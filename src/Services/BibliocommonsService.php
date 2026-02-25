@@ -68,13 +68,42 @@ class BibliocommonsService
     }
 
     /**
+     * Extract the last name from an author string for use in the contributor field.
+     *
+     * Bibliocommons stores authors in "Last, First" MARC format. Searching by full
+     * name ("Frieda McFadden") fails when the catalog has a different first-name
+     * spelling or ordering (e.g. "McFadden, Freida"). Using only the last name makes
+     * the contributor filter resilient to first-name typos in either direction.
+     *
+     * Handles:
+     *   "Alice Feeney"       → "Feeney"
+     *   "McFadden, Frieda"   → "McFadden"
+     *   "Feeney"             → "Feeney"
+     */
+    private function extractLastName(string $author): string
+    {
+        $author = trim($author);
+
+        // Already in "Last, First" format
+        if (str_contains($author, ',')) {
+            return trim(explode(',', $author)[0]);
+        }
+
+        // "First Last" — take the last word
+        $parts = preg_split('/\s+/', $author);
+        return end($parts) ?: $author;
+    }
+
+    /**
      * Build the Bibliocommons boolean search query string.
      */
     private function buildQuery(string $title, string $author, string $audience, ?string $year): string
     {
+        $lastName = $this->extractLastName($author);
+
         $parts = [
             'title:(' . $title . ')',
-            'contributor:(' . $author . ')',
+            'contributor:(' . $lastName . ')',
         ];
 
         if ($audience) {
