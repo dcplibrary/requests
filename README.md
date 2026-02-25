@@ -1,49 +1,80 @@
-# DCPL Suggest for Purchase (SFP) Application
+# dcplibrary/sfp
 
-A Laravel 12 + Livewire 4 application for managing patron suggest-for-purchase requests at DC Public Library.
-
----
-
-## Stack
-
-- **PHP 8.3+** / **Laravel 12**
-- **Livewire 4** (patron-facing multi-step form + future staff components)
-- **Alpine.js** (lightweight interactivity)
-- **Tailwind CSS** (ADA-compliant styling, focus management)
-- **MySQL / PostgreSQL** (your choice)
-- **Redis** (queue driver + cache for post-submit processing)
-- **blashbrook/papiclient** (Polaris PAPI integration)
-- **blashbrook/entra-sso** (staff authentication via Microsoft Entra)
+A Laravel package for managing patron Suggest-for-Purchase (SFP) requests at DC Public Library. Provides a multi-step Livewire patron form, a role-based staff admin interface, Polaris ILS integration, Bibliocommons catalog scraping, and ISBNdb enrichment.
 
 ---
 
-## Setup
+## Requirements
 
-### 1. Install dependencies
+- PHP 8.3+
+- Laravel 12
+- Livewire 3
+- Redis (queue driver for Polaris patron lookups)
+- `blashbrook/papiclient` (Polaris PAPI)
 
-```bash
-composer install
-npm install && npm run build
+---
+
+## Installation
+
+Since this is a private package, add it to your consuming app's `composer.json` as a path or VCS repository:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../sfp"
+        }
+    ],
+    "require": {
+        "dcplibrary/sfp": "@dev"
+    }
+}
 ```
 
-### 2. Environment
+Then install:
 
-Copy `.env.example` to `.env` and configure:
+```bash
+composer require dcplibrary/sfp
+```
+
+The service provider (`Dcplibrary\Sfp\SfpServiceProvider`) is auto-discovered via the `extra.laravel.providers` key in `composer.json`.
+
+---
+
+## Publishing Assets
+
+```bash
+# Publish everything at once
+php artisan vendor:publish --tag=sfp
+
+# Or individually:
+php artisan vendor:publish --tag=sfp-config      # config/sfp.php
+php artisan vendor:publish --tag=sfp-migrations  # database/migrations/
+php artisan vendor:publish --tag=sfp-seeders     # database/seeders/
+php artisan vendor:publish --tag=sfp-views       # resources/views/vendor/sfp/ (only if customizing)
+```
+
+---
+
+## Configuration
+
+After publishing, edit `config/sfp.php`:
+
+```php
+'route_prefix' => 'sfp',   // Patron form at /sfp, staff at /sfp/staff
+'isbndb' => [
+    'key' => env('ISBNDB_API_KEY'),
+],
+```
+
+Add to `.env`:
 
 ```env
-# App
-APP_URL=https://sfp.dcplibrary.org
+SFP_ROUTE_PREFIX=sfp
 
-# Database
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_DATABASE=sfp
-DB_USERNAME=
-DB_PASSWORD=
-
-# Queue (use Redis for production)
-QUEUE_CONNECTION=redis
-CACHE_STORE=redis
+# ISBNdb (optional — disables ISBNdb enrichment if not set)
+ISBNDB_API_KEY=
 
 # Polaris PAPI (blashbrook/papiclient)
 PAPI_ACCESS_ID=
@@ -62,24 +93,33 @@ PAPI_DOMAIN=
 PAPI_STAFF=
 PAPI_PASSWORD=
 
-# ISBNdb
-ISBNDB_API_KEY=
-
-# Microsoft Entra SSO (blashbrook/entra-sso)
+# Microsoft Entra SSO (see Entra SSO section below)
 ENTRA_CLIENT_ID=
 ENTRA_CLIENT_SECRET=
 ENTRA_TENANT_ID=
-ENTRA_REDIRECT_URI="${APP_URL}/auth/callback"
+ENTRA_REDIRECT_URI="${APP_URL}/sfp/auth/callback"
 ```
 
-### 3. Database
+---
+
+## Migrate and Seed
 
 ```bash
 php artisan migrate
-php artisan db:seed
+php artisan db:seed --class="Dcplibrary\Sfp\Database\Seeders\SfpDatabaseSeeder"
 ```
 
-### 4. Queue worker (required for Polaris lookups)
+The seeder inserts:
+- Default settings (rate limits, ILL thresholds, messages, catalog/ISBNdb toggles)
+- Material types: Book, Large Print, Graphic Novel, DVD, Blu-Ray, eAudiobook, eBook, Video Game, Other
+- Audiences: Adult, Children, Young Adult
+- Request statuses: Pending, Under Review, On Order, Purchased, Denied, ILL Referred
+
+---
+
+## Queue Worker
+
+Required for Polaris patron lookups:
 
 ```bash
 php artisan queue:work --queue=default
@@ -87,42 +127,84 @@ php artisan queue:work --queue=default
 
 ---
 
+## Routes
+
+After install, the package registers these routes under your configured prefix (default: `sfp`):
+
+| URL | Name | Description |
+|-----|------|-------------|
+| `GET /{prefix}/` | `sfp.form` | Patron-facing SFP form (Livewire) |
+| `GET /{prefix}/login` | `sfp.login` | Entra SSO redirect |
+| `GET /{prefix}/auth/callback` | `sfp.auth.callback` | Entra SSO callback |
+| `POST /{prefix}/logout` | `sfp.logout` | Log out |
+| `GET /{prefix}/staff/requests` | `sfp.staff.requests.index` | Staff request list |
+| `GET /{prefix}/staff/requests/{id}` | `sfp.staff.requests.show` | Request detail |
+| `PATCH /{prefix}/staff/requests/{id}/status` | `sfp.staff.requests.status` | Update status |
+| `GET /{prefix}/staff/settings` | `sfp.staff.settings.index` | Admin settings |
+| (and CRUD routes for material-types, audiences, statuses, users, groups) | | Admin only |
+
+---
+
+## Entra SSO
+
+`EntraAuthController` is stubbed. Wire up using `blashbrook/entra-sso` or `socialiteproviders/microsoft-azure`. The controller's comments show the Socialite pattern. The auth guard is `sfp`, backed by the `sfp_users` table.
+
+Example callback implementation (Socialite):
+
+```php
+// In EntraAuthController::callback()
+$entraUser = Socialite::driver('azure')->user();
+
+$user = \Dcplibrary\Sfp\Models\User::updateOrCreate(
+    ['entra_id' => $entraUser->getId()],
+    ['name' => $entraUser->getName(), 'email' => $entraUser->getEmail(), 'last_login_at' => now()]
+);
+
+if (! $user->active) {
+    Auth::guard(config('sfp.guard'))->logout();
+    return redirect()->route('sfp.login')->withErrors(['error' => 'Account inactive.']);
+}
+
+Auth::guard(config('sfp.guard'))->login($user, true);
+return redirect()->route('sfp.staff.requests.index');
+```
+
+---
+
 ## Architecture
 
-### Public-facing
-- **`/`** — Livewire SFP form (`App\Livewire\SfpForm`)
-  - Step 1: Patron information (barcode, name, phone, email)
-  - Step 2: Material details (type, audience, title, author, date, where heard, ILL checkbox)
-  - Step 3: Catalog + ISBNdb match resolution (interactive)
-  - Step 4: Confirmation
+### Patron Form
+`Dcplibrary\Sfp\Livewire\SfpForm` — 4-step Livewire component:
+1. Patron information (barcode, name, phone, email)
+2. Material details (type, audience, title, author, date, ILL flag)
+3. Catalog + ISBNdb match resolution (interactive)
+4. Confirmation
 
-### Post-submit processing (queued jobs)
-1. `LookupPatronInPolaris` — verifies patron in Polaris, stores match data
-2. Catalog (Bibliocommons) and ISBNdb searches run synchronously during submit for interactive patron flow
+### Staff Interface (`/{prefix}/staff/*`)
+Role-based access via the `sfp` auth guard:
+- **Admin**: full access + settings + CRUD for all lookup tables
+- **Selector**: scoped to requests matching their selector group (material types + audiences)
 
-### Staff-facing (`/staff/*`)
-- Requires Microsoft Entra SSO login
-- Roles: `admin`, `selector`
-- Selectors scoped to requests by material type + audience via selector groups
-- Admin has full access including settings, CRUD for lookup tables, user management
-
-### Key models
+### Key Models
 | Model | Table | Notes |
-|---|---|---|
-| `Patron` | `patrons` | Barcode-unique, Polaris verification fields |
+|-------|-------|-------|
+| `Patron` | `patrons` | Barcode-unique; Polaris verification fields |
 | `Material` | `materials` | Deduplicated by title+author; enriched by ISBNdb |
-| `SfpRequest` | `requests` | Core transaction; tracks catalog/ISBNdb search attempts |
+| `SfpRequest` | `requests` | Core transaction; tracks search attempts |
 | `RequestStatus` | `request_statuses` | Seeded; admin-manageable |
-| `RequestStatusHistory` | `request_status_history` | Full audit trail with user + note |
-| `Setting` | `settings` | All app rules; cached; admin UI |
+| `RequestStatusHistory` | `request_status_history` | Full audit trail |
+| `Setting` | `settings` | All business rules; 1-hour cached; admin UI |
+| `User` | `sfp_users` | Staff only; Entra SSO; role + selector group |
+| `SelectorGroup` | `selector_groups` | Scopes selector access to material types + audiences |
 
-### Configurable settings (admin UI at `/staff/settings`)
+### Configurable Settings (admin UI at `/{prefix}/staff/settings`)
 | Key | Default | Description |
-|---|---|---|
+|-----|---------|-------------|
 | `sfp_limit_count` | 5 | Requests per window |
 | `sfp_limit_window` | day | day / week / month |
 | `ill_age_threshold_years` | 2 | Years before ILL soft warning |
 | `catalog_search_enabled` | true | Toggle Bibliocommons search |
+| `catalog_search_url_template` | (Bibliocommons URL) | Editable search URL with tokens |
 | `isbndb_search_enabled` | true | Toggle ISBNdb enrichment |
 | `duplicate_request_message` | (text) | Shown when item already requested |
 | `submission_success_message` | (text) | Shown on confirmation step |
@@ -130,32 +212,12 @@ php artisan queue:work --queue=default
 
 ---
 
-## Dev tooling
+## Bibliocommons Scraping
 
-Install [Laravel Boost](https://boost.laravel.com) for AI-assisted development:
-
-```bash
-composer require laravel/boost --dev
-php artisan boost:install
-```
-
-This gives your AI editor (Cursor, VS Code, etc.) live access to your schema, routes, logs, and config while you build.
-
----
-
-## Entra SSO
-
-The `EntraAuthController` is stubbed. Wire it up using `blashbrook/entra-sso` per its docs, or use `socialiteproviders/microsoft-azure` with `Laravel\Socialite`. The controller comments show the Socialite pattern.
-
----
-
-## Bibliocommons scraping
-
-`BibliocommonsService` scrapes the Bibliocommons HTML response using `DOMXPath`. This is resilient to minor markup changes but may require updates if Bibliocommons significantly restructures their results page. The URL template is stored in settings and is editable by admins without a code deploy.
+`BibliocommonsService` scrapes Bibliocommons HTML using `DOMXPath` (no public API). The URL template is stored in settings and is editable by admins without a code deploy.
 
 ---
 
 ## ISBNdb
 
-Uses ISBNdb API v2. Set `ISBNDB_API_KEY` in `.env`. Docs: https://isbndb.com/isbndb-api-documentation-v2
-# sfp
+Uses ISBNdb API v2. Set `ISBNDB_API_KEY` in `.env`. If not configured, ISBNdb search silently skips. Docs: https://isbndb.com/isbndb-api-documentation-v2
