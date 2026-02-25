@@ -50,9 +50,9 @@ class RequestController extends Controller
         ]);
     }
 
-    public function show(SfpRequest $request)
+    public function show(SfpRequest $sfpRequest)
     {
-        $request->load([
+        $sfpRequest->load([
             'patron',
             'material.materialType',
             'materialType',
@@ -63,7 +63,7 @@ class RequestController extends Controller
         ]);
 
         return view('sfp::staff.requests.show', [
-            'sfpRequest' => $request,
+            'sfpRequest' => $sfpRequest,
             'statuses'   => RequestStatus::active()->get(),
         ]);
     }
