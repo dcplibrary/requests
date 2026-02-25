@@ -9,119 +9,166 @@ use Illuminate\Support\Facades\Log;
 class BibliocommonsService
 {
     /**
-     * Search the Bibliocommons catalog and return parsed results.
+     * The Bibliocommons library slug (subdomain).
+     * Configurable via the 'catalog_library_slug' setting.
+     */
+    private function librarySlug(): string
+    {
+        return Setting::get('catalog_library_slug', 'dcpl');
+    }
+
+    /**
+     * Search the Bibliocommons catalog via the internal JSON API and return parsed results.
      *
      * @return array{results: array, total: int, url: string}
      */
     public function search(string $title, string $author, string $audienceBiblioValue, ?string $year = null): array
     {
-        $url = $this->buildUrl($title, $author, $audienceBiblioValue, $year);
+        $slug  = $this->librarySlug();
+        $query = $this->buildQuery($title, $author, $audienceBiblioValue, $year);
+
+        // The gateway JSON API is what Bibliocommons' own SPA uses internally.
+        // The v2/search page is a React app that loads results via XHR — plain HTTP
+        // fetches of that page return an empty shell with no result data.
+        $apiUrl = "https://gateway.bibliocommons.com/v2/libraries/{$slug}/bibs/search";
+
+        // The catalog browse URL (for humans) — built from the same query
+        $browseUrl = "https://{$slug}.bibliocommons.com/v2/search?query=" . urlencode($query) . '&searchType=bl';
 
         try {
             $response = Http::timeout(10)
-                ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; DCPLSfpBot/1.0)'])
-                ->get($url);
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (compatible; SfpBot/1.0)',
+                    'Accept'     => 'application/json',
+                ])
+                ->get($apiUrl, [
+                    'query'      => $query,
+                    'searchType' => 'bl',
+                    'suppress'   => 'true',
+                ]);
 
             if (! $response->ok()) {
-                Log::warning('Bibliocommons search failed', ['status' => $response->status(), 'url' => $url]);
-                return ['results' => [], 'total' => 0, 'url' => $url];
+                Log::warning('Bibliocommons API search failed', [
+                    'status' => $response->status(),
+                    'url'    => $apiUrl,
+                    'query'  => $query,
+                ]);
+                return ['results' => [], 'total' => 0, 'url' => $browseUrl];
             }
 
-            return array_merge($this->parseHtml($response->body()), ['url' => $url]);
+            $data    = $response->json();
+            $results = $this->parseApiResponse($data, $slug);
+
+            return array_merge($results, ['url' => $browseUrl]);
 
         } catch (\Throwable $e) {
-            Log::error('Bibliocommons search exception', ['error' => $e->getMessage()]);
-            return ['results' => [], 'total' => 0, 'url' => $url];
+            Log::error('Bibliocommons API search exception', ['error' => $e->getMessage()]);
+            return ['results' => [], 'total' => 0, 'url' => $browseUrl];
         }
-    }
-
-    private function buildUrl(string $title, string $author, string $audience, ?string $year): string
-    {
-        $template = Setting::get(
-            'catalog_search_url_template',
-            'https://dcpl.bibliocommons.com/v2/search?custom_edit=false&query=(title%3A({title})%20AND%20contributor%3A({author})%20)%20audience%3A%22{audience}%22%20pubyear%3A%5B{year_from}%20TO%20{year_to}%5D&searchType=bl&suppress=true'
-        );
-
-        $yearFrom = $year ? max(1, (int) $year - 1) : 1800;
-        $yearTo   = $year ? (int) $year + 1 : now()->year;
-
-        return str_replace(
-            ['{title}', '{author}', '{audience}', '{year_from}', '{year_to}'],
-            [urlencode($title), urlencode($author), $audience, $yearFrom, $yearTo],
-            $template
-        );
     }
 
     /**
-     * Parse Bibliocommons HTML response to extract result items.
-     * Uses DOMDocument / regex fallback since there's no public API.
+     * Extract the last name from an author string for use in the contributor field.
      *
-     * Returns array of result objects with title, author, year, format, bib_id.
+     * Bibliocommons stores authors in "Last, First" MARC format. Searching by full
+     * name ("Frieda McFadden") fails when the catalog has a different first-name
+     * spelling or ordering (e.g. "McFadden, Freida"). Using only the last name makes
+     * the contributor filter resilient to first-name typos in either direction.
+     *
+     * Handles:
+     *   "Alice Feeney"       → "Feeney"
+     *   "McFadden, Frieda"   → "McFadden"
+     *   "Feeney"             → "Feeney"
      */
-    private function parseHtml(string $html): array
+    private function extractLastName(string $author): string
     {
+        $author = trim($author);
+
+        // Already in "Last, First" format
+        if (str_contains($author, ',')) {
+            return trim(explode(',', $author)[0]);
+        }
+
+        // "First Last" — take the last word
+        $parts = preg_split('/\s+/', $author);
+        return end($parts) ?: $author;
+    }
+
+    /**
+     * Build the Bibliocommons boolean search query string.
+     */
+    private function buildQuery(string $title, string $author, string $audience, ?string $year): string
+    {
+        $lastName = $this->extractLastName($author);
+
+        $parts = [
+            'title:(' . $title . ')',
+            'contributor:(' . $lastName . ')',
+        ];
+
+        if ($audience) {
+            $parts[] = 'audience:"' . $audience . '"';
+        }
+
+        if ($year) {
+            $yearFrom = max(1, (int) $year - 1);
+            $yearTo   = (int) $year + 1;
+            $parts[]  = "pubyear:[{$yearFrom} TO {$yearTo}]";
+        }
+
+        return implode(' ', $parts);
+    }
+
+    /**
+     * Parse the Bibliocommons gateway JSON API response.
+     *
+     * @return array{results: array, total: int}
+     */
+    private function parseApiResponse(array $data, string $slug): array
+    {
+        $catalogSearch = $data['catalogSearch'] ?? [];
+        $total         = $catalogSearch['pagination']['count'] ?? 0;
+
+        // Ordered result list from the catalogSearch
+        $orderedResults = $catalogSearch['results'] ?? [];
+
+        // Bib entities keyed by ID
+        $bibEntities = $data['entities']['bibs'] ?? [];
+
         $results = [];
-        $total   = 0;
 
-        libxml_use_internal_errors(true);
-        $dom = new \DOMDocument();
-        $dom->loadHTML($html);
-        libxml_clear_errors();
-
-        $xpath = new \DOMXPath($dom);
-
-        // Total result count
-        $countNodes = $xpath->query('//*[contains(@class,"results-count")]');
-        if ($countNodes->length > 0) {
-            preg_match('/\d+/', $countNodes->item(0)->textContent, $matches);
-            $total = isset($matches[0]) ? (int) $matches[0] : 0;
-        }
-
-        // Individual result items — Bibliocommons uses data-bib-id on list items
-        $items = $xpath->query('//*[@data-bib-id]');
-
-        foreach ($items as $item) {
-            $bibId = $item->getAttribute('data-bib-id');
-
-            // Title
-            $titleNode = $xpath->query('.//*[contains(@class,"title-content")]', $item);
-            $itemTitle = $titleNode->length > 0 ? trim($titleNode->item(0)->textContent) : '';
-
-            // Author/contributor
-            $authorNode = $xpath->query('.//*[contains(@class,"author-link")]', $item);
-            $itemAuthor = $authorNode->length > 0 ? trim($authorNode->item(0)->textContent) : '';
-
-            // Format
-            $formatNode = $xpath->query('.//*[contains(@class,"format-field")]', $item);
-            $itemFormat = $formatNode->length > 0 ? trim($formatNode->item(0)->textContent) : '';
-
-            // Publication year
-            $pubNode = $xpath->query('.//*[contains(@class,"pub-date")]', $item);
-            $itemYear = '';
-            if ($pubNode->length > 0) {
-                preg_match('/\d{4}/', $pubNode->item(0)->textContent, $yearMatches);
-                $itemYear = $yearMatches[0] ?? '';
+        foreach ($orderedResults as $resultRow) {
+            $bibId = $resultRow['representative'] ?? null;
+            if (! $bibId || ! isset($bibEntities[$bibId])) {
+                continue;
             }
 
-            if ($bibId && $itemTitle) {
-                $results[] = [
-                    'bib_id' => $bibId,
-                    'title'  => $itemTitle,
-                    'author' => $itemAuthor,
-                    'format' => $itemFormat,
-                    'year'   => $itemYear,
-                    'catalog_url' => "https://dcpl.bibliocommons.com/v2/record/{$bibId}",
-                ];
+            $bib  = $bibEntities[$bibId];
+            $info = $bib['briefInfo'] ?? [];
+
+            $author = '';
+            if (! empty($info['authors']) && is_array($info['authors'])) {
+                $author = implode(', ', $info['authors']);
+            }
+
+            $results[] = [
+                'bib_id'      => $bibId,
+                'title'       => $info['title'] ?? '',
+                'subtitle'    => $info['subtitle'] ?? '',
+                'author'      => $author,
+                'format'      => $info['format'] ?? '',
+                'year'        => $info['publicationDate'] ?? '',
+                'edition'     => $info['edition'] ?? '',
+                'isbns'       => $info['isbns'] ?? [],
+                'jacket'      => $info['jacket']['medium'] ?? null,
+                'catalog_url' => "https://{$slug}.bibliocommons.com/v2/record/{$bibId}",
+            ];
+
+            if (count($results) >= 5) {
+                break;
             }
         }
 
-        // Fallback: if xpath parsing yields nothing, try regex for bib IDs
-        if (empty($results) && $total === 0) {
-            preg_match_all('/data-bib-id="([^"]+)"/', $html, $bibMatches);
-            $total = count($bibMatches[1]);
-            // Results will be empty but total will indicate hits
-        }
-
-        return ['results' => array_slice($results, 0, 5), 'total' => $total];
+        return ['results' => $results, 'total' => $total];
     }
 }

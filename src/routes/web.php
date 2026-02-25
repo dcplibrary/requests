@@ -28,9 +28,9 @@ Route::group([
 
             Route::get('/', fn () => redirect()->route('sfp.staff.requests.index'));
 
-            Route::get('/requests',                    [RequestController::class, 'index'])->name('requests.index');
-            Route::get('/requests/{request}',          [RequestController::class, 'show'])->name('requests.show');
-            Route::patch('/requests/{request}/status', [RequestController::class, 'updateStatus'])->name('requests.status');
+            Route::get('/requests',                        [RequestController::class, 'index'])->name('requests.index');
+            Route::get('/requests/{sfpRequest}',           [RequestController::class, 'show'])->name('requests.show');
+            Route::patch('/requests/{sfpRequest}/status',  [RequestController::class, 'updateStatus'])->name('requests.status');
 
             Route::get('/settings',   [SettingController::class, 'index'])->name('settings.index');
             Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');

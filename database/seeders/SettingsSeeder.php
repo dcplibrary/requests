@@ -76,12 +76,12 @@ class SettingsSeeder extends Seeder
                 'description' => 'Search Bibliocommons catalog during submission.',
             ],
             [
-                'key' => 'catalog_search_url_template',
-                'value' => 'https://dcpl.bibliocommons.com/v2/search?custom_edit=false&query=(title%3A({title})%20AND%20contributor%3A({author})%20)%20audience%3A%22{audience}%22%20pubyear%3A%5B{year_from}%20TO%20{year_to}%5D&searchType=bl&suppress=true',
-                'label' => 'Catalog Search URL Template',
-                'type' => 'text',
+                'key' => 'catalog_library_slug',
+                'value' => 'dcpl',
+                'label' => 'Bibliocommons Library Slug',
+                'type' => 'string',
                 'group' => 'catalog',
-                'description' => 'URL template for Bibliocommons search. Tokens: {title}, {author}, {audience}, {year_from}, {year_to}.',
+                'description' => 'Your Bibliocommons subdomain slug (e.g. "dcpl" for dcpl.bibliocommons.com).',
             ],
 
             // --- ISBNdb ---
