@@ -11,7 +11,7 @@
         "illuminate/queue": "^12.0",
         "illuminate/http": "^12.0",
         "illuminate/cache": "^12.0",
-        "livewire/livewire": "^3.0",
+        "livewire/livewire": "^3.0|^4.0",
         "blashbrook/papiclient": "*"
     },
     "autoload": {

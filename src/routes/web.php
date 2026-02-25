@@ -48,54 +48,54 @@ Route::group([
 
                 Route::resource('material-types', MaterialTypeController::class)
                     ->names([
-                        'index'   => 'sfp.staff.material-types.index',
-                        'create'  => 'sfp.staff.material-types.create',
-                        'store'   => 'sfp.staff.material-types.store',
-                        'edit'    => 'sfp.staff.material-types.edit',
-                        'update'  => 'sfp.staff.material-types.update',
-                        'destroy' => 'sfp.staff.material-types.destroy',
+                        'index'   => 'material-types.index',
+                        'create'  => 'material-types.create',
+                        'store'   => 'material-types.store',
+                        'edit'    => 'material-types.edit',
+                        'update'  => 'material-types.update',
+                        'destroy' => 'material-types.destroy',
                     ])
                     ->except(['show']);
 
                 Route::resource('audiences', AudienceController::class)
                     ->names([
-                        'index'   => 'sfp.staff.audiences.index',
-                        'create'  => 'sfp.staff.audiences.create',
-                        'store'   => 'sfp.staff.audiences.store',
-                        'edit'    => 'sfp.staff.audiences.edit',
-                        'update'  => 'sfp.staff.audiences.update',
-                        'destroy' => 'sfp.staff.audiences.destroy',
+                        'index'   => 'audiences.index',
+                        'create'  => 'audiences.create',
+                        'store'   => 'audiences.store',
+                        'edit'    => 'audiences.edit',
+                        'update'  => 'audiences.update',
+                        'destroy' => 'audiences.destroy',
                     ])
                     ->except(['show']);
 
                 Route::resource('statuses', RequestStatusController::class)
                     ->names([
-                        'index'   => 'sfp.staff.statuses.index',
-                        'create'  => 'sfp.staff.statuses.create',
-                        'store'   => 'sfp.staff.statuses.store',
-                        'edit'    => 'sfp.staff.statuses.edit',
-                        'update'  => 'sfp.staff.statuses.update',
-                        'destroy' => 'sfp.staff.statuses.destroy',
+                        'index'   => 'statuses.index',
+                        'create'  => 'statuses.create',
+                        'store'   => 'statuses.store',
+                        'edit'    => 'statuses.edit',
+                        'update'  => 'statuses.update',
+                        'destroy' => 'statuses.destroy',
                     ])
                     ->except(['show']);
 
                 Route::resource('users', UserController::class)
                     ->names([
-                        'index'   => 'sfp.staff.users.index',
-                        'edit'    => 'sfp.staff.users.edit',
-                        'update'  => 'sfp.staff.users.update',
-                        'destroy' => 'sfp.staff.users.destroy',
+                        'index'   => 'users.index',
+                        'edit'    => 'users.edit',
+                        'update'  => 'users.update',
+                        'destroy' => 'users.destroy',
                     ])
                     ->except(['show', 'create', 'store']);
 
                 Route::resource('groups', SelectorGroupController::class)
                     ->names([
-                        'index'   => 'sfp.staff.groups.index',
-                        'create'  => 'sfp.staff.groups.create',
-                        'store'   => 'sfp.staff.groups.store',
-                        'edit'    => 'sfp.staff.groups.edit',
-                        'update'  => 'sfp.staff.groups.update',
-                        'destroy' => 'sfp.staff.groups.destroy',
+                        'index'   => 'groups.index',
+                        'create'  => 'groups.create',
+                        'store'   => 'groups.store',
+                        'edit'    => 'groups.edit',
+                        'update'  => 'groups.update',
+                        'destroy' => 'groups.destroy',
                     ])
                     ->except(['show']);
             });
