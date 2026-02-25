@@ -19,7 +19,7 @@ return new class extends Migration
         // Users can belong to many groups
         Schema::create('selector_group_user', function (Blueprint $table) {
             $table->foreignId('selector_group_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('sfp_users')->cascadeOnDelete();
             $table->primary(['selector_group_id', 'user_id']);
         });
 
