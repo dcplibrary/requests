@@ -95,33 +95,47 @@ class SfpRequest extends Model
     /**
      * Scope: only requests the given user is authorized to see based on group membership.
      *
-     * Accepts any authenticated user object (host app model or package model).
-     * If the user has an isAdmin() method, it is used; otherwise the 'role' attribute
-     * is checked directly. If the user has accessibleMaterialTypeIds() / accessibleAudienceIds()
-     * methods (i.e. is a Dcplibrary\Sfp\Models\User), those are used for filtering;
-     * otherwise admins see all and non-admins see nothing until those methods exist.
+     * Accepts any authenticated user object (host app model or package model), or null
+     * for unauthenticated requests (returns no rows).
+     *
+     * Resolution order:
+     *  1. null user → no rows
+     *  2. Already a Dcplibrary\Sfp\Models\User → use its isAdmin() / group methods directly
+     *  3. Any other Authenticatable → look up the matching SFP user by email to get role/groups
+     *  4. No matching SFP user found → if APP_ENV=local show all (dev convenience), else no rows
      */
-    public function scopeVisibleTo(\Illuminate\Database\Eloquent\Builder $query, Authenticatable $user): \Illuminate\Database\Eloquent\Builder
+    public function scopeVisibleTo(\Illuminate\Database\Eloquent\Builder $query, ?Authenticatable $user): \Illuminate\Database\Eloquent\Builder
     {
-        $isAdmin = method_exists($user, 'isAdmin')
-            ? $user->isAdmin()
-            : (($user->role ?? null) === 'admin');
+        if ($user === null) {
+            return $query->whereRaw('1 = 0');
+        }
 
-        if ($isAdmin) {
+        // Resolve to the SFP User model so we always have isAdmin() / group methods
+        if ($user instanceof \Dcplibrary\Sfp\Models\User) {
+            $sfpUser = $user;
+        } else {
+            $sfpUser = \Dcplibrary\Sfp\Models\User::where('email', $user->email ?? '')->first();
+        }
+
+        if ($sfpUser === null) {
+            // No SFP user record for this authenticated user.
+            // In local dev, show all so you can test without a full user setup.
+            if (app()->environment('local')) {
+                return $query;
+            }
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($sfpUser->isAdmin()) {
             return $query;
         }
 
-        if (method_exists($user, 'accessibleMaterialTypeIds') && method_exists($user, 'accessibleAudienceIds')) {
-            $materialTypeIds = $user->accessibleMaterialTypeIds();
-            $audienceIds     = $user->accessibleAudienceIds();
+        $materialTypeIds = $sfpUser->accessibleMaterialTypeIds();
+        $audienceIds     = $sfpUser->accessibleAudienceIds();
 
-            return $query->where(function ($q) use ($materialTypeIds, $audienceIds) {
-                $q->whereIn('material_type_id', $materialTypeIds)
-                  ->whereIn('audience_id', $audienceIds);
-            });
-        }
-
-        // Fallback: non-admin users without group membership methods see nothing.
-        return $query->whereRaw('1 = 0');
+        return $query->where(function ($q) use ($materialTypeIds, $audienceIds) {
+            $q->whereIn('material_type_id', $materialTypeIds)
+              ->whereIn('audience_id', $audienceIds);
+        });
     }
 }
