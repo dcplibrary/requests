@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RequestStatusHistory extends Model
 {
+    protected $table = 'request_status_history';
+
     protected $fillable = ['request_id', 'request_status_id', 'user_id', 'note'];
 
     public function request(): BelongsTo
