@@ -14,18 +14,21 @@ class Setting extends Model
      */
     public static function get(string $key, mixed $default = null): mixed
     {
-        $setting = Cache::remember("setting:{$key}", 3600, function () use ($key) {
-            return static::where('key', $key)->first();
+        // Cache only raw attributes, not the Eloquent model object, to avoid
+        // array-to-string errors when the cache driver serializes/deserializes it.
+        $attrs = Cache::remember("setting:{$key}", 3600, function () use ($key) {
+            $row = static::where('key', $key)->first();
+            return $row ? ['type' => $row->type, 'value' => $row->value] : null;
         });
 
-        if (! $setting) {
+        if (! $attrs) {
             return $default;
         }
 
-        return match ($setting->type) {
-            'boolean' => (bool) $setting->value,
-            'integer' => (int) $setting->value,
-            default   => $setting->value,
+        return match ($attrs['type']) {
+            'boolean' => (bool) $attrs['value'],
+            'integer' => (int) $attrs['value'],
+            default   => $attrs['value'],
         };
     }
 
