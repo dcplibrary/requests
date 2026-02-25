@@ -75,7 +75,17 @@
 
         {{-- Catalog / ILL info --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Catalog &amp; ILL</h2>
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Catalog &amp; ILL</h2>
+                <form method="POST" action="{{ route('sfp.staff.requests.catalog-recheck', $sfpRequest) }}">
+                    @csrf
+                    <button type="submit"
+                            class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
+                            onclick="return confirm('Re-run catalog search for this request?')">
+                        ↺ Re-check catalog
+                    </button>
+                </form>
+            </div>
             <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 <div>
                     <dt class="text-gray-500">Catalog searched</dt>
@@ -92,7 +102,13 @@
                 @if($sfpRequest->catalog_match_bib_id)
                 <div>
                     <dt class="text-gray-500">Bib ID</dt>
-                    <dd class="font-mono">{{ $sfpRequest->catalog_match_bib_id }}</dd>
+                    <dd>
+                        <a href="https://dcpl.bibliocommons.com/v2/record/{{ $sfpRequest->catalog_match_bib_id }}"
+                           target="_blank"
+                           class="font-mono text-blue-600 hover:underline">
+                            {{ $sfpRequest->catalog_match_bib_id }}
+                        </a>
+                    </dd>
                 </div>
                 @endif
                 <div>
