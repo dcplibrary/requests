@@ -7,6 +7,7 @@ use Dcplibrary\Sfp\Models\Audience;
 use Dcplibrary\Sfp\Models\MaterialType;
 use Dcplibrary\Sfp\Models\RequestStatus;
 use Dcplibrary\Sfp\Models\SfpRequest;
+use Dcplibrary\Sfp\Services\BibliocommonsService;
 use Illuminate\Http\Request;
 
 class RequestController extends Controller
@@ -82,5 +83,35 @@ class RequestController extends Controller
         );
 
         return back()->with('success', 'Status updated.');
+    }
+
+    public function recheckCatalog(SfpRequest $sfpRequest)
+    {
+        $audience = Audience::find($sfpRequest->audience_id);
+
+        $result = app(BibliocommonsService::class)->search(
+            $sfpRequest->submitted_title,
+            $sfpRequest->submitted_author,
+            $audience?->bibliocommons_value ?? 'adult',
+            $sfpRequest->submitted_publish_date ?: null
+        );
+
+        // Accept first physical book format, fall back to first result
+        $match = collect($result['results'])->firstWhere('format', 'BK')
+            ?? collect($result['results'])->firstWhere('format', 'LPRINT')
+            ?? ($result['results'][0] ?? null);
+
+        $sfpRequest->update([
+            'catalog_searched'       => true,
+            'catalog_result_count'   => $result['total'],
+            'catalog_match_accepted' => $match !== null,
+            'catalog_match_bib_id'   => $match['bib_id'] ?? null,
+        ]);
+
+        $message = $result['total'] > 0
+            ? "Catalog re-checked: {$result['total']} result(s) found."
+            : 'Catalog re-checked: item not found in catalog.';
+
+        return back()->with('success', $message);
     }
 }
