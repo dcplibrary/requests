@@ -9,6 +9,7 @@ class SfpDatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            UsersSeeder::class,
             SettingsSeeder::class,
             MaterialTypesSeeder::class,
             AudiencesSeeder::class,

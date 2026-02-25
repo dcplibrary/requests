@@ -65,22 +65,26 @@ class EntraAuthController extends Controller
                 ]);
             }
 
-            // Only allow users that already exist in sfp_users (no auto-create).
-            $user = User::where('email', $email)->first();
+            // Find or create the user in sfp_users.
+            // New users are created with role 'selector' and active=true;
+            // an admin can change their role and deactivate them in the staff UI.
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'name'     => $userInfo['displayName'] ?? $email,
+                    'entra_id' => $userInfo['id'] ?? null,
+                    'role'     => 'selector',
+                    'active'   => true,
+                ]
+            );
 
-            if (! $user) {
-                return redirect()->route('sfp.login')->withErrors([
-                    'error' => 'Your account does not have access to this application.',
-                ]);
-            }
-
-            if (isset($user->active) && ! $user->active) {
+            if (! $user->active) {
                 return redirect()->route('sfp.login')->withErrors([
                     'error' => 'Your account is inactive. Contact your administrator.',
                 ]);
             }
 
-            // Update name / entra_id on each login.
+            // Keep name and entra_id fresh on every login.
             $user->update(array_filter([
                 'name'     => $userInfo['displayName'] ?? $user->name,
                 'entra_id' => $userInfo['id'] ?? null,
