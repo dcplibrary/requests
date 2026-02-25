@@ -365,7 +365,8 @@ class SfpForm extends Component
             ->where('patron_id', '!=', $patron->id)
             ->first();
 
-        $pendingStatus = RequestStatus::where('slug', 'pending')->first();
+        $pendingStatus = RequestStatus::where('slug', 'pending')->first()
+            ?? RequestStatus::orderBy('sort_order')->firstOrFail();
 
         $sfpRequest = SfpRequest::create([
             'patron_id'              => $patron->id,
