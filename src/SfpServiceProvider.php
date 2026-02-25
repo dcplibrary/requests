@@ -2,9 +2,7 @@
 
 namespace Dcplibrary\Sfp;
 
-use Dcplibrary\Sfp\Http\Middleware\RoleMiddleware;
 use Dcplibrary\Sfp\Livewire\SfpForm;
-use Dcplibrary\Sfp\Models\User;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -20,8 +18,6 @@ class SfpServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->registerAuthGuard();
-        $this->registerMiddleware();
         $this->registerRoutes();
         $this->registerViews();
         $this->registerLivewire();
@@ -30,25 +26,6 @@ class SfpServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         }
-    }
-
-    protected function registerAuthGuard(): void
-    {
-        config([
-            'auth.guards.sfp' => [
-                'driver'   => 'session',
-                'provider' => 'sfp_users',
-            ],
-            'auth.providers.sfp_users' => [
-                'driver' => 'eloquent',
-                'model'  => User::class,
-            ],
-        ]);
-    }
-
-    protected function registerMiddleware(): void
-    {
-        $this->app['router']->aliasMiddleware('sfp.role', RoleMiddleware::class);
     }
 
     protected function registerRoutes(): void
@@ -86,10 +63,10 @@ class SfpServiceProvider extends ServiceProvider
 
         // Convenience tag: publish everything at once
         $this->publishes([
-            __DIR__ . '/../config/sfp.php'     => config_path('sfp.php'),
-            __DIR__ . '/../database/migrations' => database_path('migrations'),
-            __DIR__ . '/../database/seeders'    => database_path('seeders'),
-            __DIR__ . '/../resources/views'     => resource_path('views/vendor/sfp'),
+            __DIR__ . '/../config/sfp.php'      => config_path('sfp.php'),
+            __DIR__ . '/../database/migrations'  => database_path('migrations'),
+            __DIR__ . '/../database/seeders'     => database_path('seeders'),
+            __DIR__ . '/../resources/views'      => resource_path('views/vendor/sfp'),
         ], 'sfp');
     }
 }
