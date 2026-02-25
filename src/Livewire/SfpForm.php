@@ -12,9 +12,11 @@ use Dcplibrary\Sfp\Models\SfpRequest;
 use Dcplibrary\Sfp\Services\BibliocommonsService;
 use Dcplibrary\Sfp\Services\IsbnDbService;
 use Dcplibrary\Sfp\Services\PatronService;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
+#[Layout('sfp::layouts.sfp')]
 class SfpForm extends Component
 {
     // --- Steps ---
