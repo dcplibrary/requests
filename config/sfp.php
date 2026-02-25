@@ -17,30 +17,10 @@ return [
     | Route Middleware
     |--------------------------------------------------------------------------
     | Middleware applied to all package routes. 'web' is required for
-    | sessions and CSRF protection.
+    | sessions and CSRF protection. Add your auth middleware here so the
+    | host app controls authentication (e.g. ['web', 'auth', 'entra.role:sfp']).
     */
     'middleware' => ['web'],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Auth Guard
-    |--------------------------------------------------------------------------
-    | The package registers an 'sfp' auth guard backed by the sfp_users table.
-    */
-    'guard' => 'sfp',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Entra SSO Redirect URI
-    |--------------------------------------------------------------------------
-    | The callback URL registered in your Azure / Entra application registration.
-    | Must match exactly what is configured in the Entra portal.
-    | Defaults to: APP_URL + /sfp/auth/callback
-    |
-    | In the Entra portal add this as a "Web" redirect URI:
-    |   https://yourdomain.org/sfp/auth/callback
-    */
-    'entra_redirect_uri' => env('SFP_ENTRA_REDIRECT_URI', env('APP_URL') . '/sfp/auth/callback'),
 
     /*
     |--------------------------------------------------------------------------
