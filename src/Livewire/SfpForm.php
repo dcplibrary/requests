@@ -108,15 +108,22 @@ class SfpForm extends Component
     public function nextStep(): void
     {
         if ($this->step === 1) {
-            $this->validateOnly([
-                'barcode', 'name_first', 'name_last', 'phone', 'email',
+            $this->validate([
+                'barcode'    => 'required|min:5|max:20',
+                'name_first' => 'required|min:1|max:100',
+                'name_last'  => 'required|min:1|max:100',
+                'phone'      => 'required|min:7|max:20',
+                'email'      => 'nullable|email|max:255',
             ]);
             $this->checkPatronLimit();
         }
 
         if ($this->step === 2) {
-            $this->validateOnly([
-                'material_type_id', 'audience_id', 'title', 'author',
+            $this->validate([
+                'material_type_id' => 'required|exists:material_types,id',
+                'audience_id'      => 'required|exists:audiences,id',
+                'title'            => 'required|min:1|max:500',
+                'author'           => 'required|min:1|max:300',
             ]);
         }
 
