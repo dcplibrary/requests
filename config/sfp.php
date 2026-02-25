@@ -31,6 +31,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Entra SSO Redirect URI
+    |--------------------------------------------------------------------------
+    | The callback URL registered in your Azure / Entra application registration.
+    | Must match exactly what is configured in the Entra portal.
+    | Defaults to: APP_URL + /sfp/auth/callback
+    |
+    | In the Entra portal add this as a "Web" redirect URI:
+    |   https://yourdomain.org/sfp/auth/callback
+    */
+    'entra_redirect_uri' => env('SFP_ENTRA_REDIRECT_URI', env('APP_URL') . '/sfp/auth/callback'),
+
+    /*
+    |--------------------------------------------------------------------------
     | ISBNdb API
     |--------------------------------------------------------------------------
     | API key for ISBNdb v2. Set ISBNDB_API_KEY in your .env file.
