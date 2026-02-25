@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Sfp\Models;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -93,19 +94,34 @@ class SfpRequest extends Model
 
     /**
      * Scope: only requests the given user is authorized to see based on group membership.
+     *
+     * Accepts any authenticated user object (host app model or package model).
+     * If the user has an isAdmin() method, it is used; otherwise the 'role' attribute
+     * is checked directly. If the user has accessibleMaterialTypeIds() / accessibleAudienceIds()
+     * methods (i.e. is a Dcplibrary\Sfp\Models\User), those are used for filtering;
+     * otherwise admins see all and non-admins see nothing until those methods exist.
      */
-    public function scopeVisibleTo(\Illuminate\Database\Eloquent\Builder $query, User $user): \Illuminate\Database\Eloquent\Builder
+    public function scopeVisibleTo(\Illuminate\Database\Eloquent\Builder $query, Authenticatable $user): \Illuminate\Database\Eloquent\Builder
     {
-        if ($user->isAdmin()) {
+        $isAdmin = method_exists($user, 'isAdmin')
+            ? $user->isAdmin()
+            : (($user->role ?? null) === 'admin');
+
+        if ($isAdmin) {
             return $query;
         }
 
-        $materialTypeIds = $user->accessibleMaterialTypeIds();
-        $audienceIds = $user->accessibleAudienceIds();
+        if (method_exists($user, 'accessibleMaterialTypeIds') && method_exists($user, 'accessibleAudienceIds')) {
+            $materialTypeIds = $user->accessibleMaterialTypeIds();
+            $audienceIds     = $user->accessibleAudienceIds();
 
-        return $query->where(function ($q) use ($materialTypeIds, $audienceIds) {
-            $q->whereIn('material_type_id', $materialTypeIds)
-              ->whereIn('audience_id', $audienceIds);
-        });
+            return $query->where(function ($q) use ($materialTypeIds, $audienceIds) {
+                $q->whereIn('material_type_id', $materialTypeIds)
+                  ->whereIn('audience_id', $audienceIds);
+            });
+        }
+
+        // Fallback: non-admin users without group membership methods see nothing.
+        return $query->whereRaw('1 = 0');
     }
 }
