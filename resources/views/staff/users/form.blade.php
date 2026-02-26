@@ -1,6 +1,6 @@
-@extends('sfp::staff._layout')
+@extends('sfp::staff.settings._layout')
 @section('title', 'Edit User')
-@section('content')
+@section('settings-content')
 <div class="mb-6 flex items-center gap-3">
     <a href="{{ route('sfp.staff.users.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Users</a>
     <span class="text-gray-300">/</span>

@@ -1,10 +1,6 @@
-@extends('sfp::staff._layout')
+@extends('sfp::staff.settings._layout')
 @section('title', 'Settings')
-@section('content')
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
-</div>
-
+@section('settings-content')
 <form method="POST" action="{{ route('sfp.staff.settings.update') }}">
     @csrf @method('PATCH')
 

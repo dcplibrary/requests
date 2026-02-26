@@ -1,6 +1,6 @@
-@extends('sfp::staff._layout')
+@extends('sfp::staff.settings._layout')
 @section('title', $group->exists ? 'Edit Group' : 'New Group')
-@section('content')
+@section('settings-content')
 <div class="mb-6 flex items-center gap-3">
     <a href="{{ route('sfp.staff.groups.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Groups</a>
     <span class="text-gray-300">/</span>

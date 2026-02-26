@@ -1,6 +1,6 @@
-@extends('sfp::staff._layout')
+@extends('sfp::staff.settings._layout')
 @section('title', $type->exists ? 'Edit Material Type' : 'New Material Type')
-@section('content')
+@section('settings-content')
 <div class="mb-6 flex items-center gap-3">
     <a href="{{ route('sfp.staff.material-types.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Material Types</a>
     <span class="text-gray-300">/</span>
