@@ -10,6 +10,7 @@ use Dcplibrary\Sfp\Models\RequestStatus;
 use Dcplibrary\Sfp\Models\Setting;
 use Dcplibrary\Sfp\Models\SfpRequest;
 use Dcplibrary\Sfp\Services\BibliocommonsService;
+use Dcplibrary\Sfp\Services\CoverService;
 use Dcplibrary\Sfp\Services\IsbnDbService;
 use Dcplibrary\Sfp\Services\PatronService;
 use Livewire\Attributes\Layout;
@@ -227,7 +228,7 @@ class SfpForm extends Component
                 $this->publish_date ?: null
             );
             $this->catalogSearched = true;
-            $this->catalogResults = $result['results'];
+            $this->catalogResults = $this->withCovers($result['results'], 'catalog');
 
             if (count($this->catalogResults) > 0) {
                 // Show results to patron — pause here, patron interacts
@@ -243,7 +244,7 @@ class SfpForm extends Component
             $service = app(IsbnDbService::class);
             $result = $service->search($this->title, $this->author);
             $this->isbndbSearched = true;
-            $this->isbndbResults = $result['results'];
+            $this->isbndbResults = $this->withCovers($result['results'], 'isbndb');
 
             if (count($this->isbndbResults) > 0) {
                 $this->processing = false;
@@ -272,7 +273,7 @@ class SfpForm extends Component
             $service = app(IsbnDbService::class);
             $result = $service->search($this->title, $this->author);
             $this->isbndbSearched = true;
-            $this->isbndbResults = $result['results'];
+            $this->isbndbResults = $this->withCovers($result['results'], 'isbndb');
 
             if (count($this->isbndbResults) > 0) {
                 return; // Stay on step 3, show ISBNdb results
@@ -417,6 +418,29 @@ class SfpForm extends Component
         $this->createdRequestId = $sfpRequest->id;
         $this->processing = false;
         $this->step = 4; // Confirmation
+    }
+
+    /**
+     * Decorate search results with a cover_url from CoverService.
+     * Source 'catalog' uses isbns[0] + jacket fallback.
+     * Source 'isbndb' uses isbn13/isbn + image fallback.
+     */
+    private function withCovers(array $results, string $source): array
+    {
+        $covers = app(CoverService::class);
+
+        return array_map(function (array $result) use ($covers, $source) {
+            if ($source === 'catalog') {
+                $isbn     = $result['isbns'][0] ?? null;
+                $fallback = $result['jacket'] ?? null;
+            } else {
+                $isbn     = $result['isbn13'] ?? $result['isbn'] ?? null;
+                $fallback = $result['image'] ?? null;
+            }
+
+            $result['cover_url'] = $covers->url($isbn, $fallback);
+            return $result;
+        }, $results);
     }
 
     public function render()
