@@ -28,50 +28,108 @@ class IsbnDbService
         }
 
         try {
-            // Strip punctuation from the title before querying — ISBNdb searches
-            // the literal string, so "Worst.person.ever" returns nothing whereas
-            // "Worst person ever" returns the correct results.
+            $lastName    = $author ? strtolower($this->extractLastName($author)) : '';
             $searchTitle = trim(preg_replace('/\s+/', ' ', preg_replace('/[^a-zA-Z0-9\s]/u', ' ', $title)));
 
-            // Search by title first; author narrows down in result filtering
-            $response = Http::timeout(10)
-                ->withHeaders([
-                    'Authorization' => $this->apiKey,
-                    'Content-Type'  => 'application/json',
-                ])
-                ->get("{$this->baseUrl}/books/" . urlencode($searchTitle), [
-                    'language' => 'en',
-                    'pageSize' => 20,
-                ]);
+            // Primary: search by title, filter results by author last name.
+            $books = $this->fetchByTitle($searchTitle, $lastName);
 
-            if (! $response->ok()) {
-                Log::warning('ISBNdb search failed', ['status' => $response->status()]);
-                return ['results' => [], 'total' => 0];
-            }
-
-            $data = $response->json();
-            $books = $data['books'] ?? [];
-            $total = $data['total'] ?? count($books);
-
-            // Filter by author last name — more resilient than first word since
-            // ISBNdb (like Bibliocommons) may spell first names differently
-            // (e.g. "Freida" vs "Frieda"). Last name is consistent.
-            if ($author) {
-                $lastName = strtolower($this->extractLastName($author));
-                $books = array_filter($books, function ($book) use ($lastName) {
-                    $bookAuthors = strtolower(implode(' ', $book['authors'] ?? []));
-                    return str_contains($bookAuthors, $lastName);
-                });
+            // Fallback: if the title query returned rows but none matched the author,
+            // the book is likely buried beyond our page window (e.g. a generic title
+            // like "The Bible Tells Me So" with 200+ results). Search by author last
+            // name instead and filter those results by title words.
+            if (empty($books) && $lastName) {
+                $books = $this->fetchByAuthor($lastName, $searchTitle);
             }
 
             $results = array_values(array_map(fn ($book) => $this->normalizeBook($book), $books));
 
-            return ['results' => array_slice($results, 0, 5), 'total' => $total];
+            return ['results' => array_slice($results, 0, 5), 'total' => count($results)];
 
         } catch (\Throwable $e) {
             Log::error('ISBNdb search exception', ['error' => $e->getMessage()]);
             return ['results' => [], 'total' => 0];
         }
+    }
+
+    /**
+     * Search ISBNdb by title, optionally filtering results by author last name.
+     */
+    private function fetchByTitle(string $searchTitle, string $lastName): array
+    {
+        $response = Http::timeout(10)
+            ->withHeaders([
+                'Authorization' => $this->apiKey,
+                'Content-Type'  => 'application/json',
+            ])
+            ->get("{$this->baseUrl}/books/" . urlencode($searchTitle), [
+                'language' => 'en',
+                'pageSize' => 20,
+            ]);
+
+        if (! $response->ok()) {
+            Log::warning('ISBNdb title search failed', ['status' => $response->status()]);
+            return [];
+        }
+
+        $books = $response->json()['books'] ?? [];
+
+        if ($lastName) {
+            $books = array_values(array_filter($books, function ($book) use ($lastName) {
+                return str_contains(strtolower(implode(' ', $book['authors'] ?? [])), $lastName);
+            }));
+        }
+
+        return $books;
+    }
+
+    /**
+     * Search ISBNdb by author last name, filtering results by title keywords.
+     * Used as a fallback when the title is too generic to surface the right book.
+     */
+    private function fetchByAuthor(string $lastName, string $searchTitle): array
+    {
+        $response = Http::timeout(10)
+            ->withHeaders([
+                'Authorization' => $this->apiKey,
+                'Content-Type'  => 'application/json',
+            ])
+            ->get("{$this->baseUrl}/books/" . urlencode($lastName), [
+                'language' => 'en',
+                'pageSize' => 20,
+            ]);
+
+        if (! $response->ok()) {
+            Log::warning('ISBNdb author fallback search failed', ['status' => $response->status()]);
+            return [];
+        }
+
+        $books = $response->json()['books'] ?? [];
+
+        // Filter to books by this author that contain at least one significant
+        // title word (skip stopwords so "The Bible Tells Me So" → ["bible","tells"]).
+        $stopwords  = ['a', 'an', 'the', 'of', 'in', 'on', 'at', 'to', 'for',
+                       'and', 'or', 'but', 'is', 'it', 'my', 'me', 'so', 'no', 'as'];
+        $titleWords = array_filter(
+            preg_split('/\s+/', strtolower($searchTitle)),
+            fn ($w) => strlen($w) > 2 && ! in_array($w, $stopwords)
+        );
+
+        return array_values(array_filter($books, function ($book) use ($lastName, $titleWords) {
+            // Must be by this author
+            $bookAuthors = strtolower(implode(' ', $book['authors'] ?? []));
+            if (! str_contains($bookAuthors, $lastName)) {
+                return false;
+            }
+            // Must share at least one significant title word
+            $bookTitle = strtolower($book['title'] ?? '');
+            foreach ($titleWords as $word) {
+                if (str_contains($bookTitle, $word)) {
+                    return true;
+                }
+            }
+            return false;
+        }));
     }
 
     /**
