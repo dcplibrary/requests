@@ -29,12 +29,39 @@ class LookupPatronInPolaris implements ShouldQueue
         }
 
         try {
-            // GET patron basicdata by barcode via Polaris public PAPI.
+            // Step 1: Authenticate as staff to obtain an AccessSecret.
+            // The AccessSecret is required as X-PAPI-AccessToken on patron endpoints.
+            // protectedURI has no trailing slash, so uri needs a leading slash.
+            // getPolarisSettings() auto-prepends LogonWorkstationID and PatronBranchID.
+            $authResponse = app(PAPIClient::class)
+                ->method('POST')
+                ->protected()
+                ->uri('/authenticator/staff')
+                ->params([
+                    'Domain'   => env('PAPI_DOMAIN'),
+                    'Username' => env('PAPI_STAFF'),
+                    'Password' => env('PAPI_PASSWORD'),
+                ])
+                ->execRequest();
+
+            $accessSecret = $authResponse['AccessSecret'] ?? null;
+
+            if (! $accessSecret) {
+                Log::warning('Polaris staff auth returned no AccessSecret', [
+                    'patron_id' => $this->patronId,
+                    'response'  => $authResponse,
+                ]);
+                $patron->markPolarisNotFound();
+                return;
+            }
+
+            // Step 2: GET patron basicdata by barcode via Polaris public PAPI.
             // execRequest() returns an array directly (not a Response object).
             // URI builds as: {publicURI}patron/{barcode}/basicdata
-            $data = $papiclient
+            $data = app(PAPIClient::class)
                 ->method('GET')
                 ->patron($patron->barcode)
+                ->auth($accessSecret)
                 ->uri('/basicdata')
                 ->execRequest();
 
@@ -46,9 +73,8 @@ class LookupPatronInPolaris implements ShouldQueue
                 return;
             }
 
-            // Fetch full patron registration via the protected (staff) endpoint.
+            // Step 3: Fetch full patron registration via the protected (staff) endpoint.
             // protectedURI has no trailing slash, so uri needs a leading slash.
-            // Use a fresh client instance to ensure protected/public state doesn't bleed.
             $polarisPatronId = $basicData['PatronID'];
             $reg = app(PAPIClient::class)
                 ->method('GET')
