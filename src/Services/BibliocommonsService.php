@@ -6,6 +6,15 @@ use Dcplibrary\Sfp\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Client for searching the BiblioCommons catalog.
+ *
+ * Uses the internal BiblioCommons gateway JSON API — the same endpoint the
+ * catalog's React SPA calls via XHR. Results are capped at 5 per search.
+ *
+ * The library slug is read from the `catalog_library_slug` setting at runtime,
+ * allowing it to be changed without a deploy.
+ */
 class BibliocommonsService
 {
     /**

@@ -7,6 +7,19 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
+/**
+ * Laravel service provider for the dcplibrary/sfp package.
+ *
+ * Registers routes, views (including anonymous Blade component namespace),
+ * Livewire components, config merging, migrations, and publishable assets.
+ *
+ * Publish tags:
+ *  - `sfp-config`     — config/sfp.php
+ *  - `sfp-migrations` — database migrations
+ *  - `sfp-seeders`    — database seeders
+ *  - `sfp-views`      — Blade views
+ *  - `sfp`            — all of the above at once
+ */
 class SfpServiceProvider extends ServiceProvider
 {
     public function register(): void
