@@ -459,6 +459,15 @@
 
 @if($suspects->isNotEmpty())
 <script>
+{{-- Blade emits the merge URL for every patron involved so JS never has to guess paths --}}
+var SFP_MERGE_URLS = {
+    {{ $patron->id }}: "{{ route('sfp.staff.patrons.merge', $patron) }}",
+    @foreach($suspects as $suspect)
+    {{ $suspect->id }}: "{{ route('sfp.staff.patrons.merge', $suspect) }}",
+    @endforeach
+};
+</script>
+<script>
 (function () {
     // ── State ────────────────────────────────────────────────────────────────
     // Each row holds: { el, patronId, state: 'primary'|'merge'|'none' }
@@ -637,45 +646,40 @@
     }
 
     function buildFieldCell(polarisCellId, submittedCellId, fieldName, polarisVal, submittedVal, defaultChoice) {
-        const polarisCell    = document.getElementById(polarisCellId);
-        const submittedCell  = document.getElementById(submittedCellId);
-
+        const polarisCell   = document.getElementById(polarisCellId);
+        const submittedCell = document.getElementById(submittedCellId);
         const hasBoth = polarisVal && submittedVal;
-        const polChecked  = hasBoth ? (defaultChoice === 'polaris' ? 'checked' : '') : (polarisVal ? 'checked' : '');
-        const subChecked  = hasBoth ? (defaultChoice === 'submitted' ? 'checked' : '') : (submittedVal ? 'checked' : '');
 
-        if (polarisVal) {
+        if (hasBoth) {
+            // Show radio buttons — staff must choose
             polarisCell.innerHTML =
                 '<label class="flex items-center gap-2 cursor-pointer text-sm">' +
-                (hasBoth || polarisVal
-                    ? '<input type="radio" name="' + fieldName + '" value="polaris" ' + polChecked + ' class="accent-blue-600">'
-                    : '') +
+                '<input type="radio" name="' + fieldName + '" value="polaris"' +
+                (defaultChoice === 'polaris' ? ' checked' : '') + ' class="accent-blue-600">' +
                 '<span>' + esc(polarisVal) + '</span>' +
                 '</label>';
-        } else {
-            polarisCell.innerHTML = '<span class="text-gray-300 text-xs">—</span>';
-        }
-
-        if (submittedVal) {
             submittedCell.innerHTML =
                 '<label class="flex items-center gap-2 cursor-pointer text-sm">' +
-                (hasBoth || submittedVal
-                    ? '<input type="radio" name="' + fieldName + '" value="submitted" ' + subChecked + ' class="accent-blue-600">'
-                    : '') +
+                '<input type="radio" name="' + fieldName + '" value="submitted"' +
+                (defaultChoice === 'submitted' ? ' checked' : '') + ' class="accent-blue-600">' +
                 '<span>' + esc(submittedVal) + '</span>' +
                 '</label>';
-        } else {
+        } else if (polarisVal) {
+            // Only Polaris value — use hidden input, no choice needed
+            polarisCell.innerHTML =
+                '<span class="text-sm">' + esc(polarisVal) + '</span>' +
+                '<input type="hidden" name="' + fieldName + '" value="polaris">';
             submittedCell.innerHTML = '<span class="text-gray-300 text-xs">—</span>';
-        }
-
-        // If only one side has a value and no radio was needed, we still need a hidden input
-        if (!hasBoth) {
-            if (polarisVal && !submittedVal) {
-                // Auto-select polaris (already shown with radio checked by default above
-                // but ensure the radio carries the right value — already done via polChecked)
-            } else if (submittedVal && !polarisVal) {
-                // Auto-select submitted
-            }
+        } else if (submittedVal) {
+            // Only submitted value — use hidden input, no choice needed
+            polarisCell.innerHTML = '<span class="text-gray-300 text-xs">—</span>';
+            submittedCell.innerHTML =
+                '<span class="text-sm">' + esc(submittedVal) + '</span>' +
+                '<input type="hidden" name="' + fieldName + '" value="submitted">';
+        } else {
+            // Neither has a value
+            polarisCell.innerHTML   = '<span class="text-gray-300 text-xs">—</span>';
+            submittedCell.innerHTML = '<span class="text-gray-300 text-xs">—</span>';
         }
     }
 
@@ -684,26 +688,29 @@
     };
 
     window.submitMerge = function() {
-        const modal    = document.getElementById('merge-modal');
+        const modal     = document.getElementById('merge-modal');
         const primaryId = modal.dataset.primaryId;
         const loserIds  = modal.dataset.loserIds.split(',').filter(Boolean);
+        const loserId   = loserIds[0];
 
-        // We only support merging one loser at a time through the single-loser route.
-        // If multiple losers selected, we'll submit one at a time (first loser only
-        // for now — a follow-up loop could handle sequential merges).
-        // For simplicity, merge all losers by chaining: first loser → primary, then redirect to primary where the rest still show.
-        // Since the route only accepts one loser, we submit for the first one.
-        const loserId = loserIds[0];
+        // Look up the pre-generated merge URL for this loser patron
+        const mergeUrl = SFP_MERGE_URLS[loserId];
+        if (!mergeUrl) {
+            alert('Could not determine merge URL. Please refresh and try again.');
+            return;
+        }
 
-        // Get preferred phone
-        const phoneRadio = document.querySelector('input[name="preferred_phone"]:checked');
-        const preferredPhone = phoneRadio ? phoneRadio.value : 'submitted';
+        // Preferred phone — checked radio if two options, else the hidden input, else default
+        const phoneInput = document.querySelector('input[name="preferred_phone"]:checked') ||
+                           document.querySelector('input[name="preferred_phone"][type="hidden"]');
+        const preferredPhone = phoneInput ? phoneInput.value : 'submitted';
 
-        // Get preferred email
-        const emailRadio = document.querySelector('input[name="preferred_email"]:checked');
-        const preferredEmail = emailRadio ? emailRadio.value : 'submitted';
+        // Preferred email
+        const emailInput = document.querySelector('input[name="preferred_email"]:checked') ||
+                           document.querySelector('input[name="preferred_email"][type="hidden"]');
+        const preferredEmail = emailInput ? emailInput.value : 'submitted';
 
-        // Get Polaris patron ID
+        // Polaris patron ID — hidden input (single known ID) or radio (multiple) or text (none known)
         let polarisId = '';
         const polarisIdValueEl = document.getElementById('modal-polaris-id-value');
         if (polarisIdValueEl) {
@@ -713,16 +720,12 @@
             if (polarisIdRadio) polarisId = polarisIdRadio.value.trim();
         }
 
-        // Build route: POST /sfp/staff/patrons/{loser}/merge
-        const baseUrl = window.location.pathname.replace(/\/patrons\/.*$/, '/patrons/');
-        const mergeUrl = baseUrl + loserId + '/merge';
-
         const form = document.getElementById('merge-form');
         form.action = mergeUrl;
-        document.getElementById('merge-target-id').value        = primaryId;
+        document.getElementById('merge-target-id').value         = primaryId;
         document.getElementById('merge-polaris-patron-id').value = polarisId;
-        document.getElementById('merge-preferred-phone').value  = preferredPhone;
-        document.getElementById('merge-preferred-email').value  = preferredEmail;
+        document.getElementById('merge-preferred-phone').value   = preferredPhone;
+        document.getElementById('merge-preferred-email').value   = preferredEmail;
 
         form.submit();
     };
