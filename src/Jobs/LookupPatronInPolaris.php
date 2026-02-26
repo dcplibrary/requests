@@ -29,41 +29,41 @@ class LookupPatronInPolaris implements ShouldQueue
         }
 
         try {
-            // GET patron basicdata by barcode via Polaris PAPI
-            $response = $papiclient
+            // GET patron basicdata by barcode via Polaris public PAPI.
+            // execRequest() returns an array directly (not a Response object).
+            // URI builds as: {publicURI}patron/{barcode}/basicdata
+            $data = $papiclient
                 ->method('GET')
                 ->patron($patron->barcode)
-                ->uri('basicdata')
+                ->uri('/basicdata')
                 ->execRequest();
 
-            $body = $response->json() ?? [];
+            // Polaris wraps the payload in PatronBasicData
+            $basicData = $data['PatronBasicData'] ?? $data;
 
-            // Polaris returns PatronBasicData wrapper
-            $data = $body['PatronBasicData'] ?? $body;
-
-            if (empty($data) || empty($data['PatronID'])) {
+            if (empty($basicData) || empty($basicData['PatronID'])) {
                 $patron->markPolarisNotFound();
                 return;
             }
 
-            // Fetch PatronRegistration fields
-            $patronId = $data['PatronID'];
-            $regResponse = $papiclient
+            // Fetch full patron registration via the protected (staff) endpoint.
+            // Use a fresh client instance to ensure protected/public state doesn't bleed.
+            $polarisPatronId = $basicData['PatronID'];
+            $reg = app(PAPIClient::class)
                 ->method('GET')
                 ->protected()
-                ->uri("patron/{$patronId}")
+                ->uri("patron/{$polarisPatronId}")
                 ->execRequest();
 
-            $regBody = $regResponse->json() ?? [];
-            $reg = $regBody['PatronRegistrationData'] ?? $regBody;
+            $regData = $reg['PatronRegistrationData'] ?? $reg;
 
             $patron->applyPolarisData([
-                'PatronID'      => $patronId,
-                'PatronCodeID'  => $data['PatronCodeID'] ?? null,
-                'NameFirst'     => $reg['NameFirst'] ?? $data['NameFirst'] ?? null,
-                'NameLast'      => $reg['NameLast'] ?? $data['NameLast'] ?? null,
-                'PhoneVoice1'   => $reg['PhoneVoice1'] ?? null,
-                'EmailAddress'  => $reg['EmailAddress'] ?? null,
+                'PatronID'      => $polarisPatronId,
+                'PatronCodeID'  => $basicData['PatronCodeID'] ?? null,
+                'NameFirst'     => $regData['NameFirst'] ?? $basicData['NameFirst'] ?? null,
+                'NameLast'      => $regData['NameLast'] ?? $basicData['NameLast'] ?? null,
+                'PhoneVoice1'   => $regData['PhoneVoice1'] ?? null,
+                'EmailAddress'  => $regData['EmailAddress'] ?? null,
             ]);
 
         } catch (\Throwable $e) {
