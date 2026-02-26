@@ -52,6 +52,9 @@ Route::group([
             Route::post('patrons/{patron}/retrigger-polaris', [PatronController::class, 'retriggerPolaris'])
                 ->name('patrons.retrigger-polaris');
 
+            Route::post('patrons/{patron}/ignore-duplicate', [PatronController::class, 'ignoreDuplicate'])
+                ->name('patrons.ignore-duplicate');
+
             Route::get('/settings',   [SettingController::class, 'index'])->name('settings.index');
             Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
 

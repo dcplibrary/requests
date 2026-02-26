@@ -3,6 +3,7 @@
 namespace Dcplibrary\Sfp\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Patron extends Model
@@ -26,6 +27,8 @@ class Patron extends Model
         'name_last_matches',
         'phone_matches',
         'email_matches',
+        'preferred_phone',
+        'preferred_email',
     ];
 
     protected $casts = [
@@ -43,9 +46,42 @@ class Patron extends Model
         return $this->hasMany(SfpRequest::class);
     }
 
+    /**
+     * Patrons this patron has explicitly marked as not-a-duplicate.
+     */
+    public function ignoredDuplicates(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Patron::class,
+            'patron_ignored_duplicates',
+            'patron_id',
+            'ignored_patron_id'
+        );
+    }
+
     public function getFullNameAttribute(): string
     {
         return "{$this->name_first} {$this->name_last}";
+    }
+
+    /**
+     * The canonical phone to use — 'polaris' or 'submitted' (default).
+     */
+    public function getEffectivePhoneAttribute(): ?string
+    {
+        return $this->preferred_phone === 'polaris'
+            ? ($this->polaris_phone ?: $this->phone)
+            : $this->phone;
+    }
+
+    /**
+     * The canonical email to use — 'polaris' or 'submitted' (default).
+     */
+    public function getEffectiveEmailAttribute(): ?string
+    {
+        return $this->preferred_email === 'polaris'
+            ? ($this->polaris_email ?: $this->email)
+            : $this->email;
     }
 
     /**

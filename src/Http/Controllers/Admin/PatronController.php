@@ -38,19 +38,15 @@ class PatronController extends Controller
 
         if (! $showAll) {
             $query->where(function ($q) use ($suspectedDuplicateIds) {
-                // Never looked up
                 $q->where('polaris_lookup_attempted', false)
-                  // Looked up but not found
                   ->orWhere(function ($inner) {
                       $inner->where('found_in_polaris', false)
                             ->where('polaris_lookup_attempted', true);
                   })
-                  // Any submitted/Polaris field mismatch
                   ->orWhere('name_first_matches', false)
                   ->orWhere('name_last_matches', false)
                   ->orWhere('phone_matches', false)
                   ->orWhere('email_matches', false)
-                  // Suspected duplicates
                   ->orWhereIn('id', $suspectedDuplicateIds);
             });
         }
@@ -71,13 +67,13 @@ class PatronController extends Controller
 
     public function show(Patron $patron)
     {
-        $patron->load(['requests.status', 'requests.materialType']);
+        $patron->load(['requests.status', 'requests.materialType', 'ignoredDuplicates']);
 
         $suspects = $this->getSuspectsForPatron($patron);
 
         return view('sfp::staff.patrons.show', [
             'patron'  => $patron,
-            'suspects'=> $suspects,
+            'suspects' => $suspects,
         ]);
     }
 
@@ -127,7 +123,26 @@ class PatronController extends Controller
     }
 
     // -------------------------------------------------------------------------
-    // MERGE CONFIRM (GET — shows side-by-side comparison before the POST)
+    // IGNORE DUPLICATE — marks two patrons as not duplicates of each other
+    // -------------------------------------------------------------------------
+
+    public function ignoreDuplicate(Request $request, Patron $patron)
+    {
+        $request->validate([
+            'other_id' => 'required|integer|exists:patrons,id',
+        ]);
+
+        $other = Patron::findOrFail($request->other_id);
+
+        // Symmetric — ignore in both directions so neither sees the other
+        $patron->ignoredDuplicates()->syncWithoutDetaching([$other->id]);
+        $other->ignoredDuplicates()->syncWithoutDetaching([$patron->id]);
+
+        return back()->with('success', 'Marked as not a duplicate.');
+    }
+
+    // -------------------------------------------------------------------------
+    // MERGE CONFIRM (GET — kept for manual ID entry fallback)
     // -------------------------------------------------------------------------
 
     public function mergeConfirm(Request $request, Patron $loser)
@@ -152,13 +167,25 @@ class PatronController extends Controller
     }
 
     // -------------------------------------------------------------------------
-    // MERGE (POST — executes the merge)
+    // MERGE (POST — executes the merge from the modal)
+    //
+    // Expects:
+    //   target_id        — winner patron ID (the one to keep)
+    //   polaris_patron_id — optional override (entered by staff if missing)
+    //   preferred_phone  — 'submitted' | 'polaris'  for each patron
+    //   preferred_email  — 'submitted' | 'polaris'  for each patron
+    //
+    // The "loser" {patron} in the URL is the one being deleted.
+    // All requests are reassigned to the winner, then the loser is deleted.
     // -------------------------------------------------------------------------
 
     public function merge(Request $request, Patron $loser)
     {
         $request->validate([
-            'target_id' => 'required|integer|exists:patrons,id',
+            'target_id'        => 'required|integer|exists:patrons,id',
+            'polaris_patron_id'=> 'nullable|integer',
+            'preferred_phone'  => 'nullable|in:submitted,polaris',
+            'preferred_email'  => 'nullable|in:submitted,polaris',
         ]);
 
         $winner = Patron::findOrFail($request->target_id);
@@ -169,10 +196,29 @@ class PatronController extends Controller
 
         $movedCount = 0;
 
-        DB::transaction(function () use ($loser, $winner, &$movedCount) {
+        DB::transaction(function () use ($loser, $winner, $request, &$movedCount) {
+            // Apply any contact preference and Polaris ID override to the winner
+            $winnerUpdates = [];
+
+            if ($request->filled('preferred_phone')) {
+                $winnerUpdates['preferred_phone'] = $request->preferred_phone;
+            }
+            if ($request->filled('preferred_email')) {
+                $winnerUpdates['preferred_email'] = $request->preferred_email;
+            }
+            if ($request->filled('polaris_patron_id')) {
+                $winnerUpdates['polaris_patron_id'] = $request->polaris_patron_id;
+            }
+
+            if ($winnerUpdates) {
+                $winner->update($winnerUpdates);
+            }
+
+            // Move all of the loser's requests to the winner
             $movedCount = SfpRequest::where('patron_id', $loser->id)
                 ->update(['patron_id' => $winner->id]);
 
+            // Delete the loser
             $loser->delete();
         });
 
@@ -188,8 +234,6 @@ class PatronController extends Controller
     /**
      * Compute suspected duplicate patron IDs using PHP-side grouping
      * (SQLite-safe — no REGEXP_REPLACE needed).
-     *
-     * Three signals: same last name + phone digits, same email, same Polaris patron ID.
      */
     private function getSuspectedDuplicateIds(): array
     {
@@ -197,7 +241,7 @@ class PatronController extends Controller
 
         $ids = collect();
 
-        // 1. Same normalized phone digits + same last name
+        // 1. Same normalized phone + same last name
         $ids = $ids->merge(
             $allPatrons
                 ->filter(fn ($p) => preg_replace('/\D/', '', $p->phone ?? '') !== '')
@@ -233,19 +277,21 @@ class PatronController extends Controller
     }
 
     /**
-     * Find patrons suspected to be duplicates of the given patron.
-     * Used on the show page to render the warning panel.
+     * Find patrons suspected to be duplicates of the given patron,
+     * excluding any pairs the staff have marked as ignored.
      */
     private function getSuspectsForPatron(Patron $patron): \Illuminate\Support\Collection
     {
+        $ignoredIds = $patron->ignoredDuplicates->pluck('id')->all();
+
         $suspects = collect();
 
         $normalizedPhone = preg_replace('/\D/', '', $patron->phone ?? '');
 
         if ($normalizedPhone) {
-            // Other patrons with same last name and phone digits
             $suspects = $suspects->merge(
                 Patron::where('id', '!=', $patron->id)
+                    ->whereNotIn('id', $ignoredIds)
                     ->whereRaw('LOWER(name_last) = ?', [strtolower($patron->name_last)])
                     ->get()
                     ->filter(fn ($p) => preg_replace('/\D/', '', $p->phone ?? '') === $normalizedPhone)
@@ -255,6 +301,7 @@ class PatronController extends Controller
         if (! empty($patron->email)) {
             $suspects = $suspects->merge(
                 Patron::where('id', '!=', $patron->id)
+                    ->whereNotIn('id', $ignoredIds)
                     ->whereRaw('LOWER(email) = ?', [strtolower($patron->email)])
                     ->get()
             );
@@ -263,6 +310,7 @@ class PatronController extends Controller
         if (! empty($patron->polaris_patron_id)) {
             $suspects = $suspects->merge(
                 Patron::where('id', '!=', $patron->id)
+                    ->whereNotIn('id', $ignoredIds)
                     ->where('polaris_patron_id', $patron->polaris_patron_id)
                     ->get()
             );
