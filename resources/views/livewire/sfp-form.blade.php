@@ -334,7 +334,7 @@
                 @php
                     $isbn = $result['isbns'][0] ?? null;
                     $coverUrl = ($isbn && $syndeticsClient)
-                        ? "https://www.syndetics.com/index.aspx?isbn={$isbn}/issn=/LC.JPG&client={$syndeticsClient}"
+                        ? "https://www.syndetics.com/index.aspx?isbn={$isbn}&issn=/LC.JPG&client={$syndeticsClient}"
                         : ($result['jacket'] ?? null);
                 @endphp
                 <li class="p-4 border border-gray-200 rounded-md bg-white shadow-sm">
@@ -385,7 +385,7 @@
                 @php
                     $isbn = $result['isbn13'] ?? $result['isbn'] ?? null;
                     $coverUrl = ($isbn && $syndeticsClient)
-                        ? "https://www.syndetics.com/index.aspx?isbn={$isbn}/issn=/LC.JPG&client={$syndeticsClient}"
+                        ? "https://www.syndetics.com/index.aspx?isbn={$isbn}&issn=/LC.JPG&client={$syndeticsClient}"
                         : ($result['image'] ?? null);
                 @endphp
                 <li class="p-4 border border-gray-200 rounded-md bg-white shadow-sm">
