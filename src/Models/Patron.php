@@ -89,13 +89,8 @@ class Patron extends Model
      */
     public function recentRequestCount(): int
     {
-        $window = Setting::get('sfp_limit_window', 'day');
-
-        $since = match ($window) {
-            'week'  => now()->startOfWeek(),
-            'month' => now()->startOfMonth(),
-            default => now()->startOfDay(),
-        };
+        $days = (int) Setting::get('sfp_limit_window_days', 30);
+        $since = now()->subDays($days);
 
         return $this->requests()->where('created_at', '>=', $since)->count();
     }

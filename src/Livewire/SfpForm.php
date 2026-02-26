@@ -174,9 +174,9 @@ class SfpForm extends Component
 
         // 2. Rate limit check
         if ($patron->hasReachedLimit()) {
-            $window = Setting::get('sfp_limit_window', 'day');
+            $days = (int) Setting::get('sfp_limit_window_days', 30);
             $count = Setting::get('sfp_limit_count', 5);
-            $this->addError('barcode', "You have reached the limit of {$count} requests per {$window}. Please try again later.");
+            $this->addError('barcode', "You have reached the limit of {$count} requests per {$days} days. Please try again later.");
             $this->processing = false;
             return;
         }
@@ -326,9 +326,9 @@ class SfpForm extends Component
     {
         $existing = Patron::where('barcode', $this->barcode)->first();
         if ($existing && $existing->hasReachedLimit()) {
-            $window = Setting::get('sfp_limit_window', 'day');
+            $days = (int) Setting::get('sfp_limit_window_days', 30);
             $count = Setting::get('sfp_limit_count', 5);
-            $this->addError('barcode', "You have reached the limit of {$count} requests per {$window}. Please try again later.");
+            $this->addError('barcode', "You have reached the limit of {$count} requests per {$days} days. Please try again later.");
         }
     }
 
