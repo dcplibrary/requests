@@ -28,13 +28,18 @@ class IsbnDbService
         }
 
         try {
+            // Strip punctuation from the title before querying — ISBNdb searches
+            // the literal string, so "Worst.person.ever" returns nothing whereas
+            // "Worst person ever" returns the correct results.
+            $searchTitle = trim(preg_replace('/\s+/', ' ', preg_replace('/[^a-zA-Z0-9\s]/u', ' ', $title)));
+
             // Search by title first; author narrows down in result filtering
             $response = Http::timeout(10)
                 ->withHeaders([
                     'Authorization' => $this->apiKey,
                     'Content-Type'  => 'application/json',
                 ])
-                ->get("{$this->baseUrl}/books/" . urlencode($title), [
+                ->get("{$this->baseUrl}/books/" . urlencode($searchTitle), [
                     'language' => 'en',
                     'pageSize' => 20,
                 ]);

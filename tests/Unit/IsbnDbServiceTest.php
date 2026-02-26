@@ -40,6 +40,11 @@ class IsbnDbServiceTest extends TestCase
                 ];
             }
 
+            public function sanitizeTitle(string $title): string
+            {
+                return trim(preg_replace('/\s+/', ' ', preg_replace('/[^a-zA-Z0-9\s]/u', ' ', $title)));
+            }
+
             public function extractLastName(string $author): string
             {
                 $author = trim($author);
@@ -204,6 +209,35 @@ class IsbnDbServiceTest extends TestCase
     public function it_handles_single_word_author(): void
     {
         $this->assertSame('Prince', $this->service()->extractLastName('Prince'));
+    }
+
+    // ---------------------------------------------------------------------------
+    // sanitizeTitle()
+    // ---------------------------------------------------------------------------
+
+    #[Test]
+    public function it_strips_dots_from_title(): void
+    {
+        $this->assertSame('Worst person ever', $this->service()->sanitizeTitle('Worst.person.ever'));
+    }
+
+    #[Test]
+    public function it_strips_other_punctuation_from_title(): void
+    {
+        $this->assertSame('Hello World', $this->service()->sanitizeTitle('Hello, World!'));
+        $this->assertSame('The Hitchhiker s Guide', $this->service()->sanitizeTitle("The Hitchhiker's Guide"));
+    }
+
+    #[Test]
+    public function it_collapses_multiple_spaces_in_title(): void
+    {
+        $this->assertSame('Word Word Word', $this->service()->sanitizeTitle('Word...Word...Word'));
+    }
+
+    #[Test]
+    public function it_leaves_clean_titles_unchanged(): void
+    {
+        $this->assertSame('Vigil A Novel', $this->service()->sanitizeTitle('Vigil A Novel'));
     }
 
     // ---------------------------------------------------------------------------
