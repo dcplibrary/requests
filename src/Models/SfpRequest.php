@@ -7,6 +7,37 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * A patron's Suggest for Purchase request.
+ *
+ * Tracks the full lifecycle of a suggestion: submitted data, catalog and ISBNdb
+ * search outcomes, duplicate detection, and status workflow. Both the raw
+ * patron-entered values (`submitted_*`) and the resolved material record
+ * (`material_id`) are stored so staff can compare what was submitted versus
+ * what was matched.
+ *
+ * @property int              $id
+ * @property int              $patron_id
+ * @property int|null         $material_id
+ * @property int|null         $audience_id
+ * @property int|null         $material_type_id
+ * @property int              $request_status_id
+ * @property string           $submitted_title
+ * @property string           $submitted_author
+ * @property string|null      $submitted_publish_date
+ * @property string|null      $other_material_text
+ * @property string|null      $where_heard
+ * @property bool             $ill_requested
+ * @property bool             $catalog_searched
+ * @property int|null         $catalog_result_count
+ * @property bool|null        $catalog_match_accepted
+ * @property string|null      $catalog_match_bib_id
+ * @property bool             $isbndb_searched
+ * @property int|null         $isbndb_result_count
+ * @property bool|null        $isbndb_match_accepted
+ * @property bool             $is_duplicate
+ * @property int|null         $duplicate_of_request_id
+ */
 class SfpRequest extends Model
 {
     protected $table = 'requests';

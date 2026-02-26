@@ -5,6 +5,13 @@ namespace Dcplibrary\Sfp\Services;
 use Dcplibrary\Sfp\Jobs\LookupPatronInPolaris;
 use Dcplibrary\Sfp\Models\Patron;
 
+/**
+ * Creates or retrieves patrons during form submission.
+ *
+ * On first encounter (new barcode), creates the patron record and dispatches
+ * `LookupPatronInPolaris` to the queue so validation against the ILS happens
+ * asynchronously after the patron's form is submitted.
+ */
 class PatronService
 {
     /**

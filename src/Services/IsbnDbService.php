@@ -5,6 +5,19 @@ namespace Dcplibrary\Sfp\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Client for the ISBNdb v2 REST API.
+ *
+ * Used as a fallback enrichment source when the catalog search returns no
+ * results. Performs a two-stage search:
+ *  1. Search by title, filter results by author last name.
+ *  2. If stage 1 returns nothing, search by author last name and filter by
+ *     significant title words (stopword-aware). This handles cases where a
+ *     generic title (e.g. "The Bible Tells Me So") buries the right book
+ *     beyond the first page of results.
+ *
+ * The API key is read from `config('sfp.isbndb.key')`.
+ */
 class IsbnDbService
 {
     private string $apiKey;

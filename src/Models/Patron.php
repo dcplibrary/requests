@@ -6,6 +6,35 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * A library patron who has submitted at least one SFP request.
+ *
+ * Patrons are identified by their library card barcode. On first submission a
+ * `LookupPatronInPolaris` job is queued to validate and enrich the record against
+ * the ILS. Match fields flag discrepancies for staff review.
+ *
+ * @property int              $id
+ * @property string           $barcode
+ * @property string           $name_first
+ * @property string           $name_last
+ * @property string           $phone
+ * @property string|null      $email
+ * @property bool             $found_in_polaris
+ * @property bool             $polaris_lookup_attempted
+ * @property \Carbon\Carbon|null $polaris_lookup_at
+ * @property int|null         $polaris_patron_id
+ * @property int|null         $polaris_patron_code_id
+ * @property string|null      $polaris_name_first
+ * @property string|null      $polaris_name_last
+ * @property string|null      $polaris_phone
+ * @property string|null      $polaris_email
+ * @property bool|null        $name_first_matches
+ * @property bool|null        $name_last_matches
+ * @property bool|null        $phone_matches
+ * @property bool|null        $email_matches
+ * @property string           $preferred_phone  'submitted'|'polaris'
+ * @property string           $preferred_email  'submitted'|'polaris'
+ */
 class Patron extends Model
 {
     protected $fillable = [
@@ -41,6 +70,7 @@ class Patron extends Model
         'email_matches' => 'boolean',
     ];
 
+    /** All SFP requests submitted by this patron. */
     public function requests(): HasMany
     {
         return $this->hasMany(SfpRequest::class);
@@ -59,6 +89,7 @@ class Patron extends Model
         );
     }
 
+    /** Computed full name: "{first} {last}". */
     public function getFullNameAttribute(): string
     {
         return "{$this->name_first} {$this->name_last}";
