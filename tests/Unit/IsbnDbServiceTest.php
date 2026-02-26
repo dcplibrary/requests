@@ -40,16 +40,25 @@ class IsbnDbServiceTest extends TestCase
                 ];
             }
 
+            public function extractLastName(string $author): string
+            {
+                $author = trim($author);
+                if (str_contains($author, ',')) {
+                    return trim(explode(',', $author)[0]);
+                }
+                $parts = preg_split('/\s+/', $author);
+                return end($parts) ?: $author;
+            }
+
             public function filterByAuthor(array $books, string $author): array
             {
                 if (! $author) {
                     return $books;
                 }
-                $normalizedAuthor = strtolower(trim($author));
-                $firstWord = explode(' ', $normalizedAuthor)[0];
-                return array_values(array_filter($books, function ($book) use ($firstWord) {
-                    $bookAuthors = implode(' ', $book['authors'] ?? []);
-                    return str_contains(strtolower($bookAuthors), $firstWord);
+                $lastName = strtolower($this->extractLastName($author));
+                return array_values(array_filter($books, function ($book) use ($lastName) {
+                    $bookAuthors = strtolower(implode(' ', $book['authors'] ?? []));
+                    return str_contains($bookAuthors, $lastName);
                 }));
             }
 
@@ -172,11 +181,37 @@ class IsbnDbServiceTest extends TestCase
     }
 
     // ---------------------------------------------------------------------------
+    // extractLastName()
+    // ---------------------------------------------------------------------------
+
+    #[Test]
+    public function it_extracts_last_name_from_first_last_format(): void
+    {
+        $this->assertSame('Saunders', $this->service()->extractLastName('George Saunders'));
+        $this->assertSame('McFadden', $this->service()->extractLastName('Freida McFadden'));
+        $this->assertSame('McCarthy', $this->service()->extractLastName('Cormac McCarthy'));
+    }
+
+    #[Test]
+    public function it_extracts_last_name_from_marc_format(): void
+    {
+        // MARC / "Last, First" format used by some catalogues and ISBNdb
+        $this->assertSame('McFadden', $this->service()->extractLastName('McFadden, Freida'));
+        $this->assertSame('Saunders', $this->service()->extractLastName('Saunders, George'));
+    }
+
+    #[Test]
+    public function it_handles_single_word_author(): void
+    {
+        $this->assertSame('Prince', $this->service()->extractLastName('Prince'));
+    }
+
+    // ---------------------------------------------------------------------------
     // filterByAuthor()
     // ---------------------------------------------------------------------------
 
     #[Test]
-    public function it_filters_books_by_first_word_of_author(): void
+    public function it_filters_books_by_last_name_of_author(): void
     {
         $books  = $this->vigilFixture()['books'];
         $filtered = $this->service()->filterByAuthor($books, 'George Saunders');

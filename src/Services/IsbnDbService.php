@@ -30,11 +30,13 @@ class IsbnDbService
         try {
             // Search by title first; author narrows down in result filtering
             $response = Http::timeout(10)
-                ->withHeaders(['Authorization' => $this->apiKey])
-                ->get("{$this->baseUrl}/books/{$title}", [
-                    'page'     => 1,
-                    'pageSize' => 10,
-                    'column'   => 'title',
+                ->withHeaders([
+                    'Authorization' => $this->apiKey,
+                    'Content-Type'  => 'application/json',
+                ])
+                ->get("{$this->baseUrl}/books/" . urlencode($title), [
+                    'language' => 'en',
+                    'pageSize' => 20,
                 ]);
 
             if (! $response->ok()) {
@@ -46,12 +48,14 @@ class IsbnDbService
             $books = $data['books'] ?? [];
             $total = $data['total'] ?? count($books);
 
-            // Filter by author similarity
+            // Filter by author last name — more resilient than first word since
+            // ISBNdb (like Bibliocommons) may spell first names differently
+            // (e.g. "Freida" vs "Frieda"). Last name is consistent.
             if ($author) {
-                $normalizedAuthor = strtolower(trim($author));
-                $books = array_filter($books, function ($book) use ($normalizedAuthor) {
-                    $bookAuthors = implode(' ', $book['authors'] ?? []);
-                    return str_contains(strtolower($bookAuthors), explode(' ', $normalizedAuthor)[0]);
+                $lastName = strtolower($this->extractLastName($author));
+                $books = array_filter($books, function ($book) use ($lastName) {
+                    $bookAuthors = strtolower(implode(' ', $book['authors'] ?? []));
+                    return str_contains($bookAuthors, $lastName);
                 });
             }
 
@@ -63,6 +67,20 @@ class IsbnDbService
             Log::error('ISBNdb search exception', ['error' => $e->getMessage()]);
             return ['results' => [], 'total' => 0];
         }
+    }
+
+    /**
+     * Extract the last name from an author string.
+     * Handles "First Last" and "Last, First" (MARC) formats.
+     */
+    private function extractLastName(string $author): string
+    {
+        $author = trim($author);
+        if (str_contains($author, ',')) {
+            return trim(explode(',', $author)[0]);
+        }
+        $parts = preg_split('/\s+/', $author);
+        return end($parts) ?: $author;
     }
 
     /**
