@@ -195,6 +195,14 @@ class SfpForm extends Component
                     'This item has already been requested. Please check the catalog regularly.'
                 );
                 $this->resolvedMaterialId = $existingMaterial->id;
+
+                // Surface the duplicate notice before doing any further work.
+                // Advance to step 3 so the patron sees the message. If they
+                // choose to submit anyway, saveRequest() will still record the
+                // request with is_duplicate=true.
+                $this->processing = false;
+                $this->step = 3;
+                return;
             }
         }
 
@@ -360,10 +368,9 @@ class SfpForm extends Component
             $material = Material::create($materialData);
         }
 
-        // Determine if duplicate
-        $priorRequest = SfpRequest::where('material_id', $material->id)
-            ->where('patron_id', '!=', $patron->id)
-            ->first();
+        // Determine if duplicate — any prior request for this material counts,
+        // including re-submissions from the same patron.
+        $priorRequest = SfpRequest::where('material_id', $material->id)->first();
 
         $pendingStatus = RequestStatus::where('slug', 'pending')->first()
             ?? RequestStatus::orderBy('sort_order')->firstOrFail();
