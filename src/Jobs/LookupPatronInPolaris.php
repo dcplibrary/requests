@@ -47,12 +47,13 @@ class LookupPatronInPolaris implements ShouldQueue
             }
 
             // Fetch full patron registration via the protected (staff) endpoint.
+            // protectedURI has no trailing slash, so uri needs a leading slash.
             // Use a fresh client instance to ensure protected/public state doesn't bleed.
             $polarisPatronId = $basicData['PatronID'];
             $reg = app(PAPIClient::class)
                 ->method('GET')
                 ->protected()
-                ->uri("patron/{$polarisPatronId}")
+                ->uri("/patron/{$polarisPatronId}")
                 ->execRequest();
 
             $regData = $reg['PatronRegistrationData'] ?? $reg;
