@@ -25,7 +25,7 @@
             <span class="text-orange-500">·</span>
             <span class="text-xs">{{ $suspect->requests()->count() }} request(s)</span>
             <span class="text-orange-500">·</span>
-            <a href="{{ route('sfp.staff.patrons.merge-confirm', $patron) }}?target_id={{ $suspect->id }}"
+            <a href="{{ route('sfp.staff.patrons.merge-confirm', $suspect) }}?target_id={{ $patron->id }}"
                class="text-xs underline text-orange-600 hover:text-orange-900">
                 Keep this patron, merge #{{ $suspect->id }} into it &rarr;
             </a>
