@@ -3,6 +3,7 @@
 namespace Dcplibrary\Sfp\Livewire;
 
 use Dcplibrary\Sfp\Models\Audience;
+use Dcplibrary\Sfp\Models\CatalogFormatLabel;
 use Dcplibrary\Sfp\Models\Material;
 use Dcplibrary\Sfp\Models\MaterialType;
 use Dcplibrary\Sfp\Models\Patron;
@@ -451,6 +452,7 @@ class SfpForm extends Component
             'illWarningMessage' => Setting::get('ill_warning_message', ''),
             'successMessage'    => Setting::get('submission_success_message', 'Thank you for your suggestion!'),
             'duplicateMessage'  => $this->duplicateMessage,
+            'formatLabels'      => CatalogFormatLabel::map(),
         ]);
     }
 }

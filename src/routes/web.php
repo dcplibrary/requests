@@ -1,6 +1,7 @@
 <?php
 
 use Dcplibrary\Sfp\Http\Controllers\Admin\AudienceController;
+use Dcplibrary\Sfp\Http\Controllers\Admin\CatalogController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\TitleController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\MaterialTypeController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\PatronController;
@@ -72,6 +73,11 @@ Route::group([
 
             Route::get('/settings',   [SettingController::class, 'index'])->name('settings.index');
             Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+            Route::get('/catalog',    [CatalogController::class, 'index'])->name('catalog.index');
+            Route::patch('/catalog',  [CatalogController::class, 'update'])->name('catalog.update');
+            Route::post('/catalog/format-labels',                          [CatalogController::class, 'storeFormatLabel'])->name('catalog.format-labels.store');
+            Route::delete('/catalog/format-labels/{catalogFormatLabel}',   [CatalogController::class, 'destroyFormatLabel'])->name('catalog.format-labels.destroy');
 
             Route::resource('material-types', MaterialTypeController::class)
                 ->names([
