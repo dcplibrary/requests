@@ -110,7 +110,10 @@ class BibliocommonsService
             $parts[] = 'audience:"' . $audience . '"';
         }
 
-        if ($year) {
+        // Only filter by year for recent titles. For older books the patron
+        // enters the original publication year, but the catalog holds later
+        // editions/reprints — a tight year window would miss them entirely.
+        if ($year && (int) $year >= (now()->year - 2)) {
             $yearFrom = max(1, (int) $year - 1);
             $yearTo   = (int) $year + 1;
             $parts[]  = "pubyear:[{$yearFrom} TO {$yearTo}]";

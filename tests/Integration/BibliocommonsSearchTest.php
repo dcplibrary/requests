@@ -28,7 +28,7 @@ class BibliocommonsSearchTest extends TestCase
         if ($audience) {
             $parts[] = 'audience:"' . $audience . '"';
         }
-        if ($year) {
+        if ($year && (int) $year >= (date('Y') - 2)) {
             $parts[] = 'pubyear:[' . max(1, (int) $year - 1) . ' TO ' . ((int) $year + 1) . ']';
         }
         $query = implode(' ', $parts);
@@ -117,6 +117,24 @@ class BibliocommonsSearchTest extends TestCase
         $bib = $bibs['S123C906661'];
         $this->assertSame("My Husband's Wife", $bib['briefInfo']['title']);
         $this->assertSame('BK',                $bib['briefInfo']['format']);
+    }
+
+    // ---------------------------------------------------------------------------
+    // "Blood Meridian" by Cormac McCarthy (originally 1985)
+    //
+    // Classic title where the patron enters the original pub year but the
+    // catalog holds later digital editions. The year filter must be suppressed
+    // for old titles or the search returns 0 even though the book is held.
+    // ---------------------------------------------------------------------------
+
+    #[Test]
+    public function blood_meridian_by_cormac_mccarthy_is_found_without_year_filter(): void
+    {
+        $data  = $this->search('Blood Meridian', 'Cormac McCarthy', 'adult', '1985');
+        $total = $data['catalogSearch']['pagination']['count'] ?? 0;
+
+        $this->assertGreaterThan(0, $total,
+            'Expected results for "Blood Meridian" — year filter must not restrict old pub years');
     }
 
     // ---------------------------------------------------------------------------
