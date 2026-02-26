@@ -3,6 +3,7 @@
 namespace Dcplibrary\Sfp;
 
 use Dcplibrary\Sfp\Livewire\SfpForm;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -36,6 +37,8 @@ class SfpServiceProvider extends ServiceProvider
     protected function registerViews(): void
     {
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'sfp');
+
+        Blade::anonymousComponentNamespace('sfp::components', 'sfp');
     }
 
     protected function registerLivewire(): void
