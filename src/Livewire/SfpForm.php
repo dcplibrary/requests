@@ -190,10 +190,19 @@ class SfpForm extends Component
             $priorRequest = SfpRequest::where('material_id', $existingMaterial->id)->first();
             if ($priorRequest) {
                 $this->isDuplicate = true;
-                $this->duplicateMessage = Setting::get(
-                    'duplicate_request_message',
-                    'This item has already been requested. Please check the catalog regularly.'
-                );
+
+                // Use a different message if it's the same patron re-requesting
+                if ($priorRequest->patron_id === $patron->id) {
+                    $this->duplicateMessage = Setting::get(
+                        'duplicate_self_request_message',
+                        "You've already requested this item. We'll let you know when it's available."
+                    );
+                } else {
+                    $this->duplicateMessage = Setting::get(
+                        'duplicate_request_message',
+                        'This item has already been requested. Please check the catalog regularly.'
+                    );
+                }
                 $this->resolvedMaterialId = $existingMaterial->id;
 
                 // Surface the duplicate notice before doing any further work.
