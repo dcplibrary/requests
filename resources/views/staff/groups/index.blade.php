@@ -1,6 +1,6 @@
-@extends('sfp::staff._layout')
+@extends('sfp::staff.settings._layout')
 @section('title', 'Selector Groups')
-@section('content')
+@section('settings-content')
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold text-gray-900">Selector Groups</h1>
     <a href="{{ route('sfp.staff.groups.create') }}"

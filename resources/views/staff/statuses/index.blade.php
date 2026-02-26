@@ -1,6 +1,6 @@
-@extends('sfp::staff._layout')
+@extends('sfp::staff.settings._layout')
 @section('title', 'Request Statuses')
-@section('content')
+@section('settings-content')
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold text-gray-900">Request Statuses</h1>
     <a href="{{ route('sfp.staff.statuses.create') }}"
