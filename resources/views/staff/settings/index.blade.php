@@ -8,14 +8,16 @@
 <form method="POST" action="{{ route('sfp.staff.settings.update') }}">
     @csrf @method('PATCH')
 
+    @php $i = 0; @endphp
+
     @forelse($settings as $group => $items)
     <div class="bg-white rounded-lg border border-gray-200 mb-6 overflow-hidden">
         <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 class="text-sm font-semibold text-gray-700">{{ $group ?: 'General' }}</h2>
         </div>
         <div class="divide-y divide-gray-100">
-            @foreach($items as $i => $setting)
-            <input type="hidden" name="settings[{{ $loop->index + ($loop->parent ? $loop->parent->count() : 0) }}][key]" value="{{ $setting->key }}">
+            @foreach($items as $setting)
+            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $setting->key }}">
             <div class="px-5 py-4 flex items-start gap-6">
                 <div class="w-64 flex-shrink-0">
                     <label class="block text-sm font-medium text-gray-800">{{ $setting->label ?? $setting->key }}</label>
@@ -25,24 +27,25 @@
                 </div>
                 <div class="flex-1">
                     @if($setting->type === 'boolean')
-                        <input type="hidden" name="settings[{{ $loop->index + ($loop->parent ? $loop->parent->count() : 0) }}][value]" value="0">
+                        <input type="hidden" name="settings[{{ $i }}][value]" value="0">
                         <input type="checkbox"
-                               name="settings[{{ $loop->index + ($loop->parent ? $loop->parent->count() : 0) }}][value]"
+                               name="settings[{{ $i }}][value]"
                                value="1"
                                {{ $setting->value ? 'checked' : '' }}
                                class="w-4 h-4 rounded border-gray-300 text-blue-600">
-                    @elseif($setting->type === 'textarea')
-                        <textarea name="settings[{{ $loop->index + ($loop->parent ? $loop->parent->count() : 0) }}][value]"
-                                  rows="4"
+                    @elseif($setting->type === 'text' || $setting->type === 'textarea')
+                        <textarea name="settings[{{ $i }}][value]"
+                                  rows="3"
                                   class="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-y">{{ $setting->value }}</textarea>
                     @else
-                        <input type="{{ $setting->type ?? 'text' }}"
-                               name="settings[{{ $loop->index + ($loop->parent ? $loop->parent->count() : 0) }}][value]"
-                               value="{{ old("settings.{$setting->key}.value", $setting->value) }}"
+                        <input type="text"
+                               name="settings[{{ $i }}][value]"
+                               value="{{ old("settings.{$i}.value", $setting->value) }}"
                                class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
                     @endif
                 </div>
             </div>
+            @php $i++; @endphp
             @endforeach
         </div>
     </div>
