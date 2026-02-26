@@ -74,6 +74,16 @@ class SettingsSeeder extends Seeder
                 'description' => 'Shown to patrons after a successful SFP submission.',
             ],
 
+            // --- Syndetics book covers ---
+            [
+                'key' => 'syndetics_client',
+                'value' => 'davia',
+                'label' => 'Syndetics Client ID',
+                'type' => 'string',
+                'group' => 'syndetics',
+                'description' => 'Your Syndetics client ID for book cover images (e.g. "davia").',
+            ],
+
             // --- Catalog search ---
             [
                 'key' => 'catalog_search_enabled',

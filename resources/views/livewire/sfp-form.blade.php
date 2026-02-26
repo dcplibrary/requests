@@ -326,16 +326,28 @@
 
         {{-- Catalog results --}}
         @if(count($catalogResults) > 0 && $catalogMatchAccepted === null)
+        @php $syndeticsClient = \Dcplibrary\Sfp\Models\Setting::get('syndetics_client', ''); @endphp
         <div>
             <p class="text-sm text-gray-600 mb-4">We found the following in our catalog. Is one of these the item you're looking for?</p>
             <ul class="space-y-3" role="list">
                 @foreach($catalogResults as $result)
+                @php
+                    $isbn = $result['isbns'][0] ?? null;
+                    $coverUrl = ($isbn && $syndeticsClient)
+                        ? "https://www.syndetics.com/index.aspx?isbn={$isbn}/issn=/LC.JPG&client={$syndeticsClient}"
+                        : ($result['jacket'] ?? null);
+                @endphp
                 <li class="p-4 border border-gray-200 rounded-md bg-white shadow-sm">
                     <div class="flex justify-between items-start gap-3">
-                        <div>
-                            <p class="font-semibold text-gray-900 text-sm">{{ $result['title'] }}</p>
-                            <p class="text-gray-600 text-sm">{{ $result['author'] }}</p>
-                            <p class="text-gray-400 text-xs mt-1">{{ $result['format'] }}{{ $result['year'] ? ' · ' . $result['year'] : '' }}</p>
+                        <div class="flex gap-3">
+                            @if($coverUrl)
+                            <img src="{{ $coverUrl }}" alt="Cover of {{ $result['title'] }}" class="w-12 h-auto object-contain rounded shrink-0" />
+                            @endif
+                            <div>
+                                <p class="font-semibold text-gray-900 text-sm">{{ $result['title'] }}</p>
+                                <p class="text-gray-600 text-sm">{{ $result['author'] }}</p>
+                                <p class="text-gray-400 text-xs mt-1">{{ $result['format'] }}{{ $result['year'] ? ' · ' . $result['year'] : '' }}</p>
+                            </div>
                         </div>
                         <div class="flex flex-col gap-2 shrink-0">
                             <a
@@ -365,15 +377,22 @@
 
         {{-- ISBNdb results --}}
         @elseif(count($isbndbResults) > 0 && $isbndbMatchAccepted === null)
+        @php $syndeticsClient = $syndeticsClient ?? \Dcplibrary\Sfp\Models\Setting::get('syndetics_client', ''); @endphp
         <div>
             <p class="text-sm text-gray-600 mb-4">We found the following possible matches. Is one of these the item you're looking for?</p>
             <ul class="space-y-3" role="list">
                 @foreach($isbndbResults as $i => $result)
+                @php
+                    $isbn = $result['isbn13'] ?? $result['isbn'] ?? null;
+                    $coverUrl = ($isbn && $syndeticsClient)
+                        ? "https://www.syndetics.com/index.aspx?isbn={$isbn}/issn=/LC.JPG&client={$syndeticsClient}"
+                        : ($result['image'] ?? null);
+                @endphp
                 <li class="p-4 border border-gray-200 rounded-md bg-white shadow-sm">
                     <div class="flex justify-between items-start gap-3">
                         <div class="flex gap-3">
-                            @if($result['image'])
-                            <img src="{{ $result['image'] }}" alt="Cover of {{ $result['title'] }}" class="w-12 h-auto object-contain rounded shrink-0" />
+                            @if($coverUrl)
+                            <img src="{{ $coverUrl }}" alt="Cover of {{ $result['title'] }}" class="w-12 h-auto object-contain rounded shrink-0" />
                             @endif
                             <div>
                                 <p class="font-semibold text-gray-900 text-sm">{{ $result['title'] }}</p>
