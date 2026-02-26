@@ -2,6 +2,7 @@
 
 use Dcplibrary\Sfp\Http\Controllers\Admin\AudienceController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\MaterialTypeController;
+use Dcplibrary\Sfp\Http\Controllers\Admin\PatronController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\RequestController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\RequestStatusController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\SelectorGroupController;
@@ -32,6 +33,24 @@ Route::group([
             Route::get('/requests/{sfpRequest}',               [RequestController::class, 'show'])->name('requests.show');
             Route::patch('/requests/{sfpRequest}/status',      [RequestController::class, 'updateStatus'])->name('requests.status');
             Route::post('/requests/{sfpRequest}/catalog-recheck', [RequestController::class, 'recheckCatalog'])->name('requests.catalog-recheck');
+
+            Route::resource('patrons', PatronController::class)
+                ->names([
+                    'index'  => 'patrons.index',
+                    'show'   => 'patrons.show',
+                    'edit'   => 'patrons.edit',
+                    'update' => 'patrons.update',
+                ])
+                ->except(['create', 'store', 'destroy']);
+
+            Route::get('patrons/{patron}/merge-confirm', [PatronController::class, 'mergeConfirm'])
+                ->name('patrons.merge-confirm');
+
+            Route::post('patrons/{patron}/merge', [PatronController::class, 'merge'])
+                ->name('patrons.merge');
+
+            Route::post('patrons/{patron}/retrigger-polaris', [PatronController::class, 'retriggerPolaris'])
+                ->name('patrons.retrigger-polaris');
 
             Route::get('/settings',   [SettingController::class, 'index'])->name('settings.index');
             Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
