@@ -14,13 +14,35 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Route Middleware
+    | Route Middleware (Public)
     |--------------------------------------------------------------------------
-    | Middleware applied to all package routes. 'web' is required for
-    | sessions and CSRF protection. Add your auth middleware here so the
-    | host app controls authentication (e.g. ['web', 'auth', 'entra.role:sfp']).
+    | Middleware applied to the public patron form route(s). 'web' is required
+    | for sessions and CSRF protection.
     */
     'middleware' => ['web'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Route Middleware (Staff)
+    |--------------------------------------------------------------------------
+    | Middleware applied to all staff routes under "/{prefix}/staff/*".
+    | By default this uses the host application's authentication; the package
+    | maps the authenticated user to an SFP staff user record by email.
+    |
+    | Customize this in the host app to use a specific guard or additional gates,
+    | e.g. ['web', 'auth:sfp'] or ['web', 'auth', 'can:access-sfp'].
+    */
+    'staff_middleware' => ['web', 'auth'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auth Guard (Optional)
+    |--------------------------------------------------------------------------
+    | If your host app authenticates staff using a dedicated guard for SFP,
+    | set it here so package code can consistently reference that guard.
+    | Leave empty to use Laravel's default guard.
+    */
+    'guard' => env('SFP_GUARD', null),
 
     /*
     |--------------------------------------------------------------------------

@@ -327,7 +327,7 @@
         {{-- Catalog results --}}
         @if(count($catalogResults) > 0 && $catalogMatchAccepted === null)
         <div>
-            <p class="text-sm text-gray-600 mb-4">We found the following in our catalog. Is one of these the item you're looking for?</p>
+            <p class="text-sm text-gray-600 mb-4">We found the following in our catalog. If one of these is your item, you can place a hold (no suggestion will be submitted).</p>
             <ul class="space-y-3" role="list">
                 @foreach($catalogResults as $result)
                 <li class="p-4 border border-gray-200 rounded-md bg-white shadow-sm">
@@ -343,6 +343,11 @@
                             </div>
                         </div>
                         <div class="flex flex-col gap-2 shrink-0">
+                            <button
+                                type="button"
+                                wire:click="acceptCatalogMatch('{{ $result['bib_id'] }}')"
+                                class="shrink-0 px-3 py-1 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            >Yes, this is it</button>
                             <a
                                 href="{{ $result['catalog_url'] }}"
                                 target="_blank"
@@ -359,7 +364,7 @@
                     type="button"
                     wire:click="skipCatalogMatch"
                     class="text-sm text-gray-500 underline hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-                >None of these match — continue with my request</button>
+                >None of these are the exact item — continue to submit my suggestion</button>
             </div>
         </div>
 
@@ -425,8 +430,28 @@
                 <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </span>
         </div>
-        <h2 id="confirmation-heading" class="text-2xl font-bold text-gray-900 mb-3">Request Submitted</h2>
-        <p class="text-gray-600 text-sm max-w-md mx-auto">{{ $successMessage }}</p>
+        @if($catalogMatchAccepted === true)
+            <h2 id="confirmation-heading" class="text-2xl font-bold text-gray-900 mb-3">It’s already in the catalog</h2>
+            <div class="text-gray-600 text-sm max-w-md mx-auto prose prose-sm">
+                {!! $catalogOwnedMessage !!}
+            </div>
+
+            @if($catalogFoundUrl)
+                <div class="mt-6">
+                    <a
+                        href="{{ $catalogFoundUrl }}"
+                        target="_blank"
+                        rel="noopener"
+                        class="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >Open catalog record</a>
+                </div>
+            @endif
+        @else
+            <h2 id="confirmation-heading" class="text-2xl font-bold text-gray-900 mb-3">Request Submitted</h2>
+            <div class="text-gray-600 text-sm max-w-md mx-auto prose prose-sm">
+                {!! $successMessage !!}
+            </div>
+        @endif
 
         <div class="mt-8">
             <a

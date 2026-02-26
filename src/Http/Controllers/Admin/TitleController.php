@@ -101,7 +101,7 @@ class TitleController extends Controller
             'note'      => 'nullable|string|max:2000',
         ]);
 
-        $userId = $request->user()?->id;
+        $userId = $this->currentSfpUser($request)?->id;
 
         $material->requests()->each(function ($req) use ($request, $userId) {
             $req->transitionStatus($request->status_id, $userId, $request->note);

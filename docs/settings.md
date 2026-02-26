@@ -47,6 +47,7 @@ HTML messages shown to patrons at key moments.
 | `duplicate_request_message` | html | *(HTML)* | Shown when the submitted title matches another patron's existing request |
 | `duplicate_self_request_message` | html | *(HTML)* | Shown when the patron has already requested the same title |
 | `submission_success_message` | html | *(HTML)* | Shown on Step 4 (confirmation) after a successful submission |
+| `catalog_owned_message` | html | *(HTML)* | Shown when the patron confirms the item is already in the catalog (no request is created) |
 
 ---
 
@@ -85,7 +86,7 @@ ISBNdb fallback search settings.
 |-----|------|---------|-------------|
 | `isbndb_search_enabled` | boolean | `1` | Enable/disable ISBNdb fallback search |
 
-The ISBNdb API key is stored in config (`SFP_ISBNDB_KEY` env), not in the settings table.
+The ISBNdb API key is stored in config (`ISBNDB_API_KEY` env), not in the settings table.
 
 ---
 

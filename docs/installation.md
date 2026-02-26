@@ -36,7 +36,7 @@ The service provider is auto-discovered via `composer.json` `extra.laravel.provi
 |----------|-------------|
 | `SFP_ADMIN_EMAIL` | Email address for the initial admin user seeded by `UsersSeeder` |
 | `SFP_ADMIN_NAME` | Display name for the initial admin user |
-| `SFP_ISBNDB_KEY` | ISBNdb v2 API key (read via `config('sfp.isbndb.key')`) |
+| `ISBNDB_API_KEY` | ISBNdb v2 API key (read via `config('sfp.isbndb.key')`) |
 | `SFP_ROUTE_PREFIX` | URL prefix for all package routes (default: `sfp`) |
 
 ## Config File
@@ -54,8 +54,9 @@ return [
     'route_prefix'    => env('SFP_ROUTE_PREFIX', 'sfp'),
     'middleware'       => ['web'],
     'staff_middleware' => ['web', 'auth'],
+    'guard'            => env('SFP_GUARD', null),
     'isbndb' => [
-        'key' => env('SFP_ISBNDB_KEY', ''),
+        'key' => env('ISBNDB_API_KEY', ''),
     ],
     'queue' => [
         'connection' => env('SFP_QUEUE_CONNECTION', 'redis'),

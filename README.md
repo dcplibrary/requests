@@ -134,9 +134,6 @@ After install, the package registers these routes under your configured prefix (
 | URL | Name | Description |
 |-----|------|-------------|
 | `GET /{prefix}/` | `sfp.form` | Patron-facing SFP form (Livewire) |
-| `GET /{prefix}/login` | `sfp.login` | Entra SSO redirect |
-| `GET /{prefix}/auth/callback` | `sfp.auth.callback` | Entra SSO callback |
-| `POST /{prefix}/logout` | `sfp.logout` | Log out |
 | `GET /{prefix}/staff/requests` | `sfp.staff.requests.index` | Staff request list |
 | `GET /{prefix}/staff/requests/{id}` | `sfp.staff.requests.show` | Request detail |
 | `PATCH /{prefix}/staff/requests/{id}/status` | `sfp.staff.requests.status` | Update status |
@@ -145,29 +142,11 @@ After install, the package registers these routes under your configured prefix (
 
 ---
 
-## Entra SSO
+## Staff Authentication
 
-`EntraAuthController` is stubbed. Wire up using `blashbrook/entra-sso` or `socialiteproviders/microsoft-azure`. The controller's comments show the Socialite pattern. The auth guard is `sfp`, backed by the `sfp_users` table.
+The package does **not** ship login/logout routes. Protect staff routes using the host application's authentication by configuring `sfp.staff_middleware` (default: `['web', 'auth']`).
 
-Example callback implementation (Socialite):
-
-```php
-// In EntraAuthController::callback()
-$entraUser = Socialite::driver('azure')->user();
-
-$user = \Dcplibrary\Sfp\Models\User::updateOrCreate(
-    ['entra_id' => $entraUser->getId()],
-    ['name' => $entraUser->getName(), 'email' => $entraUser->getEmail(), 'last_login_at' => now()]
-);
-
-if (! $user->active) {
-    Auth::guard(config('sfp.guard'))->logout();
-    return redirect()->route('sfp.login')->withErrors(['error' => 'Account inactive.']);
-}
-
-Auth::guard(config('sfp.guard'))->login($user, true);
-return redirect()->route('sfp.staff.requests.index');
-```
+When the authenticated user is **not** the package `Dcplibrary\Sfp\Models\User`, the package maps the staff user to `sfp_users` by **email** for authorization scoping and audit logging.
 
 ---
 

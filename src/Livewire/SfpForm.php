@@ -73,6 +73,7 @@ class SfpForm extends Component
     public array $catalogResults = [];
     public bool $catalogSearched = false;
     public ?string $catalogMatchBibId = null;
+    public ?string $catalogFoundUrl = null;
 
     // ISBNdb results
     public array $isbndbResults = [];
@@ -262,7 +263,14 @@ class SfpForm extends Component
     {
         $this->catalogMatchAccepted = true;
         $this->catalogMatchBibId = $bibId;
-        $this->finishAfterResolution();
+
+        // If the patron confirms the item is already in our catalog, we do NOT
+        // create an SFP request. Direct them to place a hold instead.
+        $match = collect($this->catalogResults)->firstWhere('bib_id', $bibId);
+        $this->catalogFoundUrl = is_array($match) ? ($match['catalog_url'] ?? null) : null;
+
+        $this->processing = false;
+        $this->step = 4;
     }
 
     public function skipCatalogMatch(): void
@@ -451,6 +459,10 @@ class SfpForm extends Component
             'audiences'         => Audience::active()->get(),
             'illWarningMessage' => Setting::get('ill_warning_message', ''),
             'successMessage'    => Setting::get('submission_success_message', 'Thank you for your suggestion!'),
+            'catalogOwnedMessage' => Setting::get(
+                'catalog_owned_message',
+                '<p><strong>Good news:</strong> this item is already in our catalog. Please place a hold in the catalog to get it as soon as it’s available.</p>'
+            ),
             'duplicateMessage'  => $this->duplicateMessage,
             'formatLabels'      => CatalogFormatLabel::map(),
         ]);

@@ -45,7 +45,13 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        if ($user->id === auth(config('sfp.guard'))->id()) {
+        $authUser = request()->user();
+
+        // If staff auth uses the package guard, the IDs will match. If the host
+        // app authenticates with a different user model, map to the SFP user by
+        // email so we can still prevent self-deletion.
+        $currentSfpUser = $this->currentSfpUser(request());
+        if ($currentSfpUser && $user->id === $currentSfpUser->id) {
             return back()->withErrors(['error' => 'You cannot delete your own account.']);
         }
 

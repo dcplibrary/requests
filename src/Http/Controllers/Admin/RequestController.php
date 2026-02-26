@@ -53,6 +53,15 @@ class RequestController extends Controller
 
     public function show(SfpRequest $sfpRequest)
     {
+        $user = request()->user();
+        $allowed = SfpRequest::query()
+            ->visibleTo($user)
+            ->whereKey($sfpRequest->getKey())
+            ->exists();
+        if (! $allowed) {
+            abort(403);
+        }
+
         $sfpRequest->load([
             'patron',
             'material.materialType',
@@ -71,14 +80,23 @@ class RequestController extends Controller
 
     public function updateStatus(\Illuminate\Http\Request $httpRequest, SfpRequest $sfpRequest)
     {
+        $allowed = SfpRequest::query()
+            ->visibleTo($httpRequest->user())
+            ->whereKey($sfpRequest->getKey())
+            ->exists();
+        if (! $allowed) {
+            abort(403);
+        }
+
         $httpRequest->validate([
             'status_id' => 'required|exists:request_statuses,id',
             'note'      => 'nullable|string|max:2000',
         ]);
 
+        $sfpUserId = $this->currentSfpUser($httpRequest)?->id;
         $sfpRequest->transitionStatus(
             $httpRequest->status_id,
-            $httpRequest->user()->id,
+            $sfpUserId,
             $httpRequest->note
         );
 
@@ -87,6 +105,14 @@ class RequestController extends Controller
 
     public function recheckCatalog(SfpRequest $sfpRequest)
     {
+        $allowed = SfpRequest::query()
+            ->visibleTo(request()->user())
+            ->whereKey($sfpRequest->getKey())
+            ->exists();
+        if (! $allowed) {
+            abort(403);
+        }
+
         $audience = Audience::find($sfpRequest->audience_id);
 
         $result = app(BibliocommonsService::class)->search(

@@ -108,7 +108,7 @@ Called from the Step 2 "Submit Request" button. Runs synchronously:
 
 | Method | Description |
 |--------|-------------|
-| `acceptCatalogMatch(string $bibId)` | Records accepted bib ID; calls `finishAfterResolution()` |
+| `acceptCatalogMatch(string $bibId)` | Records accepted bib ID and ends the flow **without creating a request** (item is already owned) |
 | `skipCatalogMatch()` | Skips catalog; shows ISBNdb results (if any) or saves directly |
 | `acceptIsbndbMatch(int $index)` | Records selected ISBNdb result index; calls `finishAfterResolution()` |
 | `skipIsbndbMatch()` | Saves request without ISBNdb data |

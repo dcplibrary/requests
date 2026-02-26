@@ -67,7 +67,7 @@ Fallback bibliographic source when catalog search returns no results.
 
 | Config key | Description |
 |------------|-------------|
-| `sfp.isbndb.key` | ISBNdb v2 API key (from `SFP_ISBNDB_KEY` env) |
+| `sfp.isbndb.key` | ISBNdb v2 API key (from `ISBNDB_API_KEY` env) |
 
 ### Methods
 
