@@ -1,0 +1,7 @@
+{
+    "name": "dcplibrary/sfp",
+    "require": {
+        "blashbrook/papiclient": "^2.5",
+        "dcplibrary/entra-sso": "^1.6"
+    }
+}
