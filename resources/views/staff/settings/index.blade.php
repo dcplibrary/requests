@@ -29,10 +29,30 @@
                                value="1"
                                {{ $setting->value ? 'checked' : '' }}
                                class="w-4 h-4 rounded border-gray-300 text-blue-600">
+                    @elseif($setting->type === 'html')
+                        @php $trixId = 'trix-' . $i; @endphp
+                        <input type="hidden"
+                               id="{{ $trixId }}"
+                               name="settings[{{ $i }}][value]"
+                               value="{{ $setting->value }}">
+                        <trix-editor input="{{ $trixId }}"
+                                     class="trix-content border border-gray-300 rounded bg-white text-sm min-h-[8rem]"></trix-editor>
                     @elseif($setting->type === 'text' || $setting->type === 'textarea')
                         <textarea name="settings[{{ $i }}][value]"
                                   rows="3"
                                   class="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-y">{{ $setting->value }}</textarea>
+                    @elseif($setting->type === 'integer')
+                        @php $isDays = str_ends_with($setting->key, '_days'); @endphp
+                        <div class="flex items-center gap-2">
+                            <input type="number"
+                                   name="settings[{{ $i }}][value]"
+                                   value="{{ old("settings.{$i}.value", $setting->value) }}"
+                                   min="0"
+                                   class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
+                            @if($isDays)
+                                <span class="text-sm text-gray-500">days</span>
+                            @endif
+                        </div>
                     @else
                         <input type="text"
                                name="settings[{{ $i }}][value]"

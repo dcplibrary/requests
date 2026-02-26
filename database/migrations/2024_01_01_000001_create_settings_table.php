@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('key')->unique();
             $table->text('value')->nullable();
             $table->string('label');
-            $table->string('type')->default('string'); // string|integer|boolean|text
+            $table->string('type')->default('string'); // string|integer|boolean|text|html
             $table->string('group')->default('general');
             $table->text('description')->nullable();
             $table->timestamps();

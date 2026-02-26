@@ -6,6 +6,16 @@
     <title>@yield('title', 'Staff') — SFP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css">
+    <script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js"></script>
+    <script>
+        document.addEventListener('trix-initialize', function (e) {
+            var input = e.target.inputElement;
+            if (input && input.value) {
+                e.target.editor.loadHTML(input.value);
+            }
+        });
+    </script>
 </head>
 <body class="bg-gray-100 min-h-screen">
 

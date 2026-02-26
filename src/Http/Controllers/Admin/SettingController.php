@@ -20,7 +20,7 @@ class SettingController extends Controller
         $data = $request->validate([
             'settings'         => 'required|array',
             'settings.*.key'   => 'required|string|exists:settings,key',
-            'settings.*.value' => 'nullable|string|max:5000',
+            'settings.*.value' => 'nullable|string|max:65535',
         ]);
 
         foreach ($data['settings'] as $item) {
