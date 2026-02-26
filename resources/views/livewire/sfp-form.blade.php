@@ -449,7 +449,7 @@
 
         <div class="mt-8">
             <a
-                href="{{ url('/') }}"
+                href="{{ route('sfp.form') }}"
                 class="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >Submit Another Request</a>
         </div>
