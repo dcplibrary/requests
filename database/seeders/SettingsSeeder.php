@@ -20,28 +20,28 @@ class SettingsSeeder extends Seeder
                 'description' => 'Maximum number of SFP requests a patron can submit within the limit window.',
             ],
             [
-                'key' => 'sfp_limit_window',
-                'value' => 'day',
+                'key' => 'sfp_limit_window_days',
+                'value' => '30',
                 'label' => 'Request Limit Window',
-                'type' => 'string',
+                'type' => 'integer',
                 'group' => 'rate_limiting',
-                'description' => 'Time window for rate limiting. Options: day, week, month.',
+                'description' => 'Time window for rate limiting (in days).',
             ],
 
             // --- ILL / age threshold ---
             [
-                'key' => 'ill_age_threshold_years',
-                'value' => '2',
-                'label' => 'ILL Age Threshold (Years)',
+                'key' => 'ill_age_threshold_days',
+                'value' => '730',
+                'label' => 'ILL Age Threshold',
                 'type' => 'integer',
                 'group' => 'ill',
-                'description' => 'Items older than this many years will trigger the ILL soft warning.',
+                'description' => 'Items older than this many days will trigger the ILL soft warning.',
             ],
             [
                 'key' => 'ill_warning_message',
-                'value' => 'This item was published more than 2 years ago. For older titles, we recommend trying our Interlibrary Loan (ILL) Service, which can often obtain items not in our collection.',
+                'value' => '<p>This item was published more than 2 years ago. For older titles, we recommend trying our <strong>Interlibrary Loan (ILL) Service</strong>, which can often obtain items not in our collection.</p>',
                 'label' => 'ILL Warning Message',
-                'type' => 'text',
+                'type' => 'html',
                 'group' => 'ill',
                 'description' => 'Message shown to patrons when their item exceeds the age threshold.',
             ],
@@ -49,19 +49,27 @@ class SettingsSeeder extends Seeder
             // --- Duplicate request messaging ---
             [
                 'key' => 'duplicate_request_message',
-                'value' => 'This item has already been requested by another patron. Please regularly check the catalog for availability. If the item becomes available, be sure to place a hold directly.',
+                'value' => '<p>This item has already been requested by another patron. Please regularly check the catalog for availability. If the item becomes available, be sure to place a hold directly.</p>',
                 'label' => 'Duplicate Request Message',
-                'type' => 'text',
+                'type' => 'html',
                 'group' => 'messaging',
                 'description' => 'Shown to patrons when their submitted item matches an existing request.',
+            ],
+            [
+                'key' => 'duplicate_self_request_message',
+                'value' => '<p>You have already submitted a request for this item.</p>',
+                'label' => 'Duplicate Self-Request Message',
+                'type' => 'html',
+                'group' => 'messaging',
+                'description' => 'Shown to patrons when they submit an item they have already requested.',
             ],
 
             // --- Submission confirmation ---
             [
                 'key' => 'submission_success_message',
-                'value' => 'Thank you for your suggestion! We review all requests and will consider it for our collection. Because we receive many suggestions, we\'re unable to respond individually or provide status updates.',
+                'value' => '<p>Thank you for your suggestion! We review all requests and will consider it for our collection. Because we receive many suggestions, we\'re unable to respond individually or provide status updates.</p>',
                 'label' => 'Submission Success Message',
-                'type' => 'text',
+                'type' => 'html',
                 'group' => 'messaging',
                 'description' => 'Shown to patrons after a successful SFP submission.',
             ],
@@ -82,6 +90,14 @@ class SettingsSeeder extends Seeder
                 'type' => 'string',
                 'group' => 'catalog',
                 'description' => 'Your Bibliocommons subdomain slug (e.g. "dcpl" for dcpl.bibliocommons.com).',
+            ],
+            [
+                'key' => 'catalog_search_url_template',
+                'value' => 'https://{slug}.bibliocommons.com/v2/search?query={query}&searchType=smart',
+                'label' => 'Catalog Search URL Template',
+                'type' => 'string',
+                'group' => 'catalog',
+                'description' => 'URL template for catalog search links. Use {slug} and {query} as placeholders.',
             ],
 
             // --- ISBNdb ---

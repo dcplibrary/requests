@@ -37,14 +37,27 @@ return new class extends Migration
             $table->boolean('phone_matches')->nullable();
             $table->boolean('email_matches')->nullable();
 
+            // --- Preferred contact source (submitted vs polaris) ---
+            $table->string('preferred_phone')->default('submitted');
+            $table->string('preferred_email')->default('submitted');
+
             $table->timestamps();
 
             $table->index('barcode');
+        });
+
+        // Pairs of patron IDs that staff have explicitly marked as NOT duplicates,
+        // so they no longer appear in each other's duplicate warning panel.
+        Schema::create('patron_ignored_duplicates', function (Blueprint $table) {
+            $table->foreignId('patron_id')->constrained('patrons')->cascadeOnDelete();
+            $table->foreignId('ignored_patron_id')->constrained('patrons')->cascadeOnDelete();
+            $table->primary(['patron_id', 'ignored_patron_id']);
         });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('patron_ignored_duplicates');
         Schema::dropIfExists('patrons');
     }
 };
