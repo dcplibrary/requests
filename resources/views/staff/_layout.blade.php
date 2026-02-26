@@ -22,7 +22,7 @@
 <nav class="bg-white border-b border-gray-200 px-6 flex items-center gap-6 h-14">
 
     {{-- Brand --}}
-    <span class="font-bold text-blue-700 text-lg tracking-tight shrink-0">SFP Staff</span>
+    <x-sfp::logo :href="route('sfp.staff.requests.index')" />
 
     {{-- Primary nav — visible to all --}}
     <div class="flex items-center gap-1">
