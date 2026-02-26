@@ -29,11 +29,15 @@ class LookupPatronInPolaris implements ShouldQueue
         }
 
         try {
+            // PAPIClient is registered as a singleton, so we must use `new` to get
+            // a fresh instance for each call — otherwise state (protected, uri,
+            // params, accessSecret) from a prior call bleeds into subsequent ones.
+
             // Step 1: Authenticate as staff to obtain an AccessSecret.
             // The AccessSecret is required as X-PAPI-AccessToken on patron endpoints.
             // protectedURI has no trailing slash, so uri needs a leading slash.
             // getPolarisSettings() auto-prepends LogonWorkstationID and PatronBranchID.
-            $authResponse = app(PAPIClient::class)
+            $authResponse = (new PAPIClient())
                 ->method('POST')
                 ->protected()
                 ->uri('/authenticator/staff')
@@ -58,7 +62,7 @@ class LookupPatronInPolaris implements ShouldQueue
             // Step 2: GET patron basicdata by barcode via Polaris public PAPI.
             // execRequest() returns an array directly (not a Response object).
             // URI builds as: {publicURI}patron/{barcode}/basicdata
-            $data = app(PAPIClient::class)
+            $data = (new PAPIClient())
                 ->method('GET')
                 ->patron($patron->barcode)
                 ->auth($accessSecret)
@@ -73,24 +77,15 @@ class LookupPatronInPolaris implements ShouldQueue
                 return;
             }
 
-            // Step 3: Fetch full patron registration via the protected (staff) endpoint.
-            // protectedURI has no trailing slash, so uri needs a leading slash.
-            $polarisPatronId = $basicData['PatronID'];
-            $reg = app(PAPIClient::class)
-                ->method('GET')
-                ->protected()
-                ->uri("/patron/{$polarisPatronId}")
-                ->execRequest();
-
-            $regData = $reg['PatronRegistrationData'] ?? $reg;
-
+            // basicdata returns all the fields we need — no second call required.
+            // Note: the phone field is PhoneNumber in basicdata (not PhoneVoice1).
             $patron->applyPolarisData([
-                'PatronID'      => $polarisPatronId,
+                'PatronID'      => $basicData['PatronID'],
                 'PatronCodeID'  => $basicData['PatronCodeID'] ?? null,
-                'NameFirst'     => $regData['NameFirst'] ?? $basicData['NameFirst'] ?? null,
-                'NameLast'      => $regData['NameLast'] ?? $basicData['NameLast'] ?? null,
-                'PhoneVoice1'   => $regData['PhoneVoice1'] ?? null,
-                'EmailAddress'  => $regData['EmailAddress'] ?? null,
+                'NameFirst'     => $basicData['NameFirst'] ?? null,
+                'NameLast'      => $basicData['NameLast'] ?? null,
+                'PhoneVoice1'   => $basicData['PhoneNumber'] ?? $basicData['CellPhone'] ?? null,
+                'EmailAddress'  => $basicData['EmailAddress'] ?? null,
             ]);
 
         } catch (\Throwable $e) {
