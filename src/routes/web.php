@@ -12,20 +12,22 @@ use Dcplibrary\Sfp\Http\Controllers\Admin\UserController;
 use Dcplibrary\Sfp\Livewire\SfpForm;
 use Illuminate\Support\Facades\Route;
 
-$prefix     = config('sfp.route_prefix', 'sfp');
-$middleware = config('sfp.middleware', ['web']);
+$prefix          = config('sfp.route_prefix', 'sfp');
+$middleware      = config('sfp.middleware', ['web']);
+$staffMiddleware = config('sfp.staff_middleware', ['web', 'auth']);
 
 Route::group([
     'prefix'     => $prefix,
     'middleware' => $middleware,
-], function () {
+], function () use ($staffMiddleware) {
 
     // --- Public: SFP Patron Form ---
     Route::get('/', SfpForm::class)->name('sfp.form');
 
-    // --- Staff: Protected (auth enforced by host app via sfp.middleware config) ---
+    // --- Staff: Protected ---
     Route::prefix('staff')
         ->name('sfp.staff.')
+        ->middleware($staffMiddleware)
         ->group(function () {
 
             Route::get('/', fn () => redirect()->route('sfp.staff.requests.index'));
