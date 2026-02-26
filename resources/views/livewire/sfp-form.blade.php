@@ -339,7 +339,7 @@
                             <div>
                                 <p class="font-semibold text-gray-900 text-sm">{{ $result['title'] }}</p>
                                 <p class="text-gray-600 text-sm">{{ $result['author'] }}</p>
-                                <p class="text-gray-400 text-xs mt-1">{{ $result['format'] }}{{ $result['year'] ? ' · ' . $result['year'] : '' }}</p>
+                                <p class="text-gray-400 text-xs mt-1">{{ $formatLabels[$result['format']] ?? $result['format'] }}{{ $result['year'] ? ' · ' . $result['year'] : '' }}</p>
                             </div>
                         </div>
                         <div class="flex flex-col gap-2 shrink-0">
@@ -349,11 +349,6 @@
                                 rel="noopener"
                                 class="text-xs text-blue-600 underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
                             >View in catalog</a>
-                            <button
-                                type="button"
-                                wire:click="acceptCatalogMatch('{{ $result['bib_id'] }}')"
-                                class="px-3 py-1 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                            >This is it — place a hold</button>
                         </div>
                     </div>
                 </li>
