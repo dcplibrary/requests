@@ -53,7 +53,15 @@ class SettingsSeeder extends Seeder
                 'label' => 'Duplicate Request Message',
                 'type' => 'text',
                 'group' => 'messaging',
-                'description' => 'Shown to patrons when their submitted item matches an existing request.',
+                'description' => 'Shown to patrons when their submitted item matches an existing request from a different patron.',
+            ],
+            [
+                'key' => 'duplicate_self_request_message',
+                'value' => "You've already requested this item. We'll let you know when it's available.",
+                'label' => 'Duplicate Self-Request Message',
+                'type' => 'text',
+                'group' => 'messaging',
+                'description' => "Shown to patrons when they re-submit an item they've already requested.",
             ],
 
             // --- Submission confirmation ---
