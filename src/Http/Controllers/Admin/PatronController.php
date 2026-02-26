@@ -239,6 +239,30 @@ class PatronController extends Controller
     {
         $allPatrons = Patron::select('id', 'name_last', 'phone', 'email', 'polaris_patron_id')->get();
 
+        // Load every ignored pair as a set of "patronA|patronB" keys (both directions)
+        $ignoredPairs = DB::table('patron_ignored_duplicates')
+            ->select('patron_id', 'ignored_patron_id')
+            ->get()
+            ->flatMap(fn ($row) => [
+                min($row->patron_id, $row->ignored_patron_id) . '|' . max($row->patron_id, $row->ignored_patron_id),
+            ])
+            ->flip() // use as a lookup set
+            ->all();
+
+        // Returns true if the two patrons have mutually ignored each other
+        $isIgnored = fn (int $a, int $b): bool =>
+            isset($ignoredPairs[min($a, $b) . '|' . max($a, $b)]);
+
+        // Given a group of patrons, return only those that still have at least
+        // one non-ignored partner within the group.
+        $filterGroup = function (\Illuminate\Support\Collection $group) use ($isIgnored): \Illuminate\Support\Collection {
+            return $group->filter(function ($patron) use ($group, $isIgnored) {
+                return $group->contains(function ($other) use ($patron, $isIgnored) {
+                    return $other->id !== $patron->id && ! $isIgnored($patron->id, $other->id);
+                });
+            });
+        };
+
         $ids = collect();
 
         // 1. Same normalized phone + same last name
@@ -248,6 +272,8 @@ class PatronController extends Controller
                 ->groupBy(fn ($p) =>
                     strtolower(trim($p->name_last)) . '|' . preg_replace('/\D/', '', $p->phone)
                 )
+                ->filter(fn ($group) => $group->count() > 1)
+                ->map($filterGroup)
                 ->filter(fn ($group) => $group->count() > 1)
                 ->flatten()
                 ->pluck('id')
@@ -259,6 +285,8 @@ class PatronController extends Controller
                 ->filter(fn ($p) => ! empty($p->email))
                 ->groupBy(fn ($p) => strtolower(trim($p->email)))
                 ->filter(fn ($group) => $group->count() > 1)
+                ->map($filterGroup)
+                ->filter(fn ($group) => $group->count() > 1)
                 ->flatten()
                 ->pluck('id')
         );
@@ -268,6 +296,8 @@ class PatronController extends Controller
             $allPatrons
                 ->filter(fn ($p) => ! empty($p->polaris_patron_id))
                 ->groupBy('polaris_patron_id')
+                ->filter(fn ($group) => $group->count() > 1)
+                ->map($filterGroup)
                 ->filter(fn ($group) => $group->count() > 1)
                 ->flatten()
                 ->pluck('id')
