@@ -93,6 +93,17 @@ class SfpForm extends Component
 
     public function mount(): void
     {
+        // If the patron previously submitted a request and chose "Submit Another Request",
+        // we keep their patron info in the session for convenience.
+        $remembered = session('sfp.patron');
+        if (is_array($remembered)) {
+            $this->barcode     = (string) ($remembered['barcode'] ?? $this->barcode);
+            $this->name_first  = (string) ($remembered['name_first'] ?? $this->name_first);
+            $this->name_last   = (string) ($remembered['name_last'] ?? $this->name_last);
+            $this->phone       = (string) ($remembered['phone'] ?? $this->phone);
+            $this->email       = (string) ($remembered['email'] ?? $this->email);
+        }
+
         // Pre-select "Book" as default material type
         $book = MaterialType::where('slug', 'book')->where('active', true)->first();
         if ($book) {
@@ -136,6 +147,49 @@ class SfpForm extends Component
     public function prevStep(): void
     {
         $this->step = max(1, $this->step - 1);
+    }
+
+    /**
+     * Keep patron info and start a new request on Step 2.
+     */
+    public function submitAnotherRequest(): void
+    {
+        session()->put('sfp.patron', [
+            'barcode'    => $this->barcode,
+            'name_first' => $this->name_first,
+            'name_last'  => $this->name_last,
+            'phone'      => $this->phone,
+            'email'      => $this->email,
+        ]);
+
+        // Reset item + resolution state only (keep patron fields)
+        $this->reset([
+            'title',
+            'author',
+            'publish_date',
+            'where_heard',
+            'ill_requested',
+            'showIllWarning',
+            'other_material_text',
+            'resolvedMaterialId',
+            'isDuplicate',
+            'duplicateMessage',
+            'catalogResults',
+            'catalogSearched',
+            'catalogMatchBibId',
+            'catalogFoundUrl',
+            'isbndbResults',
+            'isbndbSearched',
+            'catalogMatchAccepted',
+            'isbndbMatchAccepted',
+            'selectedIsbndbIndex',
+            'processing',
+            'processingStep',
+            'createdRequestId',
+        ]);
+
+        $this->resetValidation();
+        $this->step = 2;
     }
 
     // --- ILL age warning (triggered by publish_date change) ---

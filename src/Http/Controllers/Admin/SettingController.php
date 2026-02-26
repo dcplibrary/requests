@@ -11,7 +11,8 @@ class SettingController extends Controller
     public function index()
     {
         return view('sfp::staff.settings.index', [
-            'settings' => Setting::allGrouped(),
+            // Catalog/ISBNdb/Syndetics settings live on the dedicated Catalog tab.
+            'settings' => Setting::allGrouped()->except(['catalog', 'isbndb', 'syndetics']),
         ]);
     }
 

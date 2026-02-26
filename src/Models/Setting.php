@@ -46,6 +46,13 @@ class Setting extends Model
      */
     public static function allGrouped(): \Illuminate\Support\Collection
     {
-        return static::orderBy('group')->orderBy('label')->get()->groupBy('group');
+        // Ensure we return a base Support\Collection (not an Eloquent\Collection),
+        // because downstream code may use collection key helpers like `only()`
+        // (Eloquent\Collection::only is model-key based and will explode on grouped values).
+        return static::orderBy('group')
+            ->orderBy('label')
+            ->get()
+            ->groupBy('group')
+            ->toBase();
     }
 }

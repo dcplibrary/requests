@@ -154,6 +154,13 @@
     <section aria-labelledby="material-heading">
         <h2 id="material-heading" class="text-2xl font-bold text-gray-900 mb-6">Material Details</h2>
 
+        {{-- Patron-level errors can be raised during submit() (e.g. rate limiting) --}}
+        @if($errors->has('barcode'))
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md" role="alert">
+                <p class="text-sm text-red-800">{{ $errors->first('barcode') }}</p>
+            </div>
+        @endif
+
         <div class="space-y-6">
             {{-- Type of Material --}}
             <fieldset>
@@ -261,7 +268,7 @@
                 @if($showIllWarning)
                 <div class="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md" role="alert">
                     <p class="text-sm text-amber-800">
-                        <strong>Note:</strong> {{ $illWarningMessage }}
+                        <strong>Note:</strong> {!! $illWarningMessage !!}
                         <a href="https://www.dcplibrary.org/interlibrary-loan/" target="_blank" rel="noopener" class="underline font-medium">Learn more about ILL</a>.
                     </p>
                 </div>
@@ -320,7 +327,9 @@
         {{-- Duplicate notice --}}
         @if($isDuplicate)
         <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md" role="alert">
-            <p class="text-sm text-blue-800">{{ $duplicateMessage }}</p>
+            <div class="text-sm text-blue-800 prose prose-sm">
+                {!! $duplicateMessage !!}
+            </div>
         </div>
         @endif
 
@@ -454,10 +463,11 @@
         @endif
 
         <div class="mt-8">
-            <a
-                href="{{ route('sfp.form') }}"
+            <button
+                type="button"
+                wire:click="submitAnotherRequest"
                 class="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >Submit Another Request</a>
+            >Submit Another Request</button>
         </div>
     </section>
     @endif
