@@ -18,6 +18,10 @@
        class="text-sm text-gray-600 hover:text-blue-700 {{ request()->routeIs('sfp.staff.patrons.*') ? 'font-semibold text-blue-700' : '' }}">
         Patrons
     </a>
+    <a href="{{ route('sfp.staff.titles.index') }}"
+       class="text-sm text-gray-600 hover:text-blue-700 {{ request()->routeIs('sfp.staff.titles.*') ? 'font-semibold text-blue-700' : '' }}">
+        Titles
+    </a>
     <a href="{{ route('sfp.staff.settings.index') }}"
        class="text-sm text-gray-600 hover:text-blue-700 {{ request()->routeIs('sfp.staff.settings.*') ? 'font-semibold text-blue-700' : '' }}">
         Settings

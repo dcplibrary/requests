@@ -1,6 +1,7 @@
 <?php
 
 use Dcplibrary\Sfp\Http\Controllers\Admin\AudienceController;
+use Dcplibrary\Sfp\Http\Controllers\Admin\TitleController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\MaterialTypeController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\PatronController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\RequestController;
@@ -54,6 +55,18 @@ Route::group([
 
             Route::post('patrons/{patron}/ignore-duplicate', [PatronController::class, 'ignoreDuplicate'])
                 ->name('patrons.ignore-duplicate');
+
+            Route::get('titles', [TitleController::class, 'index'])
+                ->name('titles.index');
+
+            Route::get('titles/{material}', [TitleController::class, 'show'])
+                ->name('titles.show');
+
+            Route::post('titles/{material}/merge', [TitleController::class, 'merge'])
+                ->name('titles.merge');
+
+            Route::post('titles/{material}/bulk-status', [TitleController::class, 'bulkStatus'])
+                ->name('titles.bulk-status');
 
             Route::get('/settings',   [SettingController::class, 'index'])->name('settings.index');
             Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
