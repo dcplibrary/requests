@@ -48,7 +48,7 @@ class BibliocommonsServiceTest extends TestCase
                     $parts[] = 'audience:"' . $audience . '"';
                 }
 
-                if ($year) {
+                if ($year && (int) $year >= (date('Y') - 2)) {
                     $yearFrom = max(1, (int) $year - 1);
                     $yearTo   = (int) $year + 1;
                     $parts[]  = "pubyear:[{$yearFrom} TO {$yearTo}]";
@@ -166,6 +166,25 @@ class BibliocommonsServiceTest extends TestCase
         $query = $this->service()->buildQuery('Dear Debbie', 'Frieda McFadden', 'adult', null);
 
         $this->assertStringNotContainsString('pubyear:', $query);
+    }
+
+    #[Test]
+    public function it_omits_year_filter_for_old_titles(): void
+    {
+        // Blood Meridian (1985) — patron enters original pub year but catalog
+        // holds later editions; a tight year window would return 0 results.
+        $query = $this->service()->buildQuery('Blood Meridian', 'Cormac McCarthy', 'adult', '1985');
+
+        $this->assertStringNotContainsString('pubyear:', $query);
+    }
+
+    #[Test]
+    public function it_applies_year_filter_for_recent_titles(): void
+    {
+        $recentYear = (string) date('Y');
+        $query = $this->service()->buildQuery('Dear Debbie', 'Frieda McFadden', 'adult', $recentYear);
+
+        $this->assertStringContainsString('pubyear:', $query);
     }
 
     #[Test]
