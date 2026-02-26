@@ -181,6 +181,11 @@ class PatronController extends Controller
 
     public function merge(Request $request, Patron $loser)
     {
+        // Convert empty string to null so nullable|integer doesn't reject it
+        if ($request->input('polaris_patron_id') === '') {
+            $request->merge(['polaris_patron_id' => null]);
+        }
+
         $request->validate([
             'target_id'        => 'required|integer|exists:patrons,id',
             'polaris_patron_id'=> 'nullable|integer',
