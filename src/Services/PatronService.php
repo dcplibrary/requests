@@ -36,7 +36,9 @@ class PatronService
         ]);
 
         // Queue Polaris lookup — runs after submission
-        LookupPatronInPolaris::dispatch($patron->id);
+        LookupPatronInPolaris::dispatch($patron->id)
+            ->onConnection(config('sfp.queue.connection'))
+            ->onQueue(config('sfp.queue.name'));
 
         return ['patron' => $patron, 'created' => true];
     }

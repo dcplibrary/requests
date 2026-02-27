@@ -117,7 +117,9 @@ class PatronController extends Controller
     {
         $patron->update(['polaris_lookup_attempted' => false]);
 
-        LookupPatronInPolaris::dispatch($patron->id);
+        LookupPatronInPolaris::dispatch($patron->id)
+            ->onConnection(config('sfp.queue.connection'))
+            ->onQueue(config('sfp.queue.name'));
 
         return back()->with('success', 'Polaris lookup queued. Refresh in a moment to see updated data.');
     }
