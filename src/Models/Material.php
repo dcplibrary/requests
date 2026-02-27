@@ -2,6 +2,8 @@
 
 namespace Dcplibrary\Sfp\Models;
 
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -58,6 +60,49 @@ class Material extends Model
     public function requests(): HasMany
     {
         return $this->hasMany(SfpRequest::class);
+    }
+
+    /**
+     * Scope: only materials the given user is authorized to see based on group membership.
+     *
+     * Materials are filtered by material type only (they carry no audience).
+     * Admins see everything. Selectors see only materials whose material_type_id
+     * falls within their assigned SelectorGroup material types.
+     *
+     * Resolution order:
+     *  1. null user → no rows
+     *  2. Already a Dcplibrary\Sfp\Models\User → use directly
+     *  3. Any other Authenticatable → look up SFP user by email
+     *  4. No SFP user found → if APP_ENV=local show all, else no rows
+     *  5. Admin → all rows
+     *  6. Selector → filter by accessible material_type_ids
+     */
+    public function scopeVisibleTo(Builder $query, ?Authenticatable $user): Builder
+    {
+        if ($user === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user instanceof \Dcplibrary\Sfp\Models\User) {
+            $sfpUser = $user;
+        } else {
+            $sfpUser = \Dcplibrary\Sfp\Models\User::where('email', $user->email ?? '')->first();
+        }
+
+        if ($sfpUser === null) {
+            if (app()->environment('local')) {
+                return $query;
+            }
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($sfpUser->isAdmin()) {
+            return $query;
+        }
+
+        $materialTypeIds = $sfpUser->accessibleMaterialTypeIds();
+
+        return $query->whereIn('material_type_id', $materialTypeIds);
     }
 
     /**

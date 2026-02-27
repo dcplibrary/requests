@@ -17,10 +17,12 @@ class TitleController extends Controller
 
     public function index(Request $request)
     {
-        $search = $request->input('search');
-        $source = $request->input('source');
+        $sfpUser = $this->currentSfpUser($request);
+        $search  = $request->input('search');
+        $source  = $request->input('source');
 
-        $query = Material::withCount('requests')
+        $query = Material::visibleTo($sfpUser)
+            ->withCount('requests')
             ->with(['materialType', 'requests.status'])
             ->orderByDesc('requests_count')
             ->orderBy('title');
@@ -41,9 +43,8 @@ class TitleController extends Controller
 
         $materials = $query->paginate(30)->withQueryString();
 
-        // Collect duplicate candidates: materials that share the same
-        // normalized title + author (case-insensitive, PHP-side).
-        $allTitles = Material::select('id', 'title', 'author')->get();
+        // Collect duplicate candidates within the user's visible set.
+        $allTitles = Material::visibleTo($sfpUser)->select('id', 'title', 'author')->get();
         $duplicateMaterialIds = $allTitles
             ->groupBy(fn ($m) => strtolower(trim($m->title)) . '|' . strtolower(trim($m->author)))
             ->filter(fn ($group) => $group->count() > 1)
@@ -51,8 +52,8 @@ class TitleController extends Controller
             ->pluck('id')
             ->all();
 
-        // Unmatched requests: submitted but not yet linked to a Material
-        $unmatchedCount = SfpRequest::whereNull('material_id')->count();
+        // Unmatched requests within the user's visible scope.
+        $unmatchedCount = SfpRequest::visibleTo($sfpUser)->whereNull('material_id')->count();
 
         return view('sfp::staff.titles.index', [
             'materials'            => $materials,
@@ -67,8 +68,16 @@ class TitleController extends Controller
     // SHOW — one material: its enriched data, all requests, bulk status
     // -------------------------------------------------------------------------
 
-    public function show(Material $material)
+    public function show(Request $request, Material $material)
     {
+        $sfpUser = $this->currentSfpUser($request);
+
+        // 403 if this material is outside the user's visible scope.
+        abort_unless(
+            Material::visibleTo($sfpUser)->where('id', $material->id)->exists(),
+            403
+        );
+
         $material->load([
             'materialType',
             'requests.patron',
@@ -76,8 +85,9 @@ class TitleController extends Controller
             'requests.audience',
         ]);
 
-        // Other materials with the same normalized title+author (duplicate candidates)
-        $duplicates = Material::where('id', '!=', $material->id)
+        // Duplicate candidates also scoped to what the user can see.
+        $duplicates = Material::visibleTo($sfpUser)
+            ->where('id', '!=', $material->id)
             ->whereRaw('LOWER(title) = ?', [strtolower(trim($material->title))])
             ->whereRaw('LOWER(author) = ?', [strtolower(trim($material->author))])
             ->withCount('requests')
@@ -96,12 +106,19 @@ class TitleController extends Controller
 
     public function bulkStatus(Request $request, Material $material)
     {
+        $sfpUser = $this->currentSfpUser($request);
+
+        abort_unless(
+            Material::visibleTo($sfpUser)->where('id', $material->id)->exists(),
+            403
+        );
+
         $request->validate([
             'status_id' => 'required|exists:request_statuses,id',
             'note'      => 'nullable|string|max:2000',
         ]);
 
-        $userId = $this->currentSfpUser($request)?->id;
+        $userId = $sfpUser?->id;
 
         $material->requests()->each(function ($req) use ($request, $userId) {
             $req->transitionStatus($request->status_id, $userId, $request->note);
@@ -118,11 +135,18 @@ class TitleController extends Controller
 
     public function merge(Request $request, Material $loser)
     {
+        $sfpUser = $this->currentSfpUser($request);
+
+        abort_unless(
+            Material::visibleTo($sfpUser)->where('id', $loser->id)->exists(),
+            403
+        );
+
         $request->validate([
             'target_id' => 'required|integer|exists:materials,id',
         ]);
 
-        $winner = Material::findOrFail($request->target_id);
+        $winner = Material::visibleTo($sfpUser)->findOrFail($request->target_id);
 
         if ($winner->id === $loser->id) {
             return back()->withErrors(['target_id' => 'Cannot merge a title into itself.']);

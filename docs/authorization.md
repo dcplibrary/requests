@@ -59,9 +59,22 @@ The `SfpRequest::scopeVisibleTo(Builder, ?Authenticatable)` scope is applied in 
 
 ---
 
-## Patron and Title Visibility
+## Title Visibility
 
-`PatronController` and `TitleController` do not currently apply group scoping — all authenticated staff can see all patrons and titles. Only request visibility is scoped.
+`Material::scopeVisibleTo()` mirrors the request scope but filters on `material_type_id` only (materials carry no audience). It is applied in all four `TitleController` actions:
+
+- `index()` — paginated list and duplicate detection scoped to visible materials
+- `show()` — 403 if the material is outside the user's scope
+- `bulkStatus()` — 403 if the material is outside the user's scope
+- `merge()` — both the loser and winner must be within the user's scope
+
+Admins see all materials. Selectors see only materials whose `material_type_id` is covered by their SelectorGroups.
+
+---
+
+## Patron Visibility
+
+`PatronController` does not apply group scoping — all authenticated staff can see all patrons. Patron visibility may be scoped in a future release.
 
 ---
 
