@@ -2,7 +2,9 @@
 
 namespace Dcplibrary\Sfp;
 
+use Dcplibrary\Sfp\Http\Middleware\RequireSfpRole;
 use Dcplibrary\Sfp\Livewire\SfpForm;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
@@ -32,6 +34,7 @@ class SfpServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->registerMiddleware();
         $this->registerRoutes();
         $this->registerViews();
         $this->registerLivewire();
@@ -40,6 +43,12 @@ class SfpServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         }
+    }
+
+    protected function registerMiddleware(): void
+    {
+        $router = $this->app->make(Router::class);
+        $router->aliasMiddleware('sfp.role', RequireSfpRole::class);
     }
 
     protected function registerRoutes(): void

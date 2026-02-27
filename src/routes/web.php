@@ -15,7 +15,10 @@ use Illuminate\Support\Facades\Route;
 
 $prefix          = config('sfp.route_prefix', 'sfp');
 $middleware      = config('sfp.middleware', ['web']);
-$staffMiddleware = config('sfp.staff_middleware', ['web', 'auth']);
+$staffMiddleware = array_merge(
+    config('sfp.staff_middleware', ['web', 'auth']),
+    ['sfp.role']
+);
 
 Route::group([
     'prefix'     => $prefix,

@@ -65,9 +65,37 @@ The `SfpRequest::scopeVisibleTo(Builder, ?Authenticatable)` scope is applied in 
 
 ---
 
+## RequireSfpRole Middleware
+
+The package automatically registers the `sfp.role` middleware alias and appends it to every staff route. It runs **after** the host app's own auth middleware.
+
+**Resolution order:**
+
+```
+1. No authenticated user
+   → pass through (let upstream auth redirect to login)
+
+2. Authenticated user with no matching sfp_users record (unknown email)
+   → return sfp::staff.no-access view (HTTP 403)
+
+3. sfp_users record exists but role is not 'admin' or 'selector'
+   → return sfp::staff.no-access view (HTTP 403)
+
+4. sfp_users record exists but active = false
+   → return sfp::staff.no-access view (HTTP 403)
+
+5. Role is 'admin' or 'selector' and active = true
+   → proceed
+```
+
+The no-access view displays:
+> "You do not have access to {app.name}. Please contact the administrator to request access."
+
+---
+
 ## Authentication
 
-Authentication is handled by the host application (`sfp-laravel`) via Azure Entra ID (OIDC). The `staff_middleware` config key defaults to `['web', 'auth']` and is applied to all staff routes.
+Authentication is handled by the host application (`sfp-laravel`) via Azure Entra ID (OIDC). The `staff_middleware` config key defaults to `['web', 'auth']` and is applied to all staff routes. The package always appends `sfp.role` after whatever middleware the host app configures.
 
 To customize middleware (e.g. add a role gate):
 
@@ -82,6 +110,8 @@ return [
 
 ## Local Development
 
-When `APP_ENV=local` and no matching SFP user record exists for the authenticated user, all requests are shown. This allows testing the UI without needing a fully configured `sfp_users` record.
+When `APP_ENV=local` and no matching SFP user record exists for the authenticated user, all requests are shown (via `scopeVisibleTo`). This allows testing the UI without needing a fully configured `sfp_users` record.
 
-To get a realistic scoped experience in local dev, add yourself to `sfp_users` with the appropriate role.
+However, the `sfp.role` middleware still runs in local. To avoid hitting the no-access page, add yourself to `sfp_users` with the appropriate role and set `active = true`.
+
+To get a realistic scoped experience in local dev, use the `selector` role and assign yourself to the relevant `SelectorGroup`.
