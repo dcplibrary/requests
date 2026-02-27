@@ -12,7 +12,31 @@
 
 ## Package Setup
 
-The package is loaded via Composer path repository in the host app (`sfp-laravel`):
+### Production / Staging
+
+Require the package from GitHub using a VCS repository in the host app's `composer.json`:
+
+```json
+"repositories": {
+    "dcplibrary-sfp": {
+        "type": "vcs",
+        "url": "https://github.com/dcplibrary/sfp.git"
+    }
+},
+"require": {
+    "dcplibrary/sfp": "dev-main"
+}
+```
+
+Then run:
+
+```bash
+composer require dcplibrary/sfp:dev-main
+```
+
+### Local Development
+
+The package is loaded via a Composer path repository so changes are reflected immediately (via symlink) without a `composer update`:
 
 ```json
 "repositories": {
@@ -28,6 +52,8 @@ The vendor symlink points to the package root:
 ```
 sfp-laravel/vendor/dcplibrary/sfp → ../../../sfp/
 ```
+
+> **Note:** The symlink points to the **main** `sfp` repo, not any active worktree. Changes in a worktree must be merged to `main` before `sfp-laravel` picks them up. See [Deployment Workflow](#deployment-workflow-development) below.
 
 The service provider is auto-discovered via `composer.json` `extra.laravel.providers`.
 
@@ -142,11 +168,37 @@ php artisan config:clear
 
 ## Running Tests
 
+Install dev dependencies first:
+
+```bash
+composer install
+```
+
+Then run the unit suite:
+
 ```bash
 ./vendor/bin/phpunit --testsuite Unit
 ```
 
-Tests use PHPUnit 11 with Mockery. No database or full Laravel container is required for the unit suite. A `tests/bootstrap.php` file provides a minimal stub for `Illuminate\Foundation\Auth\User` so the package can be tested without `laravel/framework` installed as a dev dependency.
+Or run with coverage output:
+
+```bash
+./vendor/bin/phpunit --testsuite Unit --coverage-text
+```
+
+**What's covered (113 tests, 244 assertions):**
+
+| Test File | Covers |
+|-----------|--------|
+| `RequireSfpRoleTest` | Role/active gate, host-app provisioning, case sensitivity, exactly 2 allowed roles |
+| `CatalogFormatLabelTest` | All 17 BiblioCommons format codes, unknown code fallback, map structure |
+| `SfpUserTest` | `isAdmin()`, `isSelector()`, mutual exclusivity, `accessibleIds` via Mockery |
+| `MaterialScopeVisibleToTest` | Null user, admin pass-through, selector `whereIn`, no audience constraint |
+| `SfpRequestScopeVisibleToTest` | Null user, admin pass-through, `where()` closure grouping both `material_type_id` + `audience_id` |
+| `BibliocommonsServiceTest` | Query building, author parsing, API response parsing |
+| `IsbnDbServiceTest` | ISBNdb API response parsing |
+
+No database or full Laravel container is required for the unit suite. A `tests/bootstrap.php` file provides a minimal stub for `Illuminate\Foundation\Auth\User` so the package can be tested without `laravel/framework` installed as a dev dependency.
 
 ## Deployment Workflow (Development)
 

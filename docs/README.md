@@ -6,7 +6,7 @@ Suggest for Purchase (SFP) is a Laravel package that provides a patron-facing re
 
 | Page | Contents |
 |------|----------|
-| [Installation](installation.md) | Requirements, setup, config, seeders, Entra SSO |
+| [Installation](installation.md) | Requirements, [production setup](installation.md#production--staging), [local dev setup](installation.md#local-development), config, seeders, Entra SSO |
 | [Architecture](architecture.md) | Package structure, service provider, routing overview |
 | [Database](database.md) | Full schema: all tables, columns, relationships, indexes |
 | [Models](models.md) | All Eloquent models: properties, relationships, methods |
@@ -44,7 +44,8 @@ Users with any other role (or no `sfp_users` record and no matching Entra group)
 ## Running Tests
 
 ```bash
+composer install
 ./vendor/bin/phpunit --testsuite Unit
 ```
 
-113 unit tests covering role gates, visibility scopes, format label mapping, and user model helpers. No database or Laravel container required.
+113 unit tests, 244 assertions. No database or Laravel container required. See [Installation → Running Tests](installation.md#running-tests) for the full test inventory.

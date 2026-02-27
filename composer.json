@@ -38,6 +38,12 @@
             ]
         }
     },
+    "repositories": {
+        "dcplibrary-sfp": {
+            "type": "vcs",
+            "url": "https://github.com/dcplibrary/sfp.git"
+        }
+    },
     "minimum-stability": "stable",
     "prefer-stable": true
 }
