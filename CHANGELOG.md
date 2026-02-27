@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [1.0.1](https://github.com/dcplibrary/sfp/compare/v1.0.0...v1.0.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* Remove PHP 8.3 from workflow matrix ([cc67490](https://github.com/dcplibrary/sfp/commit/cc674907d273cdc47ebf4013bf23dcedcb90f9f5))
+
 # 1.0.0 (2026-02-27)
 
 
