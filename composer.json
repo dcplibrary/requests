@@ -11,6 +11,7 @@
         "illuminate/queue": "^12.0",
         "illuminate/http": "^12.0",
         "illuminate/cache": "^12.0",
+        "illuminate/auth": "^12.0",
         "livewire/livewire": "^3.0|^4.0",
         "blashbrook/papiclient": "*",
         "dcplibrary/entra-sso": "^1.6"
@@ -27,8 +28,7 @@
     "autoload": {
         "psr-4": {
             "Dcplibrary\\Sfp\\": "src/",
-            "Dcplibrary\\Sfp\\Database\\Seeders\\": "database/seeders/",
-            "Database\\Seeders\\": "database/seeders/"
+            "Dcplibrary\\Sfp\\Database\\Seeders\\": "database/seeders/"
         }
     },
     "extra": {
