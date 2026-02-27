@@ -173,3 +173,6 @@ fabric.properties
 .idea/**/azureSettings.xml
 
 # End of https://www.toptal.com/developers/gitignore/api/laravel,macos,phpstorm
+
+# Claude Code
+.claude/
