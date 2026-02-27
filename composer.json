@@ -27,7 +27,8 @@
     "autoload": {
         "psr-4": {
             "Dcplibrary\\Sfp\\": "src/",
-            "Dcplibrary\\Sfp\\Database\\Seeders\\": "database/seeders/"
+            "Dcplibrary\\Sfp\\Database\\Seeders\\": "database/seeders/",
+            "Database\\Seeders\\": "database/seeders/"
         }
     },
     "extra": {
