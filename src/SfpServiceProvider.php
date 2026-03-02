@@ -20,6 +20,7 @@ use Livewire\Livewire;
  *  - `sfp-migrations` — database migrations
  *  - `sfp-seeders`    — database seeders
  *  - `sfp-views`      — Blade views
+ *  - `sfp-assets`     — compiled CSS → public/vendor/sfp/
  *  - `sfp`            — all of the above at once
  */
 class SfpServiceProvider extends ServiceProvider
@@ -86,12 +87,17 @@ class SfpServiceProvider extends ServiceProvider
             __DIR__ . '/../resources/views' => resource_path('views/vendor/sfp'),
         ], 'sfp-views');
 
+        $this->publishes([
+            __DIR__ . '/../public' => public_path('vendor/sfp'),
+        ], 'sfp-assets');
+
         // Convenience tag: publish everything at once
         $this->publishes([
             __DIR__ . '/../config/sfp.php'      => config_path('sfp.php'),
             __DIR__ . '/../database/migrations'  => database_path('migrations'),
             __DIR__ . '/../database/seeders'     => database_path('seeders'),
             __DIR__ . '/../resources/views'      => resource_path('views/vendor/sfp'),
+            __DIR__ . '/../public'               => public_path('vendor/sfp'),
         ], 'sfp');
     }
 }
