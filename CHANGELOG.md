@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [1.1.0](https://github.com/dcplibrary/sfp/compare/v1.0.1...v1.1.0) (2026-03-02)
+
+
+### Features
+
+* add staff access ([9fd8a98](https://github.com/dcplibrary/sfp/commit/9fd8a985295e5291610901db7e467fcbb9d91c90))
+
 ## [1.0.1](https://github.com/dcplibrary/sfp/compare/v1.0.0...v1.0.1) (2026-02-27)
 
 
