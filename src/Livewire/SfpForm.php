@@ -64,6 +64,9 @@ class SfpForm extends Component
     // --- ILL age warning ---
     public bool $showIllWarning = false;
 
+    // --- Patron limit ---
+    public bool $limitReached = false;
+
     // --- Step 3: Resolution state ---
     public ?int $resolvedMaterialId = null; // set if local material match found
     public bool $isDuplicate = false;
@@ -233,6 +236,7 @@ class SfpForm extends Component
         if ($patron->hasReachedLimit()) {
             $days = (int) Setting::get('sfp_limit_window_days', 30);
             $count = Setting::get('sfp_limit_count', 5);
+            $this->limitReached = true;
             $this->addError('barcode', "You have reached the limit of {$count} requests per {$days} days. Please try again later.");
             $this->processing = false;
             return;
@@ -392,6 +396,7 @@ class SfpForm extends Component
         if ($existing && $existing->hasReachedLimit()) {
             $days = (int) Setting::get('sfp_limit_window_days', 30);
             $count = Setting::get('sfp_limit_count', 5);
+            $this->limitReached = true;
             $this->addError('barcode', "You have reached the limit of {$count} requests per {$days} days. Please try again later.");
         }
     }
