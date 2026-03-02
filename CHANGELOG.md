@@ -2,6 +2,18 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [1.2.0](https://github.com/dcplibrary/sfp/compare/v1.1.0...v1.2.0) (2026-03-02)
+
+
+### Bug Fixes
+
+* remove form for patrons who have reached sfp limit ([2d08d6e](https://github.com/dcplibrary/sfp/commit/2d08d6e84ad3123943e3431e67594e622bf05fdf))
+
+
+### Features
+
+* hide form when patron has reached their SFP request limit ([dcf7053](https://github.com/dcplibrary/sfp/commit/dcf70531f578d950abeee743ec0c46e71622c09a))
+
 # [1.1.0](https://github.com/dcplibrary/sfp/compare/v1.0.1...v1.1.0) (2026-03-02)
 
 
