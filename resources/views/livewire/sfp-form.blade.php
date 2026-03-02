@@ -161,6 +161,7 @@
             </div>
         @endif
 
+        @unless($limitReached)
         <div class="space-y-6">
             {{-- Type of Material --}}
             <fieldset>
@@ -317,6 +318,7 @@
                 <span wire:loading wire:target="submit">Searching...</span>
             </button>
         </div>
+        @endunless
     </section>
 
     {{-- Step 3: Resolution (catalog / ISBNdb match) --}}
