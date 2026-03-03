@@ -3,6 +3,7 @@
 namespace Dcplibrary\Sfp\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class SettingsSeeder extends Seeder
@@ -54,14 +55,6 @@ class SettingsSeeder extends Seeder
                 'type' => 'html',
                 'group' => 'messaging',
                 'description' => 'Shown to patrons when their submitted item matches an existing request from a different patron.',
-            ],
-            [
-                'key' => 'duplicate_self_request_message',
-                'value' => "You've already requested this item. We'll let you know when it's available.",
-                'label' => 'Duplicate Self-Request Message',
-                'type' => 'text',
-                'group' => 'messaging',
-                'description' => "Shown to patrons when they re-submit an item they've already requested.",
             ],
             [
                 'key' => 'duplicate_self_request_message',
@@ -145,6 +138,24 @@ class SettingsSeeder extends Seeder
                 'group' => 'processing',
                 'description' => 'How to handle post-submission processing. Options: wait (patron waits on page), email (send confirmation when done).',
             ],
+
+            // --- Auto-order exclusions (popular authors) ---
+            [
+                'key' => 'auto_order_author_exclusions',
+                'value' => '',
+                'label' => 'Auto-Order Author Exclusions',
+                'type' => 'text',
+                'group' => 'ordering',
+                'description' => 'One author per line. If a submitted item has a future release date and the author matches this list, the patron will be shown an informational message instead of submitting a request.',
+            ],
+            [
+                'key' => 'auto_order_author_exclusion_message',
+                'value' => '<p><strong>Good news:</strong> the library automatically orders new releases from this author. Please check the catalog closer to the release date to place a hold.</p>',
+                'label' => 'Auto-Order Author Exclusion Message',
+                'type' => 'html',
+                'group' => 'messaging',
+                'description' => 'Shown when a patron submits a future (unreleased) title by an author on the auto-order exclusion list. No request is created in this case.',
+            ],
         ];
 
         foreach ($settings as $setting) {
@@ -155,6 +166,9 @@ class SettingsSeeder extends Seeder
                     'updated_at' => now(),
                 ])
             );
+
+            // Bust cached reads so new/updated values take effect immediately.
+            Cache::forget("setting:{$setting['key']}");
         }
     }
 }

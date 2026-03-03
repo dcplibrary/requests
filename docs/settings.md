@@ -48,6 +48,20 @@ HTML messages shown to patrons at key moments.
 | `duplicate_self_request_message` | html | *(HTML)* | Shown when the patron has already requested the same title |
 | `submission_success_message` | html | *(HTML)* | Shown on Step 4 (confirmation) after a successful submission |
 | `catalog_owned_message` | html | *(HTML)* | Shown when the patron confirms the item is already in the catalog (no request is created) |
+| `auto_order_author_exclusion_message` | html | *(HTML)* | Shown when a patron submits a future (unreleased) title by an author on the auto-order exclusion list (no request is created) |
+
+---
+
+## Group: `ordering`
+
+Controls auto-order exclusions for popular authors.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `auto_order_author_exclusions` | text | *(empty)* | One author per line. If the item has a confidently-detected future release date and the author matches this list, the patron is shown the auto-order message and no request is created |
+
+Notes:
+- The “future release date” check is only applied when the date is unambiguous (e.g. `YYYY-MM-DD`, or a clearly future `YYYY-MM` / `YYYY`).
 
 ---
 

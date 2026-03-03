@@ -14,6 +14,7 @@ use Dcplibrary\Sfp\Services\BibliocommonsService;
 use Dcplibrary\Sfp\Services\CoverService;
 use Dcplibrary\Sfp\Services\IsbnDbService;
 use Dcplibrary\Sfp\Services\PatronService;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -93,6 +94,10 @@ class SfpForm extends Component
 
     // Final request ID
     public ?int $createdRequestId = null;
+
+    // Auto-order exclusion handling (popular authors)
+    public bool $autoOrderExcluded = false;
+    public string $autoOrderExcludedMessage = '';
 
     public function mount(): void
     {
@@ -242,6 +247,19 @@ class SfpForm extends Component
             return;
         }
 
+        // 2.5 Auto-order exclusion: only if we can confidently determine the
+        // item is not yet released (future date).
+        if ($this->shouldAutoOrderExclude($this->author, $this->publish_date)) {
+            $this->autoOrderExcluded = true;
+            $this->autoOrderExcludedMessage = (string) Setting::get(
+                'auto_order_author_exclusion_message',
+                '<p><strong>Good news:</strong> the library automatically orders new releases from this author. Please check the catalog closer to the release date to place a hold.</p>'
+            );
+            $this->processing = false;
+            $this->step = 4;
+            return;
+        }
+
         // 3. Check local materials table for a match
         $this->processingStep = 'Checking our records...';
         $existingMaterial = Material::findMatch($this->title, $this->author);
@@ -364,6 +382,20 @@ class SfpForm extends Component
         $this->selectedIsbndbIndex = $index;
 
         $isbndbData = $this->isbndbResults[$index] ?? null;
+
+        // If ISBNdb can provide an unambiguous future publish date, honor the
+        // auto-order exclusion list before creating a request.
+        if (is_array($isbndbData) && $this->shouldAutoOrderExclude($this->author, (string) ($isbndbData['publish_date'] ?? ''))) {
+            $this->autoOrderExcluded = true;
+            $this->autoOrderExcludedMessage = (string) Setting::get(
+                'auto_order_author_exclusion_message',
+                '<p><strong>Good news:</strong> the library automatically orders new releases from this author. Please check the catalog closer to the release date to place a hold.</p>'
+            );
+            $this->processing = false;
+            $this->step = 4;
+            return;
+        }
+
         $patron = app(PatronService::class)->findOrCreate([
             'barcode'    => $this->barcode,
             'name_first' => $this->name_first,
@@ -522,8 +554,185 @@ class SfpForm extends Component
                 'catalog_owned_message',
                 '<p><strong>Good news:</strong> this item is already in our catalog. Please place a hold in the catalog to get it as soon as it’s available.</p>'
             ),
+            'autoOrderExcludedMessage' => $this->autoOrderExcludedMessage,
             'duplicateMessage'  => $this->duplicateMessage,
             'formatLabels'      => CatalogFormatLabel::map(),
         ]);
+    }
+
+    /**
+     * Return true when a submission should be excluded because the library
+     * auto-orders new releases from the author AND the item is not yet released.
+     */
+    private function shouldAutoOrderExclude(string $author, ?string $releaseDate): bool
+    {
+        if (! $this->isConfidentFutureDate($releaseDate)) {
+            return false;
+        }
+
+        $raw = (string) Setting::get('auto_order_author_exclusions', '');
+        $list = preg_split('/\r\n|\r|\n/', $raw) ?: [];
+
+        $submitted = $this->parseAuthorName($author);
+        if (! $submitted) {
+            return false;
+        }
+
+        foreach ($list as $entry) {
+            $excluded = $this->parseAuthorName((string) $entry);
+            if (! $excluded) {
+                continue;
+            }
+
+            // Match by last name + first initial (covers "Patterson, James" vs "James Patterson").
+            if (
+                $submitted['last'] !== ''
+                && $excluded['last'] !== ''
+                && $submitted['last'] === $excluded['last']
+                && $submitted['first_initial'] !== ''
+                && $excluded['first_initial'] !== ''
+                && $submitted['first_initial'] === $excluded['first_initial']
+            ) {
+                return true;
+            }
+
+            // Fallback: exact normalized full-name match in either order.
+            if (
+                $submitted['normalized_full'] !== ''
+                && $excluded['normalized_full'] !== ''
+                && (
+                    $submitted['normalized_full'] === $excluded['normalized_full']
+                    || $submitted['normalized_full'] === $excluded['normalized_swapped']
+                    || $submitted['normalized_swapped'] === $excluded['normalized_full']
+                )
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Only return true when we can confidently say the date is in the future.
+     * Accepts unambiguous formats: YYYY-MM-DD, YYYY-MM, YYYY.
+     */
+    private function isConfidentFutureDate(?string $value): bool
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return false;
+        }
+
+        $now = now();
+
+        // ISO datetime strings: 2026-04-15T00:00:00Z → treat as YYYY-MM-DD
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T/', $value) === 1) {
+            $value = substr($value, 0, 10);
+        }
+
+        // Full date (most reliable): 2026-04-15
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
+            try {
+                return Carbon::createFromFormat('Y-m-d', $value)->isAfter($now);
+            } catch (\Throwable) {
+                return false;
+            }
+        }
+
+        // Year-month: 2026-04 (confidently future if after current month)
+        if (preg_match('/^\d{4}-\d{2}$/', $value) === 1) {
+            try {
+                $dt = Carbon::createFromFormat('Y-m', $value)->startOfMonth();
+                return $dt->isAfter($now->copy()->startOfMonth());
+            } catch (\Throwable) {
+                return false;
+            }
+        }
+
+        // Year: 2027 (confidently future only if strictly greater than current year)
+        if (preg_match('/^\d{4}$/', $value) === 1) {
+            return (int) $value > (int) $now->year;
+        }
+
+        // Common human formats the form suggests: "January 2027", "Jan 2027", "January 5 2027"
+        // Only treat as confident if it contains a 4-digit year.
+        if (preg_match('/\b\d{4}\b/', $value) === 1) {
+            try {
+                return Carbon::parse($value)->isAfter($now);
+            } catch (\Throwable) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Parse an author string into normalized name parts for matching.
+     *
+     * Returns null if it can't determine a usable name.
+     *
+     * @return array{first:string,last:string,first_initial:string,normalized_full:string,normalized_swapped:string}|null
+     */
+    private function parseAuthorName(string $author): ?array
+    {
+        $author = strtolower(trim($author));
+        if ($author === '') {
+            return null;
+        }
+
+        // If multiple authors are present, only consider the first.
+        $author = preg_split('/\s+(and|&)\s+|;/', $author)[0] ?? $author;
+        $author = trim($author);
+
+        // Keep letters/numbers/spaces/commas; drop punctuation.
+        $author = preg_replace('/[^a-z0-9\s,]/', ' ', $author) ?? $author;
+        $author = preg_replace('/\s+/', ' ', $author) ?? $author;
+        $author = trim($author);
+
+        if ($author === '') {
+            return null;
+        }
+
+        $first = '';
+        $last = '';
+
+        if (str_contains($author, ',')) {
+            // "Last, First Middle"
+            [$lastPart, $firstPart] = array_pad(explode(',', $author, 2), 2, '');
+            $last = trim($lastPart);
+            $first = trim($firstPart);
+        } else {
+            // "First Middle Last"
+            $parts = preg_split('/\s+/', $author) ?: [];
+            if (count($parts) >= 2) {
+                $first = (string) ($parts[0] ?? '');
+                $last = (string) end($parts);
+            } else {
+                // Single token is too ambiguous to match safely.
+                return null;
+            }
+        }
+
+        $first = trim($first);
+        $last = trim($last);
+
+        if ($first === '' || $last === '') {
+            return null;
+        }
+
+        $firstInitial = $first[0] ?? '';
+
+        $normalizedFull = trim(preg_replace('/\s+/', ' ', "{$first} {$last}") ?? "{$first} {$last}");
+        $normalizedSwapped = trim(preg_replace('/\s+/', ' ', "{$last} {$first}") ?? "{$last} {$first}");
+
+        return [
+            'first' => $first,
+            'last' => $last,
+            'first_initial' => $firstInitial,
+            'normalized_full' => $normalizedFull,
+            'normalized_swapped' => $normalizedSwapped,
+        ];
     }
 }

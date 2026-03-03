@@ -29,9 +29,42 @@ if (! class_exists(\Illuminate\Foundation\Auth\User::class)) {
         extends \Illuminate\Database\Eloquent\Model
         implements \Illuminate\Contracts\Auth\Authenticatable
     {
-        use \Illuminate\Auth\Authenticatable;
-
         protected $table = 'sfp_users';
+
+        public function getAuthIdentifierName()
+        {
+            return $this->getKeyName();
+        }
+
+        public function getAuthIdentifier()
+        {
+            return $this->getKey();
+        }
+
+        public function getAuthPassword()
+        {
+            return (string) ($this->getAttribute('password') ?? '');
+        }
+
+        public function getAuthPasswordName()
+        {
+            return 'password';
+        }
+
+        public function getRememberToken()
+        {
+            return $this->getAttribute($this->getRememberTokenName());
+        }
+
+        public function setRememberToken($value)
+        {
+            $this->setAttribute($this->getRememberTokenName(), $value);
+        }
+
+        public function getRememberTokenName()
+        {
+            return 'remember_token';
+        }
     }
 
     // Register the stub under the real FQCN so `class_exists` resolves it.

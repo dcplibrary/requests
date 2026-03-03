@@ -140,4 +140,27 @@ class RequestController extends Controller
 
         return back()->with('success', $message);
     }
+
+    public function destroy(Request $httpRequest, SfpRequest $sfpRequest)
+    {
+        $allowed = SfpRequest::query()
+            ->visibleTo($httpRequest->user())
+            ->whereKey($sfpRequest->getKey())
+            ->exists();
+        if (! $allowed) {
+            abort(403);
+        }
+
+        // Destructive action: restrict to SFP admins.
+        $sfpUser = $this->currentSfpUser($httpRequest);
+        if (! $sfpUser || ! $sfpUser->isAdmin()) {
+            abort(403);
+        }
+
+        $sfpRequest->delete();
+
+        return redirect()
+            ->route('sfp.staff.requests.index')
+            ->with('success', "Request #{$sfpRequest->id} deleted.");
+    }
 }

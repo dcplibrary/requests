@@ -249,6 +249,25 @@
             </dl>
         </div>
 
+        {{-- Danger zone --}}
+        <div class="bg-white rounded-lg border border-red-200 p-5">
+            <h2 class="text-sm font-semibold text-red-700 uppercase tracking-wide mb-3">Danger Zone</h2>
+            <form method="POST" action="{{ route('sfp.staff.requests.destroy', $sfpRequest) }}">
+                @csrf
+                @method('DELETE')
+                <button
+                    type="submit"
+                    class="w-full px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                    onclick="return confirm('Delete Request #{{ $sfpRequest->id }}? This cannot be undone.')"
+                >
+                    Delete Request
+                </button>
+            </form>
+            <p class="mt-2 text-xs text-gray-500">
+                Deleting a request removes it and its status history. The patron and title records are not deleted.
+            </p>
+        </div>
+
     </div>
 </div>
 @endsection

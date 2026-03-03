@@ -441,7 +441,12 @@
                 <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </span>
         </div>
-        @if($catalogMatchAccepted === true)
+        @if($autoOrderExcluded)
+            <h2 id="confirmation-heading" class="text-2xl font-bold text-gray-900 mb-3">No request needed</h2>
+            <div class="text-gray-600 text-sm max-w-md mx-auto prose prose-sm">
+                {!! $autoOrderExcludedMessage !!}
+            </div>
+        @elseif($catalogMatchAccepted === true)
             <h2 id="confirmation-heading" class="text-2xl font-bold text-gray-900 mb-3">It’s already in the catalog</h2>
             <div class="text-gray-600 text-sm max-w-md mx-auto prose prose-sm">
                 {!! $catalogOwnedMessage !!}

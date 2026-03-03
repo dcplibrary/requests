@@ -40,6 +40,7 @@ Route::group([
             Route::get('/requests/{sfpRequest}',               [RequestController::class, 'show'])->name('requests.show');
             Route::patch('/requests/{sfpRequest}/status',      [RequestController::class, 'updateStatus'])->name('requests.status');
             Route::post('/requests/{sfpRequest}/catalog-recheck', [RequestController::class, 'recheckCatalog'])->name('requests.catalog-recheck');
+            Route::delete('/requests/{sfpRequest}',            [RequestController::class, 'destroy'])->name('requests.destroy');
 
             Route::resource('patrons', PatronController::class)
                 ->names([
