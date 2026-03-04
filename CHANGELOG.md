@@ -2,6 +2,14 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [1.3.0](https://github.com/dcplibrary/sfp/compare/v1.2.0...v1.3.0) (2026-03-04)
+
+
+### Features
+
+* add delete option to request details view.  add exclusion list for future releases from popular authors ([18b40fe](https://github.com/dcplibrary/sfp/commit/18b40fe2a53a50684f3c90f9fd47e2cd5d4166a1))
+* update staff and settings help files ([166b7d0](https://github.com/dcplibrary/sfp/commit/166b7d076feb0aa27a949cb9a4d65a812a3bd92d))
+
 # [1.2.0](https://github.com/dcplibrary/sfp/compare/v1.1.0...v1.2.0) (2026-03-02)
 
 
