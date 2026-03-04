@@ -40,13 +40,9 @@
                         {{ $group->active ? 'Active' : 'Inactive' }}
                     </span>
                 </td>
-                <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
-                    <a href="{{ route('sfp.staff.groups.edit', $group) }}" class="text-blue-600 hover:underline text-xs">Edit</a>
-                    <form method="POST" action="{{ route('sfp.staff.groups.destroy', $group) }}"
-                          onsubmit="return confirm('Delete this group?')">
-                        @csrf @method('DELETE')
-                        <button class="text-red-500 hover:underline text-xs">Delete</button>
-                    </form>
+                <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
+                    <x-sfp::icon-btn :href="route('sfp.staff.groups.edit', $group)" variant="edit" label="Edit" />
+                    <x-sfp::icon-form-btn :action="route('sfp.staff.groups.destroy', $group)" label="Delete" confirm="Delete this group?" />
                 </td>
             </tr>
             @empty

@@ -100,8 +100,7 @@
                     </div>
                 </td>
                 <td class="px-4 py-3 text-right">
-                    <a href="{{ route('sfp.staff.patrons.show', $patron) }}"
-                       class="text-blue-600 hover:underline text-xs font-medium">View</a>
+                    <x-sfp::icon-btn :href="route('sfp.staff.patrons.show', $patron)" variant="view" label="View" />
                 </td>
             </tr>
             @empty

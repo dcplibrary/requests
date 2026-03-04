@@ -261,10 +261,7 @@
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Submitted Data</h2>
-                <a href="{{ route('sfp.staff.patrons.edit', $patron) }}"
-                   class="text-xs px-3 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50">
-                    Edit
-                </a>
+                <x-sfp::icon-btn :href="route('sfp.staff.patrons.edit', $patron)" variant="edit" label="Edit" />
             </div>
             <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <div>
@@ -398,8 +395,7 @@
                         </td>
                         <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">{{ $req->created_at->format('M j, Y') }}</td>
                         <td class="px-3 py-2 text-right">
-                            <a href="{{ route('sfp.staff.requests.show', $req) }}"
-                               class="text-blue-600 hover:underline text-xs">View</a>
+                            <x-sfp::icon-btn :href="route('sfp.staff.requests.show', $req)" variant="view" label="View" />
                         </td>
                     </tr>
                     @endforeach

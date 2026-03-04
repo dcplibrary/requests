@@ -41,9 +41,9 @@
                 <td class="px-4 py-3 text-gray-500 text-xs">
                     {{ $user->last_login_at?->diffForHumans() ?? '—' }}
                 </td>
-                <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
-                    <a href="{{ route('sfp.staff.users.edit', $user) }}" class="text-blue-600 hover:underline text-xs">Edit</a>
-                    <a href="{{ route('sfp.staff.users.remove', $user) }}" class="text-red-500 hover:underline text-xs">Remove…</a>
+                <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
+                    <x-sfp::icon-btn :href="route('sfp.staff.users.edit', $user)" variant="edit" label="Edit" />
+                    <x-sfp::icon-btn :href="route('sfp.staff.users.remove', $user)" variant="remove" label="Remove" />
                 </td>
             </tr>
             @empty

@@ -29,9 +29,9 @@
                         {{ $type->active ? 'Active' : 'Inactive' }}
                     </span>
                 </td>
-                <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
-                    <a href="{{ route('sfp.staff.material-types.edit', $type) }}" class="text-blue-600 hover:underline text-xs">Edit</a>
-                    <a href="{{ route('sfp.staff.material-types.delete', $type) }}" class="text-red-500 hover:underline text-xs">Delete…</a>
+                <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
+                    <x-sfp::icon-btn :href="route('sfp.staff.material-types.edit', $type)" variant="edit" label="Edit" />
+                    <x-sfp::icon-btn :href="route('sfp.staff.material-types.delete', $type)" variant="delete" label="Delete" />
                 </td>
             </tr>
             @empty

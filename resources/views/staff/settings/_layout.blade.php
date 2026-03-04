@@ -19,6 +19,7 @@
                 ['label' => 'Statuses',       'route' => 'sfp.staff.statuses.index',        'pattern' => 'sfp.staff.statuses.*'],
                 ['label' => 'Users',          'route' => 'sfp.staff.users.index',           'pattern' => 'sfp.staff.users.*'],
                 ['label' => 'Groups',         'route' => 'sfp.staff.groups.index',          'pattern' => 'sfp.staff.groups.*'],
+                ['label' => 'Backups',        'route' => 'sfp.staff.backups.index',         'pattern' => 'sfp.staff.backups.*'],
             ];
             @endphp
             @foreach($settingsNav as $item)

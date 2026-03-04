@@ -23,15 +23,6 @@
                placeholder="Title, author, ISBN…"
                class="text-sm border border-gray-300 rounded px-2 py-1.5 w-56">
     </div>
-    <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Source</label>
-        <select name="source" class="text-sm border border-gray-300 rounded px-2 py-1.5">
-            <option value="">All sources</option>
-            <option value="submitted" {{ ($filters['source'] ?? '') === 'submitted' ? 'selected' : '' }}>Submitted</option>
-            <option value="isbndb"    {{ ($filters['source'] ?? '') === 'isbndb'    ? 'selected' : '' }}>ISBNdb</option>
-            <option value="polaris"   {{ ($filters['source'] ?? '') === 'polaris'   ? 'selected' : '' }}>Polaris</option>
-        </select>
-    </div>
     <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">Filter</button>
     @if(array_filter($filters))
         <a href="{{ route('sfp.staff.titles.index') }}"
@@ -48,9 +39,7 @@
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Author</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">ISBN</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Type</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Source</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Requests</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Flags</th>
                 <th class="px-4 py-3"></th>
             </tr>
         </thead>
@@ -79,15 +68,6 @@
                     {{ $material->materialType?->name ?? '—' }}
                 </td>
                 <td class="px-4 py-3">
-                    @if($material->source === 'isbndb')
-                        <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700">ISBNdb</span>
-                    @elseif($material->source === 'polaris')
-                        <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700">Polaris</span>
-                    @else
-                        <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-500">Submitted</span>
-                    @endif
-                </td>
-                <td class="px-4 py-3">
                     <div class="flex flex-wrap gap-1">
                         @foreach($material->requests->groupBy('request_status_id') as $statusId => $reqs)
                             @php $status = $reqs->first()->status @endphp
@@ -105,19 +85,13 @@
                         @endif
                     </div>
                 </td>
-                <td class="px-4 py-3">
-                    @if($isDuplicate)
-                        <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-orange-100 text-orange-700">Possible duplicate</span>
-                    @endif
-                </td>
                 <td class="px-4 py-3 text-right">
-                    <a href="{{ route('sfp.staff.titles.show', $material) }}"
-                       class="text-blue-600 hover:underline text-xs font-medium">View</a>
+                    <x-sfp::icon-btn :href="route('sfp.staff.titles.show', $material)" variant="view" label="View" />
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="8" class="px-4 py-10 text-center text-gray-400">No titles found.</td>
+                <td colspan="6" class="px-4 py-10 text-center text-gray-400">No titles found.</td>
             </tr>
             @endforelse
         </tbody>

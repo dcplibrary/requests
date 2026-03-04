@@ -169,8 +169,7 @@
                             {{ $req->created_at->format('M j, Y') }}
                         </td>
                         <td class="px-3 py-2 text-right">
-                            <a href="{{ route('sfp.staff.requests.show', $req) }}"
-                               class="text-blue-600 hover:underline text-xs">View</a>
+                            <x-sfp::icon-btn :href="route('sfp.staff.requests.show', $req)" variant="view" label="View" />
                         </td>
                     </tr>
                     @endforeach

@@ -1,6 +1,7 @@
 <?php
 
 use Dcplibrary\Sfp\Http\Controllers\Admin\AudienceController;
+use Dcplibrary\Sfp\Http\Controllers\Admin\BackupController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\CatalogController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\HelpController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\TitleController;
@@ -80,6 +81,14 @@ Route::group([
 
             Route::get('/settings',   [SettingController::class, 'index'])->name('settings.index');
             Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+            Route::get('/backups',                  [BackupController::class, 'index'])->name('backups.index');
+            Route::post('/backups/config-export',   [BackupController::class, 'exportConfig'])->name('backups.config-export');
+            Route::post('/backups/config-import',   [BackupController::class, 'importConfig'])->name('backups.config-import');
+            Route::post('/backups/db-export',       [BackupController::class, 'exportDatabase'])->name('backups.db-export');
+            Route::post('/backups/db-import',       [BackupController::class, 'importDatabase'])->name('backups.db-import');
+            Route::post('/backups/storage-export',  [BackupController::class, 'exportStorage'])->name('backups.storage-export');
+            Route::post('/backups/wipe',            [BackupController::class, 'wipeAll'])->name('backups.wipe');
 
             Route::get('/catalog',    [CatalogController::class, 'index'])->name('catalog.index');
             Route::patch('/catalog',  [CatalogController::class, 'update'])->name('catalog.update');

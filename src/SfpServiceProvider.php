@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Sfp;
 
+use Dcplibrary\Sfp\Console\Commands\SfpBackupCommand;
 use Dcplibrary\Sfp\Http\Middleware\RequireSfpRole;
 use Dcplibrary\Sfp\Livewire\SfpForm;
 use Illuminate\Routing\Router;
@@ -43,6 +44,10 @@ class SfpServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+            $this->commands([
+                SfpBackupCommand::class,
+            ]);
         }
     }
 
