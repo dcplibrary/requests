@@ -139,6 +139,16 @@ class SettingsSeeder extends Seeder
                 'description' => 'How to handle post-submission processing. Options: wait (patron waits on page), email (send confirmation when done).',
             ],
 
+            // --- Patron request lookup ---
+            [
+                'key' => 'patron_lookup_enabled',
+                'value' => '1',
+                'label' => 'Enable Patron Request Lookup',
+                'type' => 'boolean',
+                'group' => 'patron',
+                'description' => 'Allow patrons to look up their own submitted suggestions and statuses at /my-requests using their library card number and last name.',
+            ],
+
             // --- Polaris integration ---
             [
                 'key' => 'polaris_barcode_check_enabled',

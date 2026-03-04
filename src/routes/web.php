@@ -12,6 +12,7 @@ use Dcplibrary\Sfp\Http\Controllers\Admin\RequestStatusController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\SelectorGroupController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\SettingController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\UserController;
+use Dcplibrary\Sfp\Livewire\PatronLookup;
 use Dcplibrary\Sfp\Livewire\SfpForm;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +30,9 @@ Route::group([
 
     // --- Public: SFP Patron Form ---
     Route::get('/', SfpForm::class)->name('sfp.form');
+
+    // --- Public: Patron Request Lookup ---
+    Route::get('/my-requests', PatronLookup::class)->name('sfp.patron.lookup');
 
     // --- Staff: Protected ---
     Route::prefix('staff')
