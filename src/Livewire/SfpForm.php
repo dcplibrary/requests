@@ -149,9 +149,12 @@ class SfpForm extends Component
 
             $this->checkPatronLimit();
 
-            // Only check Polaris for barcodes we haven't seen before.
+            // Only check Polaris if the feature is enabled and the barcode is new.
             // Returning patrons (already in the local DB) bypass the API call.
-            if (! Patron::where('barcode', $this->barcode)->exists()) {
+            if (
+                Setting::get('polaris_barcode_check_enabled', true)
+                && ! Patron::where('barcode', $this->barcode)->exists()
+            ) {
                 $exists = app(PolarisService::class)->barcodeExists($this->barcode);
 
                 if ($exists === false) {
