@@ -52,14 +52,22 @@
                     type="text"
                     id="barcode"
                     wire:model="barcode"
-                    class="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ $errors->has('barcode') ? 'border-red-500' : 'border-gray-300' }}"
+                    class="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ $errors->has('barcode') || $barcodeNotFound ? 'border-red-500' : 'border-gray-300' }}"
                     autocomplete="off"
                     aria-required="true"
-                    aria-describedby="{{ $errors->has('barcode') ? 'barcode-error' : '' }}"
+                    aria-describedby="{{ $errors->has('barcode') ? 'barcode-error' : ($barcodeNotFound ? 'barcode-not-found' : '') }}"
                 />
                 @error('barcode')
                     <p id="barcode-error" class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
                 @enderror
+                @if($barcodeNotFound)
+                    <div id="barcode-not-found"
+                         class="mt-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 prose prose-sm max-w-none [&_a]:text-red-700 [&_a]:underline"
+                         role="alert"
+                         aria-live="assertive">
+                        {!! $barcodeNotFoundMessage !!}
+                    </div>
+                @endif
             </div>
 
             {{-- Name --}}

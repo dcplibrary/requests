@@ -139,6 +139,16 @@ class SettingsSeeder extends Seeder
                 'description' => 'How to handle post-submission processing. Options: wait (patron waits on page), email (send confirmation when done).',
             ],
 
+            // --- Patron barcode validation ---
+            [
+                'key' => 'barcode_not_found_message',
+                'value' => '<p>The card number you entered was not found. Please <a href="#">apply for a card online</a> or visit the library to register.</p>',
+                'label' => 'Barcode Not Found Message',
+                'type' => 'html',
+                'group' => 'messaging',
+                'description' => 'Shown on Step 1 of the request form when the patron\'s barcode is not found in Polaris. The form is stopped and no request is created. HTML is allowed — you can include links and your library\'s address.',
+            ],
+
             // --- Auto-order exclusions (popular authors) ---
             [
                 'key' => 'auto_order_author_exclusions',

@@ -14,6 +14,7 @@ use Dcplibrary\Sfp\Services\BibliocommonsService;
 use Dcplibrary\Sfp\Services\CoverService;
 use Dcplibrary\Sfp\Services\IsbnDbService;
 use Dcplibrary\Sfp\Services\PatronService;
+use Dcplibrary\Sfp\Services\PolarisService;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -67,6 +68,10 @@ class SfpForm extends Component
 
     // --- Patron limit ---
     public bool $limitReached = false;
+
+    // --- Barcode not found in Polaris ---
+    public bool $barcodeNotFound = false;
+    public string $barcodeNotFoundMessage = '';
 
     // --- Step 3: Resolution state ---
     public ?int $resolvedMaterialId = null; // set if local material match found
@@ -130,6 +135,10 @@ class SfpForm extends Component
     public function nextStep(): void
     {
         if ($this->step === 1) {
+            // Reset barcode-not-found state on each attempt
+            $this->barcodeNotFound = false;
+            $this->barcodeNotFoundMessage = '';
+
             $this->validate([
                 'barcode'    => 'required|min:5|max:20',
                 'name_first' => 'required|min:1|max:100',
@@ -137,7 +146,25 @@ class SfpForm extends Component
                 'phone'      => 'required|min:7|max:20',
                 'email'      => 'nullable|email|max:255',
             ]);
+
             $this->checkPatronLimit();
+
+            // Only check Polaris for barcodes we haven't seen before.
+            // Returning patrons (already in the local DB) bypass the API call.
+            if (! Patron::where('barcode', $this->barcode)->exists()) {
+                $exists = app(PolarisService::class)->barcodeExists($this->barcode);
+
+                if ($exists === false) {
+                    // Barcode explicitly not found in Polaris — stop here.
+                    $this->barcodeNotFound = true;
+                    $this->barcodeNotFoundMessage = (string) Setting::get(
+                        'barcode_not_found_message',
+                        '<p>The card number you entered was not found. Please apply for a library card online or visit the library to register.</p>'
+                    );
+                    return;
+                }
+                // $exists === null means Polaris is unavailable or not configured — let through.
+            }
         }
 
         if ($this->step === 2) {
