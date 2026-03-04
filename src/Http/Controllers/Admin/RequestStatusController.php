@@ -3,8 +3,10 @@
 namespace Dcplibrary\Sfp\Http\Controllers\Admin;
 
 use Dcplibrary\Sfp\Http\Controllers\Controller;
+use Dcplibrary\Sfp\Models\RequestStatusHistory;
 use Dcplibrary\Sfp\Models\RequestStatus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class RequestStatusController extends Controller
@@ -58,12 +60,97 @@ class RequestStatusController extends Controller
 
     public function destroy(RequestStatus $status)
     {
-        if ($status->requests()->exists()) {
-            return back()->withErrors(['error' => 'Cannot delete a status that has associated requests.']);
+        $request = request();
+        $sfpUser = $this->currentSfpUser($request);
+        if (! $sfpUser || ! $sfpUser->isAdmin()) {
+            abort(403);
         }
 
-        $status->delete();
+        $requestsCount = $status->requests()->count();
+        $historyCount  = $status->history()->count();
+
+        if ($requestsCount > 0 || $historyCount > 0) {
+            $data = $request->validate([
+                'reassign_to_id' => 'required|integer|exists:request_statuses,id|different:' . $status->id,
+            ]);
+
+            DB::transaction(function () use ($status, $data) {
+                DB::table('requests')
+                    ->where('request_status_id', $status->id)
+                    ->update(['request_status_id' => (int) $data['reassign_to_id']]);
+
+                DB::table('request_status_history')
+                    ->where('request_status_id', $status->id)
+                    ->update(['request_status_id' => (int) $data['reassign_to_id']]);
+
+                $status->delete();
+            });
+
+            return redirect()->route('sfp.staff.statuses.index')->with('success', 'Status deleted and records reassigned.');
+        }
 
         return redirect()->route('sfp.staff.statuses.index')->with('success', 'Status deleted.');
+    }
+
+    public function confirmDelete(RequestStatus $status)
+    {
+        $request = request();
+        $sfpUser = $this->currentSfpUser($request);
+        if (! $sfpUser || ! $sfpUser->isAdmin()) {
+            abort(403);
+        }
+
+        $requestsCount = $status->requests()->count();
+        $historyCount  = $status->history()->count();
+
+        $requestPreview = $status->requests()
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get(['id', 'submitted_title'])
+            ->map(fn ($r) => [
+                'mono'  => "#{$r->id}",
+                'label' => (string) ($r->submitted_title ?? 'Request'),
+                'href'  => route('sfp.staff.requests.show', $r->id),
+            ])->all();
+
+        $historyPreview = RequestStatusHistory::query()
+            ->where('request_status_id', $status->id)
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get(['id', 'request_id'])
+            ->map(fn (RequestStatusHistory $h) => [
+                'mono'  => "#{$h->id}",
+                'label' => "Request #{$h->request_id}",
+                'href'  => route('sfp.staff.requests.show', $h->request_id),
+            ])->all();
+
+        $options = RequestStatus::query()
+            ->whereKeyNot($status->id)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (RequestStatus $s) => ['id' => $s->id, 'label' => $s->name])
+            ->values()
+            ->all();
+
+        if (empty($options) && ($requestsCount > 0 || $historyCount > 0)) {
+            return back()->withErrors(['error' => 'You must create another status before deleting this one (records need a reassignment target).']);
+        }
+
+        return view('sfp::staff.settings.reassign-delete', [
+            'title'       => 'Delete Status',
+            'itemLabel'   => $status->name,
+            'impacts'     => [
+                "{$requestsCount} request(s) will be reassigned",
+                "{$historyCount} status history entr(y/ies) will be reassigned",
+            ],
+            'previews'    => [
+                ['title' => 'Requests', 'count' => $requestsCount, 'count_label' => 'total', 'items' => $requestPreview],
+                ['title' => 'Status history entries', 'count' => $historyCount, 'count_label' => 'total', 'items' => $historyPreview],
+            ],
+            'options'     => $options,
+            'deleteAction'=> route('sfp.staff.statuses.destroy', $status),
+            'cancelHref'  => route('sfp.staff.statuses.index'),
+            'extraFields' => [],
+        ]);
     }
 }

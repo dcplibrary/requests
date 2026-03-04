@@ -30,6 +30,15 @@
                 {{ $item['label'] }}
             </a>
             @endforeach
+
+            <div class="border-t border-gray-200 p-3">
+                <a href="{{ asset('sfp-settings-help.html') }}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="text-sm text-blue-600 hover:underline">
+                    Help
+                </a>
+            </div>
         </div>
     </nav>
 

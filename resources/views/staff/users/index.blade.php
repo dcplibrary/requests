@@ -43,11 +43,7 @@
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
                     <a href="{{ route('sfp.staff.users.edit', $user) }}" class="text-blue-600 hover:underline text-xs">Edit</a>
-                    <form method="POST" action="{{ route('sfp.staff.users.destroy', $user) }}"
-                          onsubmit="return confirm('Remove this user?')">
-                        @csrf @method('DELETE')
-                        <button class="text-red-500 hover:underline text-xs">Remove</button>
-                    </form>
+                    <a href="{{ route('sfp.staff.users.remove', $user) }}" class="text-red-500 hover:underline text-xs">Remove…</a>
                 </td>
             </tr>
             @empty

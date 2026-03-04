@@ -31,11 +31,7 @@
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
                     <a href="{{ route('sfp.staff.material-types.edit', $type) }}" class="text-blue-600 hover:underline text-xs">Edit</a>
-                    <form method="POST" action="{{ route('sfp.staff.material-types.destroy', $type) }}"
-                          onsubmit="return confirm('Delete this material type?')">
-                        @csrf @method('DELETE')
-                        <button class="text-red-500 hover:underline text-xs">Delete</button>
-                    </form>
+                    <a href="{{ route('sfp.staff.material-types.delete', $type) }}" class="text-red-500 hover:underline text-xs">Delete…</a>
                 </td>
             </tr>
             @empty

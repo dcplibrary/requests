@@ -31,11 +31,7 @@
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
                     <a href="{{ route('sfp.staff.audiences.edit', $audience) }}" class="text-blue-600 hover:underline text-xs">Edit</a>
-                    <form method="POST" action="{{ route('sfp.staff.audiences.destroy', $audience) }}"
-                          onsubmit="return confirm('Delete this audience?')">
-                        @csrf @method('DELETE')
-                        <button class="text-red-500 hover:underline text-xs">Delete</button>
-                    </form>
+                    <a href="{{ route('sfp.staff.audiences.delete', $audience) }}" class="text-red-500 hover:underline text-xs">Delete…</a>
                 </td>
             </tr>
             @empty

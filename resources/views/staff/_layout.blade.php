@@ -44,8 +44,20 @@
     </div>
 
     {{-- User avatar + dropdown pushed right --}}
-    <div class="ml-auto">
+    <div class="ml-auto flex items-center gap-3">
         @auth
+        <a href="{{ asset('sfp-selector-help.html') }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+           aria-label="Help"
+           title="Help"
+           onclick="try { window.open(this.href, 'sfpHelp', 'width=980,height=720,scrollbars=yes'); return false; } catch (e) { return true; }">
+            {{-- Heroicons (outline): question-mark-circle --}}
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.251 1.09-1.251 1.902v.75m0 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+            </svg>
+        </a>
         @php
             $authUser = auth()->user();
             $nameParts = explode(' ', trim($authUser->name ?? ''));

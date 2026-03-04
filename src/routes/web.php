@@ -2,6 +2,7 @@
 
 use Dcplibrary\Sfp\Http\Controllers\Admin\AudienceController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\CatalogController;
+use Dcplibrary\Sfp\Http\Controllers\Admin\HelpController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\TitleController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\MaterialTypeController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\PatronController;
@@ -35,6 +36,8 @@ Route::group([
         ->group(function () {
 
             Route::get('/', fn () => redirect()->route('sfp.staff.requests.index'));
+
+            Route::get('/help/{page?}', [HelpController::class, 'show'])->name('help');
 
             Route::get('/requests',                              [RequestController::class, 'index'])->name('requests.index');
             Route::get('/requests/{sfpRequest}',               [RequestController::class, 'show'])->name('requests.show');
@@ -83,6 +86,8 @@ Route::group([
             Route::post('/catalog/format-labels',                          [CatalogController::class, 'storeFormatLabel'])->name('catalog.format-labels.store');
             Route::delete('/catalog/format-labels/{catalogFormatLabel}',   [CatalogController::class, 'destroyFormatLabel'])->name('catalog.format-labels.destroy');
 
+            Route::get('material-types/{materialType}/delete', [MaterialTypeController::class, 'confirmDelete'])
+                ->name('material-types.delete');
             Route::resource('material-types', MaterialTypeController::class)
                 ->names([
                     'index'   => 'material-types.index',
@@ -94,6 +99,8 @@ Route::group([
                 ])
                 ->except(['show']);
 
+            Route::get('audiences/{audience}/delete', [AudienceController::class, 'confirmDelete'])
+                ->name('audiences.delete');
             Route::resource('audiences', AudienceController::class)
                 ->names([
                     'index'   => 'audiences.index',
@@ -105,6 +112,8 @@ Route::group([
                 ])
                 ->except(['show']);
 
+            Route::get('statuses/{status}/delete', [RequestStatusController::class, 'confirmDelete'])
+                ->name('statuses.delete');
             Route::resource('statuses', RequestStatusController::class)
                 ->names([
                     'index'   => 'statuses.index',
@@ -116,6 +125,8 @@ Route::group([
                 ])
                 ->except(['show']);
 
+            Route::get('users/{user}/remove', [UserController::class, 'confirmDelete'])
+                ->name('users.remove');
             Route::resource('users', UserController::class)
                 ->names([
                     'index'   => 'users.index',
