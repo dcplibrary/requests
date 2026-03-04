@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [1.4.0](https://github.com/dcplibrary/sfp/compare/v1.3.0...v1.4.0) (2026-03-04)
+
+
+### Features
+
+* add backup system ([495bd20](https://github.com/dcplibrary/sfp/commit/495bd20e189da1b638334bc415f97156d1b6a444))
+
 # [1.3.0](https://github.com/dcplibrary/sfp/compare/v1.2.0...v1.3.0) (2026-03-04)
 
 
