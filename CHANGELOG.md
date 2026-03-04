@@ -2,6 +2,14 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [1.5.0](https://github.com/dcplibrary/sfp/compare/v1.4.0...v1.5.0) (2026-03-04)
+
+
+### Features
+
+* add block for invalid barcodes ([d3fd5aa](https://github.com/dcplibrary/sfp/commit/d3fd5aad61f1f1c4ef02550c555c17ba79b96abc))
+* add toggle for invalid barcode blocking ([c2538c1](https://github.com/dcplibrary/sfp/commit/c2538c139dfd7bbffb6ee5cd5e4e97a688ea5366))
+
 # [1.4.0](https://github.com/dcplibrary/sfp/compare/v1.3.0...v1.4.0) (2026-03-04)
 
 
