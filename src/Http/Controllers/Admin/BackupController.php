@@ -3,6 +3,7 @@
 namespace Dcplibrary\Sfp\Http\Controllers\Admin;
 
 use Dcplibrary\Sfp\Http\Controllers\Controller;
+use Dcplibrary\Sfp\Jobs\PruneBackupsJob;
 use Dcplibrary\Sfp\Models\Audience;
 use Dcplibrary\Sfp\Models\CatalogFormatLabel;
 use Dcplibrary\Sfp\Models\MaterialType;
@@ -29,8 +30,11 @@ class BackupController extends Controller
 
     public function index()
     {
+        $retentionDays = (int) (Setting::where('key', 'backup_retention_days')->value('value') ?: 30);
+
         return view('sfp::staff.settings.backups', [
-            'serverFiles' => $this->scanServerFiles(),
+            'serverFiles'   => $this->scanServerFiles(),
+            'retentionDays' => $retentionDays,
         ]);
     }
 
@@ -155,6 +159,54 @@ class BackupController extends Controller
         }
 
         return back()->withErrors(['filename' => 'Unsupported file type.']);
+    }
+
+    // ── Download server backup file ───────────────────────────────────────────
+
+    public function downloadFromServer(Request $request)
+    {
+        $request->validate([
+            'filename' => ['required', 'string', 'regex:/^sfp-[\w\-]+\.(sql|json|zip)$/'],
+        ]);
+
+        $filename = $request->query('filename');
+        $path     = $this->backupDir . DIRECTORY_SEPARATOR . $filename;
+
+        if (! str_starts_with(realpath($path) ?: '', realpath($this->backupDir) ?: $this->backupDir)) {
+            abort(403);
+        }
+
+        if (! file_exists($path)) {
+            abort(404);
+        }
+
+        $mimes = ['sql' => 'application/octet-stream', 'json' => 'application/json', 'zip' => 'application/zip'];
+        $ext   = pathinfo($filename, PATHINFO_EXTENSION);
+
+        return response()->download($path, $filename, [
+            'Content-Type' => $mimes[$ext] ?? 'application/octet-stream',
+        ]);
+    }
+
+    // ── Backup retention ──────────────────────────────────────────────────────
+
+    public function updateRetention(Request $request)
+    {
+        $request->validate([
+            'retention_days' => 'required|integer|min:1|max:3650',
+        ]);
+
+        Setting::where('key', 'backup_retention_days')
+            ->update(['value' => (string) $request->integer('retention_days')]);
+        Cache::forget('setting:backup_retention_days');
+
+        return back()->with('success', 'Backup retention updated.');
+    }
+
+    public function pruneBackups()
+    {
+        PruneBackupsJob::dispatch();
+        return back()->with('success', 'Backup pruning job dispatched to the queue.');
     }
 
     // ── Database Export ───────────────────────────────────────────────────────

@@ -4,14 +4,17 @@
   "private": true,
   "description": "Release tooling for dcplibrary/sfp Laravel package",
   "scripts": {
-    "release": "semantic-release"
+    "release": "semantic-release",
+    "build:css": "tailwindcss -i resources/css/sfp.css -o public/css/sfp.css --minify",
+    "watch:css": "tailwindcss -i resources/css/sfp.css -o public/css/sfp.css --watch"
   },
   "devDependencies": {
-    "semantic-release": "^24.0.0",
     "@semantic-release/changelog": "^6.0.0",
+    "@semantic-release/commit-analyzer": "^13.0.0",
     "@semantic-release/git": "^10.0.0",
     "@semantic-release/github": "^10.0.0",
-    "@semantic-release/commit-analyzer": "^13.0.0",
-    "@semantic-release/release-notes-generator": "^14.0.0"
+    "@semantic-release/release-notes-generator": "^14.0.0",
+    "semantic-release": "^24.0.0",
+    "tailwindcss": "^3.4.19"
   }
 }

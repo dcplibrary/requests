@@ -15,12 +15,13 @@ use ZipArchive;
 class SfpBackupCommand extends Command
 {
     /**
-     * php artisan sfp:backup --config --db --storage --path=/var/backups/sfp
+     * php artisan sfp:backup --config --db --storage --prune --path=/var/backups/sfp
      */
     protected $signature = 'sfp:backup
         {--config   : Export configuration as JSON}
         {--db       : Export database as SQL dump}
         {--storage  : Export storage/app as a zip archive}
+        {--prune    : Delete backup files older than the configured retention period after writing}
         {--path=    : Directory to write backup files (default: storage/app/sfp-backups)}
         {--all      : Shorthand for --config --db --storage}';
 
@@ -173,6 +174,28 @@ class SfpBackupCommand extends Command
         }
 
         $this->info('Backup complete. ' . count($written) . ' file(s) written.');
+
+        // ── Prune old backups ─────────────────────────────────────────────────
+        if ($this->option('prune')) {
+            $days   = (int) (Setting::where('key', 'backup_retention_days')->value('value') ?: 30);
+            $cutoff = now()->subDays($days)->getTimestamp();
+            $files  = glob($outputDir . DIRECTORY_SEPARATOR . 'sfp-*.{json,sql,zip}', GLOB_BRACE) ?: [];
+            $pruned = 0;
+
+            foreach ($files as $path) {
+                if (filemtime($path) < $cutoff) {
+                    if (@unlink($path)) {
+                        $pruned++;
+                        $this->line('  ✔ Pruned  → ' . basename($path));
+                    } else {
+                        $this->warn('  ✘ Could not delete ' . basename($path));
+                    }
+                }
+            }
+
+            $this->info("Pruning complete. {$pruned} file(s) removed (retention: {$days} days).");
+        }
+
         return Command::SUCCESS;
     }
 

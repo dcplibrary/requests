@@ -138,8 +138,7 @@
                            required
                            class="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
                     <button type="submit"
-                            class="inline-flex items-center gap-2 px-4 py-2 text-white text-sm rounded font-medium"
-                            style="background-color:#f97316;" onmouseover="this.style.backgroundColor='#ea580c'" onmouseout="this.style.backgroundColor='#f97316'">
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded font-medium">
                         {!! $icon['restore'] !!} Restore Database
                     </button>
                 </div>
@@ -236,19 +235,28 @@
 {{-- Section 3 — Server Backups                                               --}}
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
 
+@php
+    $perPage = 5;
+    $hasAny  = collect($serverFiles)->flatten(1)->isNotEmpty();
+    $groups  = [
+        ['key' => 'db',      'label' => 'Database Backups',      'icon' => 'db',      'isDb' => true],
+        ['key' => 'config',  'label' => 'Configuration Backups', 'icon' => 'config',  'isDb' => false],
+        ['key' => 'storage', 'label' => 'Storage Backups',       'icon' => 'archive', 'isDb' => false],
+    ];
+@endphp
+
 <div class="mb-6">
     <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Server Backups</h2>
-    <div class="bg-white rounded-lg border border-gray-200 p-5">
+    <div class="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
 
-        @php
-            $hasAny = collect($serverFiles)->flatten(1)->isNotEmpty();
-            $groups = [
-                ['key' => 'db',     'label' => 'Database Backups',      'icon' => 'db'],
-                ['key' => 'config', 'label' => 'Configuration Backups', 'icon' => 'config'],
-            ];
-        @endphp
+        @if($errors->has('filename'))
+            <div class="px-5 py-3 bg-red-50 border-b border-red-200 text-red-800 text-sm">
+                {{ $errors->first('filename') }}
+            </div>
+        @endif
 
         @if(! $hasAny)
+        <div class="p-5">
             <p class="text-sm text-gray-500">
                 No backup files found in
                 <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">storage/app/sfp-backups</code>.
@@ -256,169 +264,253 @@
                 <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">php artisan sfp:backup --config --db</code>
                 to create server-side backups.
             </p>
+        </div>
         @else
-            @if($errors->has('filename'))
-                <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
-                    {{ $errors->first('filename') }}
-                </div>
-            @endif
-
             @foreach($groups as $group)
             @if(! empty($serverFiles[$group['key']]))
-            <div class="{{ ! $loop->first ? 'mt-5 pt-5 border-t border-gray-100' : '' }}">
+            @php $files = $serverFiles[$group['key']]; $total = count($files); @endphp
+            <div class="p-5"
+                 x-data="{ page: 1, perPage: {{ $perPage }}, total: {{ $total }} }"
+                 x-init="">
                 <h3 class="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-3">
                     {!! $icon[$group['icon']] !!} {{ $group['label'] }}
+                    <span class="ml-1 text-xs font-normal text-gray-400">({{ $total }})</span>
                 </h3>
+
                 <ul class="divide-y divide-gray-100 rounded-lg border border-gray-200 overflow-hidden">
-                    @foreach($serverFiles[$group['key']] as $file)
-                    <li class="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 text-sm">
-                        <div class="min-w-0">
-                            <p class="font-mono text-gray-800 truncate">{{ $file['name'] }}</p>
+                    @foreach($files as $i => $file)
+                    @php $sizeLabel = $group['key'] === 'storage'
+                        ? number_format($file['size'] / 1024 / 1024, 1) . ' MB'
+                        : number_format($file['size'] / 1024, 0) . ' KB'; @endphp
+                    <li class="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 text-sm"
+                        x-show="{{ $i }} >= (page - 1) * perPage && {{ $i }} < page * perPage">
+                        {{-- File info --}}
+                        <div class="min-w-0 mr-4">
+                            <p class="font-mono text-xs text-gray-800 truncate">{{ $file['name'] }}</p>
                             <p class="text-xs text-gray-400 mt-0.5">
                                 {{ \Illuminate\Support\Carbon::createFromTimestamp($file['modified'])->format('M j, Y g:i A') }}
-                                &middot;
-                                {{ number_format($file['size'] / 1024, 0) }} KB
+                                &middot; {{ $sizeLabel }}
                             </p>
                         </div>
-                        <form method="POST"
-                              action="{{ route('sfp.staff.backups.server-restore') }}"
-                              class="ml-4 shrink-0"
-                              onsubmit="return confirm('Restore from {{ $file['name'] }}? {{ $group['key'] === 'db' ? 'This will overwrite the current database.' : 'Existing config will be updated.' }} Continue?')">
-                            @csrf
-                            <input type="hidden" name="filename" value="{{ $file['name'] }}">
-                            <button type="submit"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded
-                                        {{ $group['key'] === 'db'
-                                            ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200' }}">
-                                {!! $icon['restore'] !!} Restore
-                            </button>
-                        </form>
+
+                        {{-- Actions --}}
+                        <div class="flex items-center gap-2 shrink-0">
+
+                            {{-- Download --}}
+                            <a href="{{ route('sfp.staff.backups.server-download', ['filename' => $file['name']]) }}"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-gray-100 text-gray-700 hover:bg-gray-200">
+                                {!! $icon['download'] !!} Download
+                            </a>
+
+                            @if($group['key'] !== 'storage')
+                            {{-- Restore --}}
+                            <form method="POST"
+                                  action="{{ route('sfp.staff.backups.server-restore') }}"
+                                  onsubmit="return confirm('Restore from {{ $file['name'] }}?\n\n{{ $group['isDb'] ? 'This will overwrite the current database.' : 'Existing config will be updated.' }}\n\nContinue?')">
+                                @csrf
+                                <input type="hidden" name="filename" value="{{ $file['name'] }}">
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded
+                                            {{ $group['isDb']
+                                                ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                                                : 'bg-blue-100 text-blue-700 hover:bg-blue-200' }}">
+                                    {!! $icon['restore'] !!} Restore
+                                </button>
+                            </form>
+                            @endif
+                        </div>
                     </li>
                     @endforeach
                 </ul>
+
+                {{-- Pagination --}}
+                @if($total > $perPage)
+                <div class="flex items-center justify-between mt-3">
+                    <p class="text-xs text-gray-400">
+                        Showing <span x-text="(page - 1) * perPage + 1"></span>–<span x-text="Math.min(page * perPage, total)"></span> of {{ $total }}
+                    </p>
+                    <div class="flex items-center gap-1">
+                        <button @click="page = Math.max(1, page - 1)"
+                                :disabled="page === 1"
+                                class="px-2.5 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+                            &lsaquo; Prev
+                        </button>
+                        <span class="px-2 text-xs text-gray-500">
+                            <span x-text="page"></span> / <span x-text="Math.ceil(total / perPage)"></span>
+                        </span>
+                        <button @click="page = Math.min(Math.ceil(total / perPage), page + 1)"
+                                :disabled="page >= Math.ceil(total / perPage)"
+                                class="px-2.5 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+                            Next &rsaquo;
+                        </button>
+                    </div>
+                </div>
+                @endif
+
+                @if($group['key'] === 'storage')
+                <p class="mt-2 text-xs text-gray-400">
+                    Storage backups must be restored manually by extracting to
+                    <code class="bg-gray-100 px-1 rounded font-mono">storage/app</code>.
+                </p>
+                @endif
             </div>
             @endif
             @endforeach
-
-            @if(! empty($serverFiles['storage']))
-            <div class="mt-5 pt-5 border-t border-gray-100">
-                <h3 class="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-1">
-                    {!! $icon['archive'] !!} Storage Backups
-                </h3>
-                <p class="text-xs text-gray-400 mb-3">Listed for reference. Restore manually by extracting to <code class="bg-gray-100 px-1 rounded font-mono">storage/app</code>.</p>
-                <ul class="divide-y divide-gray-100 rounded-lg border border-gray-200 overflow-hidden">
-                    @foreach($serverFiles['storage'] as $file)
-                    <li class="flex items-center justify-between px-4 py-3 bg-white text-sm">
-                        <div>
-                            <p class="font-mono text-gray-800">{{ $file['name'] }}</p>
-                            <p class="text-xs text-gray-400 mt-0.5">
-                                {{ \Illuminate\Support\Carbon::createFromTimestamp($file['modified'])->format('M j, Y g:i A') }}
-                                &middot;
-                                {{ number_format($file['size'] / 1024 / 1024, 1) }} MB
-                            </p>
-                        </div>
-                    </li>
-                    @endforeach
-                </ul>
-            </div>
-            @endif
         @endif
 
     </div>
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
-{{-- Section 4 — Backup Schedule                                              --}}
+{{-- Section 4 — Backup Schedule & Retention                                  --}}
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
 
 <div class="mb-6">
-    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Backup Schedule</h2>
-    <div class="bg-white rounded-lg border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Schedule &amp; Retention</h2>
+    <div class="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
 
-        <p class="text-sm text-gray-500 mb-5">
-            Use <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">php artisan sfp:backup</code>
-            on a schedule via Docker cron or the Laravel scheduler. Configure the options below to
-            generate your cron line.
-        </p>
-
-        <div id="schedule-builder" class="space-y-4 mb-5">
-
-            {{-- Frequency --}}
-            <div class="grid grid-cols-2 gap-4">
+        {{-- Retention setting --}}
+        <div class="p-5">
+            <h3 class="text-sm font-semibold text-gray-700 mb-1">Backup Retention</h3>
+            <p class="text-sm text-gray-500 mb-4">
+                Server-side backup files older than this are removed when pruning runs.
+                Pruning can be triggered manually below or scheduled via the queue worker.
+            </p>
+            <form method="POST" action="{{ route('sfp.staff.backups.retention') }}" class="flex flex-wrap items-end gap-3">
+                @csrf
                 <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Frequency</label>
-                    <select id="sched-frequency"
-                            class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
-                        <option value="0 2 * * *">Daily at 2:00 AM</option>
-                        <option value="0 2 * * 0">Weekly — Sunday at 2:00 AM</option>
-                        <option value="0 2 1 * *">Monthly — 1st at 2:00 AM</option>
-                        <option value="custom">Custom cron expression…</option>
-                    </select>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Keep backups for</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number"
+                               name="retention_days"
+                               value="{{ $retentionDays }}"
+                               min="1" max="3650"
+                               class="w-24 text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                        <span class="text-sm text-gray-500">days</span>
+                    </div>
+                    @error('retention_days')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
-                <div id="sched-custom-wrap" class="hidden">
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Custom expression</label>
-                    <input type="text" id="sched-custom"
-                           placeholder="0 2 * * *"
-                           class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded font-medium">
+                    {!! $icon['config'] !!} Save Retention
+                </button>
+            </form>
+
+            {{-- Prune now --}}
+            <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center gap-3">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm text-gray-700 font-medium">Prune Now</p>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        Dispatch a queue job that immediately deletes backups older than {{ $retentionDays }} day{{ $retentionDays === 1 ? '' : 's' }}.
+                        Requires a running queue worker (<code class="bg-gray-100 px-1 rounded font-mono text-xs">php artisan queue:work</code>).
+                    </p>
                 </div>
+                <form method="POST"
+                      action="{{ route('sfp.staff.backups.prune') }}"
+                      onsubmit="return confirm('Dispatch a pruning job to delete backups older than {{ $retentionDays }} days?')">
+                    @csrf
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded font-medium whitespace-nowrap">
+                        {!! $icon['trash'] !!} Prune Old Backups
+                    </button>
+                </form>
             </div>
-
-            {{-- Include --}}
-            <div>
-                <label class="block text-xs font-medium text-gray-600 mb-2">Include in backup</label>
-                <div class="flex flex-wrap gap-5 text-sm text-gray-700">
-                    <label class="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" id="sched-config" checked class="rounded border-gray-300"> Configuration (JSON)
-                    </label>
-                    <label class="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" id="sched-db" checked class="rounded border-gray-300"> Database (SQL)
-                    </label>
-                    <label class="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" id="sched-storage" class="rounded border-gray-300"> Storage (Zip)
-                    </label>
-                </div>
-            </div>
-
-            {{-- Output path --}}
-            <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Backup output path <span class="text-gray-400 font-normal">(inside container)</span></label>
-                <input type="text" id="sched-path"
-                       value="/var/www/html/storage/app/sfp-backups"
-                       class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
-            </div>
-
-            {{-- App path --}}
-            <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Laravel app path <span class="text-gray-400 font-normal">(inside container)</span></label>
-                <input type="text" id="sched-app"
-                       value="/var/www/html"
-                       class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
-            </div>
-
-            {{-- Generated cron line --}}
-            <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Generated cron line</label>
-                <div id="sched-output"
-                     class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 font-mono text-xs overflow-x-auto whitespace-nowrap select-all cursor-text">
-                    0 2 * * * www-data php /var/www/html/artisan sfp:backup --config --db --path=/var/www/html/storage/app/sfp-backups >> /var/log/sfp-backup.log 2>&1
-                </div>
-                <p class="mt-1.5 text-xs text-gray-400">Click to select all. Add this to your container's crontab.</p>
-            </div>
-
         </div>
 
-        {{-- Docker example --}}
-        <div class="border-t border-gray-100 pt-4">
-            <h3 class="text-xs font-semibold text-gray-600 mb-2">Docker setup</h3>
-            <pre class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 text-xs overflow-x-auto leading-relaxed"># Option A — cron inside the container
+        {{-- Cron schedule builder --}}
+        <div class="p-5">
+            <h3 class="text-sm font-semibold text-gray-700 mb-1">Backup Schedule</h3>
+            <p class="text-sm text-gray-500 mb-5">
+                Use <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">php artisan sfp:backup</code>
+                on a schedule via Docker cron or the Laravel scheduler. Use
+                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">--prune</code>
+                to automatically delete old backups as part of the same job.
+            </p>
+
+            <div id="schedule-builder" class="space-y-4 mb-5">
+
+                {{-- Frequency --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Frequency</label>
+                        <select id="sched-frequency"
+                                class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                            <option value="0 2 * * *">Daily at 2:00 AM</option>
+                            <option value="0 2 * * 0">Weekly — Sunday at 2:00 AM</option>
+                            <option value="0 2 1 * *">Monthly — 1st at 2:00 AM</option>
+                            <option value="custom">Custom cron expression…</option>
+                        </select>
+                    </div>
+                    <div id="sched-custom-wrap" class="hidden">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Custom expression</label>
+                        <input type="text" id="sched-custom"
+                               placeholder="0 2 * * *"
+                               class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                    </div>
+                </div>
+
+                {{-- Include --}}
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Include in backup</label>
+                    <div class="flex flex-wrap gap-5 text-sm text-gray-700">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="sched-config" checked class="rounded border-gray-300"> Configuration (JSON)
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="sched-db" checked class="rounded border-gray-300"> Database (SQL)
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="sched-storage" class="rounded border-gray-300"> Storage (Zip)
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="sched-prune" checked class="rounded border-gray-300"> Prune old backups
+                        </label>
+                    </div>
+                </div>
+
+                {{-- Output path --}}
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Backup output path <span class="text-gray-400 font-normal">(inside container)</span></label>
+                    <input type="text" id="sched-path"
+                           value="/var/www/html/storage/app/sfp-backups"
+                           class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                </div>
+
+                {{-- App path --}}
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Laravel app path <span class="text-gray-400 font-normal">(inside container)</span></label>
+                    <input type="text" id="sched-app"
+                           value="/var/www/html"
+                           class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                </div>
+
+                {{-- Generated cron line --}}
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Generated cron line</label>
+                    <div id="sched-output"
+                         class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 font-mono text-xs overflow-x-auto whitespace-nowrap select-all cursor-text">
+                        0 2 * * * www-data php /var/www/html/artisan sfp:backup --config --db --prune --path=/var/www/html/storage/app/sfp-backups >> /var/log/sfp-backup.log 2>&1
+                    </div>
+                    <p class="mt-1.5 text-xs text-gray-400">Click to select all. Add this to your container's crontab.</p>
+                </div>
+
+            </div>
+
+            {{-- Docker example --}}
+            <div class="border-t border-gray-100 pt-4">
+                <h3 class="text-xs font-semibold text-gray-600 mb-2">Docker setup</h3>
+                <pre class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 text-xs overflow-x-auto leading-relaxed"># Option A — cron inside the container
 RUN apt-get install -y cron
 COPY crontab /etc/cron.d/sfp-backup
 RUN chmod 0644 /etc/cron.d/sfp-backup &amp;&amp; crontab /etc/cron.d/sfp-backup
 CMD ["cron", "-f"]
 
 # Option B — Laravel scheduler (add to your docker CMD / supervisor)
-# php artisan schedule:work</pre>
+# In App\Console\Kernel::schedule():
+#   $schedule->command('sfp:backup --config --db --prune')->daily();</pre>
+            </div>
         </div>
 
     </div>
@@ -438,6 +530,7 @@ CMD ["cron", "-f"]
         if (el('sched-config').checked)  flags.push('--config');
         if (el('sched-db').checked)      flags.push('--db');
         if (el('sched-storage').checked) flags.push('--storage');
+        if (el('sched-prune').checked)   flags.push('--prune');
         if (path) flags.push('--path=' + path);
 
         var cmd = expr + ' www-data php ' + app + '/artisan sfp:backup';
@@ -447,7 +540,7 @@ CMD ["cron", "-f"]
         el('sched-output').textContent = cmd;
     }
 
-    ['sched-frequency','sched-custom','sched-config','sched-db','sched-storage','sched-path','sched-app']
+    ['sched-frequency','sched-custom','sched-config','sched-db','sched-storage','sched-prune','sched-path','sched-app']
         .forEach(function (id) {
             var node = el(id);
             if (node) node.addEventListener('input', buildCron);
