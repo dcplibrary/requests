@@ -68,7 +68,8 @@ class SfpForm extends Component
     public bool $showIllWarning = false;
 
     // --- Patron limit ---
-    public bool $limitReached = false;
+    public bool    $limitReached = false;
+    public ?string $limitUntil   = null; // formatted date string, e.g. "June 15, 2025"
 
     // --- Barcode not found in Polaris ---
     public bool $barcodeNotFound = false;
@@ -270,11 +271,9 @@ class SfpForm extends Component
 
         // 2. Rate limit check
         if ($patron->hasReachedLimit()) {
-            $days = (int) Setting::get('sfp_limit_window_days', 30);
-            $count = Setting::get('sfp_limit_count', 5);
             $this->limitReached = true;
-            $this->addError('barcode', "You have reached the limit of {$count} requests per {$days} days. Please try again later.");
-            $this->processing = false;
+            $this->limitUntil   = $patron->nextAvailableDate()?->format('F j, Y');
+            $this->processing   = false;
             return;
         }
 
@@ -457,10 +456,8 @@ class SfpForm extends Component
     {
         $existing = Patron::where('barcode', $this->barcode)->first();
         if ($existing && $existing->hasReachedLimit()) {
-            $days = (int) Setting::get('sfp_limit_window_days', 30);
-            $count = Setting::get('sfp_limit_count', 5);
             $this->limitReached = true;
-            $this->addError('barcode', "You have reached the limit of {$count} requests per {$days} days. Please try again later.");
+            $this->limitUntil   = $existing->nextAvailableDate()?->format('F j, Y');
         }
     }
 

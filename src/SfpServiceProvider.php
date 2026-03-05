@@ -4,7 +4,8 @@ namespace Dcplibrary\Sfp;
 
 use Dcplibrary\Sfp\Console\Commands\SfpBackupCommand;
 use Dcplibrary\Sfp\Http\Middleware\RequireSfpRole;
-use Dcplibrary\Sfp\Livewire\PatronLookup;
+use Dcplibrary\Sfp\Livewire\PatronPinLogin;
+use Dcplibrary\Sfp\Livewire\PatronRequests;
 use Dcplibrary\Sfp\Livewire\SfpForm;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
@@ -75,7 +76,8 @@ class SfpServiceProvider extends ServiceProvider
     protected function registerLivewire(): void
     {
         Livewire::component('sfp-form', SfpForm::class);
-        Livewire::component('sfp-patron-lookup', PatronLookup::class);
+        Livewire::component('sfp-patron-pin-login', PatronPinLogin::class);
+        Livewire::component('sfp-patron-requests', PatronRequests::class);
     }
 
     protected function registerPublishables(): void

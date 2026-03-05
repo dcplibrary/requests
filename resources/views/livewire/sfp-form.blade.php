@@ -155,6 +155,40 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </button>
         </div>
+
+        {{-- ── PIN Login ─────────────────────────────────────────────────────────── --}}
+        <div class="mt-6 pt-5 border-t border-gray-100 text-center" x-data="{ open: false }">
+            <p class="text-sm text-gray-500 mb-2">Want to check on a previous suggestion?</p>
+            <button
+                type="button"
+                @click="open = true"
+                class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            >
+                Sign in with your library card PIN →
+            </button>
+
+            {{-- Modal --}}
+            <div
+                x-show="open"
+                x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="pin-modal-title"
+            >
+                {{-- Backdrop --}}
+                <div class="absolute inset-0 bg-black/40" @click="open = false" aria-hidden="true"></div>
+
+                {{-- Dialog panel --}}
+                <div class="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-4 z-10">
+                    <h2 id="pin-modal-title" class="text-lg font-semibold text-gray-900 mb-4">
+                        Sign In to View Your Requests
+                    </h2>
+                    @livewire('sfp-patron-pin-login')
+                </div>
+            </div>
+        </div>
+
     </section>
 
     {{-- Step 2: Material Details --}}
@@ -162,14 +196,12 @@
     <section aria-labelledby="material-heading">
         <h2 id="material-heading" class="text-2xl font-bold text-gray-900 mb-6">Material Details</h2>
 
-        {{-- Patron-level errors can be raised during submit() (e.g. rate limiting) --}}
-        @if($errors->has('barcode'))
-            <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md" role="alert">
-                <p class="text-sm text-red-800">{{ $errors->first('barcode') }}</p>
-            </div>
-        @endif
-
-        @unless($limitReached)
+        @if($limitReached)
+            <x-sfp::limit-reached
+                :count="(int) \Dcplibrary\Sfp\Models\Setting::get('sfp_limit_count', 5)"
+                :until="$limitUntil ? \Illuminate\Support\Carbon::parse($limitUntil) : null"
+            />
+        @else
         <div class="space-y-6">
             {{-- Type of Material --}}
             <fieldset>
@@ -326,7 +358,7 @@
                 <span wire:loading wire:target="submit">Searching...</span>
             </button>
         </div>
-        @endunless
+        @endif
     </section>
 
     {{-- Step 3: Resolution (catalog / ISBNdb match) --}}

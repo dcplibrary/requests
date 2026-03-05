@@ -11,22 +11,38 @@ class SettingsSeeder extends Seeder
     public function run(): void
     {
         $settings = [
-            // --- Rate limiting ---
+            // --- Request limits ---
             [
-                'key' => 'sfp_limit_count',
-                'value' => '5',
-                'label' => 'Request Limit Count',
-                'type' => 'integer',
-                'group' => 'rate_limiting',
+                'key'         => 'sfp_limit_count',
+                'value'       => '5',
+                'label'       => 'Request Limit Count',
+                'type'        => 'integer',
+                'group'       => 'request_limits',
                 'description' => 'Maximum number of SFP requests a patron can submit within the limit window.',
             ],
             [
-                'key' => 'sfp_limit_window_days',
-                'value' => '30',
-                'label' => 'Request Limit Window',
-                'type' => 'integer',
-                'group' => 'rate_limiting',
-                'description' => 'Time window for rate limiting (in days).',
+                'key'         => 'sfp_limit_window_type',
+                'value'       => 'rolling',
+                'label'       => 'Limit Window Type',
+                'type'        => 'text',
+                'group'       => 'request_limits',
+                'description' => 'How the submission limit window is measured: Rolling counts requests within a sliding day window; Calendar Month resets on a fixed day each month; Calendar Week resets every Monday.',
+            ],
+            [
+                'key'         => 'sfp_limit_window_days',
+                'value'       => '30',
+                'label'       => 'Rolling Window Length',
+                'type'        => 'integer',
+                'group'       => 'request_limits',
+                'description' => 'How many days the rolling window spans (e.g. 30 means a patron may submit up to the limit count within any 30-day period).',
+            ],
+            [
+                'key'         => 'sfp_limit_calendar_reset_day',
+                'value'       => '1',
+                'label'       => 'Monthly Reset Day',
+                'type'        => 'integer',
+                'group'       => 'request_limits',
+                'description' => 'Day of the month the submission counter resets when using the Calendar Month window type. Must be between 1 and 28.',
             ],
 
             // --- ILL / age threshold ---
@@ -139,14 +155,14 @@ class SettingsSeeder extends Seeder
                 'description' => 'How to handle post-submission processing. Options: wait (patron waits on page), email (send confirmation when done).',
             ],
 
-            // --- Patron request lookup ---
+            // --- Patron PIN login ---
             [
-                'key' => 'patron_lookup_enabled',
-                'value' => '1',
-                'label' => 'Enable Patron Request Lookup',
-                'type' => 'boolean',
-                'group' => 'patron',
-                'description' => 'Allow patrons to look up their own submitted suggestions and statuses at /my-requests using their library card number and last name.',
+                'key'         => 'patron_lookup_enabled',
+                'value'       => '1',
+                'label'       => 'Enable Patron PIN Login',
+                'type'        => 'boolean',
+                'group'       => 'patron',
+                'description' => 'Allow patrons to sign in with their library card PIN at /my-requests to view and track their submitted requests.',
             ],
 
             // --- Polaris integration ---
