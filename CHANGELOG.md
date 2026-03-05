@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [1.8.5](https://github.com/dcplibrary/sfp/compare/v1.8.4...v1.8.5) (2026-03-05)
+
+
+### Bug Fixes
+
+* make restore database button visible ([3ead414](https://github.com/dcplibrary/sfp/commit/3ead414c1235da6712198ba18103f6278283c861))
+
 ## [1.8.1](https://github.com/dcplibrary/sfp/compare/v1.8.0...v1.8.1) (2026-03-05)
 
 # [1.8.0](https://github.com/dcplibrary/sfp/compare/v1.7.0...v1.8.0) (2026-03-05)
