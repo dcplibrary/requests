@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [1.9.0](https://github.com/dcplibrary/sfp/compare/v1.8.5...v1.9.0) (2026-03-05)
+
+
+### Features
+
+* add backup pruning and css deployment ([81841ea](https://github.com/dcplibrary/sfp/commit/81841eae5e4cbfd6cd16a501af9643b1a9af6350))
+
 ## [1.8.5](https://github.com/dcplibrary/sfp/compare/v1.8.4...v1.8.5) (2026-03-05)
 
 
