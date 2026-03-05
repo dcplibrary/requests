@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>DCPL Suggest for Purchase</title>
+    <title>Daviess County Public Library Suggest a Purchase</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
@@ -37,7 +37,7 @@
             <tr>
                 <td style="padding:16px 28px;background-color:#f9fafb;border-top:1px solid #e5e7eb;
                             font-size:12px;color:#9ca3af;">
-                    Daviess County Public Library &mdash; Suggest for Purchase
+                    Daviess County Public Library &mdash; Suggest a Purchase
                     &bull; This is an automated message, please do not reply.
                 </td>
             </tr>

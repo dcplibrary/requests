@@ -1,6 +1,6 @@
 # dcplibrary/sfp — Developer Documentation
 
-Suggest for Purchase (SFP) is a Laravel package that provides a patron-facing request form and a staff admin interface for DC Public Library's collection development workflow.
+Suggest for Purchase (SFP) is a Laravel package that provides a patron-facing request form and a staff admin interface for the Daviess County Public Library's collection development workflow.
 
 ## Table of Contents
 

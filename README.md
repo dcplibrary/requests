@@ -1,6 +1,6 @@
 # dcplibrary/sfp
 
-A Laravel package for managing patron Suggest-for-Purchase (SFP) requests at DC Public Library. Provides a multi-step Livewire patron form, a role-based staff admin interface, Polaris ILS integration, Bibliocommons catalog scraping, and ISBNdb enrichment.
+A Laravel package for managing patron Suggest-for-Purchase (SFP) requests at the Daviess County Public Library. Provides a multi-step Livewire patron form, a role-based staff admin interface, Polaris ILS integration, Bibliocommons catalog scraping, and ISBNdb enrichment.
 
 ---
 
