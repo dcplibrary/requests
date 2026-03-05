@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string           $submitted_author
  * @property string|null      $submitted_publish_date
  * @property string|null      $other_material_text
+ * @property string|null      $genre
  * @property string|null      $where_heard
  * @property bool             $ill_requested
  * @property bool             $catalog_searched
@@ -52,6 +53,7 @@ class SfpRequest extends Model
         'submitted_author',
         'submitted_publish_date',
         'other_material_text',
+        'genre',
         'where_heard',
         'ill_requested',
         'catalog_searched',

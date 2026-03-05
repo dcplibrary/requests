@@ -236,6 +236,39 @@
                 @enderror
             </fieldset>
 
+            {{-- Genre --}}
+            <fieldset>
+                <legend class="block text-sm font-medium text-gray-700 mb-2">
+                    Genre <span class="text-red-600" aria-hidden="true">*</span>
+                </legend>
+                <div class="flex items-center gap-4" role="radiogroup" aria-required="true">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            wire:model.live="genre"
+                            value="fiction"
+                            name="genre"
+                            class="text-blue-600 focus:ring-blue-500"
+                            aria-required="true"
+                        />
+                        <span class="text-sm text-gray-800">Fiction</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            wire:model.live="genre"
+                            value="nonfiction"
+                            name="genre"
+                            class="text-blue-600 focus:ring-blue-500"
+                        />
+                        <span class="text-sm text-gray-800">Nonfiction</span>
+                    </label>
+                </div>
+                @error('genre')
+                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                @enderror
+            </fieldset>
+
             {{-- Audience --}}
             <fieldset>
                 <legend class="block text-sm font-medium text-gray-700 mb-2">

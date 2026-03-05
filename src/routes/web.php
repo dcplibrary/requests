@@ -92,7 +92,9 @@ Route::group([
             Route::post('/backups/config-import',   [BackupController::class, 'importConfig'])->name('backups.config-import');
             Route::post('/backups/db-export',       [BackupController::class, 'exportDatabase'])->name('backups.db-export');
             Route::post('/backups/db-import',       [BackupController::class, 'importDatabase'])->name('backups.db-import');
-            Route::post('/backups/storage-export',  [BackupController::class, 'exportStorage'])->name('backups.storage-export');
+            Route::post('/backups/storage-export',    [BackupController::class, 'exportStorage'])->name('backups.storage-export');
+            Route::post('/backups/server-save',     [BackupController::class, 'saveToServer'])->name('backups.server-save');
+            Route::post('/backups/server-restore',  [BackupController::class, 'restoreFromServer'])->name('backups.server-restore');
             Route::post('/backups/wipe',            [BackupController::class, 'wipeAll'])->name('backups.wipe');
 
             Route::get('/catalog',    [CatalogController::class, 'index'])->name('catalog.index');

@@ -26,6 +26,9 @@ return new class extends Migration
             // --- "Other" material type free text ---
             $table->string('other_material_text')->nullable();
 
+            // --- Fiction / Nonfiction classification ---
+            $table->string('genre')->nullable();
+
             // --- Patron's additional info ---
             $table->text('where_heard')->nullable();
             $table->boolean('ill_requested')->default(false); // final checkbox

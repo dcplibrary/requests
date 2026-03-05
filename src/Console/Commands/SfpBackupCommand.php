@@ -83,8 +83,8 @@ class SfpBackupCommand extends Command
                         ])
                         ->all(),
 
-                    'catalog_format_labels' => CatalogFormatLabel::orderBy('sort_order')
-                        ->get(['label', 'sort_order'])
+                    'catalog_format_labels' => CatalogFormatLabel::orderBy('id')
+                        ->get(['format_code', 'label'])
                         ->toArray(),
                 ],
             ];
@@ -99,37 +99,33 @@ class SfpBackupCommand extends Command
         if ($doDb) {
             $pdo    = DB::connection()->getPdo();
             $dbName = DB::connection()->getDatabaseName();
-            $tables = DB::select('SHOW TABLES');
-            $col    = 'Tables_in_' . $dbName;
+            $tables = $this->listTables();
+            $q      = $this->qi(...);
 
             $sql  = "-- SFP Database Backup\n";
             $sql .= "-- Exported:  " . now()->toIso8601String() . "\n";
             $sql .= "-- Database:  {$dbName}\n";
             $sql .= "-- Generator: dcplibrary/sfp artisan sfp:backup\n\n";
-            $sql .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
+            $sql .= $this->fkOff() . ";\n\n";
 
-            foreach ($tables as $tableRow) {
-                $table = $tableRow->$col;
-
-                $create    = DB::select("SHOW CREATE TABLE `{$table}`");
-                $createSql = $create[0]->{'Create Table'};
+            foreach ($tables as $table) {
+                $createSql = $this->showCreateTable($table);
 
                 $sql .= "-- --------------------------------------------------------\n";
-                $sql .= "-- Table: `{$table}`\n";
+                $sql .= "-- Table: {$q($table)}\n";
                 $sql .= "-- --------------------------------------------------------\n\n";
-                $sql .= "DROP TABLE IF EXISTS `{$table}`;\n";
+                $sql .= "DROP TABLE IF EXISTS {$q($table)};\n";
                 $sql .= $createSql . ";\n\n";
 
                 $rows = DB::table($table)->get();
                 if ($rows->isNotEmpty()) {
                     $columns = array_keys((array) $rows->first());
-                    $colList = '`' . implode('`, `', $columns) . '`';
-                    $sql .= "INSERT INTO `{$table}` ({$colList}) VALUES\n";
+                    $colList = implode(', ', array_map($q, $columns));
+                    $sql .= "INSERT INTO {$q($table)} ({$colList}) VALUES\n";
 
                     $allValues = $rows->map(function ($row) use ($pdo) {
                         $vals = array_map(function ($v) use ($pdo) {
-                            if ($v === null) return 'NULL';
-                            return $pdo->quote((string) $v);
+                            return $v === null ? 'NULL' : $pdo->quote((string) $v);
                         }, (array) $row);
                         return '  (' . implode(', ', $vals) . ')';
                     })->implode(",\n");
@@ -138,7 +134,7 @@ class SfpBackupCommand extends Command
                 }
             }
 
-            $sql .= "SET FOREIGN_KEY_CHECKS=1;\n";
+            $sql .= $this->fkOn() . ";\n";
 
             $file = "{$outputDir}/sfp-database-{$timestamp}.sql";
             file_put_contents($file, $sql);
@@ -178,5 +174,56 @@ class SfpBackupCommand extends Command
 
         $this->info('Backup complete. ' . count($written) . ' file(s) written.');
         return Command::SUCCESS;
+    }
+
+    // ── Driver-aware helpers ──────────────────────────────────────────────────
+
+    private function listTables(): array
+    {
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return array_column(
+                DB::select("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"),
+                'name'
+            );
+        }
+
+        $dbName = DB::connection()->getDatabaseName();
+        $col    = 'Tables_in_' . $dbName;
+        return array_column(DB::select('SHOW TABLES'), $col);
+    }
+
+    private function showCreateTable(string $table): string
+    {
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            $row = DB::selectOne(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name = ?",
+                [$table]
+            );
+            return $row->sql ?? '';
+        }
+
+        $rows = DB::select("SHOW CREATE TABLE `{$table}`");
+        return $rows[0]->{'Create Table'};
+    }
+
+    private function fkOff(): string
+    {
+        return DB::connection()->getDriverName() === 'sqlite'
+            ? 'PRAGMA foreign_keys = OFF'
+            : 'SET FOREIGN_KEY_CHECKS=0';
+    }
+
+    private function fkOn(): string
+    {
+        return DB::connection()->getDriverName() === 'sqlite'
+            ? 'PRAGMA foreign_keys = ON'
+            : 'SET FOREIGN_KEY_CHECKS=1';
+    }
+
+    private function qi(string $name): string
+    {
+        return DB::connection()->getDriverName() === 'sqlite'
+            ? '"' . $name . '"'
+            : '`' . $name . '`';
     }
 }

@@ -17,8 +17,9 @@ class MaterialTypesSeeder extends Seeder
             ['name' => 'Blu-Ray',     'slug' => 'blu-ray',      'active' => true,  'has_other_text' => false, 'sort_order' => 5],
             ['name' => 'eAudiobook',  'slug' => 'eaudiobook',   'active' => true,  'has_other_text' => false, 'sort_order' => 6],
             ['name' => 'eBook',       'slug' => 'ebook',        'active' => true,  'has_other_text' => false, 'sort_order' => 7],
-            ['name' => 'Video Game',  'slug' => 'video-game',   'active' => true,  'has_other_text' => false, 'sort_order' => 8],
-            ['name' => 'Other',       'slug' => 'other',        'active' => true,  'has_other_text' => true,  'sort_order' => 9],
+            ['name' => 'Video Game',   'slug' => 'video-game',   'active' => true,  'has_other_text' => false, 'sort_order' => 8],
+            ['name' => 'Console Game', 'slug' => 'console-game', 'active' => true,  'has_other_text' => true,  'sort_order' => 9],
+            ['name' => 'Other',        'slug' => 'other',        'active' => true,  'has_other_text' => true,  'sort_order' => 10],
         ];
 
         foreach ($types as $type) {

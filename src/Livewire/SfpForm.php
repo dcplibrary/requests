@@ -49,6 +49,9 @@ class SfpForm extends Component
 
     public string $other_material_text = '';
 
+    #[Validate('required|in:fiction,nonfiction')]
+    public string $genre = '';
+
     #[Validate('required|exists:audiences,id')]
     public ?int $audience_id = null;
 
@@ -175,6 +178,7 @@ class SfpForm extends Component
         if ($this->step === 2) {
             $this->validate([
                 'material_type_id' => 'required|exists:material_types,id',
+                'genre'            => 'required|in:fiction,nonfiction',
                 'audience_id'      => 'required|exists:audiences,id',
                 'title'            => 'required|min:1|max:500',
                 'author'           => 'required|min:1|max:300',
@@ -211,6 +215,7 @@ class SfpForm extends Component
             'ill_requested',
             'showIllWarning',
             'other_material_text',
+            'genre',
             'resolvedMaterialId',
             'isDuplicate',
             'duplicateMessage',
@@ -523,6 +528,7 @@ class SfpForm extends Component
             'submitted_author'       => $this->author,
             'submitted_publish_date' => $this->publish_date ?: null,
             'other_material_text'    => $this->getShowOtherTextProperty() ? $this->other_material_text : null,
+            'genre'                  => $this->genre ?: null,
             'where_heard'            => $this->where_heard ?: null,
             'ill_requested'          => $this->ill_requested,
             'catalog_searched'       => $this->catalogSearched,
