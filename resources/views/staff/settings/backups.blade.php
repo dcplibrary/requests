@@ -73,14 +73,14 @@
                   action="{{ route('sfp.staff.backups.config-import') }}"
                   enctype="multipart/form-data">
                 @csrf
-                <div class="flex items-center gap-3">
+                <div class="space-y-3">
                     <input type="file"
                            name="backup_file"
                            accept=".json,application/json"
                            required
-                           class="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+                           class="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
                     <button type="submit"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium whitespace-nowrap">
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium">
                         {!! $icon['upload'] !!} Import Configuration
                     </button>
                 </div>
@@ -131,14 +131,15 @@
                   enctype="multipart/form-data"
                   onsubmit="return confirm('This will overwrite the current database with the uploaded file. Are you sure?')">
                 @csrf
-                <div class="flex items-center gap-3">
+                <div class="space-y-3">
                     <input type="file"
                            name="sql_file"
                            accept=".sql,text/plain"
                            required
-                           class="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+                           class="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
                     <button type="submit"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-sm rounded hover:bg-orange-600 font-medium whitespace-nowrap">
+                            class="inline-flex items-center gap-2 px-4 py-2 text-white text-sm rounded font-medium"
+                            style="background-color:#f97316;" onmouseover="this.style.backgroundColor='#ea580c'" onmouseout="this.style.backgroundColor='#f97316'">
                         {!! $icon['restore'] !!} Restore Database
                     </button>
                 </div>
