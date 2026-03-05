@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [1.7.0](https://github.com/dcplibrary/sfp/compare/v1.6.0...v1.7.0) (2026-03-05)
+
+
+### Features
+
+* add notifications ([a525b8e](https://github.com/dcplibrary/sfp/commit/a525b8e953d6b77184eb27c0354aed8432bacc48))
+
 # [1.6.0](https://github.com/dcplibrary/sfp/compare/v1.5.0...v1.6.0) (2026-03-04)
 
 
