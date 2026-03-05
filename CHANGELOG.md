@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [1.9.1](https://github.com/dcplibrary/sfp/compare/v1.9.0...v1.9.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* route css from package resources/dist folder ([859a79b](https://github.com/dcplibrary/sfp/commit/859a79b4f72cd5a86711135b1027165b174e1bcd))
+
 # [1.9.0](https://github.com/dcplibrary/sfp/compare/v1.8.5...v1.9.0) (2026-03-05)
 
 
