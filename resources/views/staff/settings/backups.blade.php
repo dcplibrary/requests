@@ -117,6 +117,37 @@
             </form>
         </div>
 
+        {{-- DB Restore --}}
+        <div class="p-5">
+            <h3 class="text-sm font-semibold text-gray-700 mb-1">Import Database</h3>
+            <p class="text-sm text-gray-500 mb-4">
+                Upload a <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">.sql</code> file
+                to restore the database.
+                <strong class="text-orange-600">This will overwrite existing data.</strong>
+                Export a backup first.
+            </p>
+            <form method="POST"
+                  action="{{ route('sfp.staff.backups.db-import') }}"
+                  enctype="multipart/form-data"
+                  onsubmit="return confirm('This will overwrite the current database with the uploaded file. Are you sure?')">
+                @csrf
+                <div class="flex items-center gap-3">
+                    <input type="file"
+                           name="sql_file"
+                           accept=".sql,text/plain"
+                           required
+                           class="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-sm rounded hover:bg-orange-600 font-medium whitespace-nowrap">
+                        {!! $icon['restore'] !!} Restore Database
+                    </button>
+                </div>
+                @error('sql_file')
+                    <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </form>
+        </div>
+
         {{-- Storage Export --}}
         <div class="p-5">
             <h3 class="text-sm font-semibold text-gray-700 mb-1">Export Storage</h3>
@@ -163,37 +194,6 @@
                         class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium">
                     {!! $icon['server'] !!} Save to Server Now
                 </button>
-            </form>
-        </div>
-
-        {{-- DB Restore --}}
-        <div class="p-5">
-            <h3 class="text-sm font-semibold text-gray-700 mb-1">Restore Database</h3>
-            <p class="text-sm text-gray-500 mb-4">
-                Upload a <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">.sql</code> file
-                to restore the database.
-                <strong class="text-orange-600">This will overwrite existing data.</strong>
-                Export a backup first.
-            </p>
-            <form method="POST"
-                  action="{{ route('sfp.staff.backups.db-import') }}"
-                  enctype="multipart/form-data"
-                  onsubmit="return confirm('This will overwrite the current database with the uploaded file. Are you sure?')">
-                @csrf
-                <div class="flex items-center gap-3">
-                    <input type="file"
-                           name="sql_file"
-                           accept=".sql,text/plain"
-                           required
-                           class="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
-                    <button type="submit"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-sm rounded hover:bg-orange-600 font-medium whitespace-nowrap">
-                        {!! $icon['restore'] !!} Restore Database
-                    </button>
-                </div>
-                @error('sql_file')
-                    <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p>
-                @enderror
             </form>
         </div>
 
