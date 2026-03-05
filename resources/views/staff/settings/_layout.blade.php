@@ -37,7 +37,8 @@
                 <a href="{{ asset('sfp-settings-help.html') }}"
                    target="_blank"
                    rel="noopener noreferrer"
-                   class="text-sm text-blue-600 hover:underline">
+                   class="text-sm text-blue-600 hover:underline"
+                   onclick="try { window.open(this.href, 'sfpSettingsHelp', 'width=1080,height=740,scrollbars=yes'); return false; } catch (e) { return true; }">
                     Help
                 </a>
             </div>
