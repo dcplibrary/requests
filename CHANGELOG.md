@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [1.6.0](https://github.com/dcplibrary/sfp/compare/v1.5.0...v1.6.0) (2026-03-04)
+
+
+### Features
+
+* allow patrons to see past sfps using barcode and last name ([dcd8209](https://github.com/dcplibrary/sfp/commit/dcd82094f63e13265a97eaa725f577ca146028a2))
+
 # [1.5.0](https://github.com/dcplibrary/sfp/compare/v1.4.0...v1.5.0) (2026-03-04)
 
 
