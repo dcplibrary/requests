@@ -9,6 +9,7 @@ use Dcplibrary\Sfp\Livewire\PatronRequests;
 use Dcplibrary\Sfp\Livewire\SfpForm;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -22,9 +23,11 @@ use Livewire\Livewire;
  *  - `sfp-config`     — config/sfp.php
  *  - `sfp-migrations` — database migrations
  *  - `sfp-seeders`    — database seeders
- *  - `sfp-views`      — Blade views
- *  - `sfp-assets`     — compiled CSS → public/vendor/sfp/
+ *  - `sfp-views`      — Blade views (optional override)
  *  - `sfp`            — all of the above at once
+ *
+ * CSS is served via the /sfp/assets/css route directly from resources/dist/sfp.css
+ * inside the package — no vendor:publish required for assets.
  */
 class SfpServiceProvider extends ServiceProvider
 {
@@ -63,6 +66,16 @@ class SfpServiceProvider extends ServiceProvider
 
     protected function registerRoutes(): void
     {
+        // Asset route — serves compiled CSS directly from inside the package.
+        // This is the Horizon/Telescope pattern: no vendor:publish needed for CSS.
+        Route::get('/sfp/assets/css', function () {
+            $path = __DIR__ . '/../resources/dist/sfp.css';
+
+            return response(file_get_contents($path), 200)
+                ->header('Content-Type', 'text/css')
+                ->header('Cache-Control', 'public, max-age=31536000');
+        })->name('sfp.assets.css');
+
         $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
     }
 
@@ -98,17 +111,12 @@ class SfpServiceProvider extends ServiceProvider
             __DIR__ . '/../resources/views' => resource_path('views/vendor/sfp'),
         ], 'sfp-views');
 
-        $this->publishes([
-            __DIR__ . '/../public' => public_path('vendor/sfp'),
-        ], 'sfp-assets');
-
         // Convenience tag: publish everything at once
         $this->publishes([
             __DIR__ . '/../config/sfp.php'      => config_path('sfp.php'),
             __DIR__ . '/../database/migrations'  => database_path('migrations'),
             __DIR__ . '/../database/seeders'     => database_path('seeders'),
             __DIR__ . '/../resources/views'      => resource_path('views/vendor/sfp'),
-            __DIR__ . '/../public'               => public_path('vendor/sfp'),
         ], 'sfp');
     }
 }

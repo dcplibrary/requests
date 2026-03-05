@@ -5,8 +5,9 @@
   "description": "Release tooling for dcplibrary/sfp Laravel package",
   "scripts": {
     "release": "semantic-release",
-    "build:css": "tailwindcss -i resources/css/sfp.css -o public/css/sfp.css --minify",
-    "watch:css": "tailwindcss -i resources/css/sfp.css -o public/css/sfp.css --watch"
+    "build:css": "tailwindcss -i resources/css/sfp.css -o resources/dist/sfp.css --minify",
+    "build": "npm run build:css",
+    "watch:css": "tailwindcss -i resources/css/sfp.css -o resources/dist/sfp.css --watch"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.0",
