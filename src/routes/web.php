@@ -83,8 +83,9 @@ Route::group([
             Route::post('titles/{material}/bulk-status', [TitleController::class, 'bulkStatus'])
                 ->name('titles.bulk-status');
 
-            Route::get('/settings',   [SettingController::class, 'index'])->name('settings.index');
-            Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
+            Route::get('/settings',              [SettingController::class, 'index'])->name('settings.index');
+            Route::get('/settings/notifications',[SettingController::class, 'notifications'])->name('settings.notifications');
+            Route::patch('/settings',            [SettingController::class, 'update'])->name('settings.update');
 
             Route::get('/backups',                  [BackupController::class, 'index'])->name('backups.index');
             Route::post('/backups/config-export',   [BackupController::class, 'exportConfig'])->name('backups.config-export');

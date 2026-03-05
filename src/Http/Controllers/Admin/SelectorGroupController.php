@@ -29,19 +29,21 @@ class SelectorGroupController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'          => 'required|string|max:100',
-            'description'   => 'nullable|string|max:500',
-            'active'        => 'boolean',
-            'material_types'=> 'nullable|array',
-            'material_types.*' => 'exists:material_types,id',
-            'audiences'     => 'nullable|array',
-            'audiences.*'   => 'exists:audiences,id',
+            'name'               => 'required|string|max:100',
+            'description'        => 'nullable|string|max:500',
+            'active'             => 'boolean',
+            'notification_emails'=> 'nullable|string',
+            'material_types'     => 'nullable|array',
+            'material_types.*'   => 'exists:material_types,id',
+            'audiences'          => 'nullable|array',
+            'audiences.*'        => 'exists:audiences,id',
         ]);
 
         $group = SelectorGroup::create([
-            'name'        => $data['name'],
-            'description' => $data['description'] ?? null,
-            'active'      => $data['active'] ?? true,
+            'name'                => $data['name'],
+            'description'         => $data['description'] ?? null,
+            'active'              => $data['active'] ?? true,
+            'notification_emails' => $data['notification_emails'] ?? null,
         ]);
 
         $group->materialTypes()->sync($data['material_types'] ?? []);
@@ -62,19 +64,21 @@ class SelectorGroupController extends Controller
     public function update(Request $request, SelectorGroup $group)
     {
         $data = $request->validate([
-            'name'          => 'required|string|max:100',
-            'description'   => 'nullable|string|max:500',
-            'active'        => 'boolean',
-            'material_types'=> 'nullable|array',
-            'material_types.*' => 'exists:material_types,id',
-            'audiences'     => 'nullable|array',
-            'audiences.*'   => 'exists:audiences,id',
+            'name'               => 'required|string|max:100',
+            'description'        => 'nullable|string|max:500',
+            'active'             => 'boolean',
+            'notification_emails'=> 'nullable|string',
+            'material_types'     => 'nullable|array',
+            'material_types.*'   => 'exists:material_types,id',
+            'audiences'          => 'nullable|array',
+            'audiences.*'        => 'exists:audiences,id',
         ]);
 
         $group->update([
-            'name'        => $data['name'],
-            'description' => $data['description'] ?? null,
-            'active'      => $data['active'] ?? false,
+            'name'                => $data['name'],
+            'description'         => $data['description'] ?? null,
+            'active'              => $data['active'] ?? false,
+            'notification_emails' => $data['notification_emails'] ?? null,
         ]);
 
         $group->materialTypes()->sync($data['material_types'] ?? []);

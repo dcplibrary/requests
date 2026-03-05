@@ -43,9 +43,11 @@ class SfpServiceProvider extends ServiceProvider
         $this->registerLivewire();
         $this->registerPublishables();
 
-        if ($this->app->runningInConsole()) {
-            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        // Always load migrations so `php artisan migrate` discovers them
+        // without needing to publish them first.
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
+        if ($this->app->runningInConsole()) {
             $this->commands([
                 SfpBackupCommand::class,
             ]);

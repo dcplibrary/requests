@@ -12,7 +12,15 @@ class SettingController extends Controller
     {
         return view('sfp::staff.settings.index', [
             // Catalog/ISBNdb/Syndetics settings live on the dedicated Catalog tab.
-            'settings' => Setting::allGrouped()->except(['catalog', 'isbndb', 'syndetics']),
+            // Notification settings live on the dedicated Notifications tab.
+            'settings' => Setting::allGrouped()->except(['catalog', 'isbndb', 'syndetics', 'notifications']),
+        ]);
+    }
+
+    public function notifications()
+    {
+        return view('sfp::staff.settings.notifications', [
+            'settings' => Setting::allGrouped()->only(['notifications']),
         ]);
     }
 

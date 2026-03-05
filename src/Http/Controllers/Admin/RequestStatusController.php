@@ -26,11 +26,12 @@ class RequestStatusController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:100',
-            'color'       => 'required|string|max:20',
-            'sort_order'  => 'required|integer|min:0',
-            'active'      => 'boolean',
-            'is_terminal' => 'boolean',
+            'name'         => 'required|string|max:100',
+            'color'        => 'required|string|max:20',
+            'sort_order'   => 'required|integer|min:0',
+            'active'       => 'boolean',
+            'is_terminal'  => 'boolean',
+            'notify_patron' => 'boolean',
         ]);
 
         RequestStatus::create(array_merge($data, ['slug' => Str::slug($data['name'])]));
@@ -46,11 +47,12 @@ class RequestStatusController extends Controller
     public function update(Request $request, RequestStatus $status)
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:100',
-            'color'       => 'required|string|max:20',
-            'sort_order'  => 'required|integer|min:0',
-            'active'      => 'boolean',
-            'is_terminal' => 'boolean',
+            'name'         => 'required|string|max:100',
+            'color'        => 'required|string|max:20',
+            'sort_order'   => 'required|integer|min:0',
+            'active'       => 'boolean',
+            'is_terminal'  => 'boolean',
+            'notify_patron' => 'boolean',
         ]);
 
         $status->update($data);

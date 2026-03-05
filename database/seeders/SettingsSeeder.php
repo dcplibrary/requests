@@ -167,6 +167,64 @@ class SettingsSeeder extends Seeder
                 'description' => 'Shown on Step 1 of the request form when the patron\'s barcode is not found in Polaris. HTML is allowed — you can include links and your library\'s address.',
             ],
 
+            // --- Email notifications ---
+            [
+                'key'         => 'notifications_enabled',
+                'value'       => '1',
+                'label'       => 'Enable Notifications',
+                'type'        => 'boolean',
+                'group'       => 'notifications',
+                'description' => 'Master switch for all email notifications. Turn off to silence everything without changing individual settings.',
+            ],
+            [
+                'key'         => 'staff_routing_enabled',
+                'value'       => '1',
+                'label'       => 'Enable Staff Routing Emails',
+                'type'        => 'boolean',
+                'group'       => 'notifications',
+                'description' => 'Send an email to the selector group(s) matching the request\'s material type and audience when a new request is submitted. Configure routing addresses on each Group.',
+            ],
+            [
+                'key'         => 'staff_routing_subject',
+                'value'       => 'New Purchase Suggestion: {title}',
+                'label'       => 'Staff Routing — Subject',
+                'type'        => 'string',
+                'group'       => 'notifications',
+                'description' => 'Subject line for staff routing emails. Available placeholders: {title}, {author}, {patron_name}, {patron_first_name}, {material_type}, {audience}, {status}, {submitted_date}, {request_url}.',
+            ],
+            [
+                'key'         => 'staff_routing_template',
+                'value'       => '',
+                'label'       => 'Staff Routing — Email Body',
+                'type'        => 'html',
+                'group'       => 'notifications',
+                'description' => 'HTML body for staff routing emails. Leave blank to use the built-in default. Available placeholders: {title}, {author}, {patron_name}, {patron_first_name}, {material_type}, {audience}, {status}, {submitted_date}, {request_url}.',
+            ],
+            [
+                'key'         => 'patron_status_notification_enabled',
+                'value'       => '1',
+                'label'       => 'Enable Patron Status Emails',
+                'type'        => 'boolean',
+                'group'       => 'notifications',
+                'description' => 'Send an email to the patron when their request\'s status changes. Only fires for statuses that have "Notify Patron" checked. The patron must have an email on file.',
+            ],
+            [
+                'key'         => 'patron_status_subject',
+                'value'       => 'Update on your suggestion: {title}',
+                'label'       => 'Patron Status — Subject',
+                'type'        => 'string',
+                'group'       => 'notifications',
+                'description' => 'Subject line for patron status-change emails. Available placeholders: {title}, {author}, {patron_name}, {patron_first_name}, {material_type}, {audience}, {status}, {submitted_date}, {request_url}.',
+            ],
+            [
+                'key'         => 'patron_status_template',
+                'value'       => '',
+                'label'       => 'Patron Status — Email Body',
+                'type'        => 'html',
+                'group'       => 'notifications',
+                'description' => 'HTML body for patron status-change emails. Leave blank to use the built-in default. Available placeholders: {title}, {author}, {patron_name}, {patron_first_name}, {material_type}, {audience}, {status}, {submitted_date}, {request_url}.',
+            ],
+
             // --- Auto-order exclusions (popular authors) ---
             [
                 'key' => 'auto_order_author_exclusions',

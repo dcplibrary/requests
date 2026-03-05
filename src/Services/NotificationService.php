@@ -1,0 +1,227 @@
+<?php
+
+namespace Dcplibrary\Sfp\Services;
+
+use Dcplibrary\Sfp\Mail\SfpMail;
+use Dcplibrary\Sfp\Models\SelectorGroup;
+use Dcplibrary\Sfp\Models\Setting;
+use Dcplibrary\Sfp\Models\SfpRequest;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+
+class NotificationService
+{
+    // ── Public notification methods ───────────────────────────────────────────
+
+    /**
+     * Send staff routing email(s) when a new request is submitted.
+     *
+     * Recipients are looked up by finding active SelectorGroups whose
+     * material type AND audience scope both match the request, and which
+     * have a notification_emails value set.
+     */
+    public function notifyStaffNewRequest(SfpRequest $request): void
+    {
+        if (! Setting::get('notifications_enabled', true)) return;
+        if (! Setting::get('staff_routing_enabled', true)) return;
+
+        $recipients = $this->getStaffRecipients($request);
+        if (empty($recipients)) return;
+
+        $request->loadMissing(['patron', 'materialType', 'audience', 'status']);
+
+        $subject = $this->replacePlaceholders(
+            (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}'),
+            $request
+        );
+        $body = $this->replacePlaceholders(
+            (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate()),
+            $request
+        );
+
+        foreach ($recipients as $email) {
+            try {
+                Mail::to($email)->send(new SfpMail($subject, $body));
+            } catch (\Throwable $e) {
+                Log::error('SFP staff routing email failed', [
+                    'to'         => $email,
+                    'request_id' => $request->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Send the patron a status-change email when a request transitions status.
+     *
+     * Only fires when:
+     *  - `notifications_enabled` is on
+     *  - `patron_status_notification_enabled` is on
+     *  - The new RequestStatus has `notify_patron = true`
+     *  - The patron has an email address on record
+     */
+    public function notifyPatronStatusChange(SfpRequest $request): void
+    {
+        if (! Setting::get('notifications_enabled', true)) return;
+        if (! Setting::get('patron_status_notification_enabled', true)) return;
+
+        $request->loadMissing(['patron', 'materialType', 'audience', 'status']);
+
+        if (! $request->status?->notify_patron) return;
+
+        $patronEmail = $request->patron?->email;
+        if (! $patronEmail) return;
+
+        $subject = $this->replacePlaceholders(
+            (string) Setting::get('patron_status_subject', 'Update on your suggestion: {title}'),
+            $request
+        );
+        $body = $this->replacePlaceholders(
+            (string) Setting::get('patron_status_template', $this->defaultPatronTemplate()),
+            $request
+        );
+
+        try {
+            Mail::to($patronEmail)->send(new SfpMail($subject, $body));
+        } catch (\Throwable $e) {
+            Log::error('SFP patron status email failed', [
+                'patron_id'  => $request->patron_id,
+                'request_id' => $request->id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Return unique, valid email addresses from selector groups that match
+     * the request's material type AND audience.
+     */
+    private function getStaffRecipients(SfpRequest $request): array
+    {
+        $groups = SelectorGroup::active()
+            ->whereNotNull('notification_emails')
+            ->where('notification_emails', '!=', '')
+            ->with(['materialTypes', 'audiences'])
+            ->get()
+            ->filter(fn ($group) =>
+                $group->materialTypes->contains('id', $request->material_type_id)
+                && $group->audiences->contains('id', $request->audience_id)
+            );
+
+        $emails = [];
+        foreach ($groups as $group) {
+            // Supports comma-separated or newline-separated email lists
+            foreach (preg_split('/[\s,]+/', $group->notification_emails) as $email) {
+                $email = trim($email);
+                if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $emails[] = $email;
+                }
+            }
+        }
+
+        return array_unique($emails);
+    }
+
+    /**
+     * Replace all {placeholder} tokens with request data.
+     *
+     * Available placeholders:
+     *   {title}             — submitted title
+     *   {author}            — submitted author
+     *   {patron_name}       — patron full name
+     *   {patron_first_name} — patron first name
+     *   {material_type}     — material type name
+     *   {audience}          — audience name
+     *   {status}            — current status name
+     *   {submitted_date}    — submission date (e.g. January 5, 2026)
+     *   {request_url}       — full URL to the request in the staff dashboard
+     */
+    private function replacePlaceholders(string $template, SfpRequest $request): string
+    {
+        $patronName = trim(
+            ($request->patron?->name_first ?? '') . ' ' . ($request->patron?->name_last ?? '')
+        );
+
+        $map = [
+            '{title}'             => $request->submitted_title  ?? '',
+            '{author}'            => $request->submitted_author ?? '',
+            '{patron_name}'       => $patronName,
+            '{patron_first_name}' => $request->patron?->name_first ?? '',
+            '{material_type}'     => $request->materialType?->name ?? '',
+            '{audience}'          => $request->audience?->name    ?? '',
+            '{status}'            => $request->status?->name      ?? '',
+            '{submitted_date}'    => $request->created_at?->format('F j, Y') ?? '',
+            '{request_url}'       => route('sfp.staff.requests.show', $request),
+        ];
+
+        return str_replace(array_keys($map), array_values($map), $template);
+    }
+
+    // ── Default templates (used as fallbacks before settings are customized) ──
+
+    private function defaultStaffTemplate(): string
+    {
+        return <<<'HTML'
+<h2 style="font-size:17px;font-weight:bold;margin:0 0 16px;color:#111827;">New Purchase Suggestion</h2>
+<table role="presentation" style="font-size:14px;border-collapse:collapse;width:100%;">
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Title</td>
+    <td style="padding:5px 0;font-weight:bold;">{title}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Author</td>
+    <td style="padding:5px 0;">{author}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Type</td>
+    <td style="padding:5px 0;">{material_type}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Audience</td>
+    <td style="padding:5px 0;">{audience}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Patron</td>
+    <td style="padding:5px 0;">{patron_name}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Submitted</td>
+    <td style="padding:5px 0;">{submitted_date}</td>
+  </tr>
+</table>
+<p style="margin:20px 0 0;">
+  <a href="{request_url}"
+     style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#ffffff;
+            text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;">
+    View Request →
+  </a>
+</p>
+HTML;
+    }
+
+    private function defaultPatronTemplate(): string
+    {
+        return <<<'HTML'
+<p>Hi {patron_first_name},</p>
+<p>We wanted to let you know that the status of your purchase suggestion has been updated.</p>
+<table role="presentation" style="font-size:14px;border-collapse:collapse;width:100%;margin:16px 0;">
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Title</td>
+    <td style="padding:5px 0;font-weight:bold;">{title}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Author</td>
+    <td style="padding:5px 0;">{author}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Status</td>
+    <td style="padding:5px 0;font-weight:bold;">{status}</td>
+  </tr>
+</table>
+<p>Thank you for your suggestion!</p>
+HTML;
+    }
+}

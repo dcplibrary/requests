@@ -48,6 +48,17 @@
                 <p class="text-sm text-gray-400">No audiences defined yet.</p>
                 @endforelse
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notification Emails</label>
+                <textarea name="notification_emails" rows="3"
+                          class="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono resize-y"
+                          placeholder="one@example.com, two@example.com&#10;(comma or newline separated)"
+                >{{ old('notification_emails', $group->notification_emails) }}</textarea>
+                <p class="mt-1 text-xs text-gray-500">
+                    When a new request matches this group's material type and audience, a routing email will be sent to these addresses.
+                    Separate multiple addresses with commas or line breaks.
+                </p>
+            </div>
             <div class="flex items-center gap-2">
                 <input type="hidden" name="active" value="0">
                 <input type="checkbox" name="active" id="active" value="1"

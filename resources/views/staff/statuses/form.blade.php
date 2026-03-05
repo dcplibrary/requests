@@ -46,6 +46,13 @@
                 <label for="is_terminal" class="text-sm font-medium text-gray-700">Terminal (final state)</label>
             </div>
             <div class="flex items-center gap-2">
+                <input type="hidden" name="notify_patron" value="0">
+                <input type="checkbox" name="notify_patron" id="notify_patron" value="1"
+                       {{ old('notify_patron', $status->notify_patron ?? false) ? 'checked' : '' }}
+                       class="w-4 h-4 rounded border-gray-300 text-blue-600">
+                <label for="notify_patron" class="text-sm font-medium text-gray-700">Notify Patron on this status change</label>
+            </div>
+            <div class="flex items-center gap-2">
                 <input type="hidden" name="active" value="0">
                 <input type="checkbox" name="active" id="active" value="1"
                        {{ old('active', $status->active ?? true) ? 'checked' : '' }}

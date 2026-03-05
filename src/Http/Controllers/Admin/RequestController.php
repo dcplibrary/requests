@@ -8,6 +8,7 @@ use Dcplibrary\Sfp\Models\MaterialType;
 use Dcplibrary\Sfp\Models\RequestStatus;
 use Dcplibrary\Sfp\Models\SfpRequest;
 use Dcplibrary\Sfp\Services\BibliocommonsService;
+use Dcplibrary\Sfp\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class RequestController extends Controller
@@ -99,6 +100,10 @@ class RequestController extends Controller
             $sfpUserId,
             $httpRequest->note
         );
+
+        // Reload so notify service sees the fresh status relationship.
+        $sfpRequest->refresh();
+        app(NotificationService::class)->notifyPatronStatusChange($sfpRequest);
 
         return back()->with('success', 'Status updated.');
     }

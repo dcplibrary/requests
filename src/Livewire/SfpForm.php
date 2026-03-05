@@ -14,6 +14,7 @@ use Dcplibrary\Sfp\Services\BibliocommonsService;
 use Dcplibrary\Sfp\Services\CoverService;
 use Dcplibrary\Sfp\Services\IsbnDbService;
 use Dcplibrary\Sfp\Services\PatronService;
+use Dcplibrary\Sfp\Services\NotificationService;
 use Dcplibrary\Sfp\Services\PolarisService;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
@@ -544,6 +545,9 @@ class SfpForm extends Component
             'user_id' => null,
             'note' => 'Request submitted by patron.',
         ]);
+
+        // Send staff routing notification
+        app(NotificationService::class)->notifyStaffNewRequest($sfpRequest);
 
         $this->createdRequestId = $sfpRequest->id;
         $this->processing = false;

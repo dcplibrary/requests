@@ -19,14 +19,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int    $sort_order
  * @property bool   $active
  * @property bool   $is_terminal  True for resolved statuses (Purchased, Denied, etc.)
+ * @property bool   $notify_patron True if a status change to this status triggers a patron email
  */
 class RequestStatus extends Model
 {
-    protected $fillable = ['name', 'slug', 'color', 'sort_order', 'active', 'is_terminal'];
+    protected $fillable = ['name', 'slug', 'color', 'sort_order', 'active', 'is_terminal', 'notify_patron'];
 
     protected $casts = [
         'active' => 'boolean',
         'is_terminal' => 'boolean',
+        'notify_patron' => 'boolean',
     ];
 
     /** Requests currently in this status. */

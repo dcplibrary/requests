@@ -16,10 +16,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string      $name
  * @property string|null $description
  * @property bool        $active
+ * @property string|null $notification_emails Comma/newline-separated list of routing email addresses
  */
 class SelectorGroup extends Model
 {
-    protected $fillable = ['name', 'description', 'active'];
+    protected $fillable = ['name', 'description', 'active', 'notification_emails'];
 
     protected $casts = [
         'active' => 'boolean',
