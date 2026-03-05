@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [1.8.0](https://github.com/dcplibrary/sfp/compare/v1.7.0...v1.8.0) (2026-03-05)
+
+
+### Features
+
+* add rolling or calendar date resets for request limits ([7e51f09](https://github.com/dcplibrary/sfp/commit/7e51f09b4a1330e669e3cc15f3131cdca890b562))
+
 # [1.7.0](https://github.com/dcplibrary/sfp/compare/v1.6.0...v1.7.0) (2026-03-05)
 
 
