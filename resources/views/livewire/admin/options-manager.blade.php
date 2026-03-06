@@ -33,17 +33,19 @@
             wire:key="opt-{{ $item['id'] }}"
             x-data="{
                 editOpen: false,
+                confirmDelete: false,
                 name: @js($item['name']),
                 slug: @js($item['slug']),
                 extras: @js($textExtras),
                 savedExtras: @js($textExtras),
                 autoSlug: true,
                 reset() {
-                    this.name     = @js($item['name']);
-                    this.slug     = @js($item['slug']);
-                    this.extras   = { ...this.savedExtras };
-                    this.autoSlug = true;
-                    this.editOpen = false;
+                    this.name          = @js($item['name']);
+                    this.slug          = @js($item['slug']);
+                    this.extras        = { ...this.savedExtras };
+                    this.autoSlug      = true;
+                    this.editOpen      = false;
+                    this.confirmDelete = false;
                 }
             }"
         >
@@ -98,16 +100,21 @@
 
                 {{-- Edit + Delete icons --}}
                 <div class="flex items-center gap-0.5 shrink-0">
-                    <x-sfp::icon-btn
-                        variant="edit"
-                        label="Edit"
-                        x-on:click="editOpen = !editOpen"
-                    />
-                    <x-sfp::icon-btn
-                        variant="delete"
-                        label="Delete"
-                        x-on:click="confirm('Delete ' + name + '?') && $wire.deleteItem({{ $item['id'] }})"
-                    />
+                    <template x-if="!confirmDelete">
+                        <span class="flex items-center gap-0.5">
+                            <x-sfp::icon-btn variant="edit"   label="Edit"   x-on:click="editOpen = !editOpen" />
+                            <x-sfp::icon-btn variant="delete" label="Delete" x-on:click="confirmDelete = true" />
+                        </span>
+                    </template>
+                    <template x-if="confirmDelete">
+                        <span class="flex items-center gap-1.5 text-xs">
+                            <span class="text-gray-500">Delete?</span>
+                            <button type="button" wire:click="deleteItem({{ $item['id'] }})"
+                                class="px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 focus:outline-none">Yes</button>
+                            <button type="button" x-on:click="confirmDelete = false"
+                                class="px-2 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 focus:outline-none">No</button>
+                        </span>
+                    </template>
                 </div>
             </div>
 
