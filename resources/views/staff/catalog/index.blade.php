@@ -62,9 +62,14 @@
 
     {{-- Format Labels --}}
     <div class="bg-white rounded-lg border border-gray-200 mb-6 overflow-hidden">
-        <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
-            <h2 class="text-sm font-semibold text-gray-700">BiblioCommons Format Labels</h2>
-            <p class="text-xs text-gray-400 mt-0.5">Override the raw format codes shown in catalog results (e.g. BK → Book).</p>
+        <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+            <div>
+                <h2 class="text-sm font-semibold text-gray-700">BiblioCommons Format Labels</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Override the raw format codes shown in catalog results (e.g. BK → Book).</p>
+            </div>
+            <button type="button" class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                + Add Format Label
+            </button>
         </div>
         <table class="w-full text-sm">
             <thead>
@@ -88,14 +93,13 @@
                                class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
                     </td>
                     <td class="px-5 py-3 text-right">
-                        <button type="button"
-                                data-delete-fl="{{ $fl->id }}"
-                                class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                        <x-sfp::icon-btn variant="delete" label="Remove" data-delete-fl="{{ $fl->id }}" />
                     </td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
+
     </div>
 
     <div class="flex justify-end mb-8">
@@ -124,32 +128,5 @@ document.querySelectorAll('[data-delete-fl]').forEach(btn => {
 });
 </script>
 
-{{-- Add new format label --}}
-<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-    <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
-        <h2 class="text-sm font-semibold text-gray-700">Add Format Label</h2>
-    </div>
-    <form method="POST" action="{{ route('sfp.staff.catalog.format-labels.store') }}" class="px-5 py-4 flex items-end gap-3">
-        @csrf
-        <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Format Code</label>
-            <input type="text" name="format_code" placeholder="e.g. MUSIC_CD"
-                   class="border border-gray-300 rounded px-3 py-2 text-sm w-40 uppercase"
-                   style="text-transform:uppercase"
-                   value="{{ old('format_code') }}">
-            @error('format_code')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
-        </div>
-        <div class="flex-1">
-            <label class="block text-xs font-medium text-gray-600 mb-1">Display Label</label>
-            <input type="text" name="label" placeholder="e.g. Music CD"
-                   class="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                   value="{{ old('label') }}">
-            @error('label')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
-        </div>
-        <button type="submit" class="px-4 py-2 bg-gray-700 text-white text-sm rounded hover:bg-gray-800 shrink-0">
-            Add
-        </button>
-    </form>
-</div>
 
 @endsection

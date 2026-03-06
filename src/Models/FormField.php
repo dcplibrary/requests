@@ -14,12 +14,12 @@ use Illuminate\Database\Eloquent\Model;
  * selections (material_type slug, audience slug).
  *
  * @property int         $id
- * @property string      $key          Unique field identifier (e.g. 'genre', 'console')
- * @property string      $label        Human-readable label used in the admin UI
+ * @property string      $key              Unique field identifier (e.g. 'genre', 'console')
+ * @property string      $label            Human-readable label used in the admin UI
  * @property int         $sort_order
- * @property bool        $active       When false the field is never rendered
- * @property bool        $required     When true, validation fails if the field is blank
- * @property array|null  $condition    Conditional logic rules (null = always show)
+ * @property bool        $active           When false the field is never rendered
+ * @property bool        $required         When true, validation fails if the field is blank
+ * @property array|null  $condition        Conditional logic rules (null = always show)
  */
 class FormField extends Model
 {
@@ -107,8 +107,24 @@ class FormField extends Model
         });
     }
 
+    /**
+     * Return form fields whose submitted values are available as {key} tokens
+     * in notification email templates.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, static>
+     */
+    public static function tokenFields()
+    {
+        return cache()->remember('sfp_form_fields_token', now()->addHour(), function () {
+            return static::whereIn('key', [
+                'genre', 'console', 'isbn', 'publish_date', 'where_heard', 'ill_requested',
+            ])->ordered()->get();
+        });
+    }
+
     public static function bustCache(): void
     {
         cache()->forget('sfp_form_fields');
+        cache()->forget('sfp_form_fields_token');
     }
 }

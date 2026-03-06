@@ -1,21 +1,52 @@
-<div class="space-y-3">
+<div class="space-y-3" x-data="{ addOpen: false }">
 
     {{-- ── Header ── --}}
     <div class="flex items-center justify-between">
         <h4 class="text-sm font-semibold text-gray-700">{{ $title }}</h4>
 
-        @if($savedMessage)
-        <span
-            x-data="{ show: true }"
-            x-init="setTimeout(() => { show = false; $wire.clearFlash(); }, 2000)"
-            x-show="show"
-            x-transition:leave="transition duration-500"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            class="text-xs text-green-600"
-        >{{ $savedMessage }}</span>
-        @endif
+        <div class="flex items-center gap-3">
+            @if($savedMessage)
+            <span
+                x-data="{ show: true }"
+                x-init="setTimeout(() => { show = false; $wire.clearFlash(); }, 2000)"
+                x-show="show"
+                x-transition:leave="transition duration-500"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                class="text-xs text-green-600"
+            >{{ $savedMessage }}</span>
+            @endif
+
+            <button type="button" x-on:click="addOpen = !addOpen"
+                    class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                + Add
+            </button>
+        </div>
     </div>
+
+    {{-- ── Add new option (toggled) ── --}}
+    <form x-show="addOpen" x-cloak
+          wire:submit.prevent="addItem"
+          x-on:submit="$nextTick(() => { if (!$wire.newName) addOpen = false })"
+          class="flex items-center gap-2">
+        <input
+            type="text"
+            wire:model="newName"
+            placeholder="New option name…"
+            x-ref="addInput"
+            x-effect="if (addOpen) $nextTick(() => $refs.addInput.focus())"
+            class="flex-1 rounded-md border border-gray-300 text-sm px-3 py-1.5 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+        />
+        <button
+            type="submit"
+            class="flex items-center gap-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md px-4 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+        >Add</button>
+        <button
+            type="button"
+            x-on:click="addOpen = false; $wire.set('newName', '')"
+            class="text-sm text-gray-500 hover:text-gray-700 px-2 py-1.5"
+        >Cancel</button>
+    </form>
 
     {{-- ── Option rows ── --}}
     @if(count($items))
@@ -223,24 +254,7 @@
         @endforeach
     </div>
     @else
-    <p class="text-sm text-gray-400 italic">No options yet. Add one below.</p>
+    <p class="text-sm text-gray-400 italic">No options yet. Use the Add button to create one.</p>
     @endif
-
-    {{-- ── Add new option ── --}}
-    <form wire:submit.prevent="addItem" class="flex items-center gap-2">
-        <input
-            type="text"
-            wire:model="newName"
-            placeholder="New option name…"
-            class="flex-1 rounded-md border border-gray-300 text-sm px-3 py-1.5 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
-        />
-        <button
-            type="submit"
-            class="flex items-center gap-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md px-4 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
-        >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            Add
-        </button>
-    </form>
 
 </div>

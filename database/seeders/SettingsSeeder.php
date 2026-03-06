@@ -206,7 +206,8 @@ class SettingsSeeder extends Seeder
                 'label'       => 'Staff Routing — Subject',
                 'type'        => 'string',
                 'group'       => 'notifications',
-                'description' => 'Subject line for staff routing emails. Available placeholders: {title}, {author}, {patron_name}, {patron_first_name}, {material_type}, {audience}, {status}, {submitted_date}, {request_url}.',
+                'description' => 'Subject line for staff routing emails.',
+                'tokens'      => json_encode(['{title}', '{author}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{submitted_date}', '{request_url}']),
             ],
             [
                 'key'         => 'staff_routing_template',
@@ -214,7 +215,8 @@ class SettingsSeeder extends Seeder
                 'label'       => 'Staff Routing — Email Body',
                 'type'        => 'html',
                 'group'       => 'notifications',
-                'description' => 'HTML body for staff routing emails. Leave blank to use the built-in default. Available placeholders: {title}, {author}, {patron_name}, {patron_first_name}, {material_type}, {audience}, {status}, {submitted_date}, {request_url}.',
+                'description' => 'HTML body for staff routing emails. Leave blank to use the built-in default.',
+                'tokens'      => json_encode(['{title}', '{author}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{submitted_date}', '{request_url}']),
             ],
             [
                 'key'         => 'patron_status_notification_enabled',
@@ -230,7 +232,8 @@ class SettingsSeeder extends Seeder
                 'label'       => 'Patron Status — Subject',
                 'type'        => 'string',
                 'group'       => 'notifications',
-                'description' => 'Subject line for patron status-change emails. Available placeholders: {title}, {author}, {patron_name}, {patron_first_name}, {material_type}, {audience}, {status}, {submitted_date}, {request_url}.',
+                'description' => 'Subject line for patron status-change emails.',
+                'tokens'      => json_encode(['{title}', '{author}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{submitted_date}', '{request_url}']),
             ],
             [
                 'key'         => 'patron_status_template',
@@ -238,7 +241,8 @@ class SettingsSeeder extends Seeder
                 'label'       => 'Patron Status — Email Body',
                 'type'        => 'html',
                 'group'       => 'notifications',
-                'description' => 'HTML body for patron status-change emails. Leave blank to use the built-in default. Available placeholders: {title}, {author}, {patron_name}, {patron_first_name}, {material_type}, {audience}, {status}, {submitted_date}, {request_url}.',
+                'description' => 'HTML body for patron status-change emails. Leave blank to use the built-in default.',
+                'tokens'      => json_encode(['{title}', '{author}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{submitted_date}', '{request_url}']),
             ],
 
             // --- Auto-order exclusions (popular authors) ---

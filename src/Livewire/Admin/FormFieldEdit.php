@@ -17,9 +17,9 @@ class FormFieldEdit extends Component
 {
     public int $fieldId;
 
-    public string $label     = '';
-    public bool   $required  = false;
-    public bool   $active    = false;
+    public string $label    = '';
+    public bool   $required = false;
+    public bool   $active   = false;
 
     /** @var array{match: string, rules: array<int, array<string, mixed>>} */
     public array $condition    = ['match' => 'all', 'rules' => []];
@@ -31,12 +31,12 @@ class FormFieldEdit extends Component
     {
         $field = FormField::findOrFail($fieldId);
 
-        $this->fieldId      = $fieldId;
-        $this->label        = $field->label;
-        $this->required     = $field->required;
-        $this->active       = $field->active;
-        $this->condition    = $field->condition ?? ['match' => 'all', 'rules' => []];
-        $this->hasCondition = ! empty($this->condition['rules']);
+        $this->fieldId        = $fieldId;
+        $this->label          = $field->label;
+        $this->required       = $field->required;
+        $this->active         = $field->active;
+        $this->condition      = $field->condition ?? ['match' => 'all', 'rules' => []];
+        $this->hasCondition   = ! empty($this->condition['rules']);
     }
 
     // ── Save ──────────────────────────────────────────────────────────────────
@@ -52,10 +52,10 @@ class FormFieldEdit extends Component
             : null;
 
         FormField::where('id', $this->fieldId)->update([
-            'label'     => $this->label,
-            'required'  => $this->required,
-            'active'    => $this->active,
-            'condition' => $condition ? json_encode($condition) : null,
+            'label'           => $this->label,
+            'required'        => $this->required,
+            'active'          => $this->active,
+            'condition'       => $condition ? json_encode($condition) : null,
         ]);
 
         FormField::bustCache();

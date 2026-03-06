@@ -3,6 +3,9 @@
 namespace Dcplibrary\Sfp\Services;
 
 use Dcplibrary\Sfp\Mail\SfpMail;
+use Dcplibrary\Sfp\Models\Console;
+use Dcplibrary\Sfp\Models\FormField;
+use Dcplibrary\Sfp\Models\Genre;
 use Dcplibrary\Sfp\Models\SelectorGroup;
 use Dcplibrary\Sfp\Models\Setting;
 use Dcplibrary\Sfp\Models\SfpRequest;
@@ -128,36 +131,76 @@ class NotificationService
     /**
      * Replace all {placeholder} tokens with request data.
      *
-     * Available placeholders:
+     * Core placeholders:
      *   {title}             — submitted title
      *   {author}            — submitted author
      *   {patron_name}       — patron full name
      *   {patron_first_name} — patron first name
+     *   {patron_email}      — patron canonical email address
+     *   {patron_phone}      — patron canonical phone number
      *   {material_type}     — material type name
      *   {audience}          — audience name
      *   {status}            — current status name
      *   {submitted_date}    — submission date (e.g. January 5, 2026)
      *   {request_url}       — full URL to the request in the staff dashboard
+     *
+     * Dynamic placeholders (form fields with include_as_token = true):
+     *   {isbn}              — ISBN from matched material
+     *   {publish_date}      — submitted publish / release date
+     *   {genre}             — genre name (resolved from slug)
+     *   {console}           — console name (resolved from slug)
+     *   {where_heard}       — patron's answer to "where did you hear about this?"
+     *   {ill_requested}     — "Yes" or "No"
+     *   {<key>}             — any other active form field value stored on the request
      */
     private function replacePlaceholders(string $template, SfpRequest $request): string
     {
-        $patronName = trim(
-            ($request->patron?->name_first ?? '') . ' ' . ($request->patron?->name_last ?? '')
-        );
+        $patron     = $request->patron;
+        $patronName = trim(($patron?->name_first ?? '') . ' ' . ($patron?->name_last ?? ''));
 
         $map = [
             '{title}'             => $request->submitted_title  ?? '',
             '{author}'            => $request->submitted_author ?? '',
             '{patron_name}'       => $patronName,
-            '{patron_first_name}' => $request->patron?->name_first ?? '',
+            '{patron_first_name}' => $patron?->name_first        ?? '',
+            '{patron_email}'      => $patron?->canonicalEmail()   ?? '',
+            '{patron_phone}'      => $patron?->canonicalPhone()   ?? '',
             '{material_type}'     => $request->materialType?->name ?? '',
-            '{audience}'          => $request->audience?->name    ?? '',
-            '{status}'            => $request->status?->name      ?? '',
+            '{audience}'          => $request->audience?->name     ?? '',
+            '{status}'            => $request->status?->name       ?? '',
             '{submitted_date}'    => $request->created_at?->format('F j, Y') ?? '',
             '{request_url}'       => route('sfp.staff.requests.show', $request),
         ];
 
+        // Extend with dynamic form-field tokens.
+        foreach (FormField::tokenFields() as $field) {
+            $map["{{$field->key}}"] = $this->formFieldValue($field->key, $request);
+        }
+
         return str_replace(array_keys($map), array_values($map), $template);
+    }
+
+    /**
+     * Resolve a form field's submitted value for use in notification tokens.
+     *
+     * Special handling:
+     *   genre        — slug stored on request; resolved to human-readable Genre name
+     *   console      — slug stored in other_material_text; resolved to Console name
+     *   ill_requested — boolean cast to "Yes" / "No"
+     *   isbn         — pulled from the linked Material record
+     *   publish_date — maps to submitted_publish_date column
+     *   all others   — direct attribute access on the request model
+     */
+    private function formFieldValue(string $key, SfpRequest $request): string
+    {
+        return match ($key) {
+            'genre'        => Genre::where('slug', $request->genre ?? '')->value('name') ?? ($request->genre ?? ''),
+            'console'      => Console::where('slug', $request->other_material_text ?? '')->value('name') ?? ($request->other_material_text ?? ''),
+            'ill_requested' => $request->ill_requested === null ? '' : ($request->ill_requested ? 'Yes' : 'No'),
+            'isbn'         => $request->material?->isbn ?? $request->material?->isbn13 ?? '',
+            'publish_date' => $request->submitted_publish_date ?? '',
+            default        => (string) ($request->{$key} ?? ''),
+        };
     }
 
     // ── Default templates (used as fallbacks before settings are customized) ──

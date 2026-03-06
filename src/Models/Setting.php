@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Cache;
 
 class Setting extends Model
 {
-    protected $fillable = ['key', 'value', 'label', 'type', 'group', 'description'];
+    protected $fillable = ['key', 'value', 'label', 'type', 'group', 'description', 'tokens'];
+
+    protected $casts = ['tokens' => 'array'];
 
     /**
      * Get a setting value by key, with optional default.
