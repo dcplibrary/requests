@@ -85,7 +85,9 @@ Route::group([
                 ->name('titles.bulk-status');
 
             Route::get('/settings',                  [SettingController::class, 'index'])->name('settings.index');
-            Route::get('/settings/notifications',    [SettingController::class, 'notifications'])->name('settings.notifications');
+            Route::get('/settings/notifications',                      [SettingController::class, 'notifications'])->name('settings.notifications');
+            Route::get('/settings/notifications/preview/{type}',    [SettingController::class, 'previewEmail'])->name('settings.notifications.preview');
+            Route::post('/settings/notifications/test',             [SettingController::class, 'sendTestEmail'])->name('settings.notifications.test');
             Route::get('/settings/form-fields',              [FormFieldController::class, 'index'])->name('settings.form-fields');
             Route::get('/settings/form-fields/{field}/edit', [FormFieldController::class, 'edit'])->name('settings.form-fields.edit');
             Route::patch('/settings',                [SettingController::class, 'update'])->name('settings.update');

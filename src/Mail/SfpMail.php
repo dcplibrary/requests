@@ -27,9 +27,17 @@ class SfpMail extends Mailable
 
     public function content(): Content
     {
+        $logoPath = dirname(__DIR__, 2) . '/resources/images/dcpl-logo.png';
+        $logoSrc  = file_exists($logoPath)
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
+            : null;
+
         return new Content(
             view: 'sfp::mail.sfp',
-            with: ['body' => $this->emailBody],
+            with: [
+                'body'    => $this->emailBody,
+                'logoSrc' => $logoSrc,
+            ],
         );
     }
 

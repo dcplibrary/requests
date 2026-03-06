@@ -205,7 +205,7 @@ class NotificationService
 
     // ── Default templates (used as fallbacks before settings are customized) ──
 
-    private function defaultStaffTemplate(): string
+    public function defaultStaffTemplate(): string
     {
         return <<<'HTML'
 <h2 style="font-size:17px;font-weight:bold;margin:0 0 16px;color:#111827;">New Purchase Suggestion</h2>
@@ -245,7 +245,7 @@ class NotificationService
 HTML;
     }
 
-    private function defaultPatronTemplate(): string
+    public function defaultPatronTemplate(): string
     {
         return <<<'HTML'
 <p>Hi {patron_first_name},</p>
