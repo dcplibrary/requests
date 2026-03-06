@@ -10,6 +10,7 @@ use Dcplibrary\Sfp\Http\Controllers\Admin\PatronController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\RequestController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\RequestStatusController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\SelectorGroupController;
+use Dcplibrary\Sfp\Http\Controllers\Admin\FormFieldController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\SettingController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\UserController;
 use Dcplibrary\Sfp\Livewire\PatronRequests;
@@ -83,9 +84,11 @@ Route::group([
             Route::post('titles/{material}/bulk-status', [TitleController::class, 'bulkStatus'])
                 ->name('titles.bulk-status');
 
-            Route::get('/settings',              [SettingController::class, 'index'])->name('settings.index');
-            Route::get('/settings/notifications',[SettingController::class, 'notifications'])->name('settings.notifications');
-            Route::patch('/settings',            [SettingController::class, 'update'])->name('settings.update');
+            Route::get('/settings',                  [SettingController::class, 'index'])->name('settings.index');
+            Route::get('/settings/notifications',    [SettingController::class, 'notifications'])->name('settings.notifications');
+            Route::get('/settings/form-fields',              [FormFieldController::class, 'index'])->name('settings.form-fields');
+            Route::get('/settings/form-fields/{field}/edit', [FormFieldController::class, 'edit'])->name('settings.form-fields.edit');
+            Route::patch('/settings',                [SettingController::class, 'update'])->name('settings.update');
 
             Route::get('/backups',                  [BackupController::class, 'index'])->name('backups.index');
             Route::post('/backups/config-export',   [BackupController::class, 'exportConfig'])->name('backups.config-export');

@@ -39,6 +39,12 @@ class Audience extends Model
         return $this->belongsToMany(SelectorGroup::class, 'selector_group_audience');
     }
 
+    /** Scope ordered by sort_order (all records, active or not). */
+    public function scopeOrdered(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->orderBy('sort_order');
+    }
+
     /** Scope to active audiences, ordered by sort_order. */
     public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {

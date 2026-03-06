@@ -15,6 +15,9 @@ class SfpDatabaseSeeder extends Seeder
             AudiencesSeeder::class,
             RequestStatusesSeeder::class,
             CatalogFormatLabelsSeeder::class,
+            FormFieldsSeeder::class,
+            GenresSeeder::class,
+            ConsolesSeeder::class,
         ]);
     }
 }

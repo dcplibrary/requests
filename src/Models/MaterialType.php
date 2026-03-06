@@ -47,6 +47,12 @@ class MaterialType extends Model
         return $this->belongsToMany(SelectorGroup::class, 'selector_group_material_type');
     }
 
+    /** Scope ordered by sort_order (all records, active or not). */
+    public function scopeOrdered(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->orderBy('sort_order');
+    }
+
     /** Scope to active types, ordered by sort_order. */
     public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {

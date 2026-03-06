@@ -13,10 +13,9 @@
             @php
             $settingsNav = [
                 ['label' => 'General',        'route' => 'sfp.staff.settings.index',           'pattern' => 'sfp.staff.settings.index'],
+                ['label' => 'Form Fields',    'route' => 'sfp.staff.settings.form-fields',     'pattern' => 'sfp.staff.settings.form-fields*'],
                 ['label' => 'Notifications',  'route' => 'sfp.staff.settings.notifications',   'pattern' => 'sfp.staff.settings.notifications*'],
                 ['label' => 'Catalog',        'route' => 'sfp.staff.catalog.index',            'pattern' => 'sfp.staff.catalog.*'],
-                ['label' => 'Material Types', 'route' => 'sfp.staff.material-types.index',     'pattern' => 'sfp.staff.material-types.*'],
-                ['label' => 'Audiences',      'route' => 'sfp.staff.audiences.index',          'pattern' => 'sfp.staff.audiences.*'],
                 ['label' => 'Statuses',       'route' => 'sfp.staff.statuses.index',           'pattern' => 'sfp.staff.statuses.*'],
                 ['label' => 'Users',          'route' => 'sfp.staff.users.index',              'pattern' => 'sfp.staff.users.*'],
                 ['label' => 'Groups',         'route' => 'sfp.staff.groups.index',             'pattern' => 'sfp.staff.groups.*'],

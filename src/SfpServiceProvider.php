@@ -4,6 +4,9 @@ namespace Dcplibrary\Sfp;
 
 use Dcplibrary\Sfp\Console\Commands\SfpBackupCommand;
 use Dcplibrary\Sfp\Http\Middleware\RequireSfpRole;
+use Dcplibrary\Sfp\Livewire\Admin\FormFieldEdit;
+use Dcplibrary\Sfp\Livewire\Admin\FormFields as FormFieldsAdmin;
+use Dcplibrary\Sfp\Livewire\Admin\OptionsManager;
 use Dcplibrary\Sfp\Livewire\PatronPinLogin;
 use Dcplibrary\Sfp\Livewire\PatronRequests;
 use Dcplibrary\Sfp\Livewire\SfpForm;
@@ -91,6 +94,9 @@ class SfpServiceProvider extends ServiceProvider
         Livewire::component('sfp-form', SfpForm::class);
         Livewire::component('sfp-patron-pin-login', PatronPinLogin::class);
         Livewire::component('sfp-patron-requests', PatronRequests::class);
+        Livewire::component('sfp-admin-form-fields', FormFieldsAdmin::class);
+        Livewire::component('sfp-admin-form-field-edit', FormFieldEdit::class);
+        Livewire::component('sfp-admin-options-manager', OptionsManager::class);
     }
 
     protected function registerPublishables(): void

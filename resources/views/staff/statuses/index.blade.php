@@ -32,9 +32,7 @@
                 <td class="px-4 py-3 text-gray-600">{{ $status->is_terminal ? 'Yes' : 'No' }}</td>
                 <td class="px-4 py-3 text-gray-600">{{ $status->sort_order }}</td>
                 <td class="px-4 py-3">
-                    <span class="inline-block px-2 py-0.5 rounded text-xs font-medium {{ $status->active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
-                        {{ $status->active ? 'Active' : 'Inactive' }}
-                    </span>
+                    <x-sfp::status-pill :active="$status->active" />
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
                     <x-sfp::icon-btn :href="route('sfp.staff.statuses.edit', $status)" variant="edit" label="Edit" />

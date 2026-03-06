@@ -34,9 +34,7 @@
                     {{ $user->selectorGroups->pluck('name')->join(', ') ?: '—' }}
                 </td>
                 <td class="px-4 py-3">
-                    <span class="inline-block px-2 py-0.5 rounded text-xs font-medium {{ $user->active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
-                        {{ $user->active ? 'Active' : 'Inactive' }}
-                    </span>
+                    <x-sfp::status-pill :active="$user->active" />
                 </td>
                 <td class="px-4 py-3 text-gray-500 text-xs">
                     {{ $user->last_login_at?->diffForHumans() ?? '—' }}

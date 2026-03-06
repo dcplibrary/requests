@@ -202,13 +202,23 @@
                 :until="$limitUntil ? \Illuminate\Support\Carbon::parse($limitUntil) : null"
             />
         @else
+        {{--
+            Fields are rendered in the order defined in sfp_form_fields (sort_order).
+            Each field only appears when its 'active' flag is on and its condition passes.
+            The $visibleFields map (key => bool) is computed by SfpForm::getVisibleFieldsProperty().
+        --}}
         <div class="space-y-6">
-            {{-- Type of Material --}}
+        @foreach($orderedFields as $field)
+        @php $isVisible = $visibleFields[$field->key] ?? false; @endphp
+
+        {{-- ── material_type ─────────────────────────────────── --}}
+        @if($field->key === 'material_type' && $isVisible)
             <fieldset>
                 <legend class="block text-sm font-medium text-gray-700 mb-2">
-                    Type of Material <span class="text-red-600" aria-hidden="true">*</span>
+                    {{ $field->label }}
+                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
                 </legend>
-                <div class="space-y-1" role="radiogroup" aria-required="true">
+                <div class="space-y-1" role="radiogroup" aria-required="{{ $field->required ? 'true' : 'false' }}">
                     @foreach($materialTypes as $type)
                     <label class="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-50 {{ $material_type_id == $type->id ? 'bg-blue-50 ring-1 ring-blue-200' : '' }}">
                         <input
@@ -236,45 +246,14 @@
                 @enderror
             </fieldset>
 
-            {{-- Genre --}}
+        {{-- ── audience ───────────────────────────────────────── --}}
+        @elseif($field->key === 'audience' && $isVisible)
             <fieldset>
                 <legend class="block text-sm font-medium text-gray-700 mb-2">
-                    Genre <span class="text-red-600" aria-hidden="true">*</span>
+                    {{ $field->label }}
+                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
                 </legend>
-                <div class="flex items-center gap-4" role="radiogroup" aria-required="true">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            wire:model.live="genre"
-                            value="fiction"
-                            name="genre"
-                            class="text-blue-600 focus:ring-blue-500"
-                            aria-required="true"
-                        />
-                        <span class="text-sm text-gray-800">Fiction</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            wire:model.live="genre"
-                            value="nonfiction"
-                            name="genre"
-                            class="text-blue-600 focus:ring-blue-500"
-                        />
-                        <span class="text-sm text-gray-800">Nonfiction</span>
-                    </label>
-                </div>
-                @error('genre')
-                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
-                @enderror
-            </fieldset>
-
-            {{-- Audience --}}
-            <fieldset>
-                <legend class="block text-sm font-medium text-gray-700 mb-2">
-                    Audience <span class="text-red-600" aria-hidden="true">*</span>
-                </legend>
-                <div class="space-y-1" role="radiogroup" aria-required="true">
+                <div class="space-y-1" role="radiogroup" aria-required="{{ $field->required ? 'true' : 'false' }}">
                     @foreach($audiences as $audience)
                     <label class="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-50 {{ $audience_id == $audience->id ? 'bg-blue-50 ring-1 ring-blue-200' : '' }}">
                         <input
@@ -293,43 +272,112 @@
                 @enderror
             </fieldset>
 
-            {{-- Title --}}
+        {{-- ── genre ──────────────────────────────────────────── --}}
+        @elseif($field->key === 'genre' && $isVisible)
+            <fieldset>
+                <legend class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ $field->label }}
+                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
+                </legend>
+                <div class="flex items-center gap-4 flex-wrap" role="radiogroup" aria-required="{{ $field->required ? 'true' : 'false' }}">
+                    @foreach($genres as $genreOption)
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" wire:model.live="genre" value="{{ $genreOption->slug }}" name="genre" class="text-blue-600 focus:ring-blue-500" />
+                        <span class="text-sm text-gray-800">{{ $genreOption->name }}</span>
+                    </label>
+                    @endforeach
+                </div>
+                @error('genre')
+                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                @enderror
+            </fieldset>
+
+        {{-- ── console ─────────────────────────────────────────── --}}
+        @elseif($field->key === 'console' && $isVisible)
+            <fieldset>
+                <legend class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ $field->label }}
+                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
+                </legend>
+                <div class="flex items-center gap-4 flex-wrap" role="radiogroup" aria-required="{{ $field->required ? 'true' : 'false' }}">
+                    @foreach($consoles as $consoleOption)
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" wire:model.live="console" value="{{ $consoleOption->slug }}" name="console" class="text-blue-600 focus:ring-blue-500" />
+                        <span class="text-sm text-gray-800">{{ $consoleOption->name }}</span>
+                    </label>
+                    @endforeach
+                </div>
+                @error('console')
+                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                @enderror
+            </fieldset>
+
+        {{-- ── title ───────────────────────────────────────────── --}}
+        @elseif($field->key === 'title' && $isVisible)
             <div>
                 <label for="title" class="block text-sm font-medium text-gray-700 mb-1">
-                    Title <span class="text-red-600" aria-hidden="true">*</span>
+                    {{ $field->label }}
+                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
                 </label>
                 <input
                     type="text"
                     id="title"
                     wire:model="title"
                     class="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ $errors->has('title') ? 'border-red-500' : 'border-gray-300' }}"
-                    aria-required="true"
+                    @if($field->required) aria-required="true" @endif
                 />
                 @error('title')
                     <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
                 @enderror
             </div>
 
-            {{-- Author --}}
+        {{-- ── author ──────────────────────────────────────────── --}}
+        @elseif($field->key === 'author' && $isVisible)
             <div>
                 <label for="author" class="block text-sm font-medium text-gray-700 mb-1">
-                    Author / Creator <span class="text-red-600" aria-hidden="true">*</span>
+                    {{ $field->label }}
+                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
                 </label>
                 <input
                     type="text"
                     id="author"
                     wire:model="author"
                     class="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ $errors->has('author') ? 'border-red-500' : 'border-gray-300' }}"
-                    aria-required="true"
+                    @if($field->required) aria-required="true" @endif
                 />
                 @error('author')
                     <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
                 @enderror
             </div>
 
-            {{-- Publish Date --}}
+        {{-- ── isbn ────────────────────────────────────────────── --}}
+        @elseif($field->key === 'isbn' && $isVisible)
             <div>
-                <label for="publish_date" class="block text-sm font-medium text-gray-700 mb-1">Publish / Release Date</label>
+                <label for="isbn" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ $field->label }}
+                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
+                </label>
+                <input
+                    type="text"
+                    id="isbn"
+                    wire:model="isbn"
+                    placeholder="e.g. 9780593315163"
+                    class="w-full max-w-xs rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ $errors->has('isbn') ? 'border-red-500' : 'border-gray-300' }}"
+                    @if($field->required) aria-required="true" @endif
+                />
+                <p class="mt-1 text-xs text-gray-400">10 or 13 digits, no dashes required</p>
+                @error('isbn')
+                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                @enderror
+            </div>
+
+        {{-- ── publish_date ────────────────────────────────────── --}}
+        @elseif($field->key === 'publish_date' && $isVisible)
+            <div>
+                <label for="publish_date" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ $field->label }}
+                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
+                </label>
                 <input
                     type="text"
                     id="publish_date"
@@ -337,8 +385,6 @@
                     placeholder="e.g. 2022 or January 2022"
                     class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-
-                {{-- ILL soft warning --}}
                 @if($showIllWarning)
                 <div class="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md" role="alert">
                     <p class="text-sm text-amber-800">
@@ -349,18 +395,26 @@
                 @endif
             </div>
 
-            {{-- Where did you hear about this --}}
+        {{-- ── where_heard ─────────────────────────────────────── --}}
+        @elseif($field->key === 'where_heard' && $isVisible)
             <div>
-                <label for="where_heard" class="block text-sm font-medium text-gray-700 mb-1">Where did you hear about this?</label>
+                <label for="where_heard" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ $field->label }}
+                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
+                </label>
                 <textarea
                     id="where_heard"
                     wire:model="where_heard"
                     rows="3"
                     class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
                 ></textarea>
+                @error('where_heard')
+                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                @enderror
             </div>
 
-            {{-- ILL checkbox --}}
+        {{-- ── ill_requested ───────────────────────────────────── --}}
+        @elseif($field->key === 'ill_requested' && $isVisible)
             <div>
                 <p class="text-sm font-medium text-gray-700 mb-2">If the library decides not to purchase this item, would you like the library to try to obtain it from another library (via interlibrary loan)?</p>
                 <div class="space-y-1">
@@ -370,6 +424,9 @@
                     </label>
                 </div>
             </div>
+
+        @endif
+        @endforeach
         </div>
 
         <div class="mt-8 flex justify-between">

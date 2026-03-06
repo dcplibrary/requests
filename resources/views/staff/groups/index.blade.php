@@ -36,9 +36,7 @@
                 </td>
                 <td class="px-4 py-3 text-gray-600">{{ $group->users->count() }}</td>
                 <td class="px-4 py-3">
-                    <span class="inline-block px-2 py-0.5 rounded text-xs font-medium {{ $group->active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
-                        {{ $group->active ? 'Active' : 'Inactive' }}
-                    </span>
+                    <x-sfp::status-pill :active="$group->active" />
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
                     <x-sfp::icon-btn :href="route('sfp.staff.groups.edit', $group)" variant="edit" label="Edit" />

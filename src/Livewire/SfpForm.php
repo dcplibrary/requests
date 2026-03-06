@@ -4,6 +4,9 @@ namespace Dcplibrary\Sfp\Livewire;
 
 use Dcplibrary\Sfp\Models\Audience;
 use Dcplibrary\Sfp\Models\CatalogFormatLabel;
+use Dcplibrary\Sfp\Models\Console;
+use Dcplibrary\Sfp\Models\FormField;
+use Dcplibrary\Sfp\Models\Genre;
 use Dcplibrary\Sfp\Models\Material;
 use Dcplibrary\Sfp\Models\MaterialType;
 use Dcplibrary\Sfp\Models\Patron;
@@ -44,22 +47,23 @@ class SfpForm extends Component
     public string $email = '';
 
     // --- Step 2: Material ---
-    #[Validate('required|exists:material_types,id')]
+    // Note: validation rules for these fields are built dynamically in buildStepTwoRules()
+    // based on each field's 'active', 'required', and 'condition' config in sfp_form_fields.
     public ?int $material_type_id = null;
 
     public string $other_material_text = '';
 
-    #[Validate('required|in:fiction,nonfiction')]
     public string $genre = '';
 
-    #[Validate('required|exists:audiences,id')]
+    public string $console = '';
+
     public ?int $audience_id = null;
 
-    #[Validate('required|min:1|max:500')]
     public string $title = '';
 
-    #[Validate('required|min:1|max:300')]
     public string $author = '';
+
+    public string $isbn = '';
 
     public string $publish_date = '';
 
@@ -176,13 +180,7 @@ class SfpForm extends Component
         }
 
         if ($this->step === 2) {
-            $this->validate([
-                'material_type_id' => 'required|exists:material_types,id',
-                'genre'            => 'required|in:fiction,nonfiction',
-                'audience_id'      => 'required|exists:audiences,id',
-                'title'            => 'required|min:1|max:500',
-                'author'           => 'required|min:1|max:300',
-            ]);
+            $this->validate($this->buildStepTwoRules());
         }
 
         $this->step++;
@@ -216,6 +214,7 @@ class SfpForm extends Component
             'showIllWarning',
             'other_material_text',
             'genre',
+            'console',
             'resolvedMaterialId',
             'isDuplicate',
             'duplicateMessage',
@@ -237,6 +236,28 @@ class SfpForm extends Component
         $this->step = 2;
     }
 
+    // --- Clear hidden fields when material type or audience changes ---
+
+    public function updatedMaterialTypeId(): void
+    {
+        $this->clearHiddenFields();
+    }
+
+    public function updatedAudienceId(): void
+    {
+        $this->clearHiddenFields();
+    }
+
+    private function clearHiddenFields(): void
+    {
+        if (! $this->fieldVisible('genre')) {
+            $this->genre = '';
+        }
+        if (! $this->fieldVisible('console')) {
+            $this->console = '';
+        }
+    }
+
     // --- ILL age warning (triggered by publish_date change) ---
 
     public function updatedPublishDate(string $value): void
@@ -244,7 +265,7 @@ class SfpForm extends Component
         $this->showIllWarning = Material::yearExceedsIllThreshold($value);
     }
 
-    // --- Material type "Other" toggle ---
+    // --- Material type "Other" toggle (inline text within material type radio row) ---
 
     public function getShowOtherTextProperty(): bool
     {
@@ -255,11 +276,115 @@ class SfpForm extends Component
         return $type?->has_other_text ?? false;
     }
 
+    // --- Form field config (cached) ---
+
+    /**
+     * Return all form fields ordered, keyed by their 'key'.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \Dcplibrary\Sfp\Models\FormField>
+     */
+    public function getFormFieldsProperty()
+    {
+        return FormField::allOrdered();
+    }
+
+    /**
+     * Current form state used to evaluate conditional logic.
+     * Maps the condition rule 'field' names to the currently selected slug.
+     */
+    private function formState(): array
+    {
+        $materialSlug = $this->material_type_id
+            ? (MaterialType::find($this->material_type_id)?->slug ?? '')
+            : '';
+
+        $audienceSlug = $this->audience_id
+            ? (Audience::find($this->audience_id)?->slug ?? '')
+            : '';
+
+        return [
+            'material_type' => $materialSlug,
+            'audience'      => $audienceSlug,
+        ];
+    }
+
+    /**
+     * Return the set of field keys that are visible given the current form state.
+     *
+     * @return array<string, bool>  ['genre' => true, 'console' => false, ...]
+     */
+    public function getVisibleFieldsProperty(): array
+    {
+        $state = $this->formState();
+
+        return $this->formFields
+            ->mapWithKeys(fn (FormField $f) => [$f->key => $f->isVisibleFor($state)])
+            ->all();
+    }
+
+    /**
+     * True when the given field key is both active and passes its condition.
+     */
+    public function fieldVisible(string $key): bool
+    {
+        return $this->visibleFields[$key] ?? false;
+    }
+
+    /**
+     * Build the step-2 validation rules based on field config.
+     * Required fields that are currently hidden are treated as nullable.
+     *
+     * @return array<string, string>
+     */
+    private function buildStepTwoRules(): array
+    {
+        // Fixed base rules that are always present regardless of field config
+        $rules = [
+            'material_type_id' => 'required|exists:material_types,id',
+            'audience_id'      => 'required|exists:audiences,id',
+        ];
+
+        $fieldRuleMap = [
+            'genre'        => function (bool $req) {
+                $slugs = Genre::active()->pluck('slug')->implode(',');
+                return $req ? "required|in:$slugs" : "nullable|in:$slugs";
+            },
+            'console'      => function (bool $req) {
+                $slugs = Console::active()->pluck('slug')->implode(',');
+                return $req ? "required|in:$slugs" : "nullable|in:$slugs";
+            },
+            'title'        => fn (bool $req) => $req ? 'required|min:1|max:500' : 'nullable|min:1|max:500',
+            'author'       => fn (bool $req) => $req ? 'required|min:1|max:300' : 'nullable|min:1|max:300',
+            'isbn'         => fn (bool $req) => $req ? 'required|string|max:20' : 'nullable|string|max:20',
+            'publish_date' => fn ()           => 'nullable|string|max:50',
+            'where_heard'  => fn ()           => 'nullable|string|max:1000',
+            'ill_requested'=> fn ()           => 'nullable|boolean',
+        ];
+
+        $state = $this->formState();
+
+        foreach ($this->formFields as $field) {
+            if (! isset($fieldRuleMap[$field->key])) {
+                continue;
+            }
+
+            $visible  = $field->isVisibleFor($state);
+            $required = $visible && $field->required;
+
+            // Map field key → Livewire property name (console has its own property now)
+            $prop = $field->key;
+
+            $rules[$prop] = $fieldRuleMap[$field->key]($required);
+        }
+
+        return $rules;
+    }
+
     // --- Main submission ---
 
     public function submit(): void
     {
-        $this->validate();
+        $this->validate($this->buildStepTwoRules());
 
         $this->processing = true;
         $this->processingStep = 'Saving your information...';
@@ -527,7 +652,9 @@ class SfpForm extends Component
             'submitted_title'        => $this->title,
             'submitted_author'       => $this->author,
             'submitted_publish_date' => $this->publish_date ?: null,
-            'other_material_text'    => $this->getShowOtherTextProperty() ? $this->other_material_text : null,
+            'other_material_text'    => $this->getShowOtherTextProperty()
+                                            ? $this->other_material_text
+                                            : ($this->fieldVisible('console') ? $this->console : null),
             'genre'                  => $this->genre ?: null,
             'where_heard'            => $this->where_heard ?: null,
             'ill_requested'          => $this->ill_requested,
@@ -582,14 +709,20 @@ class SfpForm extends Component
 
     public function render()
     {
+        $visible = $this->visibleFields;
+
         return view('sfp::livewire.sfp-form', [
             'materialTypes'     => MaterialType::active()->get(),
             'audiences'         => Audience::active()->get(),
+            'genres'            => Genre::active()->get(),
+            'consoles'          => Console::active()->get(),
+            'orderedFields'     => $this->formFields,   // FormField collection in sort_order
+            'visibleFields'     => $visible,             // ['genre' => true/false, ...]
             'illWarningMessage' => Setting::get('ill_warning_message', ''),
             'successMessage'    => Setting::get('submission_success_message', 'Thank you for your suggestion!'),
             'catalogOwnedMessage' => Setting::get(
                 'catalog_owned_message',
-                '<p><strong>Good news:</strong> this item is already in our catalog. Please place a hold in the catalog to get it as soon as it’s available.</p>'
+                '<p><strong>Good news:</strong> this item is already in our catalog. Please place a hold in the catalog to get it as soon as it\'s available.</p>'
             ),
             'autoOrderExcludedMessage' => $this->autoOrderExcludedMessage,
             'duplicateMessage'  => $this->duplicateMessage,
