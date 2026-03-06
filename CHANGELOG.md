@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.0.2](https://github.com/dcplibrary/sfp/compare/v2.0.1...v2.0.2) (2026-03-06)
+
+
+### Bug Fixes
+
+* add missing columns to requests table ([b9a9e40](https://github.com/dcplibrary/sfp/commit/b9a9e404becb0399a10952d0a26baccc5c874a84))
+
 ## [2.0.1](https://github.com/dcplibrary/sfp/compare/v2.0.0...v2.0.1) (2026-03-06)
 
 
