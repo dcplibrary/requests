@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.0.1](https://github.com/dcplibrary/sfp/compare/v2.0.0...v2.0.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* enable option deleting and remove console game for material type seeder ([777f6a9](https://github.com/dcplibrary/sfp/commit/777f6a922dd8c099aedfcf618b973b8d56addb2f))
+
 ## [1.9.2](https://github.com/dcplibrary/sfp/compare/v1.9.1...v1.9.2) (2026-03-05)
 
 ## [1.9.1](https://github.com/dcplibrary/sfp/compare/v1.9.0...v1.9.1) (2026-03-05)
