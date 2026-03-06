@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.1.0](https://github.com/dcplibrary/sfp/compare/v2.0.3...v2.1.0) (2026-03-06)
+
+
+### Features
+
+* update patron email header and footer ([f5ac5a8](https://github.com/dcplibrary/sfp/commit/f5ac5a80263f8b60ce2f469bfe421b820aa9c020))
+
 ## [2.0.3](https://github.com/dcplibrary/sfp/compare/v2.0.2...v2.0.3) (2026-03-06)
 
 
