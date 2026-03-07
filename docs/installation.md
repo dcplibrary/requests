@@ -34,6 +34,19 @@ Then run:
 composer require dcplibrary/sfp:dev-main
 ```
 
+## Optional: Enable Livewire Blaze (recommended)
+
+This package can automatically optimize its **anonymous Blade components** when the host app installs `livewire/blaze`.
+
+In the host app:
+
+```bash
+composer require livewire/blaze:^1.0
+php artisan view:clear
+```
+
+No further configuration is required in the host app or in this package.
+
 ### Local Development
 
 The package is loaded via a Composer path repository so changes are reflected immediately (via symlink) without a `composer update`:

@@ -38,6 +38,15 @@ Then install:
 composer require dcplibrary/sfp
 ```
 
+## Optional: Enable Livewire Blaze (recommended)
+
+If the host app installs `livewire/blaze`, this package will automatically optimize its anonymous Blade components for faster rendering (especially on Livewire re-renders).
+
+```bash
+composer require livewire/blaze:^1.0
+php artisan view:clear
+```
+
 The service provider (`Dcplibrary\Sfp\SfpServiceProvider`) is auto-discovered via the `extra.laravel.providers` key in `composer.json`.
 
 ---
