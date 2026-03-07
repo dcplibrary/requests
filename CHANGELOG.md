@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.2.0](https://github.com/dcplibrary/sfp/compare/v2.1.0...v2.2.0) (2026-03-07)
+
+
+### Features
+
+* enable livewire blaze ([edeb461](https://github.com/dcplibrary/sfp/commit/edeb461d10a3d843c91020fe4235b33cbe499f8c))
+
 # [2.1.0](https://github.com/dcplibrary/sfp/compare/v2.0.3...v2.1.0) (2026-03-06)
 
 
