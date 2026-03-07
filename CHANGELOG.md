@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.4.0](https://github.com/dcplibrary/sfp/compare/v2.3.0...v2.4.0) (2026-03-07)
+
+
+### Features
+
+* breaking - integrate ill ([a81abe0](https://github.com/dcplibrary/sfp/commit/a81abe060afc0099358ebc44968611b392e397cb))
+
 # [2.3.0](https://github.com/dcplibrary/sfp/compare/v2.2.2...v2.3.0) (2026-03-07)
 
 
