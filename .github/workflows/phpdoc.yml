@@ -1,0 +1,55 @@
+name: API Docs (phpDocumentor)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & Deploy API Docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: mbstring, xml, ctype, json
+          coverage: none
+
+      - name: Download phpDocumentor PHAR
+        run: |
+          curl -LsS -o phpDocumentor.phar https://phpdoc.org/phpDocumentor.phar
+          php phpDocumentor.phar --version
+
+      - name: Build docs
+        run: php phpDocumentor.phar -c phpdoc.dist.xml
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/phpdoc
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

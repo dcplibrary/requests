@@ -176,3 +176,7 @@ fabric.properties
 
 # Claude Code
 .claude/
+
+# Generated API documentation
+build/phpdoc/
+.phpdoc/
