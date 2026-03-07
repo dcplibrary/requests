@@ -16,6 +16,36 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+if (! function_exists('app')) {
+    /**
+     * Minimal test stub for Laravel's app() helper.
+     *
+     * Used by SfpRequest::scopeVisibleTo() to allow dev-only behavior checks like
+     * app()->environment('local') even when laravel/framework isn't installed.
+     */
+    function app()
+    {
+        return new class {
+            public function environment(...$environments)
+            {
+                $current = getenv('APP_ENV') ?: ($_ENV['APP_ENV'] ?? 'testing');
+
+                if (count($environments) === 0) {
+                    return $current;
+                }
+
+                foreach ($environments as $env) {
+                    if ($env === $current) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        };
+    }
+}
+
 if (! class_exists(\Illuminate\Foundation\Auth\User::class)) {
     // phpcs:disable
     /**

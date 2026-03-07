@@ -163,12 +163,27 @@ class SfpRequest extends Model
             return $query;
         }
 
-        $materialTypeIds = $sfpUser->accessibleMaterialTypeIds();
-        $audienceIds     = $sfpUser->accessibleAudienceIds();
+        // Selector scoping must be based on selector groups as *paired* scopes.
+        // A user with multiple groups should see the UNION of each group's
+        // (material_type_id × audience_id) coverage — not the cartesian product
+        // of all material types across all groups with all audiences across all groups.
+        //
+        // Implemented as an EXISTS subquery that requires both pivots to match
+        // the same selector_group_id.
+        $userId = $sfpUser->getKey();
 
-        return $query->where(function ($q) use ($materialTypeIds, $audienceIds) {
-            $q->whereIn('material_type_id', $materialTypeIds)
-              ->whereIn('audience_id', $audienceIds);
+        return $query->whereExists(function ($sub) use ($userId) {
+            $sub->selectRaw('1')
+                ->from('selector_group_user as sgu')
+                ->join('selector_group_material_type as sgmt', function ($join) {
+                    $join->on('sgmt.selector_group_id', '=', 'sgu.selector_group_id')
+                        ->whereColumn('sgmt.material_type_id', 'requests.material_type_id');
+                })
+                ->join('selector_group_audience as sga', function ($join) {
+                    $join->on('sga.selector_group_id', '=', 'sgu.selector_group_id')
+                        ->whereColumn('sga.audience_id', 'requests.audience_id');
+                })
+                ->where('sgu.user_id', $userId);
         });
     }
 }
