@@ -73,6 +73,18 @@ class FormField extends Model
             : ! in_array(false, $results, true);
     }
 
+    /**
+     * Determine whether this field is required for the given state.
+     *
+     * A field can only be required if it is currently visible.
+     *
+     * @param array{material_type: string|null, audience: string|null} $state
+     */
+    public function isRequiredFor(array $state): bool
+    {
+        return (bool) $this->required && $this->isVisibleFor($state);
+    }
+
     private function evaluateRule(array $rule, array $state): bool
     {
         $field    = $rule['field']    ?? '';

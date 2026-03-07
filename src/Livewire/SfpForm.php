@@ -250,12 +250,36 @@ class SfpForm extends Component
 
     private function clearHiddenFields(): void
     {
-        if (! $this->fieldVisible('genre')) {
-            $this->genre = '';
+        foreach ($this->formFields as $field) {
+            // Never clear the controlling selectors here.
+            if (in_array($field->key, ['material_type', 'audience'], true)) {
+                continue;
+            }
+
+            if (! $this->fieldVisible($field->key)) {
+                $this->clearFieldValue($field->key);
+            }
         }
-        if (! $this->fieldVisible('console')) {
-            $this->console = '';
+
+        // Clear "other" text when it isn't currently shown.
+        if (! $this->showOtherText) {
+            $this->other_material_text = '';
         }
+    }
+
+    private function clearFieldValue(string $key): void
+    {
+        match ($key) {
+            'genre'        => $this->genre = '',
+            'console'      => $this->console = '',
+            'title'        => $this->title = '',
+            'author'       => $this->author = '',
+            'isbn'         => $this->isbn = '',
+            'publish_date' => $this->publish_date = '',
+            'where_heard'  => $this->where_heard = '',
+            'ill_requested'=> $this->ill_requested = false,
+            default        => null,
+        };
     }
 
     // --- ILL age warning (triggered by publish_date change) ---
@@ -368,8 +392,7 @@ class SfpForm extends Component
                 continue;
             }
 
-            $visible  = $field->isVisibleFor($state);
-            $required = $visible && $field->required;
+            $required = $field->isRequiredFor($state);
 
             // Map field key → Livewire property name (console has its own property now)
             $prop = $field->key;

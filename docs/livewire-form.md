@@ -53,6 +53,52 @@ A processing overlay (`$processing = true`) replaces all step content while sear
 | `$ill_requested` | `bool` |
 | `$showIllWarning` | `bool` |
 
+## Dynamic Step 2 form fields (`sfp_form_fields`)
+
+Step 2’s fields are **config-driven** via the `sfp_form_fields` table (`Dcplibrary\Sfp\Models\FormField`).
+
+- **Admin controls**: order (`sort_order`), label, active/required, and conditional logic rules.
+- **Conditional logic inputs**: rules reference **slugs**, not IDs:
+  - `material_type` → `material_types.slug`
+  - `audience` → `audiences.slug`
+- **Visibility evaluation**:
+  - `SfpForm::formState()` builds `{ material_type: <slug>, audience: <slug> }` from the selected IDs.
+  - `FormField::isVisibleFor($state)` evaluates `match: all|any` + `rules[]` (`in|not_in`).
+  - `SfpForm::visibleFields` is a map of `key => bool` computed from the ordered fields.
+  - The blade (`resources/views/livewire/sfp-form.blade.php`) loops `orderedFields` in DB order and renders only when `visibleFields[$field->key]` is true.
+- **Hidden field clearing**:
+  - When `material_type_id` or `audience_id` changes, `clearHiddenFields()` clears any now-hidden Livewire properties so stale values don’t “stick” across selections.
+- **Validation**:
+  - `buildStepTwoRules()` builds rules from the field config.
+  - A field is only required when it is currently visible (`FormField::isRequiredFor($state)`), so hidden required fields validate as nullable.
+- **Caching**:
+  - Field config is cached via `FormField::allOrdered()` and is busted by the staff Form Fields UI (`FormField::bustCache()` on save).
+
+The staff UI for this lives under **Settings → Form Fields** (Livewire admin components `FormFields` / `FormFieldEdit`), and option slugs used in conditional logic are protected from editing by `OptionsManager` (locked when referenced by any field condition).
+
+### Persistence notes (what is saved where)
+
+Even though Step 2 is “config-driven” for display/validation, the final persistence into `requests` is intentionally explicit in `SfpForm::saveRequest()`:
+
+- **`genre`**: stored on `requests.genre` (slug)
+- **`console` vs “Other” text**:
+  - If the selected material type has `has_other_text = true`, the free-text input is saved to `requests.other_material_text`
+  - Otherwise, if the `console` field is visible, the selected console slug is saved to `requests.other_material_text`
+- **Other fields**: `title`, `author`, `where_heard`, `ill_requested`, etc. map directly to request columns (`submitted_*` for patron-entered bibliographic fields)
+
+### Slug locking (why some slugs can’t be edited)
+
+Option slugs for `material_types` and `audiences` are referenced by form-field conditional rules, so changing them can silently break visibility logic.
+
+The admin Options UI prevents this in two layers:
+
+- **UI**: shows the slug read-only when it’s referenced by any `FormField.condition` rule
+- **Server-side guard**: `OptionsManager::updateItem()` refuses to change a slug that is referenced (it keeps the original slug even if a different one is submitted)
+
+### Tests that lock in the decision tree
+
+- `tests/Unit/SfpFormStepTwoRulesTest.php` verifies the key invariant: a field marked required in admin is **only required when currently visible** (hidden required fields validate as nullable).
+
 ### Step 3 — Resolution
 | Property | Type | Description |
 |----------|------|-------------|
