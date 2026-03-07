@@ -47,6 +47,7 @@ class SfpServiceProvider extends ServiceProvider
         $this->registerMiddleware();
         $this->registerRoutes();
         $this->registerViews();
+        $this->registerBlaze();
         $this->registerLivewire();
         $this->registerPublishables();
 
@@ -87,6 +88,18 @@ class SfpServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'sfp');
 
         Blade::anonymousComponentNamespace('sfp::components', 'sfp');
+    }
+
+    protected function registerBlaze(): void
+    {
+        // Blaze is an optional host-app optimization. We only enable it if the
+        // consuming application has installed livewire/blaze.
+        if (!class_exists(\Livewire\Blaze\Blaze::class)) {
+            return;
+        }
+
+        \Livewire\Blaze\Blaze::optimize()
+            ->in(__DIR__ . '/../resources/views/components');
     }
 
     protected function registerLivewire(): void
