@@ -2,6 +2,8 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.2.1](https://github.com/dcplibrary/sfp/compare/v2.2.0...v2.2.1) (2026-03-07)
+
 # [2.2.0](https://github.com/dcplibrary/sfp/compare/v2.1.0...v2.2.0) (2026-03-07)
 
 
