@@ -45,6 +45,7 @@ class FormFields extends Component
                 'label'        => $f->label,
                 'active'       => $f->active,
                 'required'     => $f->required,
+                'include_as_token' => (bool) $f->include_as_token,
                 'has_condition'=> ! empty($f->condition['rules']),
                 'condition'    => $f->condition ?? ['match' => 'all', 'rules' => []],
             ])

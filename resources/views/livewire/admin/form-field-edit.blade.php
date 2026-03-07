@@ -44,6 +44,18 @@
                 <span class="text-xs text-gray-400">— show this field on the patron form</span>
             </div>
 
+            <div class="flex items-center gap-2">
+                <input type="hidden" name="includeAsToken" value="0">
+                <input
+                    type="checkbox"
+                    id="ff_token"
+                    wire:model="includeAsToken"
+                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label for="ff_token" class="text-sm font-medium text-gray-700 cursor-pointer">Include as token</label>
+                <span class="text-xs text-gray-400">— makes <span class="font-mono text-gray-500">{<span class="text-gray-500">{{ $fieldKey }}</span>}</span> available in notification templates</span>
+            </div>
+
         </div>
     </div>
 

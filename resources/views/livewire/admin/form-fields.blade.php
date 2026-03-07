@@ -7,6 +7,7 @@
                     <th class="px-4 py-3 text-left font-medium text-gray-600 w-16">Order</th>
                     <th class="px-4 py-3 text-left font-medium text-gray-600">Label</th>
                     <th class="px-4 py-3 text-left font-medium text-gray-600">Key</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Token</th>
                     <th class="px-4 py-3 text-left font-medium text-gray-600">Condition</th>
                     <th class="px-4 py-3 text-left font-medium text-gray-600">Required</th>
                     <th class="px-4 py-3 text-left font-medium text-gray-600">Active</th>
@@ -47,6 +48,17 @@
                     {{-- Key --}}
                     <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ $field['key'] }}</td>
 
+                    {{-- Token badge --}}
+                    <td class="px-4 py-3">
+                        @if($field['include_as_token'] ?? false)
+                            <span class="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 rounded px-1.5 py-0.5 font-mono">
+                                {{ '{' . $field['key'] . '}' }}
+                            </span>
+                        @else
+                            <span class="text-gray-300 text-xs">—</span>
+                        @endif
+                    </td>
+
                     {{-- Conditional badge --}}
                     <td class="px-4 py-3">
                         @if($field['has_condition'] && ! empty($field['condition']['rules']))
@@ -85,7 +97,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-4 py-10 text-center text-gray-400">No form fields found.</td>
+                    <td colspan="8" class="px-4 py-10 text-center text-gray-400">No form fields found.</td>
                 </tr>
                 @endforelse
             </tbody>

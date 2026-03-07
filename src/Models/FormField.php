@@ -20,17 +20,19 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool        $active           When false the field is never rendered
  * @property bool        $required         When true, validation fails if the field is blank
  * @property array|null  $condition        Conditional logic rules (null = always show)
+ * @property bool        $include_as_token When true, expose {key} in notifications/templates
  */
 class FormField extends Model
 {
     protected $table = 'sfp_form_fields';
 
-    protected $fillable = ['key', 'label', 'sort_order', 'active', 'required', 'condition'];
+    protected $fillable = ['key', 'label', 'sort_order', 'active', 'required', 'condition', 'include_as_token'];
 
     protected $casts = [
         'active'    => 'boolean',
         'required'  => 'boolean',
         'condition' => 'array',
+        'include_as_token' => 'boolean',
     ];
 
     // ── Scopes ──────────────────────────────────────────────────────────────
@@ -128,9 +130,7 @@ class FormField extends Model
     public static function tokenFields()
     {
         return cache()->remember('sfp_form_fields_token', now()->addHour(), function () {
-            return static::whereIn('key', [
-                'genre', 'console', 'isbn', 'publish_date', 'where_heard', 'ill_requested',
-            ])->ordered()->get();
+            return static::where('include_as_token', true)->ordered()->get();
         });
     }
 

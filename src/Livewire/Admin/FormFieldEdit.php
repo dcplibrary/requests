@@ -20,6 +20,7 @@ class FormFieldEdit extends Component
     public string $label    = '';
     public bool   $required = false;
     public bool   $active   = false;
+    public bool   $includeAsToken = false;
 
     /** @var array{match: string, rules: array<int, array<string, mixed>>} */
     public array $condition    = ['match' => 'all', 'rules' => []];
@@ -35,6 +36,7 @@ class FormFieldEdit extends Component
         $this->label          = $field->label;
         $this->required       = $field->required;
         $this->active         = $field->active;
+        $this->includeAsToken = (bool) $field->include_as_token;
         $this->condition      = $field->condition ?? ['match' => 'all', 'rules' => []];
         $this->hasCondition   = ! empty($this->condition['rules']);
     }
@@ -55,6 +57,7 @@ class FormFieldEdit extends Component
             'label'           => $this->label,
             'required'        => $this->required,
             'active'          => $this->active,
+            'include_as_token'=> $this->includeAsToken,
             'condition'       => $condition ? json_encode($condition) : null,
         ]);
 
