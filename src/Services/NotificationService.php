@@ -4,6 +4,8 @@ namespace Dcplibrary\Sfp\Services;
 
 use Dcplibrary\Sfp\Mail\SfpMail;
 use Dcplibrary\Sfp\Models\Console;
+use Dcplibrary\Sfp\Models\CustomField;
+use Dcplibrary\Sfp\Models\CustomFieldOption;
 use Dcplibrary\Sfp\Models\FormField;
 use Dcplibrary\Sfp\Models\Genre;
 use Dcplibrary\Sfp\Models\SelectorGroup;
@@ -175,6 +177,45 @@ class NotificationService
         // Extend with dynamic form-field tokens.
         foreach (FormField::tokenFields() as $field) {
             $map["{{$field->key}}"] = $this->formFieldValue($field->key, $request);
+        }
+
+        // Extend with dynamic custom-field tokens.
+        $kind = $request->request_kind ?: 'sfp';
+        $customFields = CustomField::query()
+            ->where('active', true)
+            ->where('include_as_token', true)
+            ->forKind($kind)
+            ->ordered()
+            ->get();
+
+        $request->loadMissing(['customFieldValues']);
+        $valuesByFieldId = $request->customFieldValues->keyBy('custom_field_id');
+
+        $fieldIds = $customFields->pluck('id')->all();
+        $optionsByFieldId = CustomFieldOption::query()
+            ->whereIn('custom_field_id', $fieldIds)
+            ->get()
+            ->groupBy('custom_field_id')
+            ->map(fn ($g) => $g->pluck('name', 'slug')->all())
+            ->all();
+
+        foreach ($customFields as $field) {
+            $val = $valuesByFieldId[$field->id] ?? null;
+            $token = "{{$field->key}}";
+
+            if (! $val) {
+                $map[$token] = '';
+                continue;
+            }
+
+            if ($val->value_slug) {
+                $map[$token] = $optionsByFieldId[$field->id][$val->value_slug] ?? $val->value_slug;
+            } else {
+                $raw = (string) ($val->value_text ?? '');
+                $map[$token] = $field->type === 'checkbox'
+                    ? ($raw === '1' ? 'Yes' : ($raw === '0' ? 'No' : $raw))
+                    : $raw;
+            }
         }
 
         return str_replace(array_keys($map), array_values($map), $template);

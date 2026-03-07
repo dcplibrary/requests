@@ -9,21 +9,21 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Ensure the authenticated user has an SFP staff role (admin or selector).
+ * Ensure the authenticated user has an SFP staff role (admin, selector, or ill).
  *
  * Resolution order:
  *  1. No authenticated user → let the host app's auth middleware handle it (pass through).
  *  2. Authenticated but no matching SFP user record → attempt to auto-provision from host app role.
  *  3. Host app user has an allowed role → create sfp_users record (active, same role) and proceed.
  *  4. No sfp_users record and no allowed host-app role → show no-access view.
- *  5. sfp_users record exists but role is neither 'admin' nor 'selector' → show no-access view.
+ *  5. sfp_users record exists but role is neither 'admin' nor 'selector' nor 'ill' → show no-access view.
  *  6. sfp_users record exists but active = false → show no-access view.
- *  7. Role is admin or selector and active = true → proceed.
+ *  7. Role is admin, selector, or ill and active = true → proceed.
  */
 class RequireSfpRole
 {
     /** Roles that are permitted to access the staff area. */
-    private const ALLOWED_ROLES = ['admin', 'selector'];
+    private const ALLOWED_ROLES = ['admin', 'selector', 'ill'];
 
     public function handle(Request $request, Closure $next): Response
     {

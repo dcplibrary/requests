@@ -6,6 +6,7 @@ use Dcplibrary\Sfp\Http\Controllers\Controller;
 use Dcplibrary\Sfp\Models\Audience;
 use Dcplibrary\Sfp\Models\MaterialType;
 use Dcplibrary\Sfp\Models\SelectorGroup;
+use Dcplibrary\Sfp\Models\Setting;
 use Illuminate\Http\Request;
 
 class SelectorGroupController extends Controller
@@ -74,6 +75,11 @@ class SelectorGroupController extends Controller
             'audiences.*'        => 'exists:audiences,id',
         ]);
 
+        $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
+        if ($illGroupId && (int) $group->id === $illGroupId && ($data['active'] ?? false) === false) {
+            return back()->withErrors(['error' => 'The ILL access group cannot be deactivated.']);
+        }
+
         $group->update([
             'name'                => $data['name'],
             'description'         => $data['description'] ?? null,
@@ -89,6 +95,11 @@ class SelectorGroupController extends Controller
 
     public function destroy(SelectorGroup $group)
     {
+        $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
+        if ($illGroupId && (int) $group->id === $illGroupId) {
+            return back()->withErrors(['error' => 'The ILL access group cannot be deleted.']);
+        }
+
         $group->delete();
 
         return redirect()->route('sfp.staff.groups.index')->with('success', 'Group deleted.');

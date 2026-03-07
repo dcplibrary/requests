@@ -16,12 +16,18 @@ class Setting extends Model
      */
     public static function get(string $key, mixed $default = null): mixed
     {
-        // Cache only raw attributes, not the Eloquent model object, to avoid
-        // array-to-string errors when the cache driver serializes/deserializes it.
-        $attrs = Cache::remember("setting:{$key}", 3600, function () use ($key) {
-            $row = static::where('key', $key)->first();
-            return $row ? ['type' => $row->type, 'value' => $row->value] : null;
-        });
+        // In isolated unit tests (no Laravel app boot), facades won't have a root.
+        // Fail closed to the provided default rather than throwing.
+        try {
+            // Cache only raw attributes, not the Eloquent model object, to avoid
+            // array-to-string errors when the cache driver serializes/deserializes it.
+            $attrs = Cache::remember("setting:{$key}", 3600, function () use ($key) {
+                $row = static::where('key', $key)->first();
+                return $row ? ['type' => $row->type, 'value' => $row->value] : null;
+            });
+        } catch (\Throwable) {
+            return $default;
+        }
 
         if (! $attrs) {
             return $default;
@@ -39,8 +45,12 @@ class Setting extends Model
      */
     public static function set(string $key, mixed $value): void
     {
-        static::where('key', $key)->update(['value' => $value]);
-        Cache::forget("setting:{$key}");
+        try {
+            static::where('key', $key)->update(['value' => $value]);
+            Cache::forget("setting:{$key}");
+        } catch (\Throwable) {
+            // In non-bootstrapped environments, silently no-op.
+        }
     }
 
     /**

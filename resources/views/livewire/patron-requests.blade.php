@@ -54,6 +54,9 @@
                         @if($req->materialType)
                             <p class="text-xs text-gray-400 mt-0.5">{{ $req->materialType->name }}</p>
                         @endif
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            Kind: <span class="font-mono">{{ strtoupper($req->request_kind ?? 'sfp') }}</span>
+                        </p>
                     </div>
 
                     {{-- Status badge --}}
@@ -67,6 +70,20 @@
                     @endif
 
                 </div>
+
+                @if(($req->request_kind ?? 'sfp') === 'sfp')
+                    <div class="mt-3 flex items-center justify-between">
+                        <p class="text-xs text-gray-400">
+                            Need ILL instead? You can convert this request.
+                        </p>
+                        <button type="button"
+                                wire:click="convertToIll({{ $req->id }})"
+                                class="text-xs px-3 py-1.5 rounded bg-purple-600 text-white hover:bg-purple-700"
+                                onclick="return confirm('Convert this request to Interlibrary Loan?')">
+                            Convert to ILL
+                        </button>
+                    </div>
+                @endif
 
                 {{-- Submitted date --}}
                 <p class="mt-2 text-xs text-gray-400">

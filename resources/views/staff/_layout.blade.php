@@ -28,9 +28,32 @@
     <div class="flex items-center gap-1">
         <a href="{{ route('sfp.staff.requests.index') }}"
            class="px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  {{ request()->routeIs('sfp.staff.requests.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
-            Requests
+                  {{ request()->routeIs('sfp.staff.requests.*') && request()->get('kind') !== 'ill' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+            SFP
         </a>
+        @php
+            $authUser = auth()->user();
+            $isAdmin = method_exists($authUser, 'isAdmin') ? $authUser->isAdmin() : (($authUser->role ?? null) === 'admin');
+            $openAccess = (bool) \Dcplibrary\Sfp\Models\Setting::get('requests_visibility_open_access', false);
+
+            $sfpUser = $authUser instanceof \Dcplibrary\Sfp\Models\User
+                ? $authUser
+                : \Dcplibrary\Sfp\Models\User::where('email', $authUser->email ?? '')->first();
+
+            $illGroupId = (int) \Dcplibrary\Sfp\Models\Setting::get('ill_selector_group_id', 0);
+            $inIllGroup = $sfpUser && $illGroupId
+                ? $sfpUser->selectorGroups()->whereKey($illGroupId)->exists()
+                : false;
+
+            $showIllTab = $isAdmin || $openAccess || $inIllGroup;
+        @endphp
+        @if($showIllTab)
+            <a href="{{ route('sfp.staff.requests.index', ['kind' => 'ill']) }}"
+               class="px-3 py-2 rounded-md text-sm font-medium transition-colors
+                      {{ request()->routeIs('sfp.staff.requests.*') && request()->get('kind') === 'ill' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                ILL
+            </a>
+        @endif
         <a href="{{ route('sfp.staff.patrons.index') }}"
            class="px-3 py-2 rounded-md text-sm font-medium transition-colors
                   {{ request()->routeIs('sfp.staff.patrons.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
@@ -59,13 +82,11 @@
             </svg>
         </a>
         @php
-            $authUser = auth()->user();
             $nameParts = explode(' ', trim($authUser->name ?? ''));
             $initials = strtoupper(substr($nameParts[0] ?? '', 0, 1));
             if (count($nameParts) > 1) {
                 $initials .= strtoupper(substr(end($nameParts), 0, 1));
             }
-            $isAdmin = method_exists($authUser, 'isAdmin') ? $authUser->isAdmin() : ($authUser->role === 'admin');
         @endphp
         <div class="relative" x-data="{ open: false }" @click.away="open = false">
 

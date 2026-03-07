@@ -36,7 +36,7 @@ class RequireSfpRoleTest extends TestCase
     private function gate(): object
     {
         return new class {
-            private const ALLOWED_ROLES = ['admin', 'selector'];
+            private const ALLOWED_ROLES = ['admin', 'selector', 'ill'];
 
             /** Returns true if the SfpUser should be allowed through. */
             public function isAllowed(?object $sfpUser): bool
@@ -78,6 +78,12 @@ class RequireSfpRoleTest extends TestCase
     public function selector_sfp_user_is_allowed(): void
     {
         $this->assertTrue($this->gate()->isAllowed($this->sfpUser('selector')));
+    }
+
+    #[Test]
+    public function ill_sfp_user_is_allowed(): void
+    {
+        $this->assertTrue($this->gate()->isAllowed($this->sfpUser('ill')));
     }
 
     // -------------------------------------------------------------------------
@@ -144,6 +150,12 @@ class RequireSfpRoleTest extends TestCase
     }
 
     #[Test]
+    public function host_user_with_ill_role_is_allowed_for_provisioning(): void
+    {
+        $this->assertTrue($this->gate()->isAllowedHostRole('ill'));
+    }
+
+    #[Test]
     public function host_user_with_user_role_is_not_allowed_for_provisioning(): void
     {
         $this->assertFalse($this->gate()->isAllowedHostRole('user'));
@@ -170,13 +182,13 @@ class RequireSfpRoleTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Exactly two roles are allowed
+    // Exactly three roles are allowed
     // -------------------------------------------------------------------------
 
     #[Test]
-    public function exactly_admin_and_selector_are_the_allowed_roles(): void
+    public function exactly_admin_selector_and_ill_are_the_allowed_roles(): void
     {
-        $shouldPass = ['admin', 'selector'];
+        $shouldPass = ['admin', 'selector', 'ill'];
         $shouldFail = ['user', 'viewer', 'staff', 'superadmin', '', 'Admin', 'SELECTOR'];
 
         foreach ($shouldPass as $role) {

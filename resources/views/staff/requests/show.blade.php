@@ -7,6 +7,9 @@
     <a href="{{ route('sfp.staff.requests.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Back to requests</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900">Request #{{ $sfpRequest->id }}</h1>
+    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $sfpRequest->request_kind === 'ill' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700' }}">
+        {{ strtoupper($sfpRequest->request_kind ?? 'sfp') }}
+    </span>
     @if($sfpRequest->status)
         <span class="inline-block px-2 py-0.5 rounded text-xs font-medium"
               style="background-color: {{ $sfpRequest->status->color }}22; color: {{ $sfpRequest->status->color }};">
@@ -22,7 +25,9 @@
 
         {{-- Material --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Material</h2>
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                {{ $sfpRequest->request_kind === 'ill' ? 'ILL Summary' : 'Material' }}
+            </h2>
             <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 <div>
                     <dt class="text-gray-500">Type</dt>
@@ -72,6 +77,31 @@
                 @endif
             </dl>
         </div>
+
+        @if($sfpRequest->request_kind === 'ill')
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">ILL Details</h2>
+            @php
+                $vals = $sfpRequest->customFieldValues
+                    ->sortBy(fn($v) => $v->field?->sort_order ?? 9999)
+                    ->values();
+            @endphp
+            @if($vals->isEmpty())
+                <p class="text-sm text-gray-400">No custom field values recorded.</p>
+            @else
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                    @foreach($vals as $val)
+                        <div class="md:col-span-1">
+                            <dt class="text-gray-500">{{ $val->field?->label ?? $val->field?->key ?? 'Field' }}</dt>
+                            <dd class="font-medium">
+                                {{ $customValueLabelByFieldId[$val->custom_field_id] ?? ($val->value_text ?? $val->value_slug ?? '—') }}
+                            </dd>
+                        </div>
+                    @endforeach
+                </dl>
+            @endif
+        </div>
+        @endif
 
         {{-- Catalog / ILL info --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">
@@ -169,6 +199,80 @@
 
     {{-- Sidebar --}}
     <div class="space-y-6">
+
+        {{-- Assignment --}}
+        @if($assignmentEnabled ?? false)
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Assignment</h2>
+
+            @if($sfpRequest->assignedTo)
+                <div class="mb-3">
+                    <p class="text-sm font-medium text-gray-900">
+                        {{ $sfpRequest->assignedTo->name ?: $sfpRequest->assignedTo->email }}
+                    </p>
+                    <p class="text-xs text-gray-400">{{ $sfpRequest->assignedTo->email }}</p>
+                    @if($sfpRequest->assigned_at)
+                        <p class="text-xs text-gray-400 mt-1">Assigned {{ $sfpRequest->assigned_at->format('M j, Y g:ia') }}</p>
+                    @endif
+                </div>
+            @else
+                <p class="text-sm text-gray-400 mb-3">Unassigned</p>
+            @endif
+
+            @if(! $sfpRequest->assigned_to_user_id)
+                <form method="POST" action="{{ route('sfp.staff.requests.claim', $sfpRequest) }}" class="mb-3">
+                    @csrf
+                    <button type="submit"
+                            class="w-full px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700">
+                        Claim
+                    </button>
+                </form>
+            @endif
+
+            <form method="POST" action="{{ route('sfp.staff.requests.assign', $sfpRequest) }}" class="space-y-3">
+                @csrf
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Assign to</label>
+                    <select name="assigned_to_user_id" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
+                        <option value="">Unassigned</option>
+                        @foreach($staffUsers as $u)
+                            <option value="{{ $u->id }}" @selected($sfpRequest->assigned_to_user_id == $u->id)>
+                                {{ $u->name ?: $u->email }} ({{ $u->email }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit"
+                        class="w-full px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                    Save Assignment
+                </button>
+            </form>
+        </div>
+        @endif
+
+        {{-- Convert workflow --}}
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Workflow</h2>
+            <form method="POST" action="{{ route('sfp.staff.requests.convert-kind', $sfpRequest) }}" class="space-y-3">
+                @csrf
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Convert to</label>
+                    <select name="to" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
+                        <option value="sfp" @selected($sfpRequest->request_kind === 'sfp')>SFP</option>
+                        <option value="ill" @selected($sfpRequest->request_kind === 'ill')>ILL</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
+                    <textarea name="note" rows="2" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
+                </div>
+                <button type="submit"
+                        class="w-full px-4 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                        onclick="return confirm('Convert this request workflow?')">
+                    Convert
+                </button>
+            </form>
+        </div>
 
         {{-- Update status --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">

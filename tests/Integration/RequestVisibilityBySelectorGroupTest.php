@@ -4,6 +4,7 @@ namespace Dcplibrary\Sfp\Tests\Integration;
 
 use Dcplibrary\Sfp\Models\SfpRequest;
 use Dcplibrary\Sfp\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Schema\Blueprint;
 use PHPUnit\Framework\Attributes\Test;
@@ -84,8 +85,22 @@ class RequestVisibilityBySelectorGroupTest extends TestCase
 
         $schema->create('requests', function (Blueprint $table) {
             $table->increments('id');
+            $table->string('request_kind')->default('sfp');
             $table->integer('material_type_id')->nullable();
             $table->integer('audience_id')->nullable();
+            $table->integer('assigned_to_user_id')->nullable();
+            $table->timestamps();
+        });
+
+        $schema->create('settings', function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('key')->unique();
+            $table->text('value')->nullable();
+            $table->string('label')->nullable();
+            $table->string('type')->default('string');
+            $table->string('group')->nullable();
+            $table->text('description')->nullable();
+            $table->text('tokens')->nullable();
             $table->timestamps();
         });
 
@@ -96,8 +111,10 @@ class RequestVisibilityBySelectorGroupTest extends TestCase
     {
         $now = date('Y-m-d H:i:s');
         Capsule::table('requests')->insert([
+            'request_kind' => 'sfp',
             'material_type_id' => $materialTypeId,
             'audience_id' => $audienceId,
+            'assigned_to_user_id' => null,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -111,6 +128,14 @@ class RequestVisibilityBySelectorGroupTest extends TestCase
         $this->bootDatabase();
 
         $now = date('Y-m-d H:i:s');
+        Cache::flush();
+
+        Capsule::table('settings')->insert([
+            ['key' => 'requests_visibility_open_access', 'value' => '0', 'type' => 'boolean', 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'requests_visibility_strict_groups', 'value' => '1', 'type' => 'boolean', 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'assignment_enabled', 'value' => '0', 'type' => 'boolean', 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'ill_selector_group_id', 'value' => '999', 'type' => 'integer', 'created_at' => $now, 'updated_at' => $now],
+        ]);
 
         Capsule::table('material_types')->insert([
             ['id' => 1, 'name' => 'Book', 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
@@ -180,6 +205,15 @@ class RequestVisibilityBySelectorGroupTest extends TestCase
         $this->bootDatabase();
 
         $now = date('Y-m-d H:i:s');
+        Cache::flush();
+
+        Capsule::table('settings')->delete();
+        Capsule::table('settings')->insert([
+            ['key' => 'requests_visibility_open_access', 'value' => '0', 'type' => 'boolean', 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'requests_visibility_strict_groups', 'value' => '1', 'type' => 'boolean', 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'assignment_enabled', 'value' => '0', 'type' => 'boolean', 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'ill_selector_group_id', 'value' => '999', 'type' => 'integer', 'created_at' => $now, 'updated_at' => $now],
+        ]);
 
         Capsule::table('sfp_users')->insert([
             ['id' => 99, 'name' => 'Ungrouped', 'email' => 'u@example.com', 'role' => 'selector', 'active' => 1, 'created_at' => $now, 'updated_at' => $now],

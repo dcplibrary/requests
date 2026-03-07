@@ -5,6 +5,7 @@ namespace Dcplibrary\Sfp\Livewire;
 use Dcplibrary\Sfp\Models\Patron;
 use Dcplibrary\Sfp\Models\Setting;
 use Dcplibrary\Sfp\Models\SfpRequest;
+use Dcplibrary\Sfp\Services\NotificationService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -22,6 +23,49 @@ class PatronRequests extends Component
     {
         session()->forget('sfp_authenticated_barcode');
         $this->redirect(route('sfp.form'));
+    }
+
+    public function convertToIll(int $requestId): void
+    {
+        $barcode = session('sfp_authenticated_barcode');
+        if (! $barcode) {
+            $this->redirect(route('sfp.form'));
+            return;
+        }
+
+        $patron = Patron::where('barcode', $barcode)->first();
+        if (! $patron) {
+            $this->redirect(route('sfp.form'));
+            return;
+        }
+
+        /** @var SfpRequest|null $req */
+        $req = SfpRequest::whereKey($requestId)
+            ->where('patron_id', $patron->id)
+            ->first();
+
+        if (! $req) {
+            return;
+        }
+
+        if (($req->request_kind ?? 'sfp') === 'ill') {
+            return;
+        }
+
+        $req->update([
+            'request_kind'  => 'ill',
+            'ill_requested' => true,
+        ]);
+
+        $req->statusHistory()->create([
+            'request_status_id' => $req->request_status_id,
+            'user_id'           => null,
+            'note'              => 'Converted workflow: sfp → ill (by patron).',
+        ]);
+
+        app(NotificationService::class)->notifyStaffNewRequest($req->fresh());
+
+        session()->flash('success', 'Request converted to Interlibrary Loan.');
     }
 
     public function render()

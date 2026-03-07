@@ -11,10 +11,12 @@ use Dcplibrary\Sfp\Http\Controllers\Admin\RequestController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\RequestStatusController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\SelectorGroupController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\FormFieldController;
+use Dcplibrary\Sfp\Http\Controllers\Admin\CustomFieldController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\SettingController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\UserController;
 use Dcplibrary\Sfp\Livewire\PatronRequests;
 use Dcplibrary\Sfp\Livewire\SfpForm;
+use Dcplibrary\Sfp\Livewire\IllForm;
 use Illuminate\Support\Facades\Route;
 
 $prefix          = config('sfp.route_prefix', 'sfp');
@@ -31,6 +33,9 @@ Route::group([
 
     // --- Public: SFP Patron Form ---
     Route::get('/', SfpForm::class)->name('sfp.form');
+
+    // --- Public: ILL Patron Form ---
+    Route::get('/ill', IllForm::class)->name('sfp.ill.form');
 
     // --- Public: My Requests (Polaris PIN authentication) ---
     Route::get('/my-requests', PatronRequests::class)->name('sfp.patron.requests');
@@ -49,6 +54,9 @@ Route::group([
             Route::get('/requests/{sfpRequest}',               [RequestController::class, 'show'])->name('requests.show');
             Route::patch('/requests/{sfpRequest}/status',      [RequestController::class, 'updateStatus'])->name('requests.status');
             Route::post('/requests/{sfpRequest}/catalog-recheck', [RequestController::class, 'recheckCatalog'])->name('requests.catalog-recheck');
+            Route::post('/requests/{sfpRequest}/convert-kind',  [RequestController::class, 'convertKind'])->name('requests.convert-kind');
+            Route::post('/requests/{sfpRequest}/claim',         [RequestController::class, 'claim'])->name('requests.claim');
+            Route::post('/requests/{sfpRequest}/assign',        [RequestController::class, 'assign'])->name('requests.assign');
             Route::delete('/requests/{sfpRequest}',            [RequestController::class, 'destroy'])->name('requests.destroy');
 
             Route::resource('patrons', PatronController::class)
@@ -90,6 +98,8 @@ Route::group([
             Route::post('/settings/notifications/test',             [SettingController::class, 'sendTestEmail'])->name('settings.notifications.test');
             Route::get('/settings/form-fields',              [FormFieldController::class, 'index'])->name('settings.form-fields');
             Route::get('/settings/form-fields/{field}/edit', [FormFieldController::class, 'edit'])->name('settings.form-fields.edit');
+            Route::get('/settings/custom-fields',              [CustomFieldController::class, 'index'])->name('settings.custom-fields');
+            Route::get('/settings/custom-fields/{field}/edit', [CustomFieldController::class, 'edit'])->name('settings.custom-fields.edit');
             Route::patch('/settings',                [SettingController::class, 'update'])->name('settings.update');
 
             Route::get('/backups',                  [BackupController::class, 'index'])->name('backups.index');

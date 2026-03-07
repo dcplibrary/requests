@@ -21,6 +21,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Role <span class="text-red-500">*</span></label>
                 <select name="role" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
                     <option value="selector" {{ old('role', $user->role) === 'selector' ? 'selected' : '' }}>Selector</option>
+                    <option value="ill" {{ old('role', $user->role) === 'ill' ? 'selected' : '' }}>ILL</option>
                     <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>Admin</option>
                 </select>
             </div>
@@ -33,6 +34,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Selector Groups</label>
+                <p class="text-xs text-gray-400 mb-2">Applies to the Selector role only.</p>
                 @forelse($groups as $group)
                 <div class="flex items-center gap-2 mb-1.5">
                     <input type="checkbox" name="groups[]" id="group_{{ $group->id }}" value="{{ $group->id }}"

@@ -13,12 +13,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * Authenticated via Azure Entra ID (OIDC). Role controls what data a user can see:
  * - `admin`    — full access to all requests, patrons, titles, and settings
  * - `selector` — access scoped to their assigned SelectorGroups
+ * - `ill`      — access to ILL requests queue and ILL workflow actions
  *
  * @property int              $id
  * @property string           $name
  * @property string           $email
  * @property string|null      $entra_id      Azure Entra object ID
- * @property string           $role          'admin'|'selector'
+ * @property string           $role          'admin'|'selector'|'ill'
  * @property bool             $active
  * @property \Carbon\Carbon|null $last_login_at
  */
@@ -47,10 +48,21 @@ class User extends Authenticatable
         return $this->role === 'selector';
     }
 
+    /** Returns true when this user has the 'ill' role. */
+    public function isIll(): bool
+    {
+        return $this->role === 'ill';
+    }
+
     /** Selector groups this user belongs to. */
     public function selectorGroups(): BelongsToMany
     {
         return $this->belongsToMany(SelectorGroup::class, 'selector_group_user');
+    }
+
+    public function inSelectorGroup(int $groupId): bool
+    {
+        return $this->selectorGroups()->whereKey($groupId)->exists();
     }
 
     /** Status history entries recorded by this user. */

@@ -18,6 +18,7 @@ class SfpDatabaseSeeder extends Seeder
             FormFieldsSeeder::class,
             GenresSeeder::class,
             ConsolesSeeder::class,
+            IllCustomFieldsSeeder::class,
         ]);
     }
 }

@@ -14,6 +14,7 @@
             $settingsNav = [
                 ['label' => 'General',        'route' => 'sfp.staff.settings.index',           'pattern' => 'sfp.staff.settings.index'],
                 ['label' => 'Form Fields',    'route' => 'sfp.staff.settings.form-fields',     'pattern' => 'sfp.staff.settings.form-fields*'],
+                ['label' => 'Custom Fields',  'route' => 'sfp.staff.settings.custom-fields',   'pattern' => 'sfp.staff.settings.custom-fields*'],
                 ['label' => 'Notifications',  'route' => 'sfp.staff.settings.notifications',   'pattern' => 'sfp.staff.settings.notifications*'],
                 ['label' => 'Catalog',        'route' => 'sfp.staff.catalog.index',            'pattern' => 'sfp.staff.catalog.*'],
                 ['label' => 'Statuses',       'route' => 'sfp.staff.statuses.index',           'pattern' => 'sfp.staff.statuses.*'],

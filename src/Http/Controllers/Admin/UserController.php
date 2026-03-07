@@ -29,7 +29,7 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $data = $request->validate([
-            'role'   => 'required|in:admin,selector',
+            'role'   => 'required|in:admin,selector,ill',
             'active' => 'boolean',
             'groups' => 'nullable|array',
             'groups.*' => 'exists:selector_groups,id',
@@ -40,7 +40,8 @@ class UserController extends Controller
             'active' => $data['active'] ?? false,
         ]);
 
-        $user->selectorGroups()->sync($data['groups'] ?? []);
+        // Only selectors use selector groups. Ensure other roles don't retain group assignments.
+        $user->selectorGroups()->sync($data['role'] === 'selector' ? ($data['groups'] ?? []) : []);
 
         return redirect()->route('sfp.staff.users.index')->with('success', 'User updated.');
     }

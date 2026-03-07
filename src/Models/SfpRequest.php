@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null         $audience_id
  * @property int|null         $material_type_id
  * @property int              $request_status_id
+ * @property string           $request_kind
  * @property string           $submitted_title
  * @property string           $submitted_author
  * @property string|null      $submitted_publish_date
@@ -38,6 +39,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool|null        $isbndb_match_accepted
  * @property bool             $is_duplicate
  * @property int|null         $duplicate_of_request_id
+ * @property int|null         $assigned_to_user_id
+ * @property \Carbon\Carbon|null $assigned_at
+ * @property int|null         $assigned_by_user_id
  */
 class SfpRequest extends Model
 {
@@ -49,6 +53,7 @@ class SfpRequest extends Model
         'audience_id',
         'material_type_id',
         'request_status_id',
+        'request_kind',
         'submitted_title',
         'submitted_author',
         'submitted_publish_date',
@@ -65,6 +70,9 @@ class SfpRequest extends Model
         'isbndb_match_accepted',
         'is_duplicate',
         'duplicate_of_request_id',
+        'assigned_to_user_id',
+        'assigned_at',
+        'assigned_by_user_id',
     ];
 
     protected $casts = [
@@ -74,7 +82,13 @@ class SfpRequest extends Model
         'isbndb_searched' => 'boolean',
         'isbndb_match_accepted' => 'boolean',
         'is_duplicate' => 'boolean',
+        'assigned_at' => 'datetime',
     ];
+
+    public function scopeKind(\Illuminate\Database\Eloquent\Builder $query, string $kind): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('request_kind', $kind);
+    }
 
     public function patron(): BelongsTo
     {
@@ -104,6 +118,21 @@ class SfpRequest extends Model
     public function statusHistory(): HasMany
     {
         return $this->hasMany(RequestStatusHistory::class, 'request_id')->orderBy('created_at');
+    }
+
+    public function customFieldValues(): HasMany
+    {
+        return $this->hasMany(RequestCustomFieldValue::class, 'request_id');
+    }
+
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to_user_id');
+    }
+
+    public function assignedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_by_user_id');
     }
 
     public function duplicateOf(): BelongsTo
@@ -163,27 +192,75 @@ class SfpRequest extends Model
             return $query;
         }
 
-        // Selector scoping must be based on selector groups as *paired* scopes.
-        // A user with multiple groups should see the UNION of each group's
-        // (material_type_id × audience_id) coverage — not the cartesian product
-        // of all material types across all groups with all audiences across all groups.
-        //
-        // Implemented as an EXISTS subquery that requires both pivots to match
-        // the same selector_group_id.
-        $userId = $sfpUser->getKey();
+        // Open access mode: any staff user can see all requests.
+        if (Setting::get('requests_visibility_open_access', false)) {
+            return $query;
+        }
 
-        return $query->whereExists(function ($sub) use ($userId) {
-            $sub->selectRaw('1')
-                ->from('selector_group_user as sgu')
-                ->join('selector_group_material_type as sgmt', function ($join) {
-                    $join->on('sgmt.selector_group_id', '=', 'sgu.selector_group_id')
-                        ->whereColumn('sgmt.material_type_id', 'requests.material_type_id');
-                })
-                ->join('selector_group_audience as sga', function ($join) {
-                    $join->on('sga.selector_group_id', '=', 'sgu.selector_group_id')
-                        ->whereColumn('sga.audience_id', 'requests.audience_id');
-                })
-                ->where('sgu.user_id', $userId);
+        // Assignment override: when enabled, assignees can always see their assigned requests.
+        // Implement as an OR clause around the entire scoped access predicate.
+        $assignmentEnabled = (bool) Setting::get('assignment_enabled', false);
+        if ($assignmentEnabled) {
+            $userId = $sfpUser->getKey();
+            return $query->where(function ($q) use ($sfpUser, $userId) {
+                $q->where('assigned_to_user_id', $userId)
+                  ->orWhere(function ($q2) use ($sfpUser) {
+                      $this->applyScopedAccess($q2, $sfpUser);
+                  });
+            });
+        }
+
+        $this->applyScopedAccess($query, $sfpUser);
+        return $query;
+    }
+
+    /**
+     * Apply scoped access predicate (no open access; no assignment override).
+     */
+    private function applyScopedAccess(\Illuminate\Database\Eloquent\Builder $query, \Dcplibrary\Sfp\Models\User $sfpUser): void
+    {
+        // ILL requests: gated by ILL access group membership.
+        $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
+
+        $query->where(function ($q) use ($sfpUser, $illGroupId) {
+            // ILL: only members of the ILL group.
+            $q->where(function ($ill) use ($sfpUser, $illGroupId) {
+                $ill->where('request_kind', 'ill');
+                if ($illGroupId > 0) {
+                    $ill->whereExists(function ($sub) use ($sfpUser, $illGroupId) {
+                        $sub->selectRaw('1')
+                            ->from('selector_group_user as sgu_ill')
+                            ->where('sgu_ill.selector_group_id', $illGroupId)
+                            ->where('sgu_ill.user_id', $sfpUser->getKey());
+                    });
+                } else {
+                    // No configured ILL group → deny ILL access by default.
+                    $ill->whereRaw('1 = 0');
+                }
+            })
+            // SFP: optionally strict selector-group pairing.
+            ->orWhere(function ($sfp) use ($sfpUser) {
+                $sfp->where('request_kind', 'sfp');
+
+                if (! Setting::get('requests_visibility_strict_groups', true)) {
+                    return;
+                }
+
+                $userId = $sfpUser->getKey();
+                $sfp->whereExists(function ($sub) use ($userId) {
+                    $sub->selectRaw('1')
+                        ->from('selector_group_user as sgu')
+                        ->join('selector_group_material_type as sgmt', function ($join) {
+                            $join->on('sgmt.selector_group_id', '=', 'sgu.selector_group_id')
+                                ->whereColumn('sgmt.material_type_id', 'requests.material_type_id');
+                        })
+                        ->join('selector_group_audience as sga', function ($join) {
+                            $join->on('sga.selector_group_id', '=', 'sgu.selector_group_id')
+                                ->whereColumn('sga.audience_id', 'requests.audience_id');
+                        })
+                        ->where('sgu.user_id', $userId);
+                });
+            });
         });
     }
 }

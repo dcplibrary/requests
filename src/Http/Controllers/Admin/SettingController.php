@@ -4,6 +4,7 @@ namespace Dcplibrary\Sfp\Http\Controllers\Admin;
 
 use Dcplibrary\Sfp\Http\Controllers\Controller;
 use Dcplibrary\Sfp\Mail\SfpMail;
+use Dcplibrary\Sfp\Models\CustomField;
 use Dcplibrary\Sfp\Models\FormField;
 use Dcplibrary\Sfp\Models\Setting;
 use Dcplibrary\Sfp\Services\NotificationService;
@@ -17,7 +18,8 @@ class SettingController extends Controller
         return view('sfp::staff.settings.index', [
             // Catalog/ISBNdb/Syndetics settings live on the dedicated Catalog tab.
             // Notification settings live on the dedicated Notifications tab.
-            'settings' => Setting::allGrouped()->except(['catalog', 'isbndb', 'syndetics', 'notifications', 'backup']),
+            'settings' => Setting::allGrouped()->except(['catalog', 'isbndb', 'syndetics', 'notifications', 'backup'])
+                ->sortKeys(),
         ]);
     }
 
@@ -37,9 +39,18 @@ class SettingController extends Controller
             ->map(fn (string $k) => "{{$k}}")
             ->all();
 
+        // Dynamic tokens from custom fields flagged as token sources.
+        $customFieldTokens = CustomField::query()
+            ->where('active', true)
+            ->where('include_as_token', true)
+            ->orderBy('sort_order')
+            ->pluck('key')
+            ->map(fn (string $k) => "{{$k}}")
+            ->all();
+
         return view('sfp::staff.settings.notifications', [
             'settings'        => Setting::allGrouped()->only(['notifications']),
-            'availableTokens' => array_merge($coreTokens, $fieldTokens),
+            'availableTokens' => array_values(array_unique(array_merge($coreTokens, $fieldTokens, $customFieldTokens))),
         ]);
     }
 
@@ -140,6 +151,9 @@ class SettingController extends Controller
             '{publish_date}'      => '2025-06-15',
             '{where_heard}'       => 'Library staff recommendation',
             '{ill_requested}'     => 'No',
+            '{borrow_type}'       => 'Book',
+            '{date_needed_by}'    => now()->addWeeks(3)->format('Y-m-d'),
+            '{will_pay_up_to}'    => '10.00',
         ];
     }
 

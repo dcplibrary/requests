@@ -5,11 +5,30 @@ namespace Dcplibrary\Sfp\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SettingsSeeder extends Seeder
 {
     public function run(): void
     {
+        // Ensure the seeded ILL access group exists and store its ID in settings.
+        // We identify it by a stable name; the ID is persisted so renames are safe.
+        $illGroupId = null;
+        if (Schema::hasTable('selector_groups')) {
+            $illGroupId = DB::table('selector_groups')->where('name', 'ILL')->value('id');
+            if (! $illGroupId) {
+                DB::table('selector_groups')->insert([
+                    'name' => 'ILL',
+                    'description' => 'Seeded access group for Interlibrary Loan requests.',
+                    'active' => 1,
+                    'notification_emails' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $illGroupId = (int) DB::getPdo()->lastInsertId();
+            }
+        }
+
         $settings = [
             // --- Request limits ---
             [
@@ -191,6 +210,39 @@ class SettingsSeeder extends Seeder
                 'type'        => 'boolean',
                 'group'       => 'notifications',
                 'description' => 'Master switch for all email notifications. Turn off to silence everything without changing individual settings.',
+            ],
+            // --- Request visibility / assignment ---
+            [
+                'key'         => 'requests_visibility_open_access',
+                'value'       => '0',
+                'label'       => 'Open Staff Access to Requests',
+                'type'        => 'boolean',
+                'group'       => 'staff',
+                'description' => 'When enabled, all staff users can view all requests (SFP + ILL), regardless of selector groups.',
+            ],
+            [
+                'key'         => 'requests_visibility_strict_groups',
+                'value'       => '1',
+                'label'       => 'Strict Selector Group Scoping',
+                'type'        => 'boolean',
+                'group'       => 'staff',
+                'description' => 'When enabled (and Open Staff Access is off), selector users can only view SFP requests that match their selector group material types + audiences.',
+            ],
+            [
+                'key'         => 'assignment_enabled',
+                'value'       => '0',
+                'label'       => 'Enable Request Assignment',
+                'type'        => 'boolean',
+                'group'       => 'staff',
+                'description' => 'Allow staff to claim/reassign requests. When enabled, a status update will auto-claim an unassigned request.',
+            ],
+            [
+                'key'         => 'ill_selector_group_id',
+                'value'       => $illGroupId ? (string) $illGroupId : '',
+                'label'       => 'ILL Access Group ID',
+                'type'        => 'integer',
+                'group'       => 'staff',
+                'description' => 'Internal ID of the selector group that grants staff access to ILL requests. This is set automatically by the seeder.',
             ],
             [
                 'key'         => 'staff_routing_enabled',

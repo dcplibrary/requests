@@ -16,6 +16,9 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Minimal facade boot for tests that reference Setting::get() (Cache facade).
+require_once __DIR__ . '/bootstrap_integration_settings.php';
+
 if (! function_exists('app')) {
     /**
      * Minimal test stub for Laravel's app() helper.

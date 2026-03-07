@@ -6,9 +6,13 @@ use Dcplibrary\Sfp\Console\Commands\SfpBackupCommand;
 use Dcplibrary\Sfp\Http\Middleware\RequireSfpRole;
 use Dcplibrary\Sfp\Livewire\Admin\FormFieldEdit;
 use Dcplibrary\Sfp\Livewire\Admin\FormFields as FormFieldsAdmin;
+use Dcplibrary\Sfp\Livewire\Admin\CustomFields as CustomFieldsAdmin;
+use Dcplibrary\Sfp\Livewire\Admin\CustomFieldEdit as CustomFieldEditAdmin;
+use Dcplibrary\Sfp\Livewire\Admin\CustomFieldOptionsManager;
 use Dcplibrary\Sfp\Livewire\Admin\OptionsManager;
 use Dcplibrary\Sfp\Livewire\PatronPinLogin;
 use Dcplibrary\Sfp\Livewire\PatronRequests;
+use Dcplibrary\Sfp\Livewire\IllForm;
 use Dcplibrary\Sfp\Livewire\SfpForm;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
@@ -105,11 +109,15 @@ class SfpServiceProvider extends ServiceProvider
     protected function registerLivewire(): void
     {
         Livewire::component('sfp-form', SfpForm::class);
+        Livewire::component('ill-form', IllForm::class);
         Livewire::component('sfp-patron-pin-login', PatronPinLogin::class);
         Livewire::component('sfp-patron-requests', PatronRequests::class);
         Livewire::component('sfp-admin-form-fields', FormFieldsAdmin::class);
         Livewire::component('sfp-admin-form-field-edit', FormFieldEdit::class);
         Livewire::component('sfp-admin-options-manager', OptionsManager::class);
+        Livewire::component('sfp-admin-custom-fields', CustomFieldsAdmin::class);
+        Livewire::component('sfp-admin-custom-field-edit', CustomFieldEditAdmin::class);
+        Livewire::component('sfp-admin-custom-field-options', CustomFieldOptionsManager::class);
     }
 
     protected function registerPublishables(): void
