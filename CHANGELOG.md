@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.3.0](https://github.com/dcplibrary/sfp/compare/v2.2.2...v2.3.0) (2026-03-07)
+
+
+### Features
+
+* add use as token option to form fields ([a1e2ca9](https://github.com/dcplibrary/sfp/commit/a1e2ca93a33bbbe9e7542a672b0665c4ab8cbeb0))
+
 ## [2.2.2](https://github.com/dcplibrary/sfp/compare/v2.2.1...v2.2.2) (2026-03-07)
 
 ## [2.2.1](https://github.com/dcplibrary/sfp/compare/v2.2.0...v2.2.1) (2026-03-07)
