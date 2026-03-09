@@ -9,21 +9,27 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Ensure the authenticated user has an SFP staff role (admin, selector, or ill).
+ * Ensure the authenticated user has an SFP staff role (admin or selector).
+ *
+ * ILL access is not a role; it is determined by group membership (the selector
+ * group identified by ill_selector_group_id). Use User::hasIllAccess() for that.
  *
  * Resolution order:
  *  1. No authenticated user → let the host app's auth middleware handle it (pass through).
  *  2. Authenticated but no matching SFP user record → attempt to auto-provision from host app role.
- *  3. Host app user has an allowed role → create sfp_users record (active, same role) and proceed.
+ *  3. Host app user has an allowed role (or legacy 'ill') → create sfp_users record and proceed.
  *  4. No sfp_users record and no allowed host-app role → show no-access view.
- *  5. sfp_users record exists but role is neither 'admin' nor 'selector' nor 'ill' → show no-access view.
+ *  5. sfp_users record exists but role is not 'admin' or 'selector' → show no-access view.
  *  6. sfp_users record exists but active = false → show no-access view.
- *  7. Role is admin, selector, or ill and active = true → proceed.
+ *  7. Role is admin or selector and active = true → proceed.
  */
 class RequireSfpRole
 {
     /** Roles that are permitted to access the staff area. */
-    private const ALLOWED_ROLES = ['admin', 'selector', 'ill'];
+    private const ALLOWED_ROLES = ['admin', 'selector'];
+
+    /** Legacy host role; when provisioning we store as 'selector'. */
+    private const LEGACY_ILL_ROLE = 'ill';
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -36,7 +42,8 @@ class RequireSfpRole
 
         $sfpUser = $this->resolveSfpUser($authUser);
 
-        if (! $sfpUser || ! in_array($sfpUser->role, self::ALLOWED_ROLES, true) || ! $sfpUser->active) {
+        $roleAllowed = in_array($sfpUser->role, self::ALLOWED_ROLES, true);
+        if (! $sfpUser || ! $roleAllowed || ! $sfpUser->active) {
             return response()->view('sfp::staff.no-access', [
                 'appName' => config('app.name'),
             ], 403);
@@ -75,15 +82,20 @@ class RequireSfpRole
         // No sfp_users record — check if the host app user has an allowed role
         // (populated by the Entra SSO package from ENTRA_GROUP_ROLES) and if so,
         // auto-provision a sfp_users record so they can log in immediately.
+        // Legacy: host role 'ill' is mapped to 'selector' (ILL access is group-based).
         $hostRole = $user->role ?? null;
-        if (! is_string($hostRole) || ! in_array($hostRole, self::ALLOWED_ROLES, true)) {
+        if (! is_string($hostRole)) {
+            return null;
+        }
+        $provisionRole = $hostRole === self::LEGACY_ILL_ROLE ? 'selector' : $hostRole;
+        if (! in_array($provisionRole, self::ALLOWED_ROLES, true)) {
             return null;
         }
 
         return SfpUser::create([
             'name'   => $user->name ?? $email,
             'email'  => $email,
-            'role'   => $hostRole,
+            'role'   => $provisionRole,
             'active' => true,
         ]);
     }

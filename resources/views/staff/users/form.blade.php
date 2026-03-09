@@ -21,7 +21,6 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Role <span class="text-red-500">*</span></label>
                 <select name="role" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
                     <option value="selector" {{ old('role', $user->role) === 'selector' ? 'selected' : '' }}>Selector</option>
-                    <option value="ill" {{ old('role', $user->role) === 'ill' ? 'selected' : '' }}>ILL</option>
                     <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>Admin</option>
                 </select>
             </div>

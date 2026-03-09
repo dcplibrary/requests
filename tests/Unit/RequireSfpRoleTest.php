@@ -36,7 +36,8 @@ class RequireSfpRoleTest extends TestCase
     private function gate(): object
     {
         return new class {
-            private const ALLOWED_ROLES = ['admin', 'selector', 'ill'];
+            private const ALLOWED_ROLES = ['admin', 'selector'];
+            private const LEGACY_ILL_ROLE = 'ill';
 
             /** Returns true if the SfpUser should be allowed through. */
             public function isAllowed(?object $sfpUser): bool
@@ -48,13 +49,15 @@ class RequireSfpRoleTest extends TestCase
                     && (bool) $sfpUser->active;
             }
 
-            /** Returns true if a host-app role string maps to an allowed SFP role. */
+            /** Returns true if a host-app role string is allowed for auto-provisioning (legacy 'ill' maps to selector). */
             public function isAllowedHostRole(?string $role): bool
             {
                 if (! is_string($role) || $role === '') {
                     return false;
                 }
-                return in_array($role, self::ALLOWED_ROLES, true);
+                $provisionRole = $role === self::LEGACY_ILL_ROLE ? 'selector' : $role;
+
+                return in_array($provisionRole, self::ALLOWED_ROLES, true);
             }
         };
     }
@@ -81,9 +84,9 @@ class RequireSfpRoleTest extends TestCase
     }
 
     #[Test]
-    public function ill_sfp_user_is_allowed(): void
+    public function ill_role_is_no_longer_valid_ill_access_is_group_based(): void
     {
-        $this->assertTrue($this->gate()->isAllowed($this->sfpUser('ill')));
+        $this->assertFalse($this->gate()->isAllowed($this->sfpUser('ill')));
     }
 
     // -------------------------------------------------------------------------
@@ -150,7 +153,7 @@ class RequireSfpRoleTest extends TestCase
     }
 
     #[Test]
-    public function host_user_with_ill_role_is_allowed_for_provisioning(): void
+    public function host_user_with_legacy_ill_role_is_allowed_for_provisioning_mapped_to_selector(): void
     {
         $this->assertTrue($this->gate()->isAllowedHostRole('ill'));
     }
@@ -182,14 +185,14 @@ class RequireSfpRoleTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Exactly three roles are allowed
+    // Exactly two roles are allowed (ILL access is group-based, not a role)
     // -------------------------------------------------------------------------
 
     #[Test]
-    public function exactly_admin_selector_and_ill_are_the_allowed_roles(): void
+    public function exactly_admin_and_selector_are_the_allowed_roles(): void
     {
-        $shouldPass = ['admin', 'selector', 'ill'];
-        $shouldFail = ['user', 'viewer', 'staff', 'superadmin', '', 'Admin', 'SELECTOR'];
+        $shouldPass = ['admin', 'selector'];
+        $shouldFail = ['ill', 'user', 'viewer', 'staff', 'superadmin', '', 'Admin', 'SELECTOR'];
 
         foreach ($shouldPass as $role) {
             $this->assertTrue(

@@ -153,6 +153,14 @@ Prune cutoff is controlled by the `backup_retention_days` setting (default: 30).
 
 ---
 
+## Staff roles and ILL access
+
+- **Roles:** `sfp_users.role` is `admin` or `selector` only. There is no `ill` role.
+- **ILL access** is group-based: the setting `ill_selector_group_id` holds the ID of the selector group whose members may view and work the ILL queue. That group can be named anything (e.g. "ILL", "Cathats"). Use `User::hasIllAccess()` to check (returns true for admins or users in that group).
+- Request visibility (`SfpRequest::scopeVisibleTo`) and the staff layout (ILL tab) already use this group check. Do not rely on a role called `ill`.
+
+---
+
 ## Forms (presentation layer)
 
 Form-specific presentation (which material types/fields appear, their label/order/required/visibility/step/conditional logic) is stored in a **forms** table and pivot tables — not on the core data tables (material_types, sfp_custom_fields).

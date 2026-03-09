@@ -40,9 +40,13 @@ class UserFactory extends Factory
         return $this->state(['role' => 'admin']);
     }
 
+    /**
+     * User with selector role (ILL access is via group membership, not role;
+     * use hasIllAccess() or attach to the ill_selector_group_id group).
+     */
     public function ill(): static
     {
-        return $this->state(['role' => 'ill']);
+        return $this->state(['role' => 'selector']);
     }
 
     public function inactive(): static

@@ -12,14 +12,18 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * Stored in the `sfp_users` table (separate from the host application's users).
  * Authenticated via Azure Entra ID (OIDC). Role controls what data a user can see:
  * - `admin`    — full access to all requests, patrons, titles, and settings
- * - `selector` — access scoped to their assigned SelectorGroups
- * - `ill`      — access to ILL requests queue and ILL workflow actions
+ * - `selector` — access scoped to their assigned SelectorGroups (material types, audiences)
+ *
+ * ILL access is not a role; it is determined by group membership. The setting
+ * `ill_selector_group_id` points to the selector group that may view and work
+ * ILL requests. Any user in that group (whatever it is named, e.g. "ILL" or
+ * "Cathats") has ILL access. Use hasIllAccess() for that check.
  *
  * @property int              $id
  * @property string           $name
  * @property string           $email
  * @property string|null      $entra_id      Azure Entra object ID
- * @property string           $role          'admin'|'selector'|'ill'
+ * @property string           $role          'admin'|'selector'
  * @property bool             $active
  * @property \Carbon\Carbon|null $last_login_at
  */
@@ -48,10 +52,20 @@ class User extends Authenticatable
         return $this->role === 'selector';
     }
 
-    /** Returns true when this user has the 'ill' role. */
-    public function isIll(): bool
+    /**
+     * Returns true when this user can access the ILL queue and ILL workflow.
+     * ILL access is group-based: admins always have it; otherwise the user must
+     * be in the selector group whose ID is ill_selector_group_id (that group
+     * can be named anything, e.g. "ILL" or "Cathats").
+     */
+    public function hasIllAccess(): bool
     {
-        return $this->role === 'ill';
+        if ($this->isAdmin()) {
+            return true;
+        }
+        $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
+
+        return $illGroupId > 0 && $this->inSelectorGroup($illGroupId);
     }
 
     /** Selector groups this user belongs to. */
