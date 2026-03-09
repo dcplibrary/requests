@@ -5,6 +5,7 @@ namespace Dcplibrary\Sfp\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property bool        $required         When true, validation fails if the field is blank
  * @property array|null  $condition        Conditional logic rules (null = always show)
  * @property bool        $include_as_token When true, expose {key} in notifications/templates
+ * @property string      $form_scope      'global' (both forms), 'sfp', or 'ill'
  * @property int|null    $created_by
  * @property int|null    $modified_by
  * @property \Carbon\Carbon|null $deleted_at
@@ -33,7 +35,7 @@ class FormField extends Model
 
     protected $table = 'sfp_form_fields';
 
-    protected $fillable = ['key', 'label', 'sort_order', 'active', 'required', 'condition', 'include_as_token', 'created_by', 'modified_by'];
+    protected $fillable = ['key', 'label', 'sort_order', 'active', 'required', 'condition', 'include_as_token', 'form_scope', 'created_by', 'modified_by'];
 
     protected $casts = [
         'active'    => 'boolean',
@@ -66,6 +68,12 @@ class FormField extends Model
     public function modifier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'modified_by');
+    }
+
+    /** Pivot rows attaching this field to forms (SFP / ILL) with per-form order and condition. */
+    public function formFormFields(): HasMany
+    {
+        return $this->hasMany(FormFormField::class, 'form_field_id');
     }
 
     // ── Scopes ──────────────────────────────────────────────────────────────

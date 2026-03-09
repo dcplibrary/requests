@@ -78,6 +78,27 @@
             </dl>
         </div>
 
+        @if($sfpRequest->request_kind === 'sfp')
+            @php
+                $sfpCustomVals = $sfpRequest->customFieldValues->filter(fn ($v) => $v->field?->request_kind === 'sfp')->sortBy(fn ($v) => $v->field?->sort_order ?? 9999)->values();
+            @endphp
+            @if($sfpCustomVals->isNotEmpty())
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">SFP Details</h2>
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                @foreach($sfpCustomVals as $val)
+                    <div class="md:col-span-1">
+                        <dt class="text-gray-500">{{ $val->field?->label ?? $val->field?->key ?? 'Field' }}</dt>
+                        <dd class="font-medium">
+                            {{ $customValueLabelByFieldId[$val->custom_field_id] ?? ($val->value_text ?? $val->value_slug ?? '—') }}
+                        </dd>
+                    </div>
+                @endforeach
+            </dl>
+        </div>
+            @endif
+        @endif
+
         @if($sfpRequest->request_kind === 'ill')
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">ILL Details</h2>
@@ -344,10 +365,14 @@
                     <dt class="text-gray-500 text-xs">Submitted</dt>
                     <dd>{{ $sfpRequest->created_at->format('M j, Y g:ia') }}</dd>
                 </div>
-                @if($sfpRequest->where_heard)
+                @php
+                    $whereHeardVal = $sfpRequest->customFieldValues->first(fn ($v) => $v->field?->key === 'where_heard');
+                    $whereHeardDisplay = $whereHeardVal?->value_text ?? $sfpRequest->where_heard;
+                @endphp
+                @if($whereHeardDisplay)
                 <div>
                     <dt class="text-gray-500 text-xs">Where heard</dt>
-                    <dd>{{ $sfpRequest->where_heard }}</dd>
+                    <dd>{{ $whereHeardDisplay }}</dd>
                 </div>
                 @endif
             </dl>

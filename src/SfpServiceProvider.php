@@ -6,6 +6,7 @@ use Dcplibrary\Sfp\Console\Commands\SfpBackupCommand;
 use Dcplibrary\Sfp\Http\Middleware\RequireSfpRole;
 use Dcplibrary\Sfp\Livewire\Admin\FormFieldEdit;
 use Dcplibrary\Sfp\Livewire\Admin\FormFields as FormFieldsAdmin;
+use Dcplibrary\Sfp\Livewire\Admin\FormFormFieldEdit;
 use Dcplibrary\Sfp\Livewire\Admin\CustomFields as CustomFieldsAdmin;
 use Dcplibrary\Sfp\Livewire\Admin\CustomFieldEdit as CustomFieldEditAdmin;
 use Dcplibrary\Sfp\Livewire\Admin\CustomFieldOptionsManager;
@@ -116,6 +117,7 @@ class SfpServiceProvider extends ServiceProvider
         Livewire::component('sfp-patron-requests', PatronRequests::class);
         Livewire::component('sfp-admin-form-fields', FormFieldsAdmin::class);
         Livewire::component('sfp-admin-form-field-edit', FormFieldEdit::class);
+        Livewire::component('sfp-admin-form-form-field-edit', FormFormFieldEdit::class);
         Livewire::component('sfp-admin-options-manager', OptionsManager::class);
         Livewire::component('sfp-admin-custom-fields', CustomFieldsAdmin::class);
         Livewire::component('sfp-admin-custom-field-edit', CustomFieldEditAdmin::class);

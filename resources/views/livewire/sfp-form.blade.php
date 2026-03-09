@@ -292,26 +292,6 @@
                 @enderror
             </fieldset>
 
-        {{-- ── console ─────────────────────────────────────────── --}}
-        @elseif($field->key === 'console' && $isVisible)
-            <fieldset>
-                <legend class="block text-sm font-medium text-gray-700 mb-2">
-                    {{ $field->label }}
-                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
-                </legend>
-                <div class="flex items-center gap-4 flex-wrap" role="radiogroup" aria-required="{{ $field->required ? 'true' : 'false' }}">
-                    @foreach($consoles as $consoleOption)
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" wire:model.live="console" value="{{ $consoleOption->slug }}" name="console" class="text-blue-600 focus:ring-blue-500" />
-                        <span class="text-sm text-gray-800">{{ $consoleOption->name }}</span>
-                    </label>
-                    @endforeach
-                </div>
-                @error('console')
-                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
-                @enderror
-            </fieldset>
-
         {{-- ── title ───────────────────────────────────────────── --}}
         @elseif($field->key === 'title' && $isVisible)
             <div>
@@ -395,37 +375,58 @@
                 @endif
             </div>
 
-        {{-- ── where_heard ─────────────────────────────────────── --}}
-        @elseif($field->key === 'where_heard' && $isVisible)
+        @endif
+        @endforeach
+
+        {{-- SFP custom fields (where_heard textarea, console select, etc.) --}}
+        @foreach($stepTwoCustomFields as $field)
+            @if(!$this->customFieldVisible($field->key)) @continue @endif
             <div>
-                <label for="where_heard" class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="custom_{{ $field->key }}" class="block text-sm font-medium text-gray-700 mb-1">
                     {{ $field->label }}
                     @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
                 </label>
-                <textarea
-                    id="where_heard"
-                    wire:model="where_heard"
-                    rows="3"
-                    class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
-                ></textarea>
-                @error('where_heard')
+                @if($field->type === 'textarea')
+                    <textarea
+                        id="custom_{{ $field->key }}"
+                        wire:model="custom.{{ $field->key }}"
+                        rows="3"
+                        class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                    ></textarea>
+                @elseif($field->type === 'radio')
+                    <div class="flex flex-wrap gap-4" role="radiogroup">
+                        @foreach($customFieldOptionsByFieldId[$field->id] ?? [] as $slug => $name)
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" wire:model.live="custom.{{ $field->key }}" value="{{ $slug }}" class="text-blue-600 focus:ring-blue-500" />
+                                <span class="text-sm text-gray-800">{{ $name }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                @elseif($field->type === 'select')
+                    <select id="custom_{{ $field->key }}" wire:model.live="custom.{{ $field->key }}"
+                            class="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select…</option>
+                        @foreach($customFieldOptionsByFieldId[$field->id] ?? [] as $slug => $name)
+                            <option value="{{ $slug }}">{{ $name }}</option>
+                        @endforeach
+                    </select>
+                @elseif($field->type === 'checkbox')
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" wire:model="custom.{{ $field->key }}" value="1"
+                               class="rounded text-blue-600 focus:ring-blue-500" />
+                        <span class="text-sm text-gray-700">{{ $field->key === 'ill_requested' ? 'Yes, please try interlibrary loan' : 'Yes' }}</span>
+                    </label>
+                @else
+                    <input type="text"
+                        id="custom_{{ $field->key }}"
+                        wire:model="custom.{{ $field->key }}"
+                        class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                @endif
+                @error('custom.' . $field->key)
                     <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
                 @enderror
             </div>
-
-        {{-- ── ill_requested ───────────────────────────────────── --}}
-        @elseif($field->key === 'ill_requested' && $isVisible)
-            <div>
-                <p class="text-sm font-medium text-gray-700 mb-2">If the library decides not to purchase this item, would you like the library to try to obtain it from another library (via interlibrary loan)?</p>
-                <div class="space-y-1">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" wire:model="ill_requested" value="1" class="rounded text-blue-600 focus:ring-blue-500" />
-                        <span class="text-sm text-gray-700">Yes, please try interlibrary loan</span>
-                    </label>
-                </div>
-            </div>
-
-        @endif
         @endforeach
         </div>
 

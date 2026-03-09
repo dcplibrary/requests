@@ -69,13 +69,13 @@
         <h2 id="details-heading" class="text-2xl font-bold text-gray-900 mb-6">Borrow Details</h2>
 
         <div class="space-y-6 bg-white rounded-lg border border-gray-200 p-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">I want to borrow <span class="text-red-600" aria-hidden="true">*</span></label>
-                <div class="flex flex-wrap gap-4" role="radiogroup" aria-label="Type of material">
+            <fieldset>
+                <legend class="block text-sm font-medium text-gray-700 mb-2">I want to borrow <span class="text-red-600" aria-hidden="true">*</span></legend>
+                <div class="space-y-1" role="radiogroup" aria-label="Type of material" aria-required="true">
                     @foreach($illMaterialTypes as $type)
-                        <label class="flex items-center gap-2 cursor-pointer">
+                        <label class="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-50 {{ $material_type_id == $type->id ? 'bg-blue-50 ring-1 ring-blue-200' : '' }}">
                             <input type="radio" wire:model.live="material_type_id" value="{{ $type->id }}"
-                                   class="text-blue-600 focus:ring-blue-500" />
+                                   name="ill_material_type" class="text-blue-600 focus:ring-blue-500" />
                             <span class="text-sm text-gray-800">{{ $type->name }}</span>
                         </label>
                     @endforeach
@@ -83,7 +83,7 @@
                 @error('material_type_id')
                     <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
                 @enderror
-            </div>
+            </fieldset>
 
             @php $lastSection = null; @endphp
             @foreach($orderedFields as $field)
@@ -106,9 +106,9 @@
                     </label>
 
                     @if(in_array($field->type, ['radio'], true))
-                        <div class="flex flex-wrap gap-4" role="radiogroup">
+                        <div class="space-y-1" role="radiogroup">
                             @foreach(($optionsByFieldId[$field->id] ?? []) as $slug => $name)
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-50 {{ ($custom[$field->key] ?? '') === $slug ? 'bg-blue-50 ring-1 ring-blue-200' : '' }}">
                                     <input type="radio" wire:model.live="custom.{{ $field->key }}" value="{{ $slug }}"
                                            class="text-blue-600 focus:ring-blue-500" />
                                     <span class="text-sm text-gray-800">{{ $name }}</span>
@@ -124,8 +124,9 @@
                             @endforeach
                         </select>
                     @elseif($field->type === 'textarea')
-                        <textarea wire:model="custom.{{ $field->key }}" rows="3"
-                                  class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"></textarea>
+                        <textarea wire:model="custom.{{ $field->key }}" rows="4"
+                                  class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                                  placeholder="{{ $field->key === 'other_specify' ? 'Please describe what you need...' : '' }}"></textarea>
                     @elseif($field->type === 'date')
                         <input type="date" wire:model="custom.{{ $field->key }}"
                                class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />

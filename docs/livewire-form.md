@@ -72,9 +72,9 @@ Step 2’s fields are **config-driven** via the `sfp_form_fields` table (`Dcplib
   - `buildStepTwoRules()` builds rules from the field config.
   - A field is only required when it is currently visible (`FormField::isRequiredFor($state)`), so hidden required fields validate as nullable.
 - **Caching**:
-  - Field config is cached via `FormField::allOrdered()` and is busted by the staff Form Fields UI (`FormField::bustCache()` on save).
+  - Field config is cached via `FormField::allOrdered()` and is busted by the staff Forms UI (`FormField::bustCache()` on save).
 
-The staff UI for this lives under **Settings → Form Fields** (Livewire admin components `FormFields` / `FormFieldEdit`), and option slugs used in conditional logic are protected from editing by `OptionsManager` (locked when referenced by any field condition).
+The staff UI for this lives under **Settings → Forms** (Livewire admin components `FormFields` / `FormFieldEdit`), and option slugs used in conditional logic are protected from editing by `OptionsManager` (locked when referenced by any field condition).
 
 ### Persistence notes (what is saved where)
 

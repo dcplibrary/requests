@@ -2,249 +2,219 @@
 
 namespace Dcplibrary\Sfp\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\Audience;
-use Dcplibrary\Sfp\Models\Console;
-use Dcplibrary\Sfp\Models\FormField;
-use Dcplibrary\Sfp\Models\Genre;
-use Dcplibrary\Sfp\Models\MaterialType;
+use Dcplibrary\Sfp\Models\Form;
+use Dcplibrary\Sfp\Models\FormCustomField;
+use Dcplibrary\Sfp\Models\FormFormField;
+use Illuminate\Support\Facades\URL;
 use Livewire\Component;
 
 /**
- * Admin component for managing patron-form field order, visibility,
- * required status, and conditional logic.
- *
- * Changes are persisted immediately on every interaction so there is no
- * explicit "Save" button — matching the Gravity Forms-style UX the user
- * requested.
+ * Admin component for managing field order and conditions per form.
+ * Two separate lists (Suggest for Purchase, Inter-Library Loan) so each can be controlled independently.
  */
 class FormFields extends Component
 {
-    /** @var array<int, array<string, mixed>> Ordered list of field state arrays */
-    public array $fields = [];
+    /** @var array<int, array<string, mixed>> SFP form fields (from form_form_fields pivot) */
+    public array $sfpFields = [];
 
-    /** @var array<int, bool> Which field indexes have their condition panel open */
-    public array $expanded = [];
-
-    /** Key of the field whose Options panel is open, or null if closed */
-    public ?string $optionsPanel = null;
+    /** @var array<int, array<string, mixed>> ILL form fields + custom fields */
+    public array $illFields = [];
 
     public function mount(): void
     {
         $this->loadFromDb();
     }
 
-    // ── Data loading ─────────────────────────────────────────────────────────
-
     private function loadFromDb(): void
     {
-        $this->fields = FormField::orderBy('sort_order')
-            ->get()
-            ->map(fn (FormField $f) => [
-                'id'           => $f->id,
-                'key'          => $f->key,
-                'label'        => $f->label,
-                'active'       => $f->active,
-                'required'     => $f->required,
-                'include_as_token' => (bool) $f->include_as_token,
-                'has_condition'=> ! empty($f->condition['rules']),
-                'condition'    => $f->condition ?? ['match' => 'all', 'rules' => []],
-            ])
-            ->values()
-            ->toArray();
+        $formSfp = Form::bySlug('sfp');
+        $formIll = Form::bySlug('ill');
+        if (! $formSfp || ! $formIll) {
+            $this->sfpFields = [];
+            $this->illFields = [];
+            return;
+        }
 
-        $this->expanded = array_fill(0, count($this->fields), false);
+        $sfpFormPivots = FormFormField::where('form_id', $formSfp->id)
+            ->with('formField')
+            ->orderBy('sort_order')
+            ->get();
+        $sfpCustomPivots = FormCustomField::where('form_id', $formSfp->id)
+            ->with('customField')
+            ->orderBy('sort_order')
+            ->get();
+
+        $sfpRows = $sfpFormPivots->map(fn (FormFormField $p) => $this->formFieldRow($p, 'sfp'))->values()->all();
+        foreach ($sfpCustomPivots as $p) {
+            $cf = $p->customField;
+            if (! $cf) {
+                continue;
+            }
+            $sfpRows[] = [
+                'pivot_id'           => $p->id,
+                'source'             => 'custom',
+                'form_scope'         => null,
+                'id'                 => $cf->id,
+                'key'                => $cf->key,
+                'label'              => $cf->label,
+                'type'               => $cf->type,
+                'active'             => (bool) $cf->active,
+                'required'           => (bool) $p->required,
+                'include_as_token'   => (bool) $cf->include_as_token,
+                'has_condition'      => ! empty($p->conditional_logic['rules'] ?? $cf->condition['rules'] ?? null),
+                'condition'          => $p->conditional_logic ?? $cf->condition ?? ['match' => 'all', 'rules' => []],
+                'sort_order'         => $p->sort_order,
+                'edit_url'           => $this->customFieldEditUrl($cf->id),
+            ];
+        }
+        $this->sfpFields = collect($sfpRows)->sortBy('sort_order')->values()->toArray();
+
+        $formPivots = FormFormField::where('form_id', $formIll->id)
+            ->with('formField')
+            ->orderBy('sort_order')
+            ->get();
+        $customPivots = FormCustomField::where('form_id', $formIll->id)
+            ->with('customField')
+            ->orderBy('sort_order')
+            ->get();
+
+        $illRows = $formPivots->map(fn (FormFormField $p) => $this->formFieldRow($p, 'ill'))->values()->all();
+        foreach ($customPivots as $p) {
+            $cf = $p->customField;
+            if (! $cf) {
+                continue;
+            }
+            $illRows[] = [
+                'pivot_id'           => $p->id,
+                'source'             => 'custom',
+                'form_scope'         => null,
+                'id'                 => $cf->id,
+                'key'                => $cf->key,
+                'label'              => $cf->label,
+                'type'               => $cf->type,
+                'active'             => (bool) $cf->active,
+                'required'           => (bool) $p->required,
+                'include_as_token'   => (bool) $cf->include_as_token,
+                'has_condition'      => ! empty($p->conditional_logic['rules'] ?? $cf->condition['rules'] ?? null),
+                'condition'          => $p->conditional_logic ?? $cf->condition ?? ['match' => 'all', 'rules' => []],
+                'sort_order'         => $p->sort_order,
+                'edit_url'           => $this->customFieldEditUrl($cf->id),
+            ];
+        }
+        $this->illFields = collect($illRows)->sortBy('sort_order')->values()->toArray();
     }
 
-    // ── Reordering ───────────────────────────────────────────────────────────
+    private function formFieldRow(FormFormField $pivot, string $form): array
+    {
+        $f = $pivot->formField;
+        $condition = $pivot->conditional_logic ?? $f->condition ?? ['match' => 'all', 'rules' => []];
 
-    public function moveUp(int $index): void
+        $row = [
+            'pivot_id'          => $pivot->id,
+            'source'            => 'form',
+            'id'                => $f->id,
+            'key'               => $f->key,
+            'label'             => $pivot->label_override !== null && $pivot->label_override !== '' ? $pivot->label_override : $f->label,
+            'type'              => null,
+            'form_scope'        => $f->form_scope ?? 'global',
+            'active'            => $f->active,
+            'required'          => (bool) $pivot->required,
+            'include_as_token'  => (bool) $f->include_as_token,
+            'has_condition'     => ! empty($condition['rules']),
+            'condition'         => $condition,
+            'sort_order'        => $pivot->sort_order,
+        ];
+        $row['edit_url'] = $this->formFieldEditForFormUrl($f->id, $form);
+
+        return $row;
+    }
+
+    /** Build URL for per-form form field edit (avoids relying on named route). */
+    private function formFieldEditForFormUrl(int $fieldId, string $form): string
+    {
+        $prefix = trim(config('sfp.route_prefix', 'request'), '/');
+        $path = '/' . $prefix . '/staff/settings/form-fields/' . $fieldId . '/form/' . $form . '/edit';
+
+        return URL::to($path);
+    }
+
+    /** Build URL for custom field edit (avoids relying on named route). */
+    private function customFieldEditUrl(int $fieldId): string
+    {
+        $prefix = trim(config('sfp.route_prefix', 'request'), '/');
+        $path = '/' . $prefix . '/staff/settings/custom-fields/' . $fieldId . '/edit';
+
+        return URL::to($path);
+    }
+
+    public function moveUpSfp(int $index): void
     {
         if ($index <= 0) {
             return;
         }
-
-        [$this->fields[$index - 1], $this->fields[$index]] =
-            [$this->fields[$index], $this->fields[$index - 1]];
-
-        [$this->expanded[$index - 1], $this->expanded[$index]] =
-            [$this->expanded[$index], $this->expanded[$index - 1]];
-
-        $this->persist();
+        [$this->sfpFields[$index - 1], $this->sfpFields[$index]] =
+            [$this->sfpFields[$index], $this->sfpFields[$index - 1]];
+        $this->persistSfp();
     }
 
-    public function moveDown(int $index): void
+    public function moveDownSfp(int $index): void
     {
-        if ($index >= count($this->fields) - 1) {
+        if ($index >= count($this->sfpFields) - 1) {
             return;
         }
-
-        [$this->fields[$index + 1], $this->fields[$index]] =
-            [$this->fields[$index], $this->fields[$index + 1]];
-
-        [$this->expanded[$index + 1], $this->expanded[$index]] =
-            [$this->expanded[$index], $this->expanded[$index + 1]];
-
-        $this->persist();
+        [$this->sfpFields[$index + 1], $this->sfpFields[$index]] =
+            [$this->sfpFields[$index], $this->sfpFields[$index + 1]];
+        $this->persistSfp();
     }
 
-    // ── Toggles ──────────────────────────────────────────────────────────────
-
-    public function toggleActive(int $index): void
+    public function moveUpIll(int $index): void
     {
-        $this->fields[$index]['active'] = ! $this->fields[$index]['active'];
-        $this->persist();
-    }
-
-    public function toggleRequired(int $index): void
-    {
-        $this->fields[$index]['required'] = ! $this->fields[$index]['required'];
-        $this->persist();
-    }
-
-    public function toggleConditionPanel(int $index): void
-    {
-        $this->expanded[$index] = ! $this->expanded[$index];
-    }
-
-    public function toggleOptionsPanel(string $key): void
-    {
-        $this->optionsPanel = ($this->optionsPanel === $key) ? null : $key;
-    }
-
-
-    public function updateLabel(int $fieldId, string $label): void
-    {
-        $label = trim($label);
-        if ($label === '') {
+        if ($index <= 0) {
             return;
         }
+        [$this->illFields[$index - 1], $this->illFields[$index]] =
+            [$this->illFields[$index], $this->illFields[$index - 1]];
+        $this->persistIll();
+    }
 
-        FormField::where('id', $fieldId)->update(['label' => $label]);
+    public function moveDownIll(int $index): void
+    {
+        if ($index >= count($this->illFields) - 1) {
+            return;
+        }
+        [$this->illFields[$index + 1], $this->illFields[$index]] =
+            [$this->illFields[$index], $this->illFields[$index + 1]];
+        $this->persistIll();
+    }
 
-        // Sync local state so the blade reflects the new label without a full reload
-        foreach ($this->fields as $i => $field) {
-            if ($field['id'] === $fieldId) {
-                $this->fields[$i]['label'] = $label;
-                break;
+    private function persistSfp(): void
+    {
+        foreach ($this->sfpFields as $i => $row) {
+            $order = $i + 1;
+            if (($row['source'] ?? '') === 'form') {
+                FormFormField::where('id', $row['pivot_id'])->update(['sort_order' => $order]);
+            } else {
+                FormCustomField::where('id', $row['pivot_id'])->update(['sort_order' => $order]);
             }
         }
-
-        FormField::bustCache();
+        $this->loadFromDb();
     }
 
-    public function toggleHasCondition(int $index): void
+    private function persistIll(): void
     {
-        $this->fields[$index]['has_condition'] = ! $this->fields[$index]['has_condition'];
-
-        if ($this->fields[$index]['has_condition']
-            && empty($this->fields[$index]['condition']['rules'])) {
-            $this->fields[$index]['condition'] = ['match' => 'all', 'rules' => []];
+        foreach ($this->illFields as $i => $row) {
+            $order = $i + 1;
+            if ($row['source'] === 'form') {
+                FormFormField::where('id', $row['pivot_id'])->update(['sort_order' => $order]);
+            } else {
+                FormCustomField::where('id', $row['pivot_id'])->update(['sort_order' => $order]);
+            }
         }
-
-        $this->persist();
+        $this->loadFromDb();
     }
-
-    // ── Condition rule management ─────────────────────────────────────────────
-
-    public function setConditionMatch(int $fieldIndex, string $match): void
-    {
-        $this->fields[$fieldIndex]['condition']['match'] = $match;
-        $this->persist();
-    }
-
-    public function addRule(int $fieldIndex): void
-    {
-        $this->fields[$fieldIndex]['condition']['rules'][] = [
-            'field'    => 'material_type',
-            'operator' => 'in',
-            'values'   => [],
-        ];
-        $this->persist();
-    }
-
-    public function removeRule(int $fieldIndex, int $ruleIndex): void
-    {
-        array_splice($this->fields[$fieldIndex]['condition']['rules'], $ruleIndex, 1);
-        $this->persist();
-    }
-
-    public function setRuleField(int $fieldIndex, int $ruleIndex, string $field): void
-    {
-        $this->fields[$fieldIndex]['condition']['rules'][$ruleIndex]['field']  = $field;
-        $this->fields[$fieldIndex]['condition']['rules'][$ruleIndex]['values'] = [];
-        $this->persist();
-    }
-
-    public function setRuleOperator(int $fieldIndex, int $ruleIndex, string $operator): void
-    {
-        $this->fields[$fieldIndex]['condition']['rules'][$ruleIndex]['operator'] = $operator;
-        $this->persist();
-    }
-
-    public function toggleRuleValue(int $fieldIndex, int $ruleIndex, string $value): void
-    {
-        $values = $this->fields[$fieldIndex]['condition']['rules'][$ruleIndex]['values'] ?? [];
-
-        if (in_array($value, $values, true)) {
-            $values = array_values(array_filter($values, fn ($v) => $v !== $value));
-        } else {
-            $values[] = $value;
-        }
-
-        $this->fields[$fieldIndex]['condition']['rules'][$ruleIndex]['values'] = $values;
-        $this->persist();
-    }
-
-    // ── Persistence ──────────────────────────────────────────────────────────
-
-    private function persist(): void
-    {
-        foreach ($this->fields as $i => $field) {
-            $condition = ($field['has_condition'] && ! empty($field['condition']['rules']))
-                ? $field['condition']
-                : null;
-
-            FormField::where('id', $field['id'])->update([
-                'sort_order' => $i + 1,
-                'active'     => $field['active'],
-                'required'   => $field['required'],
-                'condition'  => $condition ? json_encode($condition) : null,
-            ]);
-        }
-
-        FormField::bustCache();
-    }
-
-    // ── Render ───────────────────────────────────────────────────────────────
 
     public function render()
     {
-        return view('sfp::livewire.admin.form-fields', [
-            'materialTypeOptions' => MaterialType::orderBy('sort_order')
-                ->pluck('name', 'slug'),
-            'audienceOptions' => Audience::orderBy('sort_order')
-                ->pluck('name', 'slug'),
-            // Fields that have an inline Options panel — key => [class, title, extraFields]
-            'optionFieldConfig'  => [
-                'material_type' => [
-                    'class'          => MaterialType::class,
-                    'title'          => 'Material Type Options',
-                    'conditionField' => 'material_type',
-                    'extraFields'    => [
-                        ['key' => 'has_other_text', 'label' => 'Other text', 'type' => 'boolean'],
-                    ],
-                ],
-                'audience' => [
-                    'class'          => Audience::class,
-                    'title'          => 'Audience Options',
-                    'conditionField' => 'audience',
-                    'extraFields'    => [
-                        ['key' => 'bibliocommons_value', 'label' => 'BiblioCommons value', 'type' => 'text'],
-                    ],
-                ],
-                'genre'   => ['class' => Genre::class,   'title' => 'Genre Options',   'conditionField' => null, 'extraFields' => []],
-                'console' => ['class' => Console::class, 'title' => 'Console Options', 'conditionField' => null, 'extraFields' => []],
-            ],
-        ]);
+        return view('sfp::livewire.admin.form-fields');
     }
 }

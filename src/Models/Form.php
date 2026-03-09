@@ -25,6 +25,12 @@ class Form extends Model
         return $this->hasMany(FormMaterialType::class)->orderBy('sort_order');
     }
 
+    /** Form fields (sfp_form_fields) attached to this form with per-form order/condition. */
+    public function formFormFields(): HasMany
+    {
+        return $this->hasMany(FormFormField::class)->orderBy('sort_order');
+    }
+
     /** Custom fields attached to this form with per-form overrides. */
     public function formCustomFields(): HasMany
     {

@@ -26,8 +26,9 @@
                     $fieldId = 'notif-field-' . $i;
                     $trixId  = 'trix-notif-' . $i;
                     // Tokens apply to text/string/html settings only (not boolean toggles).
+                    $tokenList = $availableTokens ?? $setting->tokens ?? [];
                     $tokens = in_array($setting->type, ['string', 'text', 'html'])
-                        ? ($availableTokens ?? [])
+                        ? (is_array($tokenList) ? $tokenList : [])
                         : [];
                 @endphp
                 <div class="flex-1">

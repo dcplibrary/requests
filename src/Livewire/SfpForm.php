@@ -4,12 +4,14 @@ namespace Dcplibrary\Sfp\Livewire;
 
 use Dcplibrary\Sfp\Models\Audience;
 use Dcplibrary\Sfp\Models\CatalogFormatLabel;
-use Dcplibrary\Sfp\Models\Console;
+use Dcplibrary\Sfp\Models\CustomField;
+use Dcplibrary\Sfp\Models\CustomFieldOption;
 use Dcplibrary\Sfp\Models\FormField;
 use Dcplibrary\Sfp\Models\Genre;
 use Dcplibrary\Sfp\Models\Material;
 use Dcplibrary\Sfp\Models\MaterialType;
 use Dcplibrary\Sfp\Models\Patron;
+use Dcplibrary\Sfp\Models\RequestCustomFieldValue;
 use Dcplibrary\Sfp\Models\RequestStatus;
 use Dcplibrary\Sfp\Models\Setting;
 use Dcplibrary\Sfp\Models\SfpRequest;
@@ -67,9 +69,8 @@ class SfpForm extends Component
 
     public string $publish_date = '';
 
-    public string $where_heard = '';
-
-    public bool $ill_requested = false;
+    /** @var array<string, mixed> SFP custom field values (e.g. where_heard, console, ill_requested) */
+    public array $custom = [];
 
     // --- ILL age warning ---
     public bool $showIllWarning = false;
@@ -209,12 +210,10 @@ class SfpForm extends Component
             'title',
             'author',
             'publish_date',
-            'where_heard',
-            'ill_requested',
+            'custom',
             'showIllWarning',
             'other_material_text',
             'genre',
-            'console',
             'resolvedMaterialId',
             'isDuplicate',
             'duplicateMessage',
@@ -261,6 +260,12 @@ class SfpForm extends Component
             }
         }
 
+        foreach ($this->stepTwoCustomFields as $field) {
+            if (! $this->customFieldVisible($field->key)) {
+                unset($this->custom[$field->key]);
+            }
+        }
+
         // Clear "other" text when it isn't currently shown.
         if (! $this->showOtherText) {
             $this->other_material_text = '';
@@ -269,15 +274,17 @@ class SfpForm extends Component
 
     private function clearFieldValue(string $key): void
     {
+        if ($this->stepTwoCustomFields->contains('key', $key)) {
+            unset($this->custom[$key]);
+            return;
+        }
+
         match ($key) {
             'genre'        => $this->genre = '',
-            'console'      => $this->console = '',
             'title'        => $this->title = '',
             'author'       => $this->author = '',
             'isbn'         => $this->isbn = '',
             'publish_date' => $this->publish_date = '',
-            'where_heard'  => $this->where_heard = '',
-            'ill_requested'=> $this->ill_requested = false,
             default        => null,
         };
     }
@@ -355,6 +362,46 @@ class SfpForm extends Component
     }
 
     /**
+     * SFP custom fields for step 2 (e.g. where_heard textarea).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, CustomField>
+     */
+    public function getStepTwoCustomFieldsProperty()
+    {
+        return CustomField::forKind('sfp')->where('step', 2)->ordered()->get();
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public function getVisibleCustomFieldsProperty(): array
+    {
+        $state = $this->formState();
+
+        return $this->stepTwoCustomFields
+            ->mapWithKeys(fn (CustomField $f) => [$f->key => $f->isVisibleFor($state)])
+            ->all();
+    }
+
+    public function customFieldVisible(string $key): bool
+    {
+        return $this->visibleCustomFields[$key] ?? false;
+    }
+
+    private function customFieldSelectRule(CustomField $field, bool $required): string
+    {
+        $slugs = CustomFieldOption::query()
+            ->where('custom_field_id', $field->id)
+            ->active()
+            ->ordered()
+            ->pluck('slug')
+            ->implode(',');
+        $base = $required ? 'required' : 'nullable';
+
+        return $slugs !== '' ? "{$base}|in:{$slugs}" : $base;
+    }
+
+    /**
      * Build the step-2 validation rules based on field config.
      * Required fields that are currently hidden are treated as nullable.
      *
@@ -373,16 +420,10 @@ class SfpForm extends Component
                 $slugs = Genre::active()->pluck('slug')->implode(',');
                 return $req ? "required|in:$slugs" : "nullable|in:$slugs";
             },
-            'console'      => function (bool $req) {
-                $slugs = Console::active()->pluck('slug')->implode(',');
-                return $req ? "required|in:$slugs" : "nullable|in:$slugs";
-            },
             'title'        => fn (bool $req) => $req ? 'required|min:1|max:500' : 'nullable|min:1|max:500',
             'author'       => fn (bool $req) => $req ? 'required|min:1|max:300' : 'nullable|min:1|max:300',
             'isbn'         => fn (bool $req) => $req ? 'required|string|max:20' : 'nullable|string|max:20',
             'publish_date' => fn ()           => 'nullable|string|max:50',
-            'where_heard'  => fn ()           => 'nullable|string|max:1000',
-            'ill_requested'=> fn ()           => 'nullable|boolean',
         ];
 
         $state = $this->formState();
@@ -398,6 +439,19 @@ class SfpForm extends Component
             $prop = $field->key;
 
             $rules[$prop] = $fieldRuleMap[$field->key]($required);
+        }
+
+        foreach ($this->stepTwoCustomFields as $field) {
+            $visible  = $field->isVisibleFor($state);
+            $required = $visible && $field->required;
+            $path = "custom.{$field->key}";
+            $rules[$path] = match ($field->type) {
+                'textarea' => $required ? 'required|string|max:5000' : 'nullable|string|max:5000',
+                'text'     => $required ? 'required|string|max:500' : 'nullable|string|max:500',
+                'select', 'radio' => $this->customFieldSelectRule($field, $required),
+                'checkbox' => 'nullable|boolean',
+                default    => $required ? 'required' : 'nullable',
+            };
         }
 
         return $rules;
@@ -675,12 +729,10 @@ class SfpForm extends Component
             'submitted_title'        => $this->title,
             'submitted_author'       => $this->author,
             'submitted_publish_date' => $this->publish_date ?: null,
-            'other_material_text'    => $this->getShowOtherTextProperty()
-                                            ? $this->other_material_text
-                                            : ($this->fieldVisible('console') ? $this->console : null),
+            'other_material_text'    => $this->getShowOtherTextProperty() ? $this->other_material_text : null,
             'genre'                  => $this->genre ?: null,
-            'where_heard'            => $this->where_heard ?: null,
-            'ill_requested'          => $this->ill_requested,
+            'where_heard'            => null,
+            'ill_requested'          => (bool) ($this->custom['ill_requested'] ?? false),
             'catalog_searched'       => $this->catalogSearched,
             'catalog_result_count'   => count($this->catalogResults),
             'catalog_match_accepted' => $this->catalogMatchAccepted,
@@ -691,6 +743,26 @@ class SfpForm extends Component
             'is_duplicate'           => (bool) $priorRequest,
             'duplicate_of_request_id'=> $priorRequest?->id,
         ]);
+
+        $rows = [];
+        foreach ($this->stepTwoCustomFields as $field) {
+            $val = $this->custom[$field->key] ?? null;
+            if ($val === null || $val === '') {
+                continue;
+            }
+            $isSelectOrRadio = in_array($field->type, ['select', 'radio'], true);
+            $rows[] = [
+                'request_id'       => $sfpRequest->id,
+                'custom_field_id'  => $field->id,
+                'value_slug'       => $isSelectOrRadio ? (string) $val : null,
+                'value_text'       => $isSelectOrRadio ? null : (is_bool($val) ? ($val ? '1' : '0') : (string) $val),
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ];
+        }
+        if (! empty($rows)) {
+            RequestCustomFieldValue::insert($rows);
+        }
 
         // Log initial status history
         $sfpRequest->statusHistory()->create([
@@ -734,12 +806,23 @@ class SfpForm extends Component
     {
         $visible = $this->visibleFields;
 
+        $customFieldIds = $this->stepTwoCustomFields->pluck('id')->all();
+        $customFieldOptions = CustomFieldOption::query()
+            ->whereIn('custom_field_id', $customFieldIds)
+            ->active()
+            ->ordered()
+            ->get()
+            ->groupBy('custom_field_id')
+            ->map(fn ($g) => $g->pluck('name', 'slug')->all())
+            ->all();
+
         return view('sfp::livewire.sfp-form', [
-            'materialTypes'     => MaterialType::active()->get(),
-            'audiences'         => Audience::active()->get(),
-            'genres'            => Genre::active()->get(),
-            'consoles'          => Console::active()->get(),
-            'orderedFields'     => $this->formFields,   // FormField collection in sort_order
+            'materialTypes'         => MaterialType::active()->get(),
+            'audiences'             => Audience::active()->get(),
+            'genres'                => Genre::active()->get(),
+            'orderedFields'         => $this->formFields,   // FormField collection in sort_order
+            'stepTwoCustomFields'   => $this->stepTwoCustomFields,
+            'customFieldOptionsByFieldId' => $customFieldOptions,
             'visibleFields'     => $visible,             // ['genre' => true/false, ...]
             'illWarningMessage' => Setting::get('ill_warning_message', ''),
             'successMessage'    => Setting::get('submission_success_message', 'Thank you for your suggestion!'),

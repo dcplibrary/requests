@@ -218,6 +218,16 @@ class NotificationService
             }
         }
 
+        // Legacy: SFP requests may have where_heard on the request column before it became a custom field.
+        if ($kind === 'sfp' && (($map['{where_heard}'] ?? '') === '') && $request->where_heard) {
+            $map['{where_heard}'] = $request->where_heard;
+        }
+
+        // Legacy: SFP requests may have console slug in other_material_text before it became a custom field.
+        if ($kind === 'sfp' && (($map['{console}'] ?? '') === '') && $request->other_material_text) {
+            $map['{console}'] = Console::where('slug', $request->other_material_text)->value('name') ?? $request->other_material_text;
+        }
+
         return str_replace(array_keys($map), array_values($map), $template);
     }
 

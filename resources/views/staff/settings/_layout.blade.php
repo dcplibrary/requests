@@ -13,8 +13,7 @@
             @php
             $settingsNav = [
                 ['label' => 'General',        'route' => 'request.staff.settings.index',           'pattern' => 'request.staff.settings.index'],
-                ['label' => 'Form Fields',    'route' => 'request.staff.settings.form-fields',     'pattern' => 'request.staff.settings.form-fields*'],
-                ['label' => 'Custom Fields',  'route' => 'request.staff.settings.custom-fields',   'pattern' => 'request.staff.settings.custom-fields*'],
+                ['label' => 'Forms',          'route' => 'request.staff.settings.form-fields',     'pattern' => 'request.staff.settings.form-fields*'],
                 ['label' => 'Notifications',  'route' => 'request.staff.settings.notifications',   'pattern' => 'request.staff.settings.notifications*'],
                 ['label' => 'Catalog',        'route' => 'request.staff.catalog.index',            'pattern' => 'request.staff.catalog.*'],
                 ['label' => 'Statuses',       'route' => 'request.staff.statuses.index',           'pattern' => 'request.staff.statuses.*'],

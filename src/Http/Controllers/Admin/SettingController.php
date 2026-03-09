@@ -25,32 +25,48 @@ class SettingController extends Controller
 
     public function notifications()
     {
-        // Core tokens always available in notification templates.
-        $coreTokens = [
-            '{title}', '{author}',
+        // Tokens that are not form/custom fields (patron, status, dates, URL).
+        $systemTokens = [
             '{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}',
-            '{material_type}', '{audience}', '{status}',
-            '{submitted_date}', '{request_url}',
+            '{status}', '{submitted_date}', '{request_url}',
         ];
 
-        // Dynamic tokens from form fields flagged as token sources.
-        $fieldTokens = FormField::tokenFields()
-            ->pluck('key')
-            ->map(fn (string $k) => "{{$k}}")
-            ->all();
+        // Form field keys — title, author, material_type, audience, genre, etc.
+        $formFieldTokens = [];
+        try {
+            $formFieldTokens = FormField::ordered()
+                ->pluck('key')
+                ->map(fn (string $k) => "{{$k}}")
+                ->all();
+        } catch (\Throwable $e) {
+            // Table may not exist or be empty during install
+        }
 
-        // Dynamic tokens from custom fields flagged as token sources.
-        $customFieldTokens = CustomField::query()
-            ->where('active', true)
-            ->where('include_as_token', true)
-            ->orderBy('sort_order')
-            ->pluck('key')
-            ->map(fn (string $k) => "{{$k}}")
-            ->all();
+        // Active custom field keys.
+        $customFieldTokens = [];
+        try {
+            $customFieldTokens = CustomField::query()
+                ->where('active', true)
+                ->orderBy('sort_order')
+                ->pluck('key')
+                ->map(fn (string $k) => "{{$k}}")
+                ->all();
+        } catch (\Throwable $e) {
+            // Table may not exist
+        }
+
+        // Core request tokens (always include these so they’re always listed).
+        $coreRequestTokens = ['{title}', '{author}', '{material_type}', '{audience}'];
+        $availableTokens = array_values(array_unique(array_merge(
+            $coreRequestTokens,
+            $systemTokens,
+            $formFieldTokens,
+            $customFieldTokens
+        )));
 
         return view('sfp::staff.settings.notifications', [
             'settings'        => Setting::allGrouped()->only(['notifications']),
-            'availableTokens' => array_values(array_unique(array_merge($coreTokens, $fieldTokens, $customFieldTokens))),
+            'availableTokens' => $availableTokens,
         ]);
     }
 

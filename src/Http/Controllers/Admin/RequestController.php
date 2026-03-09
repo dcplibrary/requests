@@ -147,8 +147,8 @@ class RequestController extends Controller
         ]);
 
         $customValueLabelByFieldId = [];
-        if ($sfpRequest->request_kind === 'ill') {
-            $fieldIds = $sfpRequest->customFieldValues->pluck('custom_field_id')->unique()->values()->all();
+        $fieldIds = $sfpRequest->customFieldValues->pluck('custom_field_id')->unique()->values()->all();
+        if (! empty($fieldIds)) {
             $optionMaps = CustomFieldOption::query()
                 ->whereIn('custom_field_id', $fieldIds)
                 ->get()

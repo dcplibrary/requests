@@ -9,7 +9,7 @@ class CustomFieldController extends Controller
 {
     public function index()
     {
-        return view('sfp::staff.custom-fields.index');
+        return redirect()->route('request.staff.settings.form-fields');
     }
 
     public function edit(CustomField $field)

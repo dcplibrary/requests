@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * Seeds default custom fields for the patron-facing ILL form.
  *
- * These are intended as sane defaults that staff can edit in the Custom Fields UI.
+ * Fields that exist in sfp_form_fields (title, author, publish_date, isbn)
+ * are not seeded here; they are consolidated in form fields. where_heard is a custom field for SFP only. This seeder also deletes
+ * any existing custom field rows for those keys. The ILL form should source those
+ * from form fields (or form_custom_fields) when rendering step 2.
  */
 class IllCustomFieldsSeeder extends Seeder
 {
@@ -58,8 +61,8 @@ class IllCustomFieldsSeeder extends Seeder
             ],
             [
                 'key' => 'other_specify',
-                'label' => 'Please specify',
-                'type' => 'text',
+                'label' => 'Details (please describe what you need)',
+                'type' => 'textarea',
                 'step' => 2,
                 'request_kind' => 'ill',
                 'sort_order' => 5,
@@ -74,61 +77,7 @@ class IllCustomFieldsSeeder extends Seeder
                     ],
                 ]),
             ],
-            // Common with SFP: same keys as FormField (title, author, publish_date, isbn, where_heard) for shared tokens/columns
-            [
-                'key' => 'title',
-                'label' => 'Title',
-                'type' => 'text',
-                'step' => 2,
-                'request_kind' => 'both',
-                'sort_order' => 10,
-                'active' => true,
-                'required' => true,
-                'include_as_token' => true,
-                'filterable' => true,
-                'condition' => json_encode([
-                    'match' => 'any',
-                    'rules' => [
-                        ['field' => 'material_type', 'operator' => 'in', 'values' => ['book', 'audiobook', 'dvd', 'other']],
-                    ],
-                ]),
-            ],
-            [
-                'key' => 'author',
-                'label' => 'Author / Creator',
-                'type' => 'text',
-                'step' => 2,
-                'request_kind' => 'both',
-                'sort_order' => 11,
-                'active' => true,
-                'required' => false,
-                'include_as_token' => true,
-                'filterable' => false,
-                'condition' => json_encode([
-                    'match' => 'any',
-                    'rules' => [
-                        ['field' => 'material_type', 'operator' => 'in', 'values' => ['book', 'audiobook', 'other']],
-                    ],
-                ]),
-            ],
-            [
-                'key' => 'publish_date',
-                'label' => 'Publication Date',
-                'type' => 'date',
-                'step' => 2,
-                'request_kind' => 'both',
-                'sort_order' => 12,
-                'active' => true,
-                'required' => false,
-                'include_as_token' => true,
-                'filterable' => false,
-                'condition' => json_encode([
-                    'match' => 'any',
-                    'rules' => [
-                        ['field' => 'material_type', 'operator' => 'in', 'values' => ['book']],
-                    ],
-                ]),
-            ],
+            // title, author, publish_date, isbn, where_heard are consolidated in sfp_form_fields — do not seed here
             [
                 'key' => 'publisher',
                 'label' => 'Publisher',
@@ -136,24 +85,6 @@ class IllCustomFieldsSeeder extends Seeder
                 'step' => 2,
                 'request_kind' => 'ill',
                 'sort_order' => 13,
-                'active' => true,
-                'required' => false,
-                'include_as_token' => true,
-                'filterable' => false,
-                'condition' => json_encode([
-                    'match' => 'any',
-                    'rules' => [
-                        ['field' => 'material_type', 'operator' => 'in', 'values' => ['book']],
-                    ],
-                ]),
-            ],
-            [
-                'key' => 'isbn',
-                'label' => 'ISBN',
-                'type' => 'text',
-                'step' => 2,
-                'request_kind' => 'both',
-                'sort_order' => 14,
                 'active' => true,
                 'required' => false,
                 'include_as_token' => true,
@@ -292,12 +223,12 @@ class IllCustomFieldsSeeder extends Seeder
                 ]),
             ],
             [
-                'key' => 'where_heard',
+                'key' => 'comments',
                 'label' => 'Comments',
                 'type' => 'textarea',
                 'step' => 2,
-                'request_kind' => 'both',
-                'sort_order' => 99,
+                'request_kind' => 'ill',
+                'sort_order' => 32,
                 'active' => true,
                 'required' => false,
                 'include_as_token' => true,
@@ -313,13 +244,21 @@ class IllCustomFieldsSeeder extends Seeder
             );
         }
 
-        // Remove legacy ILL-only keys now aligned to common SFP keys (title, author, publish_date, isbn, where_heard)
+        // Remove custom fields consolidated into sfp_form_fields (title, author, publish_date, isbn)
+        // where_heard is now a custom field for SFP only — do not delete
+        DB::table('sfp_custom_fields')->whereIn('key', [
+            'title',
+            'author',
+            'publish_date',
+            'isbn',
+        ])->delete();
+
+        // Remove legacy ILL-only keys (old names)
         DB::table('sfp_custom_fields')->whereIn('key', [
             'ill_title',
             'ill_author',
             'publication_date',
             'isbn_number',
-            'comments',
         ])->delete();
 
         // ILL now uses material_types (MaterialType model); remove borrow_type custom field
