@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.5.1](https://github.com/dcplibrary/sfp/compare/v2.5.0...v2.5.1) (2026-03-09)
+
+
+### Bug Fixes
+
+* convert email footer to html field ([91a28e9](https://github.com/dcplibrary/sfp/commit/91a28e92083c002227b7c2bc9b2eeb82a2509fcb))
+
 # [2.5.0](https://github.com/dcplibrary/sfp/compare/v2.4.0...v2.5.0) (2026-03-09)
 
 
