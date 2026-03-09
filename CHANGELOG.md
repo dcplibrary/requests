@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.6.1](https://github.com/dcplibrary/sfp/compare/v2.6.0...v2.6.1) (2026-03-09)
+
+
+### Bug Fixes
+
+* make migrations mysql compatible ([a2111f3](https://github.com/dcplibrary/sfp/commit/a2111f31b511a1db7d10adcda922ff0c669cf7e9))
+
 # [2.6.0](https://github.com/dcplibrary/sfp/compare/v2.5.2...v2.6.0) (2026-03-09)
 
 
