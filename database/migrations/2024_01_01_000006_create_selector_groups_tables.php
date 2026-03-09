@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('description')->nullable();
             $table->boolean('active')->default(true);
+            $table->text('notification_emails')->nullable(); // routing addresses for new-request emails
             $table->timestamps();
         });
 

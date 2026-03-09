@@ -327,6 +327,36 @@ class SettingsSeeder extends Seeder
                 'description' => 'Text shown in the footer of every notification email sent to patrons and staff.',
             ],
 
+            // --- Request limit messages ---
+            [
+                'key'         => 'limit_reached_message',
+                'value'       => 'You have reached the limit of {limit} suggestions {period}.',
+                'label'       => 'Limit Reached Message',
+                'type'        => 'string',
+                'group'       => 'messaging',
+                'description' => 'Shown when a patron hits their request limit. Tokens: {limit}, {period}',
+                'tokens'      => json_encode(['{limit}', '{period}']),
+            ],
+            [
+                'key'         => 'limit_until_message',
+                'value'       => 'You won\'t be able to submit another suggestion until {until}.',
+                'label'       => 'Limit Until Message',
+                'type'        => 'string',
+                'group'       => 'messaging',
+                'description' => 'Shown below the limit message when a reset date is known. Token: {until}',
+                'tokens'      => json_encode(['{until}']),
+            ],
+
+            // --- Backup ---
+            [
+                'key'         => 'backup_retention_days',
+                'value'       => '30',
+                'label'       => 'Backup Retention',
+                'type'        => 'integer',
+                'group'       => 'backup',
+                'description' => 'How many days to keep server-side backup files. Files older than this are removed when pruning runs.',
+            ],
+
             // --- Auto-order exclusions (popular authors) ---
             [
                 'key' => 'auto_order_author_exclusions',

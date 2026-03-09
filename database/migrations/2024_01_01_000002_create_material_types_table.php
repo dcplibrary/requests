@@ -13,9 +13,15 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->boolean('active')->default(true);
+            $table->boolean('ill_enabled')->default(true);
+            $table->boolean('isbndb_searchable')->default(false);
             $table->boolean('has_other_text')->default(false); // for "Other" type
             $table->integer('sort_order')->default(0);
+            $table->softDeletes();
             $table->timestamps();
+            // Plain columns: sfp_users doesn't exist yet at migration time (runs at 000005)
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('modified_by')->nullable();
         });
     }
 

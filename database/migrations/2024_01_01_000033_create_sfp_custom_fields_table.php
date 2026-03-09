@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('key')->unique();
             $table->string('label');
+            $table->json('label_overrides')->nullable(); // optional map of context slug => label override
             $table->string('type', 30); // text|textarea|date|number|checkbox|select|radio
             $table->unsignedSmallInteger('step')->default(2); // 1..n (patron forms are multi-step)
             $table->string('request_kind', 20)->default('sfp'); // sfp|ill|both
@@ -21,7 +22,10 @@ return new class extends Migration
             $table->boolean('include_as_token')->default(false);
             $table->boolean('filterable')->default(false);
             $table->json('condition')->nullable(); // same match/rules structure as FormField
+            $table->softDeletes();
             $table->timestamps();
+            $table->foreignId('created_by')->nullable()->constrained('sfp_users')->nullOnDelete();
+            $table->foreignId('modified_by')->nullable()->constrained('sfp_users')->nullOnDelete();
 
             $table->index(['request_kind', 'step', 'active', 'sort_order'], 'sfp_custom_fields_scope');
         });

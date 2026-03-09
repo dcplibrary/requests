@@ -15,7 +15,10 @@ return new class extends Migration
             $table->string('slug');
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->boolean('active')->default(true);
+            $table->softDeletes();
             $table->timestamps();
+            $table->foreignId('created_by')->nullable()->constrained('sfp_users')->nullOnDelete();
+            $table->foreignId('modified_by')->nullable()->constrained('sfp_users')->nullOnDelete();
 
             $table->unique(['custom_field_id', 'slug']);
             $table->index(['custom_field_id', 'active', 'sort_order'], 'sfp_custom_field_options_scope');

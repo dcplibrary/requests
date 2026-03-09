@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('form_id')->constrained('forms')->cascadeOnDelete();
             $table->foreignId('form_field_id')->constrained('sfp_form_fields')->cascadeOnDelete();
+            $table->string('label_override', 255)->nullable();
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->json('conditional_logic')->nullable();
             $table->boolean('required')->default(false);

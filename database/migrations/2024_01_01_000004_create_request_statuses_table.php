@@ -16,6 +16,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->boolean('active')->default(true);
             $table->boolean('is_terminal')->default(false); // purchased/denied = no further transitions expected
+            $table->boolean('notify_patron')->default(false); // fire patron email on transition to this status
             $table->timestamps();
         });
     }

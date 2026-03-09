@@ -18,6 +18,12 @@ return new class extends Migration
             $table->foreignId('material_type_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('request_status_id')->constrained()->restrictOnDelete();
 
+            // --- Request kind and assignment ---
+            $table->string('request_kind', 20)->default('sfp'); // sfp|ill
+            $table->foreignId('assigned_to_user_id')->nullable()->constrained('sfp_users')->nullOnDelete();
+            $table->timestamp('assigned_at')->nullable();
+            $table->foreignId('assigned_by_user_id')->nullable()->constrained('sfp_users')->nullOnDelete();
+
             // --- Raw submitted data (always preserved as entered) ---
             $table->string('submitted_title');
             $table->string('submitted_author');
@@ -54,6 +60,8 @@ return new class extends Migration
             $table->index('material_id');
             $table->index('request_status_id');
             $table->index('created_at');
+            $table->index('request_kind');
+            $table->index(['assigned_to_user_id', 'assigned_at']);
         });
     }
 

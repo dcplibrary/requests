@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('type')->default('string'); // string|integer|boolean|text|html
             $table->string('group')->default('general');
             $table->text('description')->nullable();
+            $table->json('tokens')->nullable();        // optional insert-token list for admin UI
             $table->timestamps();
         });
     }
