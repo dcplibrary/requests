@@ -154,6 +154,9 @@ php artisan db:seed --class=Dcplibrary\\Sfp\\Database\\Seeders\\SfpDatabaseSeede
 
 # Or simply:
 php artisan db:seed
+
+# Seed only missing settings (never overwrites existing values). Safe to run anytime:
+php artisan db:seed --class=Dcplibrary\\Sfp\\Database\\Seeders\\DefaultSettingsSeeder
 ```
 
 The host app's `DatabaseSeeder` should call `SfpDatabaseSeeder` directly:

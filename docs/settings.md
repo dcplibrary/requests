@@ -128,7 +128,7 @@ Post-submission processing mode.
 
 ## Adding a New Setting
 
-1. Add a row to `SettingsSeeder::run()`:
+1. Add a row to `SettingsSeeder::defaultSettings()` (the shared defaults array):
 
 ```php
 [
@@ -141,6 +141,12 @@ Post-submission processing mode.
 ],
 ```
 
-2. Re-run the seeder: `php artisan db:seed --class=Dcplibrary\\Sfp\\Database\\Seeders\\SettingsSeeder`
+2. **SettingsSeeder** (full seed/overwrite):  
+   `php artisan db:seed --class=Dcplibrary\\Sfp\\Database\\Seeders\\SettingsSeeder`  
+   Use when resetting or initially seeding; it overwrites existing values.
 
-3. Read it in code: `Setting::get('my_new_setting', 'default')`
+3. **DefaultSettingsSeeder** (missing keys only):  
+   `php artisan db:seed --class=Dcplibrary\\Sfp\\Database\\Seeders\\DefaultSettingsSeeder`  
+   Use to ensure defaults exist without changing values already set in the database. Safe to run by class name anytime.
+
+4. Read it in code: `Setting::get('my_new_setting', 'default')`

@@ -44,6 +44,13 @@
                        class="w-4 h-4 rounded border-gray-300 text-blue-600">
                 <label for="ill_enabled" class="text-sm font-medium text-gray-700">Available on ILL form</label>
             </div>
+            <div class="flex items-center gap-2">
+                <input type="hidden" name="isbndb_searchable" value="0">
+                <input type="checkbox" name="isbndb_searchable" id="isbndb_searchable" value="1"
+                       {{ old('isbndb_searchable', $type->isbndb_searchable ?? false) ? 'checked' : '' }}
+                       class="w-4 h-4 rounded border-gray-300 text-blue-600">
+                <label for="isbndb_searchable" class="text-sm font-medium text-gray-700">Searchable in ISBNdb (ILL enrichment)</label>
+            </div>
         </div>
 
         <div class="mt-6 flex gap-3">

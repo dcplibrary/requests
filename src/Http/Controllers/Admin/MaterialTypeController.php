@@ -25,16 +25,18 @@ class MaterialTypeController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'          => 'required|string|max:100',
-            'sort_order'    => 'required|integer|min:0',
-            'active'        => 'boolean',
-            'ill_enabled'   => 'boolean',
-            'has_other_text'=> 'boolean',
+            'name'              => 'required|string|max:100',
+            'sort_order'        => 'required|integer|min:0',
+            'active'            => 'boolean',
+            'ill_enabled'       => 'boolean',
+            'isbndb_searchable' => 'boolean',
+            'has_other_text'    => 'boolean',
         ]);
 
         MaterialType::create(array_merge($data, [
             'slug' => Str::slug($data['name']),
             'ill_enabled' => $request->boolean('ill_enabled'),
+            'isbndb_searchable' => $request->boolean('isbndb_searchable'),
         ]));
 
         return redirect()->route('request.staff.material-types.index')->with('success', 'Material type created.');
@@ -48,14 +50,16 @@ class MaterialTypeController extends Controller
     public function update(Request $request, MaterialType $materialType)
     {
         $data = $request->validate([
-            'name'          => 'required|string|max:100',
-            'sort_order'    => 'required|integer|min:0',
-            'active'        => 'boolean',
-            'ill_enabled'   => 'boolean',
-            'has_other_text'=> 'boolean',
+            'name'              => 'required|string|max:100',
+            'sort_order'        => 'required|integer|min:0',
+            'active'            => 'boolean',
+            'ill_enabled'       => 'boolean',
+            'isbndb_searchable' => 'boolean',
+            'has_other_text'    => 'boolean',
         ]);
 
         $data['ill_enabled'] = $request->boolean('ill_enabled');
+        $data['isbndb_searchable'] = $request->boolean('isbndb_searchable');
         $materialType->update($data);
 
         return redirect()->route('request.staff.material-types.index')->with('success', 'Material type updated.');

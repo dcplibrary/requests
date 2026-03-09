@@ -9,27 +9,41 @@ use Illuminate\Support\Facades\Schema;
 
 class SettingsSeeder extends Seeder
 {
-    public function run(): void
+    /**
+     * Ensure the ILL selector group exists and return its ID (or null).
+     * Used by both SettingsSeeder and DefaultSettingsSeeder.
+     */
+    public static function ensureIllGroupExists(): ?int
     {
-        // Ensure the seeded ILL access group exists and store its ID in settings.
-        // We identify it by a stable name; the ID is persisted so renames are safe.
-        $illGroupId = null;
-        if (Schema::hasTable('selector_groups')) {
-            $illGroupId = DB::table('selector_groups')->where('name', 'ILL')->value('id');
-            if (! $illGroupId) {
-                DB::table('selector_groups')->insert([
-                    'name' => 'ILL',
-                    'description' => 'Seeded access group for Interlibrary Loan requests.',
-                    'active' => 1,
-                    'notification_emails' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                $illGroupId = (int) DB::getPdo()->lastInsertId();
-            }
+        if (! Schema::hasTable('selector_groups')) {
+            return null;
+        }
+        $illGroupId = DB::table('selector_groups')->where('name', 'ILL')->value('id');
+        if (! $illGroupId) {
+            DB::table('selector_groups')->insert([
+                'name' => 'ILL',
+                'description' => 'Seeded access group for Interlibrary Loan requests.',
+                'active' => 1,
+                'notification_emails' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $illGroupId = (int) DB::getPdo()->lastInsertId();
         }
 
-        $settings = [
+        return (int) $illGroupId;
+    }
+
+    /**
+     * Return the default settings definitions. Pass the ILL group ID for ill_selector_group_id.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function defaultSettings(?int $illGroupId = null): array
+    {
+        $illGroupId = $illGroupId ?? self::ensureIllGroupExists();
+
+        return [
             // --- Request limits ---
             [
                 'key'         => 'sfp_limit_count',
@@ -80,6 +94,14 @@ class SettingsSeeder extends Seeder
                 'type' => 'html',
                 'group' => 'ill',
                 'description' => 'Message shown to patrons when their item exceeds the age threshold.',
+            ],
+            [
+                'key' => 'ill_isbndb_enabled',
+                'value' => '1',
+                'label' => 'Enable ISBNdb enrichment for ILL',
+                'type' => 'boolean',
+                'group' => 'ill',
+                'description' => 'When enabled, ILL requests for books/audiobooks search ISBNdb to verify ISBN and add publisher, edition, and other enrichment. Patrons can confirm a match before submitting.',
             ],
 
             // --- Duplicate request messaging ---
@@ -315,6 +337,12 @@ class SettingsSeeder extends Seeder
                 'description' => 'Shown when a patron submits a future (unreleased) title by an author on the auto-order exclusion list. No request is created in this case.',
             ],
         ];
+    }
+
+    public function run(): void
+    {
+        $illGroupId = self::ensureIllGroupExists();
+        $settings = self::defaultSettings($illGroupId);
 
         foreach ($settings as $setting) {
             DB::table('settings')->updateOrInsert(
@@ -325,7 +353,6 @@ class SettingsSeeder extends Seeder
                 ])
             );
 
-            // Bust cached reads so new/updated values take effect immediately.
             Cache::forget("setting:{$setting['key']}");
         }
     }

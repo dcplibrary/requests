@@ -10,7 +10,10 @@ use Dcplibrary\Sfp\Models\RequestCustomFieldValue;
 use Dcplibrary\Sfp\Models\RequestStatus;
 use Dcplibrary\Sfp\Models\Setting;
 use Dcplibrary\Sfp\Models\SfpRequest;
+use Dcplibrary\Sfp\Models\Material;
 use Dcplibrary\Sfp\Services\BibliocommonsService;
+use Dcplibrary\Sfp\Services\CoverService;
+use Dcplibrary\Sfp\Services\IsbnDbService;
 use Dcplibrary\Sfp\Services\NotificationService;
 use Dcplibrary\Sfp\Services\PatronService;
 use Illuminate\Support\Carbon;
@@ -50,6 +53,11 @@ class IllForm extends Component
     public bool $catalogSearched = false;
     public ?string $catalogMatchBibId = null;
     public ?string $catalogFoundUrl = null;
+
+    /** ISBNdb enrichment (Step 3, when catalog had no hits or patron skipped) */
+    public array $isbndbResults = [];
+    public bool $isbndbSearched = false;
+    public ?bool $isbndbMatchAccepted = null;
 
     public bool $processing = false;
     public string $processingStep = '';
@@ -263,6 +271,22 @@ class IllForm extends Component
             }
         }
 
+        // No catalog hits: optionally search ISBNdb for enrichment (when this material type is searchable)
+        $materialType = MaterialType::find($this->material_type_id);
+        if ($materialType?->isbndb_searchable && $title !== '' && Setting::get('ill_isbndb_enabled', false)) {
+            $this->processingStep = 'Verifying book details...';
+            $service = app(IsbnDbService::class);
+            $searchResult = $service->search($title, $author);
+            $this->isbndbSearched = true;
+            $this->isbndbResults = $this->withCovers($searchResult['results'], 'isbndb');
+
+            if (count($this->isbndbResults) > 0) {
+                $this->processing = false;
+                $this->step = 3;
+                return;
+            }
+        }
+
         $this->saveRequest($patron);
     }
 
@@ -281,10 +305,46 @@ class IllForm extends Component
     {
         /** @var Patron $patron */
         $patron = Patron::where('barcode', $this->barcode)->firstOrFail();
+
+        // Optionally show ISBNdb results for enrichment (when this material type is searchable)
+        $materialType = MaterialType::find($this->material_type_id);
+        $title = (string) ($this->custom['title'] ?? '');
+        $author = (string) ($this->custom['author'] ?? '');
+
+        if (! $this->isbndbSearched && $materialType?->isbndb_searchable && $title !== '' && Setting::get('ill_isbndb_enabled', false)) {
+            $this->processingStep = 'Verifying book details...';
+            $service = app(IsbnDbService::class);
+            $searchResult = $service->search($title, $author);
+            $this->isbndbSearched = true;
+            $this->isbndbResults = $this->withCovers($searchResult['results'], 'isbndb');
+
+            if (count($this->isbndbResults) > 0) {
+                $this->processing = false;
+                $this->step = 3;
+                return;
+            }
+        }
+
         $this->saveRequest($patron);
     }
 
-    private function saveRequest(Patron $patron): void
+    public function acceptIsbndbMatch(int $index): void
+    {
+        /** @var Patron $patron */
+        $patron = Patron::where('barcode', $this->barcode)->firstOrFail();
+        $isbndbData = $this->isbndbResults[$index] ?? null;
+        $this->isbndbMatchAccepted = true;
+        $this->saveRequest($patron, is_array($isbndbData) ? $isbndbData : null);
+    }
+
+    public function skipIsbndbMatch(): void
+    {
+        /** @var Patron $patron */
+        $patron = Patron::where('barcode', $this->barcode)->firstOrFail();
+        $this->saveRequest($patron);
+    }
+
+    private function saveRequest(Patron $patron, ?array $isbndbData = null): void
     {
         $this->processing = true;
         $this->processingStep = 'Submitting your request...';
@@ -305,9 +365,43 @@ class IllForm extends Component
             $submittedTitle = 'Interlibrary Loan request';
         }
 
+        $materialId = null;
+        if ($isbndbData !== null) {
+            $titleForMatch = $isbndbData['title'] ?? $submittedTitle;
+            $authorForMatch = $isbndbData['author_string'] ?? $submittedAuthor;
+            $material = Material::findMatch($titleForMatch, $authorForMatch);
+
+            if ($material) {
+                $material->update([
+                    'isbn'               => $isbndbData['isbn'] ?? $material->isbn,
+                    'isbn13'             => $isbndbData['isbn13'] ?? $material->isbn13,
+                    'publisher'          => $isbndbData['publisher'] ?? $material->publisher,
+                    'exact_publish_date' => isset($isbndbData['publish_date']) ? date('Y-m-d', strtotime($isbndbData['publish_date'])) : $material->exact_publish_date,
+                    'edition'            => $isbndbData['edition'] ?? $material->edition,
+                    'overview'           => $isbndbData['overview'] ?? $material->overview,
+                    'source'             => 'isbndb',
+                ]);
+            } else {
+                $material = Material::create([
+                    'title'              => $titleForMatch,
+                    'author'             => $authorForMatch,
+                    'publish_date'       => $submittedPublishDate,
+                    'material_type_id'   => $this->material_type_id,
+                    'isbn'               => $isbndbData['isbn'] ?? null,
+                    'isbn13'             => $isbndbData['isbn13'] ?? null,
+                    'publisher'          => $isbndbData['publisher'] ?? null,
+                    'exact_publish_date' => isset($isbndbData['publish_date']) ? date('Y-m-d', strtotime($isbndbData['publish_date'])) : null,
+                    'edition'            => $isbndbData['edition'] ?? null,
+                    'overview'           => $isbndbData['overview'] ?? null,
+                    'source'             => 'isbndb',
+                ]);
+            }
+            $materialId = $material->id;
+        }
+
         $req = SfpRequest::create([
             'patron_id'              => $patron->id,
-            'material_id'            => null,
+            'material_id'            => $materialId,
             'audience_id'            => null,
             'material_type_id'       => $this->material_type_id,
             'request_status_id'      => $pendingStatus->id,
@@ -323,9 +417,9 @@ class IllForm extends Component
             'catalog_result_count'   => is_array($this->catalogResults) ? count($this->catalogResults) : null,
             'catalog_match_accepted' => $this->catalogMatchBibId ? true : null,
             'catalog_match_bib_id'   => $this->catalogMatchBibId,
-            'isbndb_searched'        => false,
-            'isbndb_result_count'    => null,
-            'isbndb_match_accepted'  => null,
+            'isbndb_searched'        => $this->isbndbSearched,
+            'isbndb_result_count'    => count($this->isbndbResults),
+            'isbndb_match_accepted'  => $isbndbData !== null,
             'is_duplicate'           => false,
             'duplicate_of_request_id'=> null,
         ]);
@@ -370,6 +464,20 @@ class IllForm extends Component
         $this->createdRequestId = $req->id;
         $this->processing = false;
         $this->step = 4;
+    }
+
+    /**
+     * Decorate ISBNdb results with cover_url (same pattern as SfpForm).
+     */
+    private function withCovers(array $results, string $source): array
+    {
+        $covers = app(CoverService::class);
+        return array_map(function (array $result) use ($covers) {
+            $isbn = $result['isbn13'] ?? $result['isbn'] ?? null;
+            $fallback = $result['image'] ?? null;
+            $result['cover_url'] = $covers->url($isbn, $fallback);
+            return $result;
+        }, $results);
     }
 
     /**

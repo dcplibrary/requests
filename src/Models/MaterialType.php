@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string      $slug
  * @property bool        $active
  * @property bool        $ill_enabled     When true, show this type on the ILL form (configurable per type)
+ * @property bool        $isbndb_searchable When true, ILL form may search ISBNdb for this type (books/audiobooks typically)
  * @property bool        $has_other_text  When true, show a free-text "please specify" input
  * @property int         $sort_order
  * @property int|null    $created_by
@@ -30,12 +31,13 @@ class MaterialType extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['name', 'slug', 'active', 'ill_enabled', 'has_other_text', 'sort_order', 'created_by', 'modified_by'];
+    protected $fillable = ['name', 'slug', 'active', 'ill_enabled', 'isbndb_searchable', 'has_other_text', 'sort_order', 'created_by', 'modified_by'];
 
     protected $casts = [
-        'active'         => 'boolean',
-        'ill_enabled'    => 'boolean',
-        'has_other_text' => 'boolean',
+        'active'             => 'boolean',
+        'ill_enabled'        => 'boolean',
+        'isbndb_searchable'  => 'boolean',
+        'has_other_text'     => 'boolean',
     ];
 
     protected static function booted(): void

@@ -162,9 +162,10 @@
         </div>
     </section>
 
-    {{-- Step 3: Catalog resolution --}}
+    {{-- Step 3: Catalog and/or ISBNdb resolution --}}
     @elseif($step === 3)
     <section aria-labelledby="resolution-heading">
+        @if(count($catalogResults) > 0)
         <h2 id="resolution-heading" class="text-2xl font-bold text-gray-900 mb-4">Before we request from other libraries…</h2>
         <p class="text-sm text-gray-600 mb-6">We found possible matches in our catalog. If we already own it, you can place a hold instead of requesting ILL.</p>
 
@@ -196,6 +197,50 @@
                 Continue with ILL request
             </button>
         </div>
+
+        @elseif(count($isbndbResults) > 0 && $isbndbMatchAccepted === null)
+        <h2 id="resolution-heading" class="text-2xl font-bold text-gray-900 mb-4">Verify your book details</h2>
+        <p class="text-sm text-gray-600 mb-6">We found possible matches. Confirm the correct edition so we can add ISBN and other details to your request.</p>
+
+        <div class="space-y-4">
+            @foreach($isbndbResults as $i => $result)
+                <div class="bg-white rounded-lg border border-gray-200 p-4">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex gap-3 min-w-0">
+                            @if(!empty($result['cover_url']))
+                                <img src="{{ $result['cover_url'] }}" alt="" class="w-12 h-auto object-contain rounded shrink-0" />
+                            @endif
+                            <div class="min-w-0">
+                                <p class="font-semibold text-gray-900">{{ $result['title'] ?? 'Match' }}</p>
+                                <p class="text-sm text-gray-600">{{ $result['author_string'] ?? '' }}</p>
+                                @if(!empty($result['publisher']) || !empty($result['publish_date']))
+                                    <p class="text-xs text-gray-400 mt-1">{{ $result['publisher'] ?? '' }}{{ ($result['publisher'] ?? '') && ($result['publish_date'] ?? '') ? ' · ' : '' }}{{ $result['publish_date'] ?? '' }}</p>
+                                @endif
+                                @if(!empty($result['isbn13']))
+                                    <p class="text-xs text-gray-400 font-mono">ISBN {{ $result['isbn13'] }}</p>
+                                @endif
+                            </div>
+                        </div>
+                        <button type="button" wire:click="acceptIsbndbMatch({{ $i }})"
+                                class="shrink-0 px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700">
+                            Yes, this is it
+                        </button>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="mt-6 flex items-center justify-between">
+            <button type="button" wire:click="prevStep"
+                    class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
+                Back
+            </button>
+            <button type="button" wire:click="skipIsbndbMatch"
+                    class="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700">
+                None of these — continue with my details
+            </button>
+        </div>
+        @endif
     </section>
 
     {{-- Step 4: Confirmation --}}

@@ -10,18 +10,18 @@ class MaterialTypesSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            ['name' => 'Book',                'slug' => 'book',                 'active' => true,  'has_other_text' => false, 'sort_order' => 1],
-            ['name' => 'Large Print',         'slug' => 'large-print',          'active' => true,  'has_other_text' => false, 'sort_order' => 2],
-            ['name' => 'Graphic Novel',        'slug' => 'graphic-novel',        'active' => true,  'has_other_text' => false, 'sort_order' => 3],
-            ['name' => 'DVD',                  'slug' => 'dvd',                  'active' => true,  'has_other_text' => false, 'sort_order' => 4],
-            ['name' => 'Blu-Ray',              'slug' => 'blu-ray',              'active' => true,  'has_other_text' => false, 'sort_order' => 5],
-            ['name' => 'eAudiobook',           'slug' => 'eaudiobook',           'active' => true,  'has_other_text' => false, 'sort_order' => 6],
-            ['name' => 'eBook',                'slug' => 'ebook',                'active' => true,  'has_other_text' => false, 'sort_order' => 7],
-            ['name' => 'Video Game',           'slug' => 'video-game',           'active' => true,  'has_other_text' => false, 'sort_order' => 8],
-            ['name' => 'Other',                'slug' => 'other',                'active' => true,  'has_other_text' => true,  'sort_order' => 9],
-            ['name' => 'Audiobook',            'slug' => 'audiobook',            'active' => true,  'has_other_text' => false, 'sort_order' => 10],
-            ['name' => 'Magazine Article',      'slug' => 'magazine-article',     'active' => true,  'has_other_text' => false, 'sort_order' => 11],
-            ['name' => 'Newspaper/Microfilm',  'slug' => 'newspaper-microfilm',  'active' => true,  'has_other_text' => false, 'sort_order' => 12],
+            ['name' => 'Book',                'slug' => 'book',                 'active' => true,  'has_other_text' => false, 'sort_order' => 1,  'isbndb_searchable' => true],
+            ['name' => 'Large Print',         'slug' => 'large-print',          'active' => true,  'has_other_text' => false, 'sort_order' => 2,  'isbndb_searchable' => false],
+            ['name' => 'Graphic Novel',        'slug' => 'graphic-novel',        'active' => true,  'has_other_text' => false, 'sort_order' => 3,  'isbndb_searchable' => false],
+            ['name' => 'DVD',                  'slug' => 'dvd',                  'active' => true,  'has_other_text' => false, 'sort_order' => 4,  'isbndb_searchable' => false],
+            ['name' => 'Blu-Ray',              'slug' => 'blu-ray',              'active' => true,  'has_other_text' => false, 'sort_order' => 5,  'isbndb_searchable' => false],
+            ['name' => 'eAudiobook',           'slug' => 'eaudiobook',           'active' => true,  'has_other_text' => false, 'sort_order' => 6,  'isbndb_searchable' => false],
+            ['name' => 'eBook',                'slug' => 'ebook',                'active' => true,  'has_other_text' => false, 'sort_order' => 7,  'isbndb_searchable' => false],
+            ['name' => 'Video Game',           'slug' => 'video-game',           'active' => true,  'has_other_text' => false, 'sort_order' => 8,  'isbndb_searchable' => false],
+            ['name' => 'Other',                'slug' => 'other',                'active' => true,  'has_other_text' => true,  'sort_order' => 9,  'isbndb_searchable' => false],
+            ['name' => 'Audiobook',            'slug' => 'audiobook',            'active' => true,  'has_other_text' => false, 'sort_order' => 10, 'isbndb_searchable' => true],
+            ['name' => 'Magazine Article',      'slug' => 'magazine-article',     'active' => true,  'has_other_text' => false, 'sort_order' => 11, 'isbndb_searchable' => false],
+            ['name' => 'Newspaper/Microfilm',  'slug' => 'newspaper-microfilm',  'active' => true,  'has_other_text' => false, 'sort_order' => 12, 'isbndb_searchable' => false],
         ];
 
         foreach ($types as $type) {
