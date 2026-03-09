@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.8.0](https://github.com/dcplibrary/sfp/compare/v2.7.1...v2.8.0) (2026-03-09)
+
+
+### Features
+
+* separate staff and patron email editors ([e51ee43](https://github.com/dcplibrary/sfp/commit/e51ee4327f05e367a6bcf139db46945029add0ec))
+
 # [2.7.0](https://github.com/dcplibrary/sfp/compare/v2.6.2...v2.7.0) (2026-03-09)
 
 
