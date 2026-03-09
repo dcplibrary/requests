@@ -7,6 +7,7 @@ use Dcplibrary\Sfp\Http\Controllers\Admin\HelpController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\TitleController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\MaterialTypeController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\PatronController;
+use Dcplibrary\Sfp\Http\Controllers\Admin\PatronStatusTemplateController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\RequestController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\RequestStatusController;
 use Dcplibrary\Sfp\Http\Controllers\Admin\SelectorGroupController;
@@ -96,6 +97,8 @@ Route::group([
 
             Route::get('/settings',                  [SettingController::class, 'index'])->name('settings.index');
             Route::get('/settings/notifications',                      [SettingController::class, 'notifications'])->name('settings.notifications');
+            Route::get('/settings/notifications/staff-email',           [SettingController::class, 'staffEmailForm'])->name('settings.notifications.staff-email');
+            Route::get('/settings/notifications/default-patron-email', [SettingController::class, 'defaultPatronEmailForm'])->name('settings.notifications.default-patron-email');
             Route::get('/settings/notifications/preview/{type}',    [SettingController::class, 'previewEmail'])->name('settings.notifications.preview');
             Route::post('/settings/notifications/test',             [SettingController::class, 'sendTestEmail'])->name('settings.notifications.test');
             Route::get('/settings/form-fields',              [FormFieldController::class, 'index'])->name('settings.form-fields');
@@ -149,6 +152,19 @@ Route::group([
                     'edit'    => 'audiences.edit',
                     'update'  => 'audiences.update',
                     'destroy' => 'audiences.destroy',
+                ])
+                ->except(['show']);
+
+            Route::get('patron-status-templates/{patron_status_template}/delete', [PatronStatusTemplateController::class, 'confirmDelete'])
+                ->name('patron-status-templates.delete');
+            Route::resource('patron-status-templates', PatronStatusTemplateController::class)
+                ->names([
+                    'index'   => 'patron-status-templates.index',
+                    'create'  => 'patron-status-templates.create',
+                    'store'   => 'patron-status-templates.store',
+                    'edit'    => 'patron-status-templates.edit',
+                    'update'  => 'patron-status-templates.update',
+                    'destroy' => 'patron-status-templates.destroy',
                 ])
                 ->except(['show']);
 

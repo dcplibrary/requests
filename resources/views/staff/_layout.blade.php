@@ -27,8 +27,10 @@
     {{-- Primary nav — visible to all --}}
     <div class="flex items-center gap-1">
         <a href="{{ route('request.staff.requests.index') }}"
-           class="px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  {{ request()->routeIs('request.staff.requests.*') && request()->get('kind') !== 'ill' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+           class="px-3 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-px
+                  {{ request()->routeIs('request.staff.requests.*') && request()->get('kind') !== 'ill'
+                      ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
             SFP
         </a>
         @php
@@ -49,19 +51,25 @@
         @endphp
         @if($showIllTab)
             <a href="{{ route('request.staff.requests.index', ['kind' => 'ill']) }}"
-               class="px-3 py-2 rounded-md text-sm font-medium transition-colors
-                      {{ request()->routeIs('request.staff.requests.*') && request()->get('kind') === 'ill' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+               class="px-3 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-px
+                      {{ request()->routeIs('request.staff.requests.*') && request()->get('kind') === 'ill'
+                          ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600'
+                          : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
                 ILL
             </a>
         @endif
         <a href="{{ route('request.staff.patrons.index') }}"
-           class="px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  {{ request()->routeIs('request.staff.patrons.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+           class="px-3 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-px
+                  {{ request()->routeIs('request.staff.patrons.*')
+                      ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
             Patrons
         </a>
         <a href="{{ route('request.staff.titles.index') }}"
-           class="px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  {{ request()->routeIs('request.staff.titles.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+           class="px-3 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-px
+                  {{ request()->routeIs('request.staff.titles.*')
+                      ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
             Titles
         </a>
     </div>

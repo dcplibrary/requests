@@ -19,7 +19,7 @@
     {{-- Tab bar (same visual language as settings sidebar) --}}
     <div class="bg-white rounded-lg border border-gray-200 mb-4 overflow-hidden">
         <nav class="flex border-b border-gray-200" role="tablist" aria-label="Notification sections">
-            @foreach(['general' => 'General', 'staff' => 'Staff', 'patron' => 'Patron'] as $tabId => $tabLabel)
+            @foreach(['general' => 'General', 'emails' => 'Emails'] as $tabId => $tabLabel)
                 <button type="button"
                         role="tab"
                         aria-selected="{{ (request()->get('tab', 'general') === $tabId || (request()->get('tab') === null && $tabId === 'general')) ? 'true' : 'false' }}"
@@ -28,7 +28,7 @@
                         data-notifications-tab="{{ $tabId }}"
                         class="notifications-tab px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors
                                {{ request()->get('tab', 'general') === $tabId || (request()->get('tab') === null && $tabId === 'general')
-                                  ? 'border-blue-600 text-blue-700 bg-blue-50/50'
+                                  ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600'
                                   : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50' }}">
                     {{ $tabLabel }}
                 </button>
@@ -37,7 +37,7 @@
     </div>
 
     @php $i = 0; @endphp
-    @foreach(['general', 'staff', 'patron'] as $tabId)
+    @foreach(['general', 'emails'] as $tabId)
         @php
             $items = $settingsByTab[$tabId] ?? collect();
             $panelId = 'notif-panel-' . $tabId;
@@ -49,21 +49,31 @@
              aria-labelledby="notif-tab-{{ $tabId }}">
             <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
                 <h2 class="text-sm font-semibold text-gray-700">
-                    {{ $tabId === 'general' ? 'General' : ($tabId === 'staff' ? 'Staff routing email' : 'Patron status email') }}
+                    {{ $tabId === 'general' ? 'General' : 'Emails' }}
                 </h2>
                 @if($tabId === 'general')
                     <p class="text-xs text-gray-400 mt-0.5">Master switch and footer used for all notification emails.</p>
-                @elseif($tabId === 'staff')
-                    <p class="text-xs text-gray-400 mt-0.5">Sent to staff when a new request is submitted.</p>
                 @else
-                    <p class="text-xs text-gray-400 mt-0.5">Sent to the patron when their request’s status changes.</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Staff and patron email templates. Edit each row or add patron templates.</p>
                 @endif
             </div>
+            @if($items->isNotEmpty())
             <div class="divide-y divide-gray-100">
                 @foreach($items as $setting)
                     <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $setting->key }}">
                     @php
-                        $isEnableRow = ($tabId === 'staff' && $setting->key === 'staff_routing_enabled') || ($tabId === 'patron' && $setting->key === 'patron_status_notification_enabled');
+                        $isEnableRow = ($tabId === 'emails' && in_array($setting->key, ['staff_routing_enabled', 'patron_status_notification_enabled']));
+                    @endphp
+                    @php
+                        $fieldId = 'notif-field-' . $i;
+                        $trixId  = 'trix-notif-' . $i;
+                        $tokenList = in_array($setting->key, ['staff_routing_subject', 'patron_status_subject'])
+                            ? array_values(array_diff($availableTokens ?? [], $subjectExcludedTokens ?? []))
+                            : ($availableTokens ?? $setting->tokens ?? []);
+                        $tokens = in_array($setting->type, ['string', 'text', 'html'])
+                            ? (is_array($tokenList) ? $tokenList : [])
+                            : [];
+                        $isEmailBody = $setting->type === 'html' && in_array($setting->key, ['staff_routing_template', 'patron_status_template']);
                     @endphp
                     <div class="px-5 py-4 flex items-start gap-6">
                         <div class="w-64 flex-shrink-0">
@@ -72,15 +82,6 @@
                                 <p class="text-xs text-gray-400 mt-0.5">{{ $setting->description }}</p>
                             @endif
                         </div>
-                        @php
-                            $fieldId = 'notif-field-' . $i;
-                            $trixId  = 'trix-notif-' . $i;
-                            $tokenList = $availableTokens ?? $setting->tokens ?? [];
-                            $tokens = in_array($setting->type, ['string', 'text', 'html'])
-                                ? (is_array($tokenList) ? $tokenList : [])
-                                : [];
-                            $isEmailBody = $setting->type === 'html' && in_array($setting->key, ['staff_routing_template', 'patron_status_template']);
-                        @endphp
                         <div class="flex-1 min-w-0 flex items-start justify-between gap-4">
                             <div>
                             @if($setting->type === 'boolean')
@@ -182,11 +183,79 @@
                     @php $i++; @endphp
                 @endforeach
             </div>
+            @endif
+
+            @if($tabId === 'emails')
+            <div class="px-5 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-gray-800">Email templates</h3>
+                    <a href="{{ route('request.staff.patron-status-templates.create') }}" class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ Add template</a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left font-medium text-gray-700">Name</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-700">Type</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-700">Subject</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-700">Triggered by</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-700">Material types</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-700">Default</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-700">Enabled</th>
+                                <th class="px-4 py-2 text-right font-medium text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-4 py-2 text-gray-900">{{ $staffTitle ?? 'Staff routing' }}</td>
+                                <td class="px-4 py-2 text-gray-600">Staff routing</td>
+                                <td class="px-4 py-2 text-gray-600">{{ $staffSubject->value ?? '' }}</td>
+                                <td class="px-4 py-2 text-gray-600">New request</td>
+                                <td class="px-4 py-2 text-gray-400">—</td>
+                                <td class="px-4 py-2 text-gray-400">—</td>
+                                <td class="px-4 py-2">{{ $staffEnabled ? 'Yes' : 'No' }}</td>
+                                <td class="px-4 py-2 text-right">
+                                    <x-sfp::icon-btn :href="route('request.staff.settings.notifications.staff-email')" variant="edit" label="Edit" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2 text-gray-900">Default patron</td>
+                                <td class="px-4 py-2 text-gray-600">Default patron</td>
+                                <td class="px-4 py-2 text-gray-600">{{ $patronSubject->value ?? '' }}</td>
+                                <td class="px-4 py-2 text-gray-400">Fallback when no status template matches</td>
+                                <td class="px-4 py-2 text-gray-400">—</td>
+                                <td class="px-4 py-2 text-gray-400">—</td>
+                                <td class="px-4 py-2">{{ $patronEnabled ? 'Yes' : 'No' }}</td>
+                                <td class="px-4 py-2 text-right">
+                                    <x-sfp::icon-btn :href="route('request.staff.settings.notifications.default-patron-email')" variant="edit" label="Edit" />
+                                </td>
+                            </tr>
+                            @foreach($patronStatusTemplates ?? [] as $tpl)
+                            <tr>
+                                <td class="px-4 py-2 text-gray-900">{{ $tpl->name }}</td>
+                                <td class="px-4 py-2 text-gray-600">Patron status</td>
+                                <td class="px-4 py-2 text-gray-600">{{ Str::limit($tpl->subject, 40) }}</td>
+                                <td class="px-4 py-2 text-gray-600">{{ $tpl->requestStatuses->pluck('name')->join(', ') ?: '—' }}</td>
+                                <td class="px-4 py-2 text-gray-600">{{ $tpl->materialTypes->isNotEmpty() ? $tpl->materialTypes->pluck('name')->join(', ') : 'All' }}</td>
+                                <td class="px-4 py-2">{{ $tpl->is_default ? 'Yes' : '—' }}</td>
+                                <td class="px-4 py-2">{{ $tpl->enabled ? 'Yes' : 'No' }}</td>
+                                <td class="px-4 py-2 text-right flex items-center justify-end gap-1">
+                                    <x-sfp::icon-btn :href="route('request.staff.patron-status-templates.edit', $tpl)" variant="edit" label="Edit" />
+                                    <x-sfp::icon-btn :href="route('request.staff.patron-status-templates.delete', $tpl)" variant="delete" label="Delete" />
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
         </div>
     @endforeach
 
     @if($notificationSettings->isNotEmpty())
-    <div class="flex justify-end">
+    @php $saveForGeneralOnly = request()->get('tab', 'general') === 'general'; @endphp
+    <div id="notifications-save-row" class="flex justify-end {{ $saveForGeneralOnly ? '' : 'hidden' }}">
         <button type="submit" class="px-6 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
             Save Settings
         </button>
@@ -208,15 +277,18 @@
         tabs.forEach(function(t) {
             var isActive = t.getAttribute('data-notifications-tab') === tabId;
             t.setAttribute('aria-selected', isActive ? 'true' : 'false');
-            t.classList.toggle('border-blue-600', isActive);
+            t.classList.toggle('bg-blue-50', isActive);
             t.classList.toggle('text-blue-700', isActive);
-            t.classList.toggle('bg-blue-50/50', isActive);
+            t.classList.toggle('font-semibold', isActive);
+            t.classList.toggle('border-blue-600', isActive);
             t.classList.toggle('border-transparent', !isActive);
             t.classList.toggle('text-gray-600', !isActive);
         });
         panels.forEach(function(p) {
             p.classList.toggle('hidden', p.id !== 'notif-panel-' + tabId);
         });
+        var saveRow = document.getElementById('notifications-save-row');
+        if (saveRow) saveRow.classList.toggle('hidden', tabId !== 'general');
     }
     tabs.forEach(function(t) {
         t.addEventListener('click', function() {
@@ -224,7 +296,7 @@
         });
     });
     var initial = new URLSearchParams(window.location.search).get('tab') || 'general';
-    if (['general','staff','patron'].indexOf(initial) !== -1) {
+    if (['general','emails'].indexOf(initial) !== -1) {
         switchTo(initial);
     }
 })();

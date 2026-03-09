@@ -15,6 +15,7 @@
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Color</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Terminal</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Order</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Notify</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Active</th>
                 <th class="px-4 py-3"></th>
             </tr>
@@ -32,6 +33,9 @@
                 <td class="px-4 py-3 text-gray-600">{{ $status->is_terminal ? 'Yes' : 'No' }}</td>
                 <td class="px-4 py-3 text-gray-600">{{ $status->sort_order }}</td>
                 <td class="px-4 py-3">
+                    <x-sfp::status-pill :active="$status->notify_patron" active-label="On" inactive-label="Off" />
+                </td>
+                <td class="px-4 py-3">
                     <x-sfp::status-pill :active="$status->active" />
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
@@ -40,7 +44,7 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">No statuses yet.</td></tr>
+            <tr><td colspan="7" class="px-4 py-10 text-center text-gray-400">No statuses yet.</td></tr>
             @endforelse
         </tbody>
     </table>

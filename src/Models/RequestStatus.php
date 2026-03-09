@@ -3,6 +3,7 @@
 namespace Dcplibrary\Sfp\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -20,10 +21,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool   $active
  * @property bool   $is_terminal  True for resolved statuses (Purchased, Denied, etc.)
  * @property bool   $notify_patron True if a status change to this status triggers a patron email
+ * @property string|null $description Optional text describing the status for use in patron emails ({status_description})
  */
 class RequestStatus extends Model
 {
-    protected $fillable = ['name', 'slug', 'color', 'sort_order', 'active', 'is_terminal', 'notify_patron'];
+    protected $fillable = ['name', 'slug', 'color', 'sort_order', 'active', 'is_terminal', 'notify_patron', 'description'];
 
     protected $casts = [
         'active' => 'boolean',
@@ -41,6 +43,17 @@ class RequestStatus extends Model
     public function history(): HasMany
     {
         return $this->hasMany(RequestStatusHistory::class);
+    }
+
+    /** Patron email templates that are sent when a request transitions to this status. */
+    public function patronStatusTemplates(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PatronStatusTemplate::class,
+            'patron_status_template_request_status',
+            'request_status_id',
+            'patron_status_template_id'
+        );
     }
 
     /** Scope to active statuses, ordered by sort_order. */

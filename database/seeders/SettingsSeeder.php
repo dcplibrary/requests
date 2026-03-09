@@ -281,7 +281,7 @@ class SettingsSeeder extends Seeder
                 'type'        => 'string',
                 'group'       => 'notifications',
                 'description' => 'Subject line for staff routing emails.',
-                'tokens'      => json_encode(['{title}', '{author}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{submitted_date}', '{request_url}']),
+                'tokens'      => json_encode(['{title}', '{author}', '{patron_name}', '{patron_first_name}', '{material_type}', '{status}', '{submitted_date}']),
             ],
             [
                 'key'         => 'staff_routing_template',
@@ -307,7 +307,7 @@ class SettingsSeeder extends Seeder
                 'type'        => 'string',
                 'group'       => 'notifications',
                 'description' => 'Subject line for patron status-change emails.',
-                'tokens'      => json_encode(['{title}', '{author}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{submitted_date}', '{request_url}']),
+                'tokens'      => json_encode(['{title}', '{author}', '{patron_name}', '{patron_first_name}', '{material_type}', '{status}', '{submitted_date}']),
             ],
             [
                 'key'         => 'patron_status_template',

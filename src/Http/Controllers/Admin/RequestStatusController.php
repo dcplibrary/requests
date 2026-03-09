@@ -32,6 +32,7 @@ class RequestStatusController extends Controller
             'active'       => 'boolean',
             'is_terminal'  => 'boolean',
             'notify_patron' => 'boolean',
+            'description'  => 'nullable|string|max:2000',
         ]);
 
         RequestStatus::create(array_merge($data, ['slug' => Str::slug($data['name'])]));
@@ -53,6 +54,7 @@ class RequestStatusController extends Controller
             'active'       => 'boolean',
             'is_terminal'  => 'boolean',
             'notify_patron' => 'boolean',
+            'description'  => 'nullable|string|max:2000',
         ]);
 
         $status->update($data);

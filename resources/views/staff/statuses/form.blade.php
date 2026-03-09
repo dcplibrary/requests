@@ -52,6 +52,12 @@
                        class="w-4 h-4 rounded border-gray-300 text-blue-600">
                 <label for="notify_patron" class="text-sm font-medium text-gray-700">Notify Patron on this status change</label>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description (for patron emails)</label>
+                <p class="text-xs text-gray-500 mb-1">Optional. Shown in patron emails when this status is used. Insert in templates with <code class="text-xs bg-gray-100 px-1 rounded">{status_description}</code>.</p>
+                <textarea name="description" rows="3" class="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                          placeholder="e.g. A library staff member is reviewing your request to see if it fits the needs of the library.">{{ old('description', $status->description ?? '') }}</textarea>
+            </div>
             <div class="flex items-center gap-2">
                 <input type="hidden" name="active" value="0">
                 <input type="checkbox" name="active" id="active" value="1"

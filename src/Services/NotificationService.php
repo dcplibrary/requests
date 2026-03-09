@@ -8,6 +8,7 @@ use Dcplibrary\Sfp\Models\CustomField;
 use Dcplibrary\Sfp\Models\CustomFieldOption;
 use Dcplibrary\Sfp\Models\FormField;
 use Dcplibrary\Sfp\Models\Genre;
+use Dcplibrary\Sfp\Models\PatronStatusTemplate;
 use Dcplibrary\Sfp\Models\SelectorGroup;
 use Dcplibrary\Sfp\Models\Setting;
 use Dcplibrary\Sfp\Models\SfpRequest;
@@ -39,10 +40,8 @@ class NotificationService
             (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}'),
             $request
         );
-        $body = $this->replacePlaceholders(
-            (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate()),
-            $request
-        );
+        $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
+        $body = $this->replacePlaceholders($bodyTemplate, $request);
 
         foreach ($recipients as $email) {
             try {
@@ -78,23 +77,46 @@ class NotificationService
         $patronEmail = $request->patron?->email;
         if (! $patronEmail) return;
 
-        $subject = $this->replacePlaceholders(
-            (string) Setting::get('patron_status_subject', 'Update on your suggestion: {title}'),
-            $request
-        );
-        $body = $this->replacePlaceholders(
-            (string) Setting::get('patron_status_template', $this->defaultPatronTemplate()),
-            $request
-        );
+        $statusId = $request->request_status_id;
+        $templates = PatronStatusTemplate::query()
+            ->where('enabled', true)
+            ->whereHas('requestStatuses', fn ($q) => $q->where('request_statuses.id', $statusId))
+            ->ordered()
+            ->get();
 
-        try {
-            Mail::to($patronEmail)->send(new SfpMail($subject, $body));
-        } catch (\Throwable $e) {
-            Log::error('SFP patron status email failed', [
-                'patron_id'  => $request->patron_id,
-                'request_id' => $request->id,
-                'error'      => $e->getMessage(),
-            ]);
+        if ($templates->isEmpty()) {
+            // Backward compat: no templates configured — use single setting
+            $subject = $this->replacePlaceholders(
+                (string) Setting::get('patron_status_subject', 'Update on your suggestion: {title}'),
+                $request
+            );
+            $bodyTemplate = (string) Setting::get('patron_status_template', $this->defaultPatronTemplate());
+            $body = $this->replacePlaceholders($bodyTemplate, $request);
+            try {
+                Mail::to($patronEmail)->send(new SfpMail($subject, $body));
+            } catch (\Throwable $e) {
+                Log::error('SFP patron status email failed', [
+                    'patron_id'  => $request->patron_id,
+                    'request_id' => $request->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+            return;
+        }
+
+        foreach ($templates as $template) {
+            try {
+                $subject = $this->replacePlaceholders($template->subject, $request);
+                $body = $this->replacePlaceholders((string) $template->body, $request);
+                Mail::to($patronEmail)->send(new SfpMail($subject, $body));
+            } catch (\Throwable $e) {
+                Log::error('SFP patron status email failed', [
+                    'patron_id'  => $request->patron_id,
+                    'request_id' => $request->id,
+                    'template_id'=> $template->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
         }
     }
 
@@ -143,6 +165,7 @@ class NotificationService
      *   {material_type}     — material type name
      *   {audience}          — audience name
      *   {status}            — current status name
+     *   {status_description} — description text for the current status (for patron emails)
      *   {submitted_date}    — submission date (e.g. January 5, 2026)
      *   {request_url}       — full URL to the request in the staff dashboard
      *
@@ -170,6 +193,7 @@ class NotificationService
             '{material_type}'     => $request->materialType?->name ?? '',
             '{audience}'          => $request->audience?->name     ?? '',
             '{status}'            => $request->status?->name       ?? '',
+            '{status_description}' => $request->status?->description ?? '',
             '{submitted_date}'    => $request->created_at?->format('F j, Y') ?? '',
             '{request_url}'       => route('request.staff.requests.show', $request),
         ];
