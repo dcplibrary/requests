@@ -64,9 +64,39 @@ class SettingController extends Controller
             $customFieldTokens
         )));
 
+        $notifications = Setting::where('group', 'notifications')->orderBy('label')->get();
+        $keyToTab = [
+            'notifications_enabled' => 'general',
+            'email_footer_text' => 'general',
+            'staff_routing_enabled' => 'staff',
+            'staff_routing_subject' => 'staff',
+            'staff_routing_template' => 'staff',
+            'patron_status_notification_enabled' => 'patron',
+            'patron_status_subject' => 'patron',
+            'patron_status_template' => 'patron',
+        ];
+        $tabOrder = ['general', 'staff', 'patron'];
+        $keyOrder = [
+            'general' => ['notifications_enabled', 'email_footer_text'],
+            'staff'   => ['staff_routing_enabled', 'staff_routing_subject', 'staff_routing_template'],
+            'patron'  => ['patron_status_notification_enabled', 'patron_status_subject', 'patron_status_template'],
+        ];
+        $settingsByTab = [];
+        foreach ($tabOrder as $tab) {
+            $keys = $keyOrder[$tab] ?? [];
+            $byKey = $notifications->filter(fn ($s) => ($keyToTab[$s->key] ?? null) === $tab)->keyBy('key');
+            $settingsByTab[$tab] = collect($keys)->map(fn ($k) => $byKey->get($k))->filter()->values();
+        }
+        $notificationSettings = $settingsByTab['general']
+            ->concat($settingsByTab['staff'])
+            ->concat($settingsByTab['patron'])
+            ->values();
+
         return view('sfp::staff.settings.notifications', [
-            'settings'        => Setting::allGrouped()->only(['notifications']),
-            'availableTokens' => $availableTokens,
+            'settingsByTab'         => $settingsByTab,
+            'notificationSettings'  => $notificationSettings,
+            'keyToTab'              => $keyToTab,
+            'availableTokens'       => $availableTokens,
         ]);
     }
 
