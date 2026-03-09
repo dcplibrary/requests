@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.5.0](https://github.com/dcplibrary/sfp/compare/v2.4.0...v2.5.0) (2026-03-09)
+
+
+### Features
+
+* breaking - merge ill and sfp material types and abstract presentation into separate table ([99df9d5](https://github.com/dcplibrary/sfp/commit/99df9d59e1714fb2a736d6f89df6ec348a35e1e1))
+
 # [2.4.0](https://github.com/dcplibrary/sfp/compare/v2.3.0...v2.4.0) (2026-03-07)
 
 
