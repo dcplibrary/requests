@@ -4,6 +4,7 @@ namespace Dcplibrary\Sfp\Livewire;
 
 use Dcplibrary\Sfp\Models\CustomField;
 use Dcplibrary\Sfp\Models\CustomFieldOption;
+use Dcplibrary\Sfp\Models\MaterialType;
 use Dcplibrary\Sfp\Models\Patron;
 use Dcplibrary\Sfp\Models\RequestCustomFieldValue;
 use Dcplibrary\Sfp\Models\RequestStatus;
@@ -38,7 +39,9 @@ class IllForm extends Component
     #[Validate('nullable|email|max:255')]
     public string $email = '';
 
-    // Step 2 (dynamic custom field answers)
+    // Step 2: material type (from material_types table) + dynamic custom field answers
+    public ?int $material_type_id = null;
+
     /** @var array<string, mixed> */
     public array $custom = [];
 
@@ -53,6 +56,33 @@ class IllForm extends Component
 
     public ?int $createdRequestId = null;
 
+    public function mount(): void
+    {
+        // When a patron switches from the SFP form (e.g. after age-of-book warning) to ILL,
+        // pre-fill from shared request.patron session so they don't re-enter details.
+        $remembered = session('request.patron');
+        if (is_array($remembered)) {
+            $this->barcode    = (string) ($remembered['barcode'] ?? $this->barcode);
+            $this->name_first = (string) ($remembered['name_first'] ?? $this->name_first);
+            $this->name_last  = (string) ($remembered['name_last'] ?? $this->name_last);
+            $this->phone      = (string) ($remembered['phone'] ?? $this->phone);
+            $this->email      = (string) ($remembered['email'] ?? $this->email);
+        }
+
+        $book = MaterialType::where('slug', 'book')->where('active', true)->first();
+        if ($book) {
+            $this->material_type_id = $book->id;
+        }
+    }
+
+    private function materialTypeSlug(): ?string
+    {
+        if ($this->material_type_id === null) {
+            return null;
+        }
+        return MaterialType::find($this->material_type_id)?->slug ?? null;
+    }
+
     public function nextStep(): void
     {
         if ($this->step === 1) {
@@ -66,6 +96,7 @@ class IllForm extends Component
         }
 
         if ($this->step === 2) {
+            $this->validate(['material_type_id' => 'required|exists:material_types,id']);
             $this->clearHiddenFields();
             $this->validate($this->buildStepTwoRules());
         }
@@ -101,9 +132,16 @@ class IllForm extends Component
      *
      * @return array<string, string|null>
      */
+    /**
+     * Current state for conditional logic: material_type from selection, plus select/radio custom values.
+     *
+     * @return array<string, string|null>
+     */
     private function customState(): array
     {
-        $state = [];
+        $state = [
+            'material_type' => $this->materialTypeSlug(),
+        ];
 
         foreach ($this->stepTwoFields as $field) {
             if (! in_array($field->type, ['select', 'radio'], true)) {
@@ -153,6 +191,10 @@ class IllForm extends Component
         foreach ($this->stepTwoFields as $field) {
             $visible  = $field->isVisibleFor($state);
             $required = $visible && $field->required;
+            // When "Other" material type is selected, title can come from other_specify; don't require title.
+            if ($field->key === 'title' && ($state['material_type'] ?? '') === 'other') {
+                $required = false;
+            }
 
             $path = "custom.{$field->key}";
 
@@ -187,6 +229,7 @@ class IllForm extends Component
 
     public function submit(): void
     {
+        $this->validate(['material_type_id' => 'required|exists:material_types,id']);
         $this->clearHiddenFields();
         $this->validate($this->buildStepTwoRules());
 
@@ -202,12 +245,12 @@ class IllForm extends Component
             'email'      => $this->email ?: null,
         ])['patron'];
 
-        // Lightweight “already owned” check for common borrow types.
-        $borrowType = (string) ($this->custom['borrow_type'] ?? '');
-        $title = (string) ($this->custom['ill_title'] ?? '');
-        $author = (string) ($this->custom['ill_author'] ?? '');
+        // Lightweight “already owned” check for book/audiobook/dvd material types.
+        $materialSlug = $this->materialTypeSlug();
+        $title = (string) ($this->custom['title'] ?? '');
+        $author = (string) ($this->custom['author'] ?? '');
 
-        if (in_array($borrowType, ['book', 'audiobook', 'dvd-vhs'], true) && $title !== '') {
+        if (in_array($materialSlug, ['book', 'audiobook', 'dvd'], true) && $title !== '') {
             $this->processingStep = 'Checking our catalog...';
             $result = app(BibliocommonsService::class)->search($title, $author, 'adult', null);
             $this->catalogSearched = true;
@@ -249,9 +292,15 @@ class IllForm extends Component
         $pendingStatus = RequestStatus::where('slug', 'pending')->first()
             ?? RequestStatus::orderBy('sort_order')->firstOrFail();
 
-        $submittedTitle  = trim((string) ($this->custom['ill_title'] ?? ''));
-        $submittedAuthor = trim((string) ($this->custom['ill_author'] ?? ''));
+        $materialSlug    = $this->materialTypeSlug();
+        $submittedTitle  = trim((string) ($this->custom['title'] ?? ''));
+        $submittedAuthor = trim((string) ($this->custom['author'] ?? ''));
+        $submittedPublishDate = trim((string) ($this->custom['publish_date'] ?? '')) ?: null;
+        $otherSpecify    = trim((string) ($this->custom['other_specify'] ?? ''));
 
+        if ($materialSlug === 'other' && $otherSpecify !== '') {
+            $submittedTitle = 'Other: ' . $otherSpecify;
+        }
         if ($submittedTitle === '') {
             $submittedTitle = 'Interlibrary Loan request';
         }
@@ -260,15 +309,15 @@ class IllForm extends Component
             'patron_id'              => $patron->id,
             'material_id'            => null,
             'audience_id'            => null,
-            'material_type_id'       => null,
+            'material_type_id'       => $this->material_type_id,
             'request_status_id'      => $pendingStatus->id,
             'request_kind'           => 'ill',
             'submitted_title'        => $submittedTitle,
             'submitted_author'       => $submittedAuthor ?: '—',
-            'submitted_publish_date' => null,
-            'other_material_text'    => null,
+            'submitted_publish_date' => $submittedPublishDate,
+            'other_material_text'    => $materialSlug === 'other' ? $otherSpecify : null,
             'genre'                  => null,
-            'where_heard'            => isset($this->custom['comments']) ? (string) $this->custom['comments'] : null,
+            'where_heard'            => isset($this->custom['where_heard']) ? (string) $this->custom['where_heard'] : null,
             'ill_requested'          => true,
             'catalog_searched'       => $this->catalogSearched,
             'catalog_result_count'   => is_array($this->catalogResults) ? count($this->catalogResults) : null,
@@ -308,11 +357,67 @@ class IllForm extends Component
             'note' => 'ILL request submitted by patron.',
         ]);
 
+        session()->put('request.patron', [
+            'barcode'    => $this->barcode,
+            'name_first' => $this->name_first,
+            'name_last'  => $this->name_last,
+            'phone'      => $this->phone,
+            'email'      => $this->email,
+        ]);
+
         app(NotificationService::class)->notifyStaffNewRequest($req);
 
         $this->createdRequestId = $req->id;
         $this->processing = false;
         $this->step = 4;
+    }
+
+    /**
+     * Section key for conditional heading before this field (books, photocopy, dvd), or null.
+     */
+    public function getFieldSectionKey(CustomField $field): ?string
+    {
+        $slug = $this->materialTypeSlug();
+
+        if (in_array($slug, ['book', 'audiobook'], true)
+            && in_array($field->key, ['title', 'author', 'publish_date', 'publisher', 'isbn'], true)) {
+            return 'books';
+        }
+        if (in_array($slug, ['magazine-article', 'newspaper-microfilm'], true)
+            && in_array($field->key, ['periodical_title', 'article_author', 'article_title', 'volume_number', 'page_number'], true)) {
+            return 'photocopy';
+        }
+        if ($slug === 'dvd' && in_array($field->key, ['title', 'director', 'cast'], true)) {
+            return 'dvd';
+        }
+
+        return null;
+    }
+
+    /**
+     * Display label for field (conditional on material type for title/author).
+     */
+    public function getDisplayLabelForField(CustomField $field): string
+    {
+        $slug = $this->materialTypeSlug();
+
+        if ($field->key === 'title') {
+            return match ($slug) {
+                'book'      => 'Book Title',
+                'audiobook' => 'Audiobook Title',
+                'dvd'       => 'Movie Title',
+                default     => $field->label,
+            };
+        }
+        if ($field->key === 'author') {
+            return match ($slug) {
+                'book'      => 'Author of Book',
+                'audiobook' => 'Author of Audiobook',
+                default     => $field->label,
+            };
+        }
+
+        return $field->label;
     }
 
     public function render()
@@ -329,10 +434,23 @@ class IllForm extends Component
             ->map(fn ($group) => $group->pluck('name', 'slug')->all())
             ->all();
 
+        $fieldSectionKeys = $fields->mapWithKeys(fn (CustomField $f) => [$f->key => $this->getFieldSectionKey($f)])->all();
+        $displayLabels = $fields->mapWithKeys(fn (CustomField $f) => [$f->key => $this->getDisplayLabelForField($f)])->all();
+
+        $illSlugs = ['book', 'audiobook', 'dvd', 'magazine-article', 'newspaper-microfilm', 'other'];
+
         return view('sfp::livewire.ill-form', [
             'orderedFields' => $fields,
             'visibleFields' => $this->visibleCustomFields,
             'optionsByFieldId' => $options,
+            'illMaterialTypes' => MaterialType::whereIn('slug', $illSlugs)->where('active', true)->ordered()->get(),
+            'fieldSectionKeys' => $fieldSectionKeys,
+            'sectionLabels' => [
+                'books' => 'Books',
+                'photocopy' => 'Photocopy/Microfilm',
+                'dvd' => 'DVD',
+            ],
+            'displayLabels' => $displayLabels,
             'catalogOwnedMessage' => Setting::get(
                 'catalog_owned_message',
                 '<p><strong>Good news:</strong> this item is already in our catalog. Please place a hold in the catalog to get it as soon as it\'s available.</p>'

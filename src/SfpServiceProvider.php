@@ -69,20 +69,22 @@ class SfpServiceProvider extends ServiceProvider
     protected function registerMiddleware(): void
     {
         $router = $this->app->make(Router::class);
-        $router->aliasMiddleware('sfp.role', RequireSfpRole::class);
+        $router->aliasMiddleware('request.role', RequireSfpRole::class);
     }
 
     protected function registerRoutes(): void
     {
         // Asset route — serves compiled CSS directly from inside the package.
         // This is the Horizon/Telescope pattern: no vendor:publish needed for CSS.
-        Route::get('/sfp/assets/css', function () {
+        $routePrefix = config('sfp.route_prefix', 'request');
+        $assetPath = trim($routePrefix . '/assets/css', '/');
+        Route::get($assetPath, function () {
             $path = __DIR__ . '/../resources/dist/sfp.css';
 
             return response(file_get_contents($path), 200)
                 ->header('Content-Type', 'text/css')
                 ->header('Cache-Control', 'public, max-age=31536000');
-        })->name('sfp.assets.css');
+        })->name('request.assets.css');
 
         $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
     }

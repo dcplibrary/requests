@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('sfp.staff.patrons.show', $loser) }}"
+    <a href="{{ route('request.staff.patrons.show', $loser) }}"
        class="text-sm text-blue-600 hover:underline">&larr; Back</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900">Confirm Patron Merge</h1>
@@ -93,7 +93,7 @@
 
 {{-- Action buttons --}}
 <div class="flex gap-4 items-center">
-    <form method="POST" action="{{ route('sfp.staff.patrons.merge', $loser) }}">
+    <form method="POST" action="{{ route('request.staff.patrons.merge', $loser) }}">
         @csrf
         <input type="hidden" name="target_id" value="{{ $winner->id }}">
         <button type="submit"
@@ -101,7 +101,7 @@
             Confirm: delete #{{ $loser->id }}, move requests to #{{ $winner->id }}
         </button>
     </form>
-    <a href="{{ route('sfp.staff.patrons.show', $loser) }}"
+    <a href="{{ route('request.staff.patrons.show', $loser) }}"
        class="px-6 py-2.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
         Cancel
     </a>

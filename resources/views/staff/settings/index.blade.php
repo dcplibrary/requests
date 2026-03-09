@@ -1,7 +1,7 @@
 @extends('sfp::staff.settings._layout')
 @section('title', 'Settings')
 @section('settings-content')
-<form method="POST" action="{{ route('sfp.staff.settings.update') }}">
+<form method="POST" action="{{ route('request.staff.settings.update') }}">
     @csrf @method('PATCH')
 
     @php $i = 0; @endphp

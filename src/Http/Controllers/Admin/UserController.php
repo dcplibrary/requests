@@ -43,7 +43,7 @@ class UserController extends Controller
         // Only selectors use selector groups. Ensure other roles don't retain group assignments.
         $user->selectorGroups()->sync($data['role'] === 'selector' ? ($data['groups'] ?? []) : []);
 
-        return redirect()->route('sfp.staff.users.index')->with('success', 'User updated.');
+        return redirect()->route('request.staff.users.index')->with('success', 'User updated.');
     }
 
     public function destroy(User $user)
@@ -103,12 +103,12 @@ class UserController extends Controller
                 $user->delete();
             });
 
-            return redirect()->route('sfp.staff.users.index')->with('success', 'User removed and records reassigned.');
+            return redirect()->route('request.staff.users.index')->with('success', 'User removed and records reassigned.');
         }
 
         $user->delete();
 
-        return redirect()->route('sfp.staff.users.index')->with('success', 'User removed.');
+        return redirect()->route('request.staff.users.index')->with('success', 'User removed.');
     }
 
     public function confirmDelete(User $user)
@@ -134,7 +134,7 @@ class UserController extends Controller
             ->map(fn (RequestStatusHistory $h) => [
                 'mono'  => "#{$h->id}",
                 'label' => "Request #{$h->request_id}",
-                'href'  => route('sfp.staff.requests.show', $h->request_id),
+                'href'  => route('request.staff.requests.show', $h->request_id),
             ])->all();
 
         $groupPreview = $user->selectorGroups()
@@ -144,7 +144,7 @@ class UserController extends Controller
             ->map(fn ($g) => [
                 'mono'  => "#{$g->id}",
                 'label' => (string) $g->name,
-                'href'  => route('sfp.staff.groups.edit', $g->id),
+                'href'  => route('request.staff.groups.edit', $g->id),
             ])->all();
 
         $options = User::query()
@@ -171,8 +171,8 @@ class UserController extends Controller
                 ['title' => 'Selector groups', 'count' => $groupsCount, 'count_label' => 'total', 'items' => $groupPreview],
             ],
             'options'     => $options,
-            'deleteAction'=> route('sfp.staff.users.destroy', $user),
-            'cancelHref'  => route('sfp.staff.users.index'),
+            'deleteAction'=> route('request.staff.users.destroy', $user),
+            'cancelHref'  => route('request.staff.users.index'),
             'extraFields' => [
                 ['name' => 'transfer_history', 'label' => 'Transfer status history entries to the selected user', 'default' => true],
                 ['name' => 'transfer_groups',  'label' => 'Transfer selector group memberships to the selected user', 'default' => true],

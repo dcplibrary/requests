@@ -50,7 +50,7 @@ class SelectorGroupController extends Controller
         $group->materialTypes()->sync($data['material_types'] ?? []);
         $group->audiences()->sync($data['audiences'] ?? []);
 
-        return redirect()->route('sfp.staff.groups.index')->with('success', 'Group created.');
+        return redirect()->route('request.staff.groups.index')->with('success', 'Group created.');
     }
 
     public function edit(SelectorGroup $group)
@@ -90,7 +90,7 @@ class SelectorGroupController extends Controller
         $group->materialTypes()->sync($data['material_types'] ?? []);
         $group->audiences()->sync($data['audiences'] ?? []);
 
-        return redirect()->route('sfp.staff.groups.index')->with('success', 'Group updated.');
+        return redirect()->route('request.staff.groups.index')->with('success', 'Group updated.');
     }
 
     public function destroy(SelectorGroup $group)
@@ -102,6 +102,6 @@ class SelectorGroupController extends Controller
 
         $group->delete();
 
-        return redirect()->route('sfp.staff.groups.index')->with('success', 'Group deleted.');
+        return redirect()->route('request.staff.groups.index')->with('success', 'Group deleted.');
     }
 }

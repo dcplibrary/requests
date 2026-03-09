@@ -10,7 +10,7 @@ return [
     | "/{prefix}" and the staff admin at "/{prefix}/staff/*".
     | Set to '' (empty string) to mount at the root.
     */
-    'route_prefix' => env('SFP_ROUTE_PREFIX', 'sfp'),
+    'route_prefix' => env('SFP_ROUTE_PREFIX', 'request'),
 
     /*
     |--------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 @section('title', 'Catalog Settings')
 @section('settings-content')
 
-<form method="POST" action="{{ route('sfp.staff.catalog.update') }}">
+<form method="POST" action="{{ route('request.staff.catalog.update') }}">
     @csrf @method('PATCH')
 
     {{-- Catalog + ISBNdb + Syndetics settings --}}
@@ -112,7 +112,7 @@
 {{-- Delete forms for each format label (outside the main PATCH form) --}}
 @foreach($formatLabels as $fl)
 <form class="hidden" method="POST"
-      action="{{ route('sfp.staff.catalog.format-labels.destroy', $fl) }}"
+      action="{{ route('request.staff.catalog.format-labels.destroy', $fl) }}"
       id="delete-fl-{{ $fl->id }}">
     @csrf @method('DELETE')
 </form>

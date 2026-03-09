@@ -171,7 +171,7 @@ class NotificationService
             '{audience}'          => $request->audience?->name     ?? '',
             '{status}'            => $request->status?->name       ?? '',
             '{submitted_date}'    => $request->created_at?->format('F j, Y') ?? '',
-            '{request_url}'       => route('sfp.staff.requests.show', $request),
+            '{request_url}'       => route('request.staff.requests.show', $request),
         ];
 
         // Extend with dynamic form-field tokens.

@@ -5,7 +5,7 @@
 **Class:** `Dcplibrary\Sfp\Livewire\SfpForm`
 **View:** `resources/views/livewire/sfp-form.blade.php`
 **Layout:** `sfp::layouts.sfp`
-**Route:** `GET /sfp` → name `sfp.form`
+**Route:** `GET /{prefix}` → name `request.form` (default prefix: `request`)
 
 ---
 

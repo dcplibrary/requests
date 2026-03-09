@@ -3,7 +3,7 @@
 @section('settings-content')
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold text-gray-900">Selector Groups</h1>
-    <a href="{{ route('sfp.staff.groups.create') }}"
+    <a href="{{ route('request.staff.groups.create') }}"
        class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New Group</a>
 </div>
 
@@ -39,8 +39,8 @@
                     <x-sfp::status-pill :active="$group->active" />
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-sfp::icon-btn :href="route('sfp.staff.groups.edit', $group)" variant="edit" label="Edit" />
-                    <x-sfp::icon-form-btn :action="route('sfp.staff.groups.destroy', $group)" label="Delete" confirm="Delete this group?" />
+                    <x-sfp::icon-btn :href="route('request.staff.groups.edit', $group)" variant="edit" label="Edit" />
+                    <x-sfp::icon-form-btn :action="route('request.staff.groups.destroy', $group)" label="Delete" confirm="Delete this group?" />
                 </td>
             </tr>
             @empty

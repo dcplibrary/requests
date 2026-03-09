@@ -63,8 +63,9 @@
         @csrf
         @method('DELETE')
 
+        @if(!empty($hasDependencies) && !empty($options))
         <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Reassign to</label>
+            <label class="block text-sm font-medium text-gray-700">Reassign associated records to</label>
             <select name="reassign_to_id" required class="w-full max-w-md border border-gray-300 rounded px-3 py-2 text-sm">
                 <option value="">Select…</option>
                 @foreach($options as $opt)
@@ -77,6 +78,9 @@
                 <p class="text-sm text-red-600">{{ $message }}</p>
             @enderror
         </div>
+        @elseif(!empty($hasDependencies) && empty($options))
+        <p class="text-sm text-amber-700">You must create another item of this type before deleting (records need a reassignment target).</p>
+        @endif
 
         @if(!empty($extraFields))
             <div class="pt-2 space-y-2">

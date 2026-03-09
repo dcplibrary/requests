@@ -53,7 +53,7 @@ class PatronPinLogin extends Component
 
             session(['sfp_authenticated_barcode' => $barcode]);
 
-            $this->redirect(route('sfp.patron.requests'));
+            $this->redirect(route('request.patron.requests'));
         } catch (GuzzleException) {
             $this->failed = true;
         }

@@ -52,7 +52,7 @@
                 Download a JSON snapshot of all configuration — statuses, material types, audiences,
                 selector groups, catalog format labels, and settings. Request data is not included.
             </p>
-            <form method="POST" action="{{ route('sfp.staff.backups.config-export') }}">
+            <form method="POST" action="{{ route('request.staff.backups.config-export') }}">
                 @csrf
                 <button type="submit"
                         class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium">
@@ -70,7 +70,7 @@
                 Nothing is deleted during import.
             </p>
             <form method="POST"
-                  action="{{ route('sfp.staff.backups.config-import') }}"
+                  action="{{ route('request.staff.backups.config-import') }}"
                   enctype="multipart/form-data">
                 @csrf
                 <div class="space-y-3">
@@ -108,7 +108,7 @@
                 Download a full SQL dump of the database. Includes all tables and data —
                 requests, patrons, titles, and configuration.
             </p>
-            <form method="POST" action="{{ route('sfp.staff.backups.db-export') }}">
+            <form method="POST" action="{{ route('request.staff.backups.db-export') }}">
                 @csrf
                 <button type="submit"
                         class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium">
@@ -127,7 +127,7 @@
                 Export a backup first.
             </p>
             <form method="POST"
-                  action="{{ route('sfp.staff.backups.db-import') }}"
+                  action="{{ route('request.staff.backups.db-import') }}"
                   enctype="multipart/form-data"
                   onsubmit="return confirm('This will overwrite the current database with the uploaded file. Are you sure?')">
                 @csrf
@@ -155,7 +155,7 @@
                 Download a zip archive of <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">storage/app</code>.
                 Useful for backing up uploaded files and other stored assets.
             </p>
-            <form method="POST" action="{{ route('sfp.staff.backups.storage-export') }}">
+            <form method="POST" action="{{ route('request.staff.backups.storage-export') }}">
                 @csrf
                 <button type="submit"
                         class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium">
@@ -176,7 +176,7 @@
             @error('save')
                 <p class="mb-3 text-sm text-red-600">{{ $message }}</p>
             @enderror
-            <form method="POST" action="{{ route('sfp.staff.backups.server-save') }}">
+            <form method="POST" action="{{ route('request.staff.backups.server-save') }}">
                 @csrf
                 <div class="flex flex-wrap items-center gap-4 mb-4">
                     <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
@@ -208,7 +208,7 @@
                 {!! $icon['warning'] !!} This cannot be undone. Export a database backup before proceeding.
             </p>
             <form method="POST"
-                  action="{{ route('sfp.staff.backups.wipe') }}"
+                  action="{{ route('request.staff.backups.wipe') }}"
                   onsubmit="return confirm('This will permanently delete ALL data in the database. This cannot be undone. Proceed?')">
                 @csrf
                 <div class="flex items-center gap-3">
@@ -297,7 +297,7 @@
                         <div class="flex items-center gap-2 shrink-0">
 
                             {{-- Download --}}
-                            <a href="{{ route('sfp.staff.backups.server-download', ['filename' => $file['name']]) }}"
+                            <a href="{{ route('request.staff.backups.server-download', ['filename' => $file['name']]) }}"
                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-gray-100 text-gray-700 hover:bg-gray-200">
                                 {!! $icon['download'] !!} Download
                             </a>
@@ -305,7 +305,7 @@
                             @if($group['key'] !== 'storage')
                             {{-- Restore --}}
                             <form method="POST"
-                                  action="{{ route('sfp.staff.backups.server-restore') }}"
+                                  action="{{ route('request.staff.backups.server-restore') }}"
                                   onsubmit="return confirm('Restore from {{ $file['name'] }}?\n\n{{ $group['isDb'] ? 'This will overwrite the current database.' : 'Existing config will be updated.' }}\n\nContinue?')">
                                 @csrf
                                 <input type="hidden" name="filename" value="{{ $file['name'] }}">
@@ -376,7 +376,7 @@
                 Server-side backup files older than this are removed when pruning runs.
                 Pruning can be triggered manually below or scheduled via the queue worker.
             </p>
-            <form method="POST" action="{{ route('sfp.staff.backups.retention') }}" class="flex flex-wrap items-end gap-3">
+            <form method="POST" action="{{ route('request.staff.backups.retention') }}" class="flex flex-wrap items-end gap-3">
                 @csrf
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Keep backups for</label>
@@ -408,7 +408,7 @@
                     </p>
                 </div>
                 <form method="POST"
-                      action="{{ route('sfp.staff.backups.prune') }}"
+                      action="{{ route('request.staff.backups.prune') }}"
                       onsubmit="return confirm('Dispatch a pruning job to delete backups older than {{ $retentionDays }} days?')">
                     @csrf
                     <button type="submit"

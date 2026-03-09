@@ -4,6 +4,8 @@ namespace Dcplibrary\Sfp\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Configurable patron-form field definition.
@@ -21,12 +23,17 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool        $required         When true, validation fails if the field is blank
  * @property array|null  $condition        Conditional logic rules (null = always show)
  * @property bool        $include_as_token When true, expose {key} in notifications/templates
+ * @property int|null    $created_by
+ * @property int|null    $modified_by
+ * @property \Carbon\Carbon|null $deleted_at
  */
 class FormField extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'sfp_form_fields';
 
-    protected $fillable = ['key', 'label', 'sort_order', 'active', 'required', 'condition', 'include_as_token'];
+    protected $fillable = ['key', 'label', 'sort_order', 'active', 'required', 'condition', 'include_as_token', 'created_by', 'modified_by'];
 
     protected $casts = [
         'active'    => 'boolean',
@@ -34,6 +41,32 @@ class FormField extends Model
         'condition' => 'array',
         'include_as_token' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $model): void {
+            if ($model->created_by === null && auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+        });
+        static::updating(function (self $model): void {
+            if (auth()->check()) {
+                $model->modified_by = auth()->id();
+            }
+        });
+    }
+
+    /** User who created this record (staff). */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** User who last modified this record (staff). */
+    public function modifier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'modified_by');
+    }
 
     // ── Scopes ──────────────────────────────────────────────────────────────
 

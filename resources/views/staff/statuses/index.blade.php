@@ -3,7 +3,7 @@
 @section('settings-content')
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold text-gray-900">Request Statuses</h1>
-    <a href="{{ route('sfp.staff.statuses.create') }}"
+    <a href="{{ route('request.staff.statuses.create') }}"
        class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New Status</a>
 </div>
 
@@ -35,8 +35,8 @@
                     <x-sfp::status-pill :active="$status->active" />
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-sfp::icon-btn :href="route('sfp.staff.statuses.edit', $status)" variant="edit" label="Edit" />
-                    <x-sfp::icon-btn :href="route('sfp.staff.statuses.delete', $status)" variant="delete" label="Delete" />
+                    <x-sfp::icon-btn :href="route('request.staff.statuses.edit', $status)" variant="edit" label="Edit" />
+                    <x-sfp::icon-btn :href="route('request.staff.statuses.delete', $status)" variant="delete" label="Delete" />
                 </td>
             </tr>
             @empty

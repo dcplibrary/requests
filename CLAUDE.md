@@ -18,14 +18,15 @@ The package ships its own compiled CSS — no host app configuration required.
 ### Asset route (Horizon/Telescope pattern)
 `SfpServiceProvider::registerRoutes()` registers:
 ```
-GET /sfp/assets/css  →  named route: sfp.assets.css
+GET /{prefix}/assets/css  →  named route: request.assets.css
 ```
+(Default prefix is `request`; config key `sfp.route_prefix`.)
 This streams `resources/dist/sfp.css` directly from inside `vendor/dcplibrary/sfp/` with a 1-year cache header. No files are copied to the host app's `public/` directory.
 
 ### Layout files
 All four layout files load CSS via the named route:
 ```blade
-<link rel="stylesheet" href="{{ route('sfp.assets.css') }}">
+<link rel="stylesheet" href="{{ route('request.assets.css') }}">
 ```
 **Never** use `asset('vendor/sfp/css/sfp.css')` — that requires vendor:publish and is the old pattern.
 
@@ -149,3 +150,24 @@ php artisan sfp:backup --prune    # run a backup then prune old files
 ```
 
 Prune cutoff is controlled by the `backup_retention_days` setting (default: 30).
+
+---
+
+## Forms (presentation layer)
+
+Form-specific presentation (which material types/fields appear, their label/order/required/visibility/step/conditional logic) is stored in a **forms** table and pivot tables — not on the core data tables (material_types, sfp_custom_fields).
+
+### Tables
+- **forms** — `id`, `name`, `slug` (e.g. `ill`, `sfp`). Seeded with "Interlibrary Loan" (ill) and "Suggest for Purchase" (sfp).
+- **form_material_types** — `form_id`, `material_type_id`, `label_override`, `sort_order`, `required`, `visible`, `step`, `conditional_logic` (JSON). Unique (form_id, material_type_id).
+- **form_custom_fields** — same shape for custom fields: `form_id`, `custom_field_id`, `label_override`, `sort_order`, `required`, `visible`, `step`, `conditional_logic`.
+- **form_custom_field_options** — per-form option overrides: `form_id`, `custom_field_option_id`, `label_override`, `sort_order`, `visible`, `conditional_logic`.
+
+### Models
+- `Form` — `Form::bySlug('ill'|'sfp')`; `formMaterialTypes()`, `formCustomFields()`, `formCustomFieldOptions()` (all ordered).
+- `FormMaterialType`, `FormCustomField`, `FormCustomFieldOption` — pivot models with `form()`, and `materialType()` / `customField()` / `customFieldOption()`.
+
+### How ILL / SFP should use them (next steps)
+- **ILL:** Resolve `Form::bySlug('ill')`. Material types for the form: `$form->formMaterialTypes()->where('visible', true)->with('materialType')->orderBy('sort_order')->get()` (use pivot `label_override`, `sort_order`, `required`, `step`, `conditional_logic` when rendering). Custom fields: `$form->formCustomFields()->where('visible', true)->with('customField')->orderBy('sort_order')->get()`, applying pivot overrides. Option labels/order/visibility: join or lookup `form_custom_field_options` by form_id and option id when displaying select/radio options.
+- **SFP:** Same pattern with `Form::bySlug('sfp')` when SFP is driven from form config (today SFP may still use sfp_form_fields + material_types/audiences directly).
+- Until the live forms are wired to these tables, ILL continues to use `MaterialType::activeForIll()` and `CustomField::forKind('ill')`; the pivots are the source of truth once the UI is switched over.

@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('sfp.staff.titles.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Titles</a>
+    <a href="{{ route('request.staff.titles.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Titles</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900 truncate max-w-2xl">{{ $material->title }}</h1>
     <span class="text-sm text-gray-400 font-mono">#{{ $material->id }}</span>
@@ -22,7 +22,7 @@
         @foreach($duplicates as $dup)
         <div class="flex items-center justify-between gap-4 text-sm">
             <div>
-                <a href="{{ route('sfp.staff.titles.show', $dup) }}"
+                <a href="{{ route('request.staff.titles.show', $dup) }}"
                    class="font-medium text-blue-700 hover:underline">{{ $dup->title }}</a>
                 <span class="text-gray-400 mx-1">by</span>
                 <span class="text-gray-600">{{ $dup->author }}</span>
@@ -30,7 +30,7 @@
             </div>
             <div class="flex items-center gap-2 shrink-0">
                 <span class="text-xs text-gray-500">Merge duplicate into this record:</span>
-                <form method="POST" action="{{ route('sfp.staff.titles.merge', $dup) }}"
+                <form method="POST" action="{{ route('request.staff.titles.merge', $dup) }}"
                       onsubmit="return confirm('Merge &quot;{{ addslashes($dup->title) }}&quot; into &quot;{{ addslashes($material->title) }}&quot;? This will move all its requests here and delete the duplicate.')">
                     @csrf
                     <input type="hidden" name="target_id" value="{{ $material->id }}">
@@ -139,7 +139,7 @@
                         <td class="px-3 py-2 text-gray-400 text-xs">{{ $req->id }}</td>
                         <td class="px-3 py-2">
                             @if($req->patron)
-                                <a href="{{ route('sfp.staff.patrons.show', $req->patron) }}"
+                                <a href="{{ route('request.staff.patrons.show', $req->patron) }}"
                                    class="text-blue-600 hover:underline text-xs">
                                     {{ $req->patron->full_name }}
                                 </a>
@@ -169,7 +169,7 @@
                             {{ $req->created_at->format('M j, Y') }}
                         </td>
                         <td class="px-3 py-2 text-right">
-                            <x-sfp::icon-btn :href="route('sfp.staff.requests.show', $req)" variant="view" label="View" />
+                            <x-sfp::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
                         </td>
                     </tr>
                     @endforeach
@@ -192,7 +192,7 @@
             <p class="text-xs text-gray-500 mb-3">
                 Apply a status to all {{ $material->requests->count() }} request{{ $material->requests->count() !== 1 ? 's' : '' }} for this title at once.
             </p>
-            <form method="POST" action="{{ route('sfp.staff.titles.bulk-status', $material) }}">
+            <form method="POST" action="{{ route('request.staff.titles.bulk-status', $material) }}">
                 @csrf
                 <div class="mb-3">
                     <label class="block text-xs font-medium text-gray-600 mb-1">New Status</label>

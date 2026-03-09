@@ -171,7 +171,7 @@
             class="px-5 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
         >Save Changes</button>
         <a
-            href="{{ route('sfp.staff.settings.form-fields') }}"
+            href="{{ route('request.staff.settings.form-fields') }}"
             class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200"
         >Cancel</a>
     </div>

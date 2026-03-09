@@ -2,46 +2,46 @@
 
 [← Back to README](README.md)
 
-All controllers live in `src/Http/Controllers/Admin/` and extend `Dcplibrary\Sfp\Http\Controllers\Controller`. All routes are under the `sfp.staff.*` name prefix.
+All controllers live in `src/Http/Controllers/Admin/` and extend `Dcplibrary\Sfp\Http\Controllers\Controller`. All routes are under the `request.staff.*` name prefix.
 
 ---
 
 ## Route Summary
 
 ```
-GET    /sfp/staff/requests                          sfp.staff.requests.index
-GET    /sfp/staff/requests/{id}                     sfp.staff.requests.show
-PATCH  /sfp/staff/requests/{id}/status              sfp.staff.requests.status
-POST   /sfp/staff/requests/{id}/catalog-recheck     sfp.staff.requests.catalog-recheck
+GET    /{prefix}/staff/requests                          request.staff.requests.index
+GET    /{prefix}/staff/requests/{id}                     request.staff.requests.show
+PATCH  /{prefix}/staff/requests/{id}/status              request.staff.requests.status
+POST   /{prefix}/staff/requests/{id}/catalog-recheck     request.staff.requests.catalog-recheck
 
-GET    /sfp/staff/patrons                           sfp.staff.patrons.index
-GET    /sfp/staff/patrons/{id}                      sfp.staff.patrons.show
-GET    /sfp/staff/patrons/{id}/edit                 sfp.staff.patrons.edit
-PATCH  /sfp/staff/patrons/{id}                      sfp.staff.patrons.update
-GET    /sfp/staff/patrons/{id}/merge-confirm        sfp.staff.patrons.merge-confirm
-POST   /sfp/staff/patrons/{id}/merge                sfp.staff.patrons.merge
-POST   /sfp/staff/patrons/{id}/retrigger-polaris    sfp.staff.patrons.retrigger-polaris
-POST   /sfp/staff/patrons/{id}/ignore-duplicate     sfp.staff.patrons.ignore-duplicate
+GET    /{prefix}/staff/patrons                           request.staff.patrons.index
+GET    /{prefix}/staff/patrons/{id}                      request.staff.patrons.show
+GET    /{prefix}/staff/patrons/{id}/edit                 request.staff.patrons.edit
+PATCH  /{prefix}/staff/patrons/{id}                      request.staff.patrons.update
+GET    /{prefix}/staff/patrons/{id}/merge-confirm        request.staff.patrons.merge-confirm
+POST   /{prefix}/staff/patrons/{id}/merge                request.staff.patrons.merge
+POST   /{prefix}/staff/patrons/{id}/retrigger-polaris    request.staff.patrons.retrigger-polaris
+POST   /{prefix}/staff/patrons/{id}/ignore-duplicate     request.staff.patrons.ignore-duplicate
 
-GET    /sfp/staff/titles                            sfp.staff.titles.index
-GET    /sfp/staff/titles/{id}                       sfp.staff.titles.show
-POST   /sfp/staff/titles/{id}/merge                 sfp.staff.titles.merge
-POST   /sfp/staff/titles/{id}/bulk-status           sfp.staff.titles.bulk-status
+GET    /{prefix}/staff/titles                            request.staff.titles.index
+GET    /{prefix}/staff/titles/{id}                       request.staff.titles.show
+POST   /{prefix}/staff/titles/{id}/merge                 request.staff.titles.merge
+POST   /{prefix}/staff/titles/{id}/bulk-status           request.staff.titles.bulk-status
 
-GET    /sfp/staff/settings                          sfp.staff.settings.index
-PATCH  /sfp/staff/settings                          sfp.staff.settings.update
+GET    /{prefix}/staff/settings                          request.staff.settings.index
+PATCH  /{prefix}/staff/settings                          request.staff.settings.update
 
-GET    /sfp/staff/catalog                           sfp.staff.catalog.index
-PATCH  /sfp/staff/catalog                           sfp.staff.catalog.update
-POST   /sfp/staff/catalog/format-labels             sfp.staff.catalog.format-labels.store
-DELETE /sfp/staff/catalog/format-labels/{id}        sfp.staff.catalog.format-labels.destroy
+GET    /{prefix}/staff/catalog                           request.staff.catalog.index
+PATCH  /{prefix}/staff/catalog                           request.staff.catalog.update
+POST   /{prefix}/staff/catalog/format-labels             request.staff.catalog.format-labels.store
+DELETE /{prefix}/staff/catalog/format-labels/{id}        request.staff.catalog.format-labels.destroy
 
 # Standard resource routes (create/edit/store/update/destroy) for:
-/sfp/staff/material-types    sfp.staff.material-types.*
-/sfp/staff/audiences         sfp.staff.audiences.*
-/sfp/staff/statuses          sfp.staff.statuses.*
-/sfp/staff/users             sfp.staff.users.*  (no create/store)
-/sfp/staff/groups            sfp.staff.groups.*
+/{prefix}/staff/material-types    request.staff.material-types.*
+/{prefix}/staff/audiences         request.staff.audiences.*
+/{prefix}/staff/statuses          request.staff.statuses.*
+/{prefix}/staff/users             request.staff.users.*  (no create/store)
+/{prefix}/staff/groups            request.staff.groups.*
 ```
 
 ---

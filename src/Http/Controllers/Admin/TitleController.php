@@ -160,7 +160,7 @@ class TitleController extends Controller
         });
 
         return redirect()
-            ->route('sfp.staff.titles.show', $winner)
+            ->route('request.staff.titles.show', $winner)
             ->with('success', "Merged into \"{$winner->title}\". Duplicate record deleted.");
     }
 }

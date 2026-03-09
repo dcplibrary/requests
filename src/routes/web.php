@@ -19,12 +19,17 @@ use Dcplibrary\Sfp\Livewire\SfpForm;
 use Dcplibrary\Sfp\Livewire\IllForm;
 use Illuminate\Support\Facades\Route;
 
-$prefix          = config('sfp.route_prefix', 'sfp');
+$prefix          = config('sfp.route_prefix', 'request');
 $middleware      = config('sfp.middleware', ['web']);
 $staffMiddleware = array_merge(
     config('sfp.staff_middleware', ['web', 'auth']),
-    ['sfp.role']
+    ['request.role']
 );
+
+// --- Public: ILL Patron Form (at site root /ill) ---
+Route::get('ill', IllForm::class)
+    ->middleware($middleware)
+    ->name('request.ill.form');
 
 Route::group([
     'prefix'     => $prefix,
@@ -32,21 +37,18 @@ Route::group([
 ], function () use ($staffMiddleware) {
 
     // --- Public: SFP Patron Form ---
-    Route::get('/', SfpForm::class)->name('sfp.form');
-
-    // --- Public: ILL Patron Form ---
-    Route::get('/ill', IllForm::class)->name('sfp.ill.form');
+    Route::get('/', SfpForm::class)->name('request.form');
 
     // --- Public: My Requests (Polaris PIN authentication) ---
-    Route::get('/my-requests', PatronRequests::class)->name('sfp.patron.requests');
+    Route::get('/my-requests', PatronRequests::class)->name('request.patron.requests');
 
     // --- Staff: Protected ---
     Route::prefix('staff')
-        ->name('sfp.staff.')
+        ->name('request.staff.')
         ->middleware($staffMiddleware)
         ->group(function () {
 
-            Route::get('/', fn () => redirect()->route('sfp.staff.requests.index'));
+            Route::get('/', fn () => redirect()->route('request.staff.requests.index'));
 
             Route::get('/help/{page?}', [HelpController::class, 'show'])->name('help');
 

@@ -387,7 +387,7 @@ class RequestController extends Controller
         $sfpRequest->delete();
 
         return redirect()
-            ->route('sfp.staff.requests.index')
+            ->route('request.staff.requests.index')
             ->with('success', "Request #{$sfpRequest->id} deleted.");
     }
 }

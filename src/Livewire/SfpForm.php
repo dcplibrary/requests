@@ -117,7 +117,7 @@ class SfpForm extends Component
     {
         // If the patron previously submitted a request and chose "Submit Another Request",
         // we keep their patron info in the session for convenience.
-        $remembered = session('sfp.patron');
+        $remembered = session('request.patron');
         if (is_array($remembered)) {
             $this->barcode     = (string) ($remembered['barcode'] ?? $this->barcode);
             $this->name_first  = (string) ($remembered['name_first'] ?? $this->name_first);
@@ -196,7 +196,7 @@ class SfpForm extends Component
      */
     public function submitAnotherRequest(): void
     {
-        session()->put('sfp.patron', [
+        session()->put('request.patron', [
             'barcode'    => $this->barcode,
             'name_first' => $this->name_first,
             'name_last'  => $this->name_last,

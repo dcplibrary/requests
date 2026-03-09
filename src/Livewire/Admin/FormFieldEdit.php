@@ -64,7 +64,7 @@ class FormFieldEdit extends Component
         FormField::bustCache();
 
         session()->flash('success', "'{$this->label}' updated.");
-        $this->redirect(route('sfp.staff.settings.form-fields'));
+        $this->redirect(route('request.staff.settings.form-fields'));
     }
 
     // ── Conditional logic ─────────────────────────────────────────────────────

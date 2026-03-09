@@ -69,13 +69,39 @@
         <h2 id="details-heading" class="text-2xl font-bold text-gray-900 mb-6">Borrow Details</h2>
 
         <div class="space-y-6 bg-white rounded-lg border border-gray-200 p-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">I want to borrow <span class="text-red-600" aria-hidden="true">*</span></label>
+                <div class="flex flex-wrap gap-4" role="radiogroup" aria-label="Type of material">
+                    @foreach($illMaterialTypes as $type)
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" wire:model.live="material_type_id" value="{{ $type->id }}"
+                                   class="text-blue-600 focus:ring-blue-500" />
+                            <span class="text-sm text-gray-800">{{ $type->name }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('material_type_id')
+                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                @enderror
+            </div>
+
+            @php $lastSection = null; @endphp
             @foreach($orderedFields as $field)
-                @php $isVisible = $visibleFields[$field->key] ?? false; @endphp
+                @php
+                    $isVisible = $visibleFields[$field->key] ?? false;
+                    $sectionKey = $fieldSectionKeys[$field->key] ?? null;
+                    $displayLabel = $displayLabels[$field->key] ?? $field->label;
+                @endphp
                 @if(! $isVisible) @continue @endif
+
+                @if($sectionKey && $sectionKey !== $lastSection)
+                    <h3 class="text-lg font-semibold text-gray-900 pt-2 first:pt-0">{{ $sectionLabels[$sectionKey] ?? $sectionKey }}</h3>
+                    @php $lastSection = $sectionKey; @endphp
+                @endif
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ $field->label }}
+                        {{ $displayLabel }}
                         @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
                     </label>
 

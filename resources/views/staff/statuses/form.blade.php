@@ -2,13 +2,13 @@
 @section('title', $status->exists ? 'Edit Status' : 'New Status')
 @section('settings-content')
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('sfp.staff.statuses.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Statuses</a>
+    <a href="{{ route('request.staff.statuses.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Statuses</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900">{{ $status->exists ? 'Edit Status' : 'New Status' }}</h1>
 </div>
 
 <div class="max-w-lg bg-white rounded-lg border border-gray-200 p-6">
-    <form method="POST" action="{{ $status->exists ? route('sfp.staff.statuses.update', $status) : route('sfp.staff.statuses.store') }}">
+    <form method="POST" action="{{ $status->exists ? route('request.staff.statuses.update', $status) : route('request.staff.statuses.store') }}">
         @csrf
         @if($status->exists) @method('PUT') @endif
 
@@ -65,7 +65,7 @@
             <button type="submit" class="px-5 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                 {{ $status->exists ? 'Save Changes' : 'Create Status' }}
             </button>
-            <a href="{{ route('sfp.staff.statuses.index') }}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Cancel</a>
+            <a href="{{ route('request.staff.statuses.index') }}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Cancel</a>
         </div>
     </form>
 </div>

@@ -88,7 +88,7 @@
                     {{-- Actions --}}
                     <td class="px-4 py-3 text-right">
                         <x-sfp::icon-btn
-                            :href="route('sfp.staff.settings.form-fields.edit', ['field' => $field['id']])"
+                            :href="route('request.staff.settings.form-fields.edit', ['field' => $field['id']])"
                             variant="edit"
                             label="Edit"
                         />

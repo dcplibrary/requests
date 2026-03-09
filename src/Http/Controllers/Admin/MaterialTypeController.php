@@ -28,12 +28,16 @@ class MaterialTypeController extends Controller
             'name'          => 'required|string|max:100',
             'sort_order'    => 'required|integer|min:0',
             'active'        => 'boolean',
+            'ill_enabled'   => 'boolean',
             'has_other_text'=> 'boolean',
         ]);
 
-        MaterialType::create(array_merge($data, ['slug' => Str::slug($data['name'])]));
+        MaterialType::create(array_merge($data, [
+            'slug' => Str::slug($data['name']),
+            'ill_enabled' => $request->boolean('ill_enabled'),
+        ]));
 
-        return redirect()->route('sfp.staff.material-types.index')->with('success', 'Material type created.');
+        return redirect()->route('request.staff.material-types.index')->with('success', 'Material type created.');
     }
 
     public function edit(MaterialType $materialType)
@@ -47,12 +51,14 @@ class MaterialTypeController extends Controller
             'name'          => 'required|string|max:100',
             'sort_order'    => 'required|integer|min:0',
             'active'        => 'boolean',
+            'ill_enabled'   => 'boolean',
             'has_other_text'=> 'boolean',
         ]);
 
+        $data['ill_enabled'] = $request->boolean('ill_enabled');
         $materialType->update($data);
 
-        return redirect()->route('sfp.staff.material-types.index')->with('success', 'Material type updated.');
+        return redirect()->route('request.staff.material-types.index')->with('success', 'Material type updated.');
     }
 
     public function destroy(MaterialType $materialType)
@@ -100,10 +106,12 @@ class MaterialTypeController extends Controller
                 $materialType->delete();
             });
 
-            return redirect()->route('sfp.staff.material-types.index')->with('success', 'Material type deleted and records reassigned.');
+            return redirect()->route('request.staff.material-types.index')->with('success', 'Material type deleted and records reassigned.');
         }
 
-        return redirect()->route('sfp.staff.material-types.index')->with('success', 'Material type deleted.');
+        $materialType->delete();
+
+        return redirect()->route('request.staff.material-types.index')->with('success', 'Material type deleted.');
     }
 
     public function confirmDelete(MaterialType $materialType)
@@ -125,7 +133,7 @@ class MaterialTypeController extends Controller
             ->map(fn ($r) => [
                 'mono'  => "#{$r->id}",
                 'label' => (string) ($r->submitted_title ?? 'Request'),
-                'href'  => route('sfp.staff.requests.show', $r->id),
+                'href'  => route('request.staff.requests.show', $r->id),
             ])->all();
 
         $materialPreview = $materialType->materials()
@@ -135,7 +143,7 @@ class MaterialTypeController extends Controller
             ->map(fn ($m) => [
                 'mono'  => "#{$m->id}",
                 'label' => (string) ($m->title ?? 'Material'),
-                'href'  => route('sfp.staff.titles.show', $m->id),
+                'href'  => route('request.staff.titles.show', $m->id),
             ])->all();
 
         $groupPreview = $materialType->selectorGroups()
@@ -145,7 +153,7 @@ class MaterialTypeController extends Controller
             ->map(fn ($g) => [
                 'mono'  => "#{$g->id}",
                 'label' => (string) $g->name,
-                'href'  => route('sfp.staff.groups.edit', $g->id),
+                'href'  => route('request.staff.groups.edit', $g->id),
             ])->all();
 
         $options = MaterialType::query()
@@ -160,9 +168,12 @@ class MaterialTypeController extends Controller
             return back()->withErrors(['error' => 'You must create another material type before deleting this one (records need a reassignment target).']);
         }
 
+        $hasDependencies = $requestsCount > 0 || $materialsCount > 0 || $groupsCount > 0;
+
         return view('sfp::staff.settings.reassign-delete', [
-            'title'       => 'Delete Material Type',
-            'itemLabel'   => $materialType->name,
+            'title'             => 'Delete Material Type',
+            'itemLabel'         => $materialType->name,
+            'hasDependencies'   => $hasDependencies,
             'impacts'     => [
                 "{$requestsCount} request(s) will be reassigned",
                 "{$materialsCount} material record(s) will be reassigned",
@@ -174,8 +185,8 @@ class MaterialTypeController extends Controller
                 ['title' => 'Selector groups', 'count' => $groupsCount, 'count_label' => 'total', 'items' => $groupPreview],
             ],
             'options'     => $options,
-            'deleteAction'=> route('sfp.staff.material-types.destroy', $materialType),
-            'cancelHref'  => route('sfp.staff.material-types.index'),
+            'deleteAction'=> route('request.staff.material-types.destroy', $materialType),
+            'cancelHref'  => route('request.staff.material-types.index'),
             'extraFields' => [],
         ]);
     }

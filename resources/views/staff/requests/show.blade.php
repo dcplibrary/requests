@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('sfp.staff.requests.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Back to requests</a>
+    <a href="{{ route('request.staff.requests.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Back to requests</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900">Request #{{ $sfpRequest->id }}</h1>
     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $sfpRequest->request_kind === 'ill' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700' }}">
@@ -107,7 +107,7 @@
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Catalog &amp; ILL</h2>
-                <form method="POST" action="{{ route('sfp.staff.requests.catalog-recheck', $sfpRequest) }}">
+                <form method="POST" action="{{ route('request.staff.requests.catalog-recheck', $sfpRequest) }}">
                     @csrf
                     <button type="submit"
                             class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -158,7 +158,7 @@
                     <dt class="text-gray-500">Duplicate of</dt>
                     <dd>
                         @if($sfpRequest->duplicateOf)
-                            <a href="{{ route('sfp.staff.requests.show', $sfpRequest->duplicateOf) }}" class="text-blue-600 hover:underline">
+                            <a href="{{ route('request.staff.requests.show', $sfpRequest->duplicateOf) }}" class="text-blue-600 hover:underline">
                                 #{{ $sfpRequest->duplicate_of_request_id }}
                             </a>
                         @else
@@ -220,7 +220,7 @@
             @endif
 
             @if(! $sfpRequest->assigned_to_user_id)
-                <form method="POST" action="{{ route('sfp.staff.requests.claim', $sfpRequest) }}" class="mb-3">
+                <form method="POST" action="{{ route('request.staff.requests.claim', $sfpRequest) }}" class="mb-3">
                     @csrf
                     <button type="submit"
                             class="w-full px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700">
@@ -229,7 +229,7 @@
                 </form>
             @endif
 
-            <form method="POST" action="{{ route('sfp.staff.requests.assign', $sfpRequest) }}" class="space-y-3">
+            <form method="POST" action="{{ route('request.staff.requests.assign', $sfpRequest) }}" class="space-y-3">
                 @csrf
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Assign to</label>
@@ -253,7 +253,7 @@
         {{-- Convert workflow --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Workflow</h2>
-            <form method="POST" action="{{ route('sfp.staff.requests.convert-kind', $sfpRequest) }}" class="space-y-3">
+            <form method="POST" action="{{ route('request.staff.requests.convert-kind', $sfpRequest) }}" class="space-y-3">
                 @csrf
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Convert to</label>
@@ -277,7 +277,7 @@
         {{-- Update status --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Update Status</h2>
-            <form method="POST" action="{{ route('sfp.staff.requests.status', $sfpRequest) }}">
+            <form method="POST" action="{{ route('request.staff.requests.status', $sfpRequest) }}">
                 @csrf
                 @method('PATCH')
                 <div class="mb-3">
@@ -356,7 +356,7 @@
         {{-- Danger zone --}}
         <div class="bg-white rounded-lg border border-red-200 p-5">
             <h2 class="text-sm font-semibold text-red-700 uppercase tracking-wide mb-3">Danger Zone</h2>
-            <form method="POST" action="{{ route('sfp.staff.requests.destroy', $sfpRequest) }}">
+            <form method="POST" action="{{ route('request.staff.requests.destroy', $sfpRequest) }}">
                 @csrf
                 @method('DELETE')
                 <button

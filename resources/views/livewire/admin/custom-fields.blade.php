@@ -41,7 +41,7 @@
                     <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ $field['key'] }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ $field['type'] }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ $field['step'] }}</td>
-                    <td class="px-4 py-3 text-gray-600 font-mono text-xs">{{ $field['request_kind'] }}</td>
+                    <td class="px-4 py-3 text-gray-600 text-xs">{{ match($field['request_kind'] ?? '') { 'sfp' => 'Suggest for Purchase', 'ill' => 'Interlibrary Loan', 'both' => 'Both', default => $field['request_kind'] ?? '—' } }}</td>
 
                     <td class="px-4 py-3">
                         @if($field['include_as_token'])
@@ -82,7 +82,7 @@
 
                     <td class="px-4 py-3 text-right">
                         <x-sfp::icon-btn
-                            :href="route('sfp.staff.settings.custom-fields.edit', ['field' => $field['id']])"
+                            :href="route('request.staff.settings.custom-fields.edit', ['field' => $field['id']])"
                             variant="edit"
                             label="Edit"
                         />

@@ -95,7 +95,7 @@ Usage:
 <x-sfp::logo />
 
 {{-- Custom href --}}
-<x-sfp::logo :href="route('sfp.staff.requests.index')" />
+<x-sfp::logo :href="route('request.staff.requests.index')" />
 ```
 
 The component renders the 4-panel DCPL SVG logo alongside `config('app.name')`.

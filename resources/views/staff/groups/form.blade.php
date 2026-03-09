@@ -2,13 +2,13 @@
 @section('title', $group->exists ? 'Edit Group' : 'New Group')
 @section('settings-content')
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('sfp.staff.groups.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Groups</a>
+    <a href="{{ route('request.staff.groups.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Groups</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900">{{ $group->exists ? 'Edit Group' : 'New Group' }}</h1>
 </div>
 
 <div class="max-w-lg bg-white rounded-lg border border-gray-200 p-6">
-    <form method="POST" action="{{ $group->exists ? route('sfp.staff.groups.update', $group) : route('sfp.staff.groups.store') }}">
+    <form method="POST" action="{{ $group->exists ? route('request.staff.groups.update', $group) : route('request.staff.groups.store') }}">
         @csrf
         @if($group->exists) @method('PUT') @endif
 
@@ -72,7 +72,7 @@
             <button type="submit" class="px-5 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                 {{ $group->exists ? 'Save Changes' : 'Create Group' }}
             </button>
-            <a href="{{ route('sfp.staff.groups.index') }}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Cancel</a>
+            <a href="{{ route('request.staff.groups.index') }}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Cancel</a>
         </div>
     </form>
 </div>

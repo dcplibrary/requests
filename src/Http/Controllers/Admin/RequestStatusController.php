@@ -36,7 +36,7 @@ class RequestStatusController extends Controller
 
         RequestStatus::create(array_merge($data, ['slug' => Str::slug($data['name'])]));
 
-        return redirect()->route('sfp.staff.statuses.index')->with('success', 'Status created.');
+        return redirect()->route('request.staff.statuses.index')->with('success', 'Status created.');
     }
 
     public function edit(RequestStatus $status)
@@ -57,7 +57,7 @@ class RequestStatusController extends Controller
 
         $status->update($data);
 
-        return redirect()->route('sfp.staff.statuses.index')->with('success', 'Status updated.');
+        return redirect()->route('request.staff.statuses.index')->with('success', 'Status updated.');
     }
 
     public function destroy(RequestStatus $status)
@@ -88,10 +88,12 @@ class RequestStatusController extends Controller
                 $status->delete();
             });
 
-            return redirect()->route('sfp.staff.statuses.index')->with('success', 'Status deleted and records reassigned.');
+            return redirect()->route('request.staff.statuses.index')->with('success', 'Status deleted and records reassigned.');
         }
 
-        return redirect()->route('sfp.staff.statuses.index')->with('success', 'Status deleted.');
+        $status->delete();
+
+        return redirect()->route('request.staff.statuses.index')->with('success', 'Status deleted.');
     }
 
     public function confirmDelete(RequestStatus $status)
@@ -112,7 +114,7 @@ class RequestStatusController extends Controller
             ->map(fn ($r) => [
                 'mono'  => "#{$r->id}",
                 'label' => (string) ($r->submitted_title ?? 'Request'),
-                'href'  => route('sfp.staff.requests.show', $r->id),
+                'href'  => route('request.staff.requests.show', $r->id),
             ])->all();
 
         $historyPreview = RequestStatusHistory::query()
@@ -123,7 +125,7 @@ class RequestStatusController extends Controller
             ->map(fn (RequestStatusHistory $h) => [
                 'mono'  => "#{$h->id}",
                 'label' => "Request #{$h->request_id}",
-                'href'  => route('sfp.staff.requests.show', $h->request_id),
+                'href'  => route('request.staff.requests.show', $h->request_id),
             ])->all();
 
         $options = RequestStatus::query()
@@ -138,9 +140,12 @@ class RequestStatusController extends Controller
             return back()->withErrors(['error' => 'You must create another status before deleting this one (records need a reassignment target).']);
         }
 
+        $hasDependencies = $requestsCount > 0 || $historyCount > 0;
+
         return view('sfp::staff.settings.reassign-delete', [
-            'title'       => 'Delete Status',
-            'itemLabel'   => $status->name,
+            'title'             => 'Delete Status',
+            'itemLabel'         => $status->name,
+            'hasDependencies'   => $hasDependencies,
             'impacts'     => [
                 "{$requestsCount} request(s) will be reassigned",
                 "{$historyCount} status history entr(y/ies) will be reassigned",
@@ -150,8 +155,8 @@ class RequestStatusController extends Controller
                 ['title' => 'Status history entries', 'count' => $historyCount, 'count_label' => 'total', 'items' => $historyPreview],
             ],
             'options'     => $options,
-            'deleteAction'=> route('sfp.staff.statuses.destroy', $status),
-            'cancelHref'  => route('sfp.staff.statuses.index'),
+            'deleteAction'=> route('request.staff.statuses.destroy', $status),
+            'cancelHref'  => route('request.staff.statuses.index'),
             'extraFields' => [],
         ]);
     }

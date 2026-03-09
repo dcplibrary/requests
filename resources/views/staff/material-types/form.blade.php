@@ -2,13 +2,13 @@
 @section('title', $type->exists ? 'Edit Material Type' : 'New Material Type')
 @section('settings-content')
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('sfp.staff.material-types.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Material Types</a>
+    <a href="{{ route('request.staff.material-types.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Material Types</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900">{{ $type->exists ? 'Edit Material Type' : 'New Material Type' }}</h1>
 </div>
 
 <div class="max-w-lg bg-white rounded-lg border border-gray-200 p-6">
-    <form method="POST" action="{{ $type->exists ? route('sfp.staff.material-types.update', $type) : route('sfp.staff.material-types.store') }}">
+    <form method="POST" action="{{ $type->exists ? route('request.staff.material-types.update', $type) : route('request.staff.material-types.store') }}">
         @csrf
         @if($type->exists) @method('PUT') @endif
 
@@ -37,13 +37,20 @@
                        class="w-4 h-4 rounded border-gray-300 text-blue-600">
                 <label for="active" class="text-sm font-medium text-gray-700">Active</label>
             </div>
+            <div class="flex items-center gap-2">
+                <input type="hidden" name="ill_enabled" value="0">
+                <input type="checkbox" name="ill_enabled" id="ill_enabled" value="1"
+                       {{ old('ill_enabled', $type->ill_enabled ?? true) ? 'checked' : '' }}
+                       class="w-4 h-4 rounded border-gray-300 text-blue-600">
+                <label for="ill_enabled" class="text-sm font-medium text-gray-700">Available on ILL form</label>
+            </div>
         </div>
 
         <div class="mt-6 flex gap-3">
             <button type="submit" class="px-5 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                 {{ $type->exists ? 'Save Changes' : 'Create Type' }}
             </button>
-            <a href="{{ route('sfp.staff.material-types.index') }}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Cancel</a>
+            <a href="{{ route('request.staff.material-types.index') }}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Cancel</a>
         </div>
     </form>
 </div>

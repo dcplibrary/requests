@@ -12,15 +12,15 @@
         <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
             @php
             $settingsNav = [
-                ['label' => 'General',        'route' => 'sfp.staff.settings.index',           'pattern' => 'sfp.staff.settings.index'],
-                ['label' => 'Form Fields',    'route' => 'sfp.staff.settings.form-fields',     'pattern' => 'sfp.staff.settings.form-fields*'],
-                ['label' => 'Custom Fields',  'route' => 'sfp.staff.settings.custom-fields',   'pattern' => 'sfp.staff.settings.custom-fields*'],
-                ['label' => 'Notifications',  'route' => 'sfp.staff.settings.notifications',   'pattern' => 'sfp.staff.settings.notifications*'],
-                ['label' => 'Catalog',        'route' => 'sfp.staff.catalog.index',            'pattern' => 'sfp.staff.catalog.*'],
-                ['label' => 'Statuses',       'route' => 'sfp.staff.statuses.index',           'pattern' => 'sfp.staff.statuses.*'],
-                ['label' => 'Users',          'route' => 'sfp.staff.users.index',              'pattern' => 'sfp.staff.users.*'],
-                ['label' => 'Groups',         'route' => 'sfp.staff.groups.index',             'pattern' => 'sfp.staff.groups.*'],
-                ['label' => 'Backups',        'route' => 'sfp.staff.backups.index',            'pattern' => 'sfp.staff.backups.*'],
+                ['label' => 'General',        'route' => 'request.staff.settings.index',           'pattern' => 'request.staff.settings.index'],
+                ['label' => 'Form Fields',    'route' => 'request.staff.settings.form-fields',     'pattern' => 'request.staff.settings.form-fields*'],
+                ['label' => 'Custom Fields',  'route' => 'request.staff.settings.custom-fields',   'pattern' => 'request.staff.settings.custom-fields*'],
+                ['label' => 'Notifications',  'route' => 'request.staff.settings.notifications',   'pattern' => 'request.staff.settings.notifications*'],
+                ['label' => 'Catalog',        'route' => 'request.staff.catalog.index',            'pattern' => 'request.staff.catalog.*'],
+                ['label' => 'Statuses',       'route' => 'request.staff.statuses.index',           'pattern' => 'request.staff.statuses.*'],
+                ['label' => 'Users',          'route' => 'request.staff.users.index',              'pattern' => 'request.staff.users.*'],
+                ['label' => 'Groups',         'route' => 'request.staff.groups.index',             'pattern' => 'request.staff.groups.*'],
+                ['label' => 'Backups',        'route' => 'request.staff.backups.index',            'pattern' => 'request.staff.backups.*'],
             ];
             @endphp
             @foreach($settingsNav as $item)

@@ -11,6 +11,7 @@ class SfpDatabaseSeeder extends Seeder
         $this->call([
             UsersSeeder::class,
             SettingsSeeder::class,
+            FormsSeeder::class,
             MaterialTypesSeeder::class,
             AudiencesSeeder::class,
             RequestStatusesSeeder::class,

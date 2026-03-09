@@ -105,7 +105,7 @@
 
     <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">Filter</button>
     @if(array_filter($filters))
-        <a href="{{ route('sfp.staff.requests.index') }}" class="px-4 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Clear</a>
+        <a href="{{ route('request.staff.requests.index') }}" class="px-4 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Clear</a>
     @endif
 </form>
 
@@ -183,7 +183,7 @@
                     {{ $req->created_at->format('M j, Y') }}
                 </td>
                 <td class="px-4 py-3 text-right">
-                    <x-sfp::icon-btn :href="route('sfp.staff.requests.show', $req)" variant="view" label="View" />
+                    <x-sfp::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
                 </td>
             </tr>
             @empty

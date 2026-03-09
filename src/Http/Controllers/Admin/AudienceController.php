@@ -33,7 +33,7 @@ class AudienceController extends Controller
 
         Audience::create(array_merge($data, ['slug' => Str::slug($data['name'])]));
 
-        return redirect()->route('sfp.staff.audiences.index')->with('success', 'Audience created.');
+        return redirect()->route('request.staff.audiences.index')->with('success', 'Audience created.');
     }
 
     public function edit(Audience $audience)
@@ -52,7 +52,7 @@ class AudienceController extends Controller
 
         $audience->update($data);
 
-        return redirect()->route('sfp.staff.audiences.index')->with('success', 'Audience updated.');
+        return redirect()->route('request.staff.audiences.index')->with('success', 'Audience updated.');
     }
 
     public function destroy(Audience $audience)
@@ -95,10 +95,12 @@ class AudienceController extends Controller
                 $audience->delete();
             });
 
-            return redirect()->route('sfp.staff.audiences.index')->with('success', 'Audience deleted and records reassigned.');
+            return redirect()->route('request.staff.audiences.index')->with('success', 'Audience deleted and records reassigned.');
         }
 
-        return redirect()->route('sfp.staff.audiences.index')->with('success', 'Audience deleted.');
+        $audience->delete();
+
+        return redirect()->route('request.staff.audiences.index')->with('success', 'Audience deleted.');
     }
 
     public function confirmDelete(Audience $audience)
@@ -119,7 +121,7 @@ class AudienceController extends Controller
             ->map(fn ($r) => [
                 'mono'  => "#{$r->id}",
                 'label' => (string) ($r->submitted_title ?? 'Request'),
-                'href'  => route('sfp.staff.requests.show', $r->id),
+                'href'  => route('request.staff.requests.show', $r->id),
             ])->all();
 
         $groupPreview = $audience->selectorGroups()
@@ -129,7 +131,7 @@ class AudienceController extends Controller
             ->map(fn ($g) => [
                 'mono'  => "#{$g->id}",
                 'label' => (string) $g->name,
-                'href'  => route('sfp.staff.groups.edit', $g->id),
+                'href'  => route('request.staff.groups.edit', $g->id),
             ])->all();
 
         $options = Audience::query()
@@ -144,9 +146,12 @@ class AudienceController extends Controller
             return back()->withErrors(['error' => 'You must create another audience before deleting this one (records need a reassignment target).']);
         }
 
+        $hasDependencies = $requestsCount > 0 || $groupsCount > 0;
+
         return view('sfp::staff.settings.reassign-delete', [
-            'title'       => 'Delete Audience',
-            'itemLabel'   => $audience->name,
+            'title'             => 'Delete Audience',
+            'itemLabel'         => $audience->name,
+            'hasDependencies'   => $hasDependencies,
             'impacts'     => [
                 "{$requestsCount} request(s) will be reassigned",
                 "{$groupsCount} selector group assignment(s) will be updated",
@@ -156,8 +161,8 @@ class AudienceController extends Controller
                 ['title' => 'Selector groups', 'count' => $groupsCount, 'count_label' => 'total', 'items' => $groupPreview],
             ],
             'options'     => $options,
-            'deleteAction'=> route('sfp.staff.audiences.destroy', $audience),
-            'cancelHref'  => route('sfp.staff.audiences.index'),
+            'deleteAction'=> route('request.staff.audiences.destroy', $audience),
+            'cancelHref'  => route('request.staff.audiences.index'),
             'extraFields' => [],
         ]);
     }

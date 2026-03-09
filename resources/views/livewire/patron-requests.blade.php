@@ -27,7 +27,7 @@
 
         <div class="bg-white rounded-lg border border-gray-200 p-8 shadow-sm text-center text-gray-500 text-sm">
             You haven't submitted any suggestions yet.
-            <a href="{{ route('sfp.form') }}" class="ml-1 text-blue-600 hover:underline">Submit your first one →</a>
+            <a href="{{ route('request.form') }}" class="ml-1 text-blue-600 hover:underline">Submit your first one →</a>
         </div>
 
     @else
@@ -96,7 +96,7 @@
     @endif
 
     <div class="mt-6 text-center">
-        <a href="{{ route('sfp.form') }}" class="text-sm text-blue-600 hover:underline">
+        <a href="{{ route('request.form') }}" class="text-sm text-blue-600 hover:underline">
             Submit another suggestion →
         </a>
     </div>

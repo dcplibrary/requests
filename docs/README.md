@@ -8,7 +8,7 @@ Suggest for Purchase (SFP) is a Laravel package that provides a patron-facing re
 |------|----------|
 | [Installation](installation.md) | Requirements, [production setup](installation.md#production--staging), [local dev setup](installation.md#local-development), config, seeders, Entra SSO |
 | [Architecture](architecture.md) | Package structure, service provider, routing overview |
-| [Database](database.md) | Full schema: all tables, columns, relationships, indexes |
+| [Database](database.md) | Full schema: all tables (including **forms** and form pivot tables), columns, relationships, indexes |
 | [Models](models.md) | All Eloquent models: properties, relationships, methods |
 | [Services](services.md) | BibliocommonsService, IsbnDbService, CoverService, PatronService |
 | [Controllers](controllers.md) | All admin controllers and their actions |

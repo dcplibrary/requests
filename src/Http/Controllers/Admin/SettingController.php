@@ -151,7 +151,7 @@ class SettingController extends Controller
             '{publish_date}'      => '2025-06-15',
             '{where_heard}'       => 'Library staff recommendation',
             '{ill_requested}'     => 'No',
-            '{borrow_type}'       => 'Book',
+            '{material_type}'     => 'Book',
             '{date_needed_by}'    => now()->addWeeks(3)->format('Y-m-d'),
             '{will_pay_up_to}'    => '10.00',
         ];

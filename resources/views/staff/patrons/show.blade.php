@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('sfp.staff.patrons.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Patrons</a>
+    <a href="{{ route('request.staff.patrons.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Patrons</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900">{{ $patron->full_name }}</h1>
     <span class="text-sm text-gray-400 font-mono">#{{ $patron->id }}</span>
@@ -132,7 +132,7 @@
                                 Merge
                             </button>
                             <form method="POST"
-                                  action="{{ route('sfp.staff.patrons.ignore-duplicate', $patron) }}"
+                                  action="{{ route('request.staff.patrons.ignore-duplicate', $patron) }}"
                                   class="inline ignore-form">
                                 @csrf
                                 <input type="hidden" name="other_id" value="{{ $suspect->id }}">
@@ -261,7 +261,7 @@
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Submitted Data</h2>
-                <x-sfp::icon-btn :href="route('sfp.staff.patrons.edit', $patron)" variant="edit" label="Edit" />
+                <x-sfp::icon-btn :href="route('request.staff.patrons.edit', $patron)" variant="edit" label="Edit" />
             </div>
             <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <div>
@@ -287,7 +287,7 @@
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Polaris Lookup</h2>
-                <form method="POST" action="{{ route('sfp.staff.patrons.retrigger-polaris', $patron) }}">
+                <form method="POST" action="{{ route('request.staff.patrons.retrigger-polaris', $patron) }}">
                     @csrf
                     <button type="submit"
                             class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -395,7 +395,7 @@
                         </td>
                         <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">{{ $req->created_at->format('M j, Y') }}</td>
                         <td class="px-3 py-2 text-right">
-                            <x-sfp::icon-btn :href="route('sfp.staff.requests.show', $req)" variant="view" label="View" />
+                            <x-sfp::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
                         </td>
                     </tr>
                     @endforeach
@@ -436,7 +436,7 @@
             <p class="text-xs text-gray-500 mb-3">
                 Enter another patron's ID to review a merge. This record will be treated as the one to delete.
             </p>
-            <form method="GET" action="{{ route('sfp.staff.patrons.merge-confirm', $patron) }}">
+            <form method="GET" action="{{ route('request.staff.patrons.merge-confirm', $patron) }}">
                 <div class="mb-3">
                     <label class="block text-xs font-medium text-gray-600 mb-1">Winner patron ID</label>
                     <input type="number" name="target_id" required min="1"
@@ -457,9 +457,9 @@
 <script>
 {{-- Blade emits the merge URL for every patron involved so JS never has to guess paths --}}
 var SFP_MERGE_URLS = {
-    {{ $patron->id }}: "{{ route('sfp.staff.patrons.merge', $patron) }}",
+    {{ $patron->id }}: "{{ route('request.staff.patrons.merge', $patron) }}",
     @foreach($suspects as $suspect)
-    {{ $suspect->id }}: "{{ route('sfp.staff.patrons.merge', $suspect) }}",
+    {{ $suspect->id }}: "{{ route('request.staff.patrons.merge', $suspect) }}",
     @endforeach
 };
 </script>

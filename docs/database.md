@@ -244,3 +244,81 @@ Maps BiblioCommons format codes to display labels shown on the patron form.
 | `timestamps` | | |
 
 **Default codes:** `BK`, `BOOK_CD`, `AB`, `EAUDIOBOOK`, `EBOOK`, `LPRINT`, `DVD`, `BLURAY`, `UK`, `GRAPHIC_NOVEL_DOWNLOAD`, `VIDEO_GAME`, `VIDEO_ONLINE`, `PASS`, `MAG_ONLINE`, `MAG`, `KIT`, `EQUIPMENT`
+
+---
+
+## forms (presentation layer)
+
+Form definitions. Which material types and custom fields appear on each form, and their per-form label/order/required/visibility/step/conditional logic, are in the pivot tables below — not on the core data tables.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | bigint PK | |
+| `name` | string | e.g. "Interlibrary Loan", "Suggest for Purchase" |
+| `slug` | string | Unique; e.g. `ill`, `sfp` |
+| `timestamps` | | |
+
+**Seeded:** `ill`, `sfp`.
+
+---
+
+## form_material_types
+
+Per-form material type config: label override, order, required, visible, step, conditional logic.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | bigint PK | |
+| `form_id` | bigint FK | → forms, cascade delete |
+| `material_type_id` | bigint FK | → material_types, cascade delete |
+| `label_override` | string | Nullable |
+| `sort_order` | smallint | Default 0 |
+| `required` | boolean | Default false |
+| `visible` | boolean | Default true |
+| `step` | smallint | Default 2 |
+| `conditional_logic` | json | Nullable; `{ match, rules }` |
+| `timestamps` | | |
+
+**Unique:** (`form_id`, `material_type_id`)
+
+---
+
+## form_custom_fields
+
+Per-form custom field config: label override, order, required, visible, step, conditional logic.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | bigint PK | |
+| `form_id` | bigint FK | → forms, cascade delete |
+| `custom_field_id` | bigint FK | → sfp_custom_fields, cascade delete |
+| `label_override` | string | Nullable |
+| `sort_order` | smallint | Default 0 |
+| `required` | boolean | Default false |
+| `visible` | boolean | Default true |
+| `step` | smallint | Default 2 |
+| `conditional_logic` | json | Nullable |
+| `timestamps` | | |
+
+**Unique:** (`form_id`, `custom_field_id`)
+
+---
+
+## form_custom_field_options
+
+Per-form overrides for a custom field option (label, order, visible, conditional logic). When no row exists, the base `sfp_custom_field_options` values apply.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | bigint PK | |
+| `form_id` | bigint FK | → forms, cascade delete |
+| `custom_field_option_id` | bigint FK | → sfp_custom_field_options, cascade delete |
+| `label_override` | string | Nullable |
+| `sort_order` | smallint | Default 0 |
+| `visible` | boolean | Default true |
+| `conditional_logic` | json | Nullable |
+| `timestamps` | | |
+
+**Unique:** (`form_id`, `custom_field_option_id`)
+
+**Usage:** ILL and SFP should resolve `Form::bySlug('ill')` or `Form::bySlug('sfp')` and use the form’s `formMaterialTypes` / `formCustomFields` (and option overrides where needed) for what to show and how. Until wired, ILL still uses `MaterialType::activeForIll()` and `CustomField::forKind('ill')`. See [CLAUDE.md](../CLAUDE.md#forms-presentation-layer) for implementation notes.

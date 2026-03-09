@@ -2,13 +2,13 @@
 @section('title', $audience->exists ? 'Edit Audience' : 'New Audience')
 @section('settings-content')
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('sfp.staff.audiences.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Audiences</a>
+    <a href="{{ route('request.staff.audiences.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Audiences</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900">{{ $audience->exists ? 'Edit Audience' : 'New Audience' }}</h1>
 </div>
 
 <div class="max-w-lg bg-white rounded-lg border border-gray-200 p-6">
-    <form method="POST" action="{{ $audience->exists ? route('sfp.staff.audiences.update', $audience) : route('sfp.staff.audiences.store') }}">
+    <form method="POST" action="{{ $audience->exists ? route('request.staff.audiences.update', $audience) : route('request.staff.audiences.store') }}">
         @csrf
         @if($audience->exists) @method('PUT') @endif
 
@@ -42,7 +42,7 @@
             <button type="submit" class="px-5 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                 {{ $audience->exists ? 'Save Changes' : 'Create Audience' }}
             </button>
-            <a href="{{ route('sfp.staff.audiences.index') }}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Cancel</a>
+            <a href="{{ route('request.staff.audiences.index') }}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Cancel</a>
         </div>
     </form>
 </div>

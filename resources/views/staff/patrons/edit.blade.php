@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('sfp.staff.patrons.show', $patron) }}"
+    <a href="{{ route('request.staff.patrons.show', $patron) }}"
        class="text-sm text-blue-600 hover:underline">&larr; {{ $patron->full_name }}</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900">Edit Patron</h1>
@@ -16,7 +16,7 @@
     <div class="bg-white rounded-lg border border-gray-200 p-6">
         <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Patron Fields</h2>
 
-        <form method="POST" action="{{ route('sfp.staff.patrons.update', $patron) }}">
+        <form method="POST" action="{{ route('request.staff.patrons.update', $patron) }}">
             @csrf
             @method('PUT')
 
@@ -86,7 +86,7 @@
                         class="px-5 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                     Save Changes
                 </button>
-                <a href="{{ route('sfp.staff.patrons.show', $patron) }}"
+                <a href="{{ route('request.staff.patrons.show', $patron) }}"
                    class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
                     Cancel
                 </a>
@@ -115,7 +115,7 @@
             @endif
         </div>
 
-        <form method="POST" action="{{ route('sfp.staff.patrons.retrigger-polaris', $patron) }}">
+        <form method="POST" action="{{ route('request.staff.patrons.retrigger-polaris', $patron) }}">
             @csrf
             <button type="submit"
                     class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded border border-gray-300 hover:bg-gray-200"

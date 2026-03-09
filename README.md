@@ -71,7 +71,7 @@ php artisan vendor:publish --tag=sfp-views       # resources/views/vendor/sfp/ (
 After publishing, edit `config/sfp.php`:
 
 ```php
-'route_prefix' => 'sfp',   // Patron form at /sfp, staff at /sfp/staff
+'route_prefix' => 'request',   // Patron form at /request, staff at /request/staff (SFP and ILL under request umbrella)
 'isbndb' => [
     'key' => env('ISBNDB_API_KEY'),
 ],
@@ -106,7 +106,7 @@ PAPI_PASSWORD=
 ENTRA_CLIENT_ID=
 ENTRA_CLIENT_SECRET=
 ENTRA_TENANT_ID=
-ENTRA_REDIRECT_URI="${APP_URL}/sfp/auth/callback"
+ENTRA_REDIRECT_URI="${APP_URL}/request/auth/callback"
 ```
 
 ---
@@ -142,18 +142,19 @@ After install, the package registers these routes under your configured prefix (
 
 | URL | Name | Description |
 |-----|------|-------------|
-| `GET /{prefix}/` | `sfp.form` | Patron-facing SFP form (Livewire) |
-| `GET /{prefix}/staff/requests` | `sfp.staff.requests.index` | Staff request list |
-| `GET /{prefix}/staff/requests/{id}` | `sfp.staff.requests.show` | Request detail |
-| `PATCH /{prefix}/staff/requests/{id}/status` | `sfp.staff.requests.status` | Update status |
-| `GET /{prefix}/staff/settings` | `sfp.staff.settings.index` | Admin settings |
+| `GET /{prefix}/` | `request.form` | Patron-facing SFP form (Livewire) |
+| `GET /ill` | `request.ill.form` | Patron-facing ILL form (Livewire) |
+| `GET /{prefix}/staff/requests` | `request.staff.requests.index` | Staff request list |
+| `GET /{prefix}/staff/requests/{id}` | `request.staff.requests.show` | Request detail |
+| `PATCH /{prefix}/staff/requests/{id}/status` | `request.staff.requests.status` | Update status |
+| `GET /{prefix}/staff/settings` | `request.staff.settings.index` | Admin settings |
 | (and CRUD routes for material-types, audiences, statuses, users, groups) | | Admin only |
 
 ---
 
 ## Staff Authentication
 
-The package does **not** ship login/logout routes. Protect staff routes using the host application's authentication by configuring `sfp.staff_middleware` (default: `['web', 'auth']`).
+The package does **not** ship login/logout routes. Protect staff routes using the host application's authentication by configuring `sfp.staff_middleware` in `config/sfp.php` (default: `['web', 'auth']`).
 
 When the authenticated user is **not** the package `Dcplibrary\Sfp\Models\User`, the package maps the staff user to `sfp_users` by **email** for authorization scoping and audit logging.
 

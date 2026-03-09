@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Staff') — SFP</title>
-    <link rel="stylesheet" href="{{ route('sfp.assets.css') }}">
+    <link rel="stylesheet" href="{{ route('request.assets.css') }}">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css">
     <script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js"></script>
@@ -22,13 +22,13 @@
 <nav class="bg-white border-b border-gray-200 px-6 flex items-center gap-6 h-14">
 
     {{-- Brand --}}
-    <x-sfp::logo :href="route('sfp.staff.requests.index')" />
+    <x-sfp::logo :href="route('request.staff.requests.index')" />
 
     {{-- Primary nav — visible to all --}}
     <div class="flex items-center gap-1">
-        <a href="{{ route('sfp.staff.requests.index') }}"
+        <a href="{{ route('request.staff.requests.index') }}"
            class="px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  {{ request()->routeIs('sfp.staff.requests.*') && request()->get('kind') !== 'ill' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                  {{ request()->routeIs('request.staff.requests.*') && request()->get('kind') !== 'ill' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
             SFP
         </a>
         @php
@@ -48,20 +48,20 @@
             $showIllTab = $isAdmin || $openAccess || $inIllGroup;
         @endphp
         @if($showIllTab)
-            <a href="{{ route('sfp.staff.requests.index', ['kind' => 'ill']) }}"
+            <a href="{{ route('request.staff.requests.index', ['kind' => 'ill']) }}"
                class="px-3 py-2 rounded-md text-sm font-medium transition-colors
-                      {{ request()->routeIs('sfp.staff.requests.*') && request()->get('kind') === 'ill' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                      {{ request()->routeIs('request.staff.requests.*') && request()->get('kind') === 'ill' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
                 ILL
             </a>
         @endif
-        <a href="{{ route('sfp.staff.patrons.index') }}"
+        <a href="{{ route('request.staff.patrons.index') }}"
            class="px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  {{ request()->routeIs('sfp.staff.patrons.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                  {{ request()->routeIs('request.staff.patrons.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
             Patrons
         </a>
-        <a href="{{ route('sfp.staff.titles.index') }}"
+        <a href="{{ route('request.staff.titles.index') }}"
            class="px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  {{ request()->routeIs('sfp.staff.titles.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                  {{ request()->routeIs('request.staff.titles.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
             Titles
         </a>
     </div>
@@ -117,9 +117,9 @@
                 {{-- Settings — admin only --}}
                 @if($isAdmin)
                 <div class="py-1 border-b border-gray-100">
-                    <a href="{{ route('sfp.staff.settings.index') }}"
+                    <a href="{{ route('request.staff.settings.index') }}"
                        class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors
-                              {{ request()->routeIs('sfp.staff.settings.*', 'sfp.staff.material-types.*', 'sfp.staff.audiences.*', 'sfp.staff.statuses.*', 'sfp.staff.users.*', 'sfp.staff.groups.*') ? 'font-semibold' : '' }}">
+                              {{ request()->routeIs('request.staff.settings.*', 'request.staff.material-types.*', 'request.staff.audiences.*', 'request.staff.statuses.*', 'request.staff.users.*', 'request.staff.groups.*') ? 'font-semibold' : '' }}">
                         <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>

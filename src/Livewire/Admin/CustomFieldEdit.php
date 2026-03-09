@@ -59,7 +59,7 @@ class CustomFieldEdit extends Component
     public function addRule(): void
     {
         $this->condition['rules'][] = [
-            'field'    => 'borrow_type',
+            'field'    => 'material_type',
             'operator' => 'in',
             'values'   => [],
         ];
@@ -125,27 +125,36 @@ class CustomFieldEdit extends Component
         ]);
 
         session()->flash('success', "'{$this->label}' updated.");
-        $this->redirect(route('sfp.staff.settings.custom-fields'));
+        $this->redirect(route('request.staff.settings.custom-fields'));
     }
 
     public function render()
     {
         $field = CustomField::findOrFail($this->fieldId);
 
-        // Condition fields: any select/radio custom field keys are eligible controllers.
-        $conditionFieldKeys = CustomField::query()
-            ->whereIn('type', ['select', 'radio'])
-            ->orderBy('sort_order')
-            ->pluck('key')
-            ->all();
+        // Condition fields: material_type (ILL uses MaterialType) plus any select/radio custom field keys.
+        $conditionFieldKeys = array_values(array_unique(array_merge(
+            ['material_type'],
+            CustomField::query()
+                ->whereIn('type', ['select', 'radio'])
+                ->orderBy('sort_order')
+                ->pluck('key')
+                ->all()
+        )));
 
-        // For rule value pickers we currently support borrow_type values (ILL) first.
-        // Additional controllers will show their values if they have options.
+        // For rule value pickers: custom field options, plus material_type from MaterialType (for ILL conditions).
         $optionsByKey = CustomField::query()
             ->whereIn('key', $conditionFieldKeys)
             ->with(['options' => fn ($q) => $q->active()->ordered()])
             ->get()
             ->mapWithKeys(fn (CustomField $f) => [$f->key => $f->options->pluck('name', 'slug')->all()])
+            ->all();
+
+        $optionsByKey['material_type'] = \Dcplibrary\Sfp\Models\MaterialType::query()
+            ->where('active', true)
+            ->ordered()
+            ->get()
+            ->pluck('name', 'slug')
             ->all();
 
         return view('sfp::livewire.admin.custom-field-edit', [

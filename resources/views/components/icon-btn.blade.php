@@ -2,7 +2,7 @@
     Icon button — renders as <a href> for navigation or <button> for Livewire/Alpine actions.
 
     Usage (link):
-        <x-sfp::icon-btn :href="route('sfp.staff.statuses.edit', $status)" variant="edit" label="Edit" />
+        <x-sfp::icon-btn :href="route('request.staff.statuses.edit', $status)" variant="edit" label="Edit" />
 
     Usage (Livewire button — no href):
         <x-sfp::icon-btn variant="edit" label="Edit" wire:click="openEdit({{ $id }})" />

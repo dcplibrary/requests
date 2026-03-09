@@ -2,7 +2,7 @@
 @section('title', 'Edit User')
 @section('settings-content')
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('sfp.staff.users.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Users</a>
+    <a href="{{ route('request.staff.users.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Users</a>
     <span class="text-gray-300">/</span>
     <h1 class="text-xl font-bold text-gray-900">Edit User</h1>
 </div>
@@ -13,7 +13,7 @@
         <p class="text-sm text-gray-500">{{ $user->email }}</p>
     </div>
 
-    <form method="POST" action="{{ route('sfp.staff.users.update', $user) }}">
+    <form method="POST" action="{{ route('request.staff.users.update', $user) }}">
         @csrf @method('PUT')
 
         <div class="space-y-4">
@@ -50,7 +50,7 @@
 
         <div class="mt-6 flex gap-3">
             <button type="submit" class="px-5 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">Save Changes</button>
-            <a href="{{ route('sfp.staff.users.index') }}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Cancel</a>
+            <a href="{{ route('request.staff.users.index') }}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Cancel</a>
         </div>
     </form>
 </div>

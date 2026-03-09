@@ -35,9 +35,9 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Applies to</label>
                 <select wire:model="requestKind" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-                    <option value="sfp">sfp</option>
-                    <option value="ill">ill</option>
-                    <option value="both">both</option>
+                    <option value="sfp">Suggest for Purchase</option>
+                    <option value="ill">Interlibrary Loan</option>
+                    <option value="both">Both</option>
                 </select>
             </div>
 
@@ -146,7 +146,7 @@
                 class="px-5 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
             Save Changes
         </button>
-        <a href="{{ route('sfp.staff.settings.custom-fields') }}"
+        <a href="{{ route('request.staff.settings.custom-fields') }}"
            class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
             Cancel
         </a>

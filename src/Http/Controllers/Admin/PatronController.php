@@ -105,7 +105,7 @@ class PatronController extends Controller
         $patron->update($data);
 
         return redirect()
-            ->route('sfp.staff.patrons.show', $patron)
+            ->route('request.staff.patrons.show', $patron)
             ->with('success', 'Patron updated.');
     }
 
@@ -230,7 +230,7 @@ class PatronController extends Controller
         });
 
         return redirect()
-            ->route('sfp.staff.patrons.show', $winner)
+            ->route('request.staff.patrons.show', $winner)
             ->with('success', "Patron #{$loser->id} merged. {$movedCount} request(s) moved to this record.");
     }
 

@@ -40,8 +40,8 @@
                     {{ $user->last_login_at?->diffForHumans() ?? '—' }}
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-sfp::icon-btn :href="route('sfp.staff.users.edit', $user)" variant="edit" label="Edit" />
-                    <x-sfp::icon-btn :href="route('sfp.staff.users.remove', $user)" variant="remove" label="Remove" />
+                    <x-sfp::icon-btn :href="route('request.staff.users.edit', $user)" variant="edit" label="Edit" />
+                    <x-sfp::icon-btn :href="route('request.staff.users.remove', $user)" variant="remove" label="Remove" />
                 </td>
             </tr>
             @empty

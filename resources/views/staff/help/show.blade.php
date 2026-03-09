@@ -9,12 +9,12 @@
         <p class="text-sm text-gray-500 mt-1">Opens in a new tab from the Help icon.</p>
     </div>
     <div class="flex items-center gap-2">
-        <a href="{{ route('sfp.staff.help', ['page' => 'user']) }}"
+        <a href="{{ route('request.staff.help', ['page' => 'user']) }}"
            class="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 {{ $page === 'user' ? 'bg-gray-50' : '' }}">
             User help
         </a>
         @if(auth()->user() && (method_exists(auth()->user(), 'isAdmin') ? auth()->user()->isAdmin() : (auth()->user()->role ?? null) === 'admin'))
-        <a href="{{ route('sfp.staff.help', ['page' => 'admin']) }}"
+        <a href="{{ route('request.staff.help', ['page' => 'admin']) }}"
            class="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 {{ $page === 'admin' ? 'bg-gray-50' : '' }}">
             Admin docs
         </a>

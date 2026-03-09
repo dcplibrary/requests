@@ -18,14 +18,14 @@ The package ships its own compiled CSS — no host app configuration required.
 ### Asset route (Horizon/Telescope pattern)
 `SfpServiceProvider::registerRoutes()` registers:
 ```
-GET /sfp/assets/css  →  named route: sfp.assets.css
+GET /{prefix}/assets/css  →  named route: request.assets.css
 ```
 This streams `resources/dist/sfp.css` directly from inside `vendor/dcplibrary/sfp/` with a 1-year cache header. No files are copied to the host app's `public/` directory.
 
 ### Layout files
 All four layout files load CSS via the named route:
 ```blade
-<link rel="stylesheet" href="{{ route('sfp.assets.css') }}">
+<link rel="stylesheet" href="{{ route('request.assets.css') }}">
 ```
 **Never** use `asset('vendor/sfp/css/sfp.css')` — that requires vendor:publish and is the old pattern.
 

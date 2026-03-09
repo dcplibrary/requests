@@ -15,27 +15,27 @@ class PatronRequests extends Component
     public function mount(): void
     {
         if (! session()->has('sfp_authenticated_barcode')) {
-            $this->redirect(route('sfp.form'));
+            $this->redirect(route('request.form'));
         }
     }
 
     public function logout(): void
     {
         session()->forget('sfp_authenticated_barcode');
-        $this->redirect(route('sfp.form'));
+        $this->redirect(route('request.form'));
     }
 
     public function convertToIll(int $requestId): void
     {
         $barcode = session('sfp_authenticated_barcode');
         if (! $barcode) {
-            $this->redirect(route('sfp.form'));
+            $this->redirect(route('request.form'));
             return;
         }
 
         $patron = Patron::where('barcode', $barcode)->first();
         if (! $patron) {
-            $this->redirect(route('sfp.form'));
+            $this->redirect(route('request.form'));
             return;
         }
 

@@ -105,7 +105,7 @@ The service provider is auto-discovered via `composer.json` `extra.laravel.provi
 
 1. User clicks "Sign in with Microsoft" → authenticates via Azure Entra ID.
 2. `dcplibrary/entra-sso` syncs their Azure group membership and sets `role` on the `users` table using `ENTRA_GROUP_ROLES`.
-3. The SFP `sfp.role` middleware runs on every staff route. If the user has no `sfp_users` record but their `users.role` is `admin` or `selector`, a `sfp_users` record is **auto-provisioned** (active, same role).
+3. The package `request.role` middleware runs on every staff route. If the user has no `sfp_users` record but their `users.role` is `admin` or `selector`, a `sfp_users` record is **auto-provisioned** (active, same role).
 4. Users with any other role (or no Entra group match) see the no-access page.
 
 Admins can then manage the user's selector group assignments via **Settings → Users**.
@@ -122,7 +122,7 @@ Or manually create `config/sfp.php` in the host app:
 
 ```php
 return [
-    'route_prefix'    => env('SFP_ROUTE_PREFIX', 'sfp'),
+    'route_prefix'    => env('SFP_ROUTE_PREFIX', 'request'),
     'middleware'       => ['web'],
     'staff_middleware' => ['web', 'auth'],
     'guard'            => env('SFP_GUARD', null),
@@ -141,7 +141,7 @@ return [
 | Key | Default | Purpose |
 |-----|---------|---------|
 | `middleware` | `['web']` | Applied to the public patron form route |
-| `staff_middleware` | `['web', 'auth']` | Applied to all staff routes; `sfp.role` is always appended automatically |
+| `staff_middleware` | `['web', 'auth']` | Applied to all staff routes; `request.role` is always appended automatically |
 
 ## Migrations & Seeders
 
