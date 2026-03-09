@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.6.0](https://github.com/dcplibrary/sfp/compare/v2.5.2...v2.6.0) (2026-03-09)
+
+
+### Features
+
+* mark shared fields as global and make unique fields custom ([4dd96a7](https://github.com/dcplibrary/sfp/commit/4dd96a7ad9830ccf3d73fc95cc4670cac7765dbf))
+
 ## [2.5.2](https://github.com/dcplibrary/sfp/compare/v2.5.1...v2.5.2) (2026-03-09)
 
 
