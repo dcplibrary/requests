@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.7.0](https://github.com/dcplibrary/sfp/compare/v2.6.2...v2.7.0) (2026-03-09)
+
+
+### Features
+
+* add commands to seed dcpl defaults and to backup and restore users ([364d0fb](https://github.com/dcplibrary/sfp/commit/364d0fbb0ab6f40edb9d869a05d3dba9cae8cb90))
+
 ## [2.6.2](https://github.com/dcplibrary/sfp/compare/v2.6.1...v2.6.2) (2026-03-09)
 
 
