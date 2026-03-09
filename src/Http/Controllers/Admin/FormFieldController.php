@@ -3,6 +3,7 @@
 namespace Dcplibrary\Sfp\Http\Controllers\Admin;
 
 use Dcplibrary\Sfp\Http\Controllers\Controller;
+use Dcplibrary\Sfp\Livewire\Admin\FormFormFieldOptionsManager;
 use Dcplibrary\Sfp\Models\Form;
 use Dcplibrary\Sfp\Models\FormField;
 use Dcplibrary\Sfp\Models\FormFormField;
@@ -15,7 +16,7 @@ class FormFieldController extends Controller
     }
 
     /**
-     * Edit this field’s configuration for one form only (SFP or ILL).
+     * Edit this field's configuration for one form only (SFP or ILL).
      * Edits the pivot (required, visible, conditional_logic); base field is unchanged.
      * Creates the pivot row if missing (e.g. seeder not run or new field).
      */
@@ -46,6 +47,28 @@ class FormFieldController extends Controller
             'formSlug'   => $form,
             'formLabel'  => $formLabel,
         ]);
+    }
+
+    /**
+     * Edit a single option's per-form configuration.
+     * Only valid for option-type fields (material_type, audience, genre, console).
+     */
+    public function editForFormOption(FormField $field, string $form, string $slug)
+    {
+        abort_unless(in_array($form, ['sfp', 'ill'], true), 404);
+
+        $modelClass = FormFormFieldOptionsManager::modelClassForKey($field->key);
+        abort_unless($modelClass !== null, 404, 'This field does not have per-form option overrides.');
+
+        $option = $modelClass::where('slug', $slug)->first();
+        abort_unless($option !== null, 404);
+
+        $formLabel  = $form === 'ill' ? 'Inter-Library Loan' : 'Suggest for Purchase';
+        $optionName = $option->name;
+
+        return view('sfp::staff.form-fields.edit-option-for-form', compact(
+            'field', 'form', 'formLabel', 'optionName', 'formLabel'
+        ) + ['formSlug' => $form, 'optionSlug' => $slug]);
     }
 
     /** Edit the base field (label, key, active, token) — shared across forms. */

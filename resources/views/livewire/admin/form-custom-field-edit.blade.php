@@ -1,19 +1,17 @@
 <div class="space-y-6">
 
-    {{-- Label (per-form override) --}}
+    {{-- Label override --}}
     <div class="max-w-lg bg-white rounded-lg border border-gray-200 p-6">
-        <div class="space-y-4">
-            <div>
-                <label for="pff_label" class="block text-sm font-medium text-gray-700 mb-1">Label</label>
-                <input
-                    type="text"
-                    id="pff_label"
-                    wire:model="labelOverride"
-                    class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Override for this form only"
-                />
-                <p class="mt-1 text-xs text-gray-400">Leave blank to use the default label. Key and token are set on the <a href="{{ route('request.staff.settings.form-fields.edit', ['field' => $fieldId]) }}" class="text-blue-600 hover:underline">base field</a>.</p>
-            </div>
+        <div>
+            <label for="fcf_label" class="block text-sm font-medium text-gray-700 mb-1">Label</label>
+            <input
+                type="text"
+                id="fcf_label"
+                wire:model="labelOverride"
+                class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Override for this form only"
+            />
+            <p class="mt-1 text-xs text-gray-400">Leave blank to use the default label. Key, type, and token are set on the <a href="{{ route('request.staff.settings.custom-fields.edit', ['field' => $fieldId]) }}" class="text-blue-600 hover:underline">base field</a>.</p>
         </div>
     </div>
 
@@ -24,22 +22,22 @@
                 <input type="hidden" name="required" value="0">
                 <input
                     type="checkbox"
-                    id="pff_required"
+                    id="fcf_required"
                     wire:model="required"
                     class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <label for="pff_required" class="text-sm font-medium text-gray-700 cursor-pointer">Required</label>
+                <label for="fcf_required" class="text-sm font-medium text-gray-700 cursor-pointer">Required</label>
                 <span class="text-xs text-gray-400">— patron must complete this field before submitting</span>
             </div>
             <div class="flex items-center gap-2">
                 <input type="hidden" name="visible" value="0">
                 <input
                     type="checkbox"
-                    id="pff_visible"
+                    id="fcf_visible"
                     wire:model="visible"
                     class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <label for="pff_visible" class="text-sm font-medium text-gray-700 cursor-pointer">Visible</label>
+                <label for="fcf_visible" class="text-sm font-medium text-gray-700 cursor-pointer">Visible</label>
                 <span class="text-xs text-gray-400">— show this field on this form</span>
             </div>
         </div>
@@ -111,24 +109,23 @@
             </div>
             @endforeach
             <button type="button" wire:click="addRule" class="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 focus:outline-none">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                 Add condition
             </button>
         </div>
         @endif
     </div>
 
-    {{-- Per-form option overrides (material_type, audience, genre, console only) --}}
-    @if($hasOptions && $formId > 0)
+    {{-- Per-form option overrides (select / radio custom fields only) --}}
+    @if($hasOptions)
     <div class="bg-white rounded-lg border border-gray-200 p-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-sm font-semibold text-gray-700">Options</h2>
             <span class="text-xs text-gray-400">Visibility and order are per-form; Edit sets a label override for this form.</span>
         </div>
-        <livewire:sfp-admin-form-form-field-options
-            :formId="$formId"
+        <livewire:sfp-admin-form-custom-field-options
+            :pivotId="$pivotId"
             :fieldId="$fieldId"
-            :fieldKey="$fieldKey"
             :formSlug="$formSlug"
         />
     </div>

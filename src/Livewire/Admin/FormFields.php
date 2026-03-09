@@ -64,7 +64,7 @@ class FormFields extends Component
                 'has_condition'      => ! empty($p->conditional_logic['rules'] ?? $cf->condition['rules'] ?? null),
                 'condition'          => $p->conditional_logic ?? $cf->condition ?? ['match' => 'all', 'rules' => []],
                 'sort_order'         => $p->sort_order,
-                'edit_url'           => $this->customFieldEditUrl($cf->id),
+                'edit_url'           => $this->customFieldEditUrl($cf->id, 'sfp'),
             ];
         }
         $this->sfpFields = collect($sfpRows)->sortBy('sort_order')->values()->toArray();
@@ -98,7 +98,7 @@ class FormFields extends Component
                 'has_condition'      => ! empty($p->conditional_logic['rules'] ?? $cf->condition['rules'] ?? null),
                 'condition'          => $p->conditional_logic ?? $cf->condition ?? ['match' => 'all', 'rules' => []],
                 'sort_order'         => $p->sort_order,
-                'edit_url'           => $this->customFieldEditUrl($cf->id),
+                'edit_url'           => $this->customFieldEditUrl($cf->id, 'ill'),
             ];
         }
         $this->illFields = collect($illRows)->sortBy('sort_order')->values()->toArray();
@@ -138,11 +138,11 @@ class FormFields extends Component
         return URL::to($path);
     }
 
-    /** Build URL for custom field edit (avoids relying on named route). */
-    private function customFieldEditUrl(int $fieldId): string
+    /** Build URL for per-form custom field edit (avoids relying on named route). */
+    private function customFieldEditUrl(int $fieldId, string $formSlug): string
     {
         $prefix = trim(config('sfp.route_prefix', 'request'), '/');
-        $path = '/' . $prefix . '/staff/settings/custom-fields/' . $fieldId . '/edit';
+        $path = '/' . $prefix . '/staff/settings/custom-fields/' . $fieldId . '/form/' . $formSlug . '/edit';
 
         return URL::to($path);
     }

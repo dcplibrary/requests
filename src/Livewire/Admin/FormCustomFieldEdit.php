@@ -3,32 +3,36 @@
 namespace Dcplibrary\Sfp\Livewire\Admin;
 
 use Dcplibrary\Sfp\Models\Audience;
-use Dcplibrary\Sfp\Models\Form;
-use Dcplibrary\Sfp\Models\FormField;
-use Dcplibrary\Sfp\Models\FormFormField;
+use Dcplibrary\Sfp\Models\CustomField;
+use Dcplibrary\Sfp\Models\FormCustomField;
 use Dcplibrary\Sfp\Models\MaterialType;
 use Livewire\Component;
 
 /**
- * Edit a form field’s configuration for one form only (SFP or ILL).
- * Edits the pivot: required, visible, conditional_logic. Base field is not changed.
+ * Edit a custom field's per-form configuration (SFP or ILL).
+ *
+ * Edits the form_custom_fields pivot: label override, required, visible,
+ * and conditional_logic.  The base field definition (key, type, etc.) is
+ * unchanged; for that use the global custom field edit page.
+ *
+ * For select/radio fields the component also embeds FormCustomFieldOptionsManager
+ * to let admins configure per-form option visibility and order.
  */
-class FormFormFieldEdit extends Component
+class FormCustomFieldEdit extends Component
 {
-    public int $pivotId;
-    public int $fieldId;
-    public string $formSlug  = '';
-    public string $fieldKey  = '';
-    public bool   $hasOptions = false;
-    public int    $formId    = 0;
+    public int    $pivotId;
+    public int    $fieldId;
+    public string $formSlug    = '';
+    public string $fieldType   = '';
+    public bool   $hasOptions  = false;
 
     public string $labelOverride = '';
-    public bool $required = false;
-    public bool $visible = true;
+    public bool   $required      = false;
+    public bool   $visible       = true;
 
     /** @var array{match: string, rules: array<int, array<string, mixed>>} */
-    public array $condition = ['match' => 'all', 'rules' => []];
-    public bool $hasCondition = false;
+    public array $condition    = ['match' => 'all', 'rules' => []];
+    public bool  $hasCondition = false;
 
     public function mount(int $pivotId, int $fieldId, string $formSlug): void
     {
@@ -36,23 +40,18 @@ class FormFormFieldEdit extends Component
         $this->fieldId  = $fieldId;
         $this->formSlug = $formSlug;
 
-        $pivot = FormFormField::findOrFail($pivotId);
+        $pivot = FormCustomField::findOrFail($pivotId);
         $this->labelOverride = (string) ($pivot->label_override ?? '');
         $this->required      = (bool) $pivot->required;
         $this->visible       = (bool) $pivot->visible;
         $this->condition     = $pivot->conditional_logic ?? ['match' => 'all', 'rules' => []];
         $this->hasCondition  = ! empty($this->condition['rules']);
 
-        // Determine if this field has options (material_type, audience, genre, console).
-        $field = FormField::find($fieldId);
+        $field = CustomField::find($fieldId);
         if ($field) {
-            $this->fieldKey  = $field->key;
-            $this->hasOptions = in_array($field->key, FormFormFieldOptionsManager::OPTION_KEYS, true);
+            $this->fieldType  = $field->type;
+            $this->hasOptions = in_array($field->type, ['select', 'radio'], true);
         }
-
-        // Resolve the Form model ID needed by the options manager.
-        $formModel    = Form::bySlug($formSlug);
-        $this->formId = $formModel?->id ?? 0;
     }
 
     public function save(): void
@@ -62,8 +61,8 @@ class FormFormFieldEdit extends Component
             : null;
 
         $labelOverride = trim($this->labelOverride);
-        FormFormField::where('id', $this->pivotId)->update([
-            'label_override'     => $labelOverride !== '' ? $labelOverride : null,
+        FormCustomField::where('id', $this->pivotId)->update([
+            'label_override'    => $labelOverride !== '' ? $labelOverride : null,
             'required'          => $this->required,
             'visible'           => $this->visible,
             'conditional_logic' => $conditionalLogic ? json_encode($conditionalLogic) : null,
@@ -72,6 +71,8 @@ class FormFormFieldEdit extends Component
         session()->flash('success', 'Settings for this form updated.');
         $this->redirect(route('request.staff.settings.form-fields'));
     }
+
+    // ── Conditional logic ─────────────────────────────────────────────────────
 
     public function toggleHasCondition(): void
     {
@@ -124,7 +125,7 @@ class FormFormFieldEdit extends Component
 
     public function render()
     {
-        return view('sfp::livewire.admin.form-form-field-edit', [
+        return view('sfp::livewire.admin.form-custom-field-edit', [
             'materialTypeOptions' => MaterialType::orderBy('sort_order')->pluck('name', 'slug'),
             'audienceOptions'     => Audience::orderBy('sort_order')->pluck('name', 'slug'),
         ]);

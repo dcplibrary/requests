@@ -16,7 +16,7 @@ return new class extends Migration
             $table->text('value_text')->nullable();   // for text/textarea/date/number (stringy)
             $table->timestamps();
 
-            $table->unique(['request_id', 'custom_field_id']);
+            $table->unique(['request_id', 'custom_field_id'], 'sfp_rcfv_request_custom_field_unique');
             $table->index(['custom_field_id', 'value_slug'], 'sfp_req_custom_field_value_slug');
             $table->index(['custom_field_id'], 'sfp_req_custom_field_id');
         });

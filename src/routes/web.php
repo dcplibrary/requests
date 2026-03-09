@@ -100,9 +100,12 @@ Route::group([
             Route::post('/settings/notifications/test',             [SettingController::class, 'sendTestEmail'])->name('settings.notifications.test');
             Route::get('/settings/form-fields',              [FormFieldController::class, 'index'])->name('settings.form-fields');
             Route::get('/settings/form-fields/{field}/form/{form}/edit', [FormFieldController::class, 'editForForm'])->name('settings.form-fields.edit-for-form')->where('form', 'sfp|ill');
+            Route::get('/settings/form-fields/{field}/form/{form}/options/{slug}/edit', [FormFieldController::class, 'editForFormOption'])->name('settings.form-fields.edit-for-form-option')->where('form', 'sfp|ill');
             Route::get('/settings/form-fields/{field}/edit', [FormFieldController::class, 'edit'])->name('settings.form-fields.edit');
             Route::get('/settings/custom-fields',              [CustomFieldController::class, 'index'])->name('settings.custom-fields');
             Route::get('/settings/custom-fields/{field}/edit', [CustomFieldController::class, 'edit'])->name('settings.custom-fields.edit');
+            Route::get('/settings/custom-fields/{field}/form/{form}/edit', [CustomFieldController::class, 'editForForm'])->name('settings.custom-fields.edit-for-form')->where('form', 'sfp|ill');
+            Route::get('/settings/custom-fields/{field}/form/{form}/options/{optionId}/edit', [CustomFieldController::class, 'editForFormOption'])->name('settings.custom-fields.edit-for-form-option')->where(['form' => 'sfp|ill', 'optionId' => '[0-9]+']);
             Route::patch('/settings',                [SettingController::class, 'update'])->name('settings.update');
 
             Route::get('/backups',                  [BackupController::class, 'index'])->name('backups.index');
