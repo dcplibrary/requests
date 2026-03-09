@@ -2,7 +2,10 @@
 
 namespace Dcplibrary\Sfp;
 
+use Dcplibrary\Sfp\Console\Commands\SeedDefaultsCommand;
 use Dcplibrary\Sfp\Console\Commands\SfpBackupCommand;
+use Dcplibrary\Sfp\Console\Commands\UsersBackupCommand;
+use Dcplibrary\Sfp\Console\Commands\UsersRestoreCommand;
 use Dcplibrary\Sfp\Http\Middleware\RequireSfpRole;
 use Dcplibrary\Sfp\Livewire\Admin\FormFieldEdit;
 use Dcplibrary\Sfp\Livewire\Admin\FormFields as FormFieldsAdmin;
@@ -67,7 +70,10 @@ class SfpServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                SeedDefaultsCommand::class,
                 SfpBackupCommand::class,
+                UsersBackupCommand::class,
+                UsersRestoreCommand::class,
             ]);
         }
     }
