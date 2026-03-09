@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.5.2](https://github.com/dcplibrary/sfp/compare/v2.5.1...v2.5.2) (2026-03-09)
+
+
+### Bug Fixes
+
+* remove code using ill as a role instead of group-based access ([ee4c306](https://github.com/dcplibrary/sfp/commit/ee4c3068cf0ce37ea0abc320b0e6084b39c28c23))
+
 ## [2.5.1](https://github.com/dcplibrary/sfp/compare/v2.5.0...v2.5.1) (2026-03-09)
 
 
