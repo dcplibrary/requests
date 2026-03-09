@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SFP — Settings Guide</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      color: #1f2937;
+      background: #f3f4f6;
+    }
+
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: #1e293b;
+      color: #cbd5e1;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 28px 0 40px;
+    }
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      padding: 0 20px 8px;
+    }
+    .sidebar a {
+      display: block;
+      padding: 7px 20px;
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .sidebar a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .sidebar a.active { color: #fff; border-left-color: #3b82f6; background: rgba(59,130,246,.12); }
+    .sidebar .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #64748b;
+      padding: 18px 20px 4px;
+    }
+
+    /* ── Main ── */
+    main { flex: 1; max-width: 860px; padding: 48px 48px 80px; }
+
+    section { margin-bottom: 64px; }
+
+    h1 { font-size: 28px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    .subtitle { font-size: 15px; color: #64748b; margin-bottom: 40px; }
+
+    h2 {
+      font-size: 20px; font-weight: 700; color: #0f172a;
+      margin-bottom: 6px; padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    h3 { font-size: 15px; font-weight: 600; color: #334155; margin: 20px 0 6px; }
+
+    p { margin-bottom: 12px; color: #374151; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── Screenshot ── */
+    .screenshot {
+      margin: 18px 0 24px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    .screenshot img { display: block; width: 100%; height: auto; }
+    .screenshot figcaption {
+      padding: 8px 14px;
+      background: #f8fafc;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    /* ── Callout ── */
+    .callout {
+      display: flex; gap: 12px; padding: 14px 16px;
+      border-radius: 8px; margin: 16px 0; font-size: 14px;
+    }
+    .callout-icon { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+    .callout.tip    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    .callout.warn   { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+
+    /* ── Field table ── */
+    .field-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; }
+    .field-table th {
+      text-align: left; padding: 8px 12px;
+      background: #f8fafc; border-bottom: 2px solid #e2e8f0;
+      color: #374151; font-weight: 600;
+    }
+    .field-table td {
+      padding: 9px 12px; border-bottom: 1px solid #f1f5f9;
+      vertical-align: top; color: #374151;
+    }
+    .field-table tr:last-child td { border-bottom: none; }
+    .field-name { font-weight: 600; color: #0f172a; white-space: nowrap; }
+
+    /* ── Group header inside table ── */
+    .field-table .group-row td {
+      background: #f8fafc;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #64748b;
+      padding: 6px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    /* ── Step list ── */
+    ol.steps { padding-left: 0; list-style: none; counter-reset: step; }
+    ol.steps li {
+      counter-increment: step; display: flex; gap: 14px;
+      margin-bottom: 14px; align-items: flex-start;
+    }
+    ol.steps li::before {
+      content: counter(step);
+      flex-shrink: 0; width: 26px; height: 26px;
+      background: #3b82f6; color: #fff;
+      font-size: 13px; font-weight: 700; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 1px;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block; padding: 1px 8px;
+      border-radius: 999px; font-size: 12px; font-weight: 600;
+      vertical-align: middle;
+    }
+    .badge-admin    { background: #ede9fe; color: #6d28d9; }
+    .badge-selector { background: #dbeafe; color: #1d4ed8; }
+    .badge-active   { background: #d1fae5; color: #065f46; }
+    .badge-inactive { background: #f1f5f9; color: #64748b; }
+    .badge-terminal { background: #fce7f3; color: #9d174d; }
+
+    hr { border: none; border-top: 1px solid #e2e8f0; margin: 40px 0; }
+
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
+    .topbar-logo {
+      font-size: 13px; font-weight: 700; color: #3b82f6;
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 6px; padding: 3px 10px; letter-spacing: .04em;
+    }
+    .topbar-breadcrumb { font-size: 13px; color: #94a3b8; }
+
+    @media print { .sidebar { display: none; } main { padding: 24px; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="sidebar-title">SFP Help</div>
+    <a href="#overview">Overview</a>
+    <div class="section-label">Settings</div>
+    <a href="#general">General</a>
+    <a href="#notifications">Notifications</a>
+    <a href="#catalog">Catalog</a>
+    <a href="#material-types">Material Types</a>
+    <a href="#audiences">Audiences</a>
+    <a href="#statuses">Statuses</a>
+    <a href="#users">Users</a>
+    <a href="#groups">Groups</a>
+    <a href="#backups">Backups</a>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main>
+
+    <div class="topbar">
+      <span class="topbar-logo">SFP</span>
+      <span class="topbar-breadcrumb">Settings Guide</span>
+    </div>
+
+    <h1>Settings Guide</h1>
+    <p class="subtitle">How to configure SFP — messages patrons see, catalog connections, statuses, users, and more.</p>
+
+    <!-- ══ OVERVIEW ══ -->
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>Settings are only accessible to <span class="badge badge-admin">Admin</span> users. You get there from the navigation bar — look for your name or avatar in the top right, or go directly via <strong>Settings</strong> in the nav. The sidebar inside Settings lets you jump between nine areas: General, Notifications, Catalog, Material Types, Audiences, Statuses, Users, Groups, and Backups.</p>
+      <p>Most changes take effect immediately after saving. A few (like messaging changes) are visible to patrons as soon as you save.</p>
+    </section>
+
+    <hr>
+
+    <!-- ══ GENERAL ══ -->
+    <section id="general">
+      <h2>General</h2>
+      <p>Controls patron PIN login, request limits, ILL messaging, and the messages patrons see at key moments during submission.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/settings-general.jpg" alt="General Settings page">
+        <figcaption>General Settings — grouped into Patron, Request Limits, ILL, messaging, and ordering sections.</figcaption>
+      </figure>
+
+      <h3>Patron</h3>
+      <table class="field-table">
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Enable Patron PIN Login</td><td>When on, a "Sign in with your library card PIN" button appears on the submission form. Patrons can authenticate with their barcode and PIN to view their submitted requests and statuses at <code>/my-requests</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Request Limits</h3>
+      <p>Controls how many requests a patron can submit and how the limit window is measured.</p>
+      <table class="field-table">
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Request Limit Count</td><td>How many requests a patron can submit within the active window. Default: 5.</td></tr>
+          <tr><td class="field-name">Limit Window Type</td><td>
+            How the window is measured. Choose one of three modes:
+            <ul style="margin: 6px 0 0 16px; font-size: 14px;">
+              <li style="margin-bottom:4px"><strong>Rolling</strong> — counts requests within a sliding day window (e.g. any 30-day period). Configure the window length below.</li>
+              <li style="margin-bottom:4px"><strong>Calendar Month</strong> — resets on the same day every month (e.g. the 1st). Configure the reset day below.</li>
+              <li><strong>Calendar Week</strong> — resets every Monday.</li>
+            </ul>
+          </td></tr>
+          <tr><td class="field-name">Rolling Window Length</td><td>Only shown when <em>Rolling</em> is selected. The number of days in the sliding window. Default: 30.</td></tr>
+          <tr><td class="field-name">Monthly Reset Day</td><td>Only shown when <em>Calendar Month</em> is selected. The day of the month the counter resets (1–28). Default: 1.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>When a patron hits the limit, both the submission form and the My Requests view show a message indicating when they can submit again.</div>
+      </div>
+
+      <h3>ILL (Interlibrary Loan)</h3>
+      <table class="field-table">
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">ILL Age Threshold</td><td>If the item's publish date is older than this many days, the patron sees the ILL Warning Message during submission. Default: 730 days (2 years).</td></tr>
+          <tr><td class="field-name">ILL Warning Message</td><td>The message shown to patrons when their item is older than the threshold. Supports rich text formatting.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Messaging</h3>
+      <p>These are the messages patrons see at various points. All support rich text (bold, links, etc.).</p>
+      <table class="field-table">
+        <thead><tr><th>Setting</th><th>When it appears</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Submission Success Message</td><td>Shown after a patron's request is successfully submitted.</td></tr>
+          <tr><td class="field-name">Catalog Owned Message</td><td>Shown when the patron confirms the catalog already has the item — no request is created.</td></tr>
+          <tr><td class="field-name">Duplicate Request Message</td><td>Shown when a different patron has already requested the same title.</td></tr>
+          <tr><td class="field-name">Duplicate Self-Request Message</td><td>Shown when a patron submits something they've already requested themselves.</td></tr>
+          <tr><td class="field-name">Auto-Order Author Exclusion Message</td><td>Shown when a patron submits a future release by an author on the auto-order exclusion list — no request is created.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Auto-Order Author Exclusions</h3>
+      <p>A plain-text list of author names, one per line. When a patron submits a title with a future release date and the author matches this list, SFP shows the exclusion message instead of creating a request. This is useful for high-demand authors whose new titles you always pre-order automatically.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The exclusion only triggers when the item has a <em>specific</em> future release date (like 2025-09-15) — not just a year. Vague dates won't trigger it.</div>
+      </div>
+
+      <h3>Syndetics</h3>
+      <table class="field-table">
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Syndetics Client ID</td><td>Your library's Syndetics client ID, used to display book cover images during patron submission.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <hr>
+
+    <!-- ══ NOTIFICATIONS ══ -->
+    <section id="notifications">
+      <h2>Notifications</h2>
+      <p>Controls all automated emails SFP sends — to selectors when new requests arrive, and to patrons when their request status changes.</p>
+
+      <h3>Master switch</h3>
+      <table class="field-table">
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Enable Notifications</td><td>Global on/off for all SFP emails. Turn this off to silence everything without touching individual settings.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Staff routing emails</h3>
+      <p>Sent to selector groups when a new request is submitted. Routing uses the request's material type and audience to find the matching group(s) and sends to each group's configured email address.</p>
+      <table class="field-table">
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Enable Staff Routing Emails</td><td>Turn off to stop routing emails without disabling patron notifications.</td></tr>
+          <tr><td class="field-name">Staff Routing — Subject</td><td>Subject line for routing emails. Supports placeholders like <code>{title}</code>, <code>{author}</code>, <code>{material_type}</code>.</td></tr>
+          <tr><td class="field-name">Staff Routing — Email Body</td><td>HTML body for routing emails. Leave blank to use the built-in default template.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Patron status emails</h3>
+      <p>Sent to the patron when their request moves to a status that has <strong>Notify Patron</strong> checked. The patron must have an email address on file.</p>
+      <table class="field-table">
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Enable Patron Status Emails</td><td>Turn off to stop patron emails without disabling staff routing.</td></tr>
+          <tr><td class="field-name">Patron Status — Subject</td><td>Subject line for patron status emails. Supports the same placeholders as staff routing.</td></tr>
+          <tr><td class="field-name">Patron Status — Email Body</td><td>HTML body for patron emails. Leave blank to use the built-in default template.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Available placeholders for subjects and bodies: <code>{title}</code>, <code>{author}</code>, <code>{patron_name}</code>, <code>{patron_first_name}</code>, <code>{material_type}</code>, <code>{audience}</code>, <code>{status}</code>, <code>{submitted_date}</code>, <code>{request_url}</code>.</div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>To control which statuses trigger a patron email, edit the status under <strong>Settings → Statuses</strong> and check the <strong>Notify Patron</strong> option on that status.</div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ══ CATALOG ══ -->
+    <section id="catalog">
+      <h2>Catalog</h2>
+      <p>Controls how SFP connects to your catalog and external metadata sources during patron submission.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/settings-catalog.jpg" alt="Catalog Settings page">
+        <figcaption>Catalog Settings — catalog search, ISBNdb, and BiblioCommons Format Labels.</figcaption>
+      </figure>
+
+      <h3>Catalog Search</h3>
+      <table class="field-table">
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Enable Catalog Search</td><td>When on, SFP searches the catalog during submission so patrons can be redirected to place a hold if the item is already owned.</td></tr>
+          <tr><td class="field-name">Bibliocommons Library Slug</td><td>Your library's subdomain on Bibliocommons (e.g. <code>dcpl</code> for dcpl.bibliocommons.com).</td></tr>
+          <tr><td class="field-name">Catalog Search URL Template</td><td>The URL pattern used to link patrons to catalog search results. Uses <code>{slug}</code> and <code>{query}</code> as placeholders.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>ISBNdb</h3>
+      <table class="field-table">
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Enable ISBNdb Search</td><td>When on, SFP looks up the title in ISBNdb after submission to enrich the record with ISBN, publisher, and publication date. Only runs when the catalog search returns no results.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Post-Submit Processing Mode</h3>
+      <table class="field-table">
+        <thead><tr><th>Value</th><th>Behavior</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">wait</td><td>The patron's browser waits on the page while catalog and ISBNdb lookups run. Fastest feedback for the patron.</td></tr>
+          <tr><td class="field-name">email</td><td>The patron sees a confirmation immediately and lookups run in the background. A follow-up email is sent when processing completes.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>BiblioCommons Format Labels</h3>
+      <p>Bibliocommons returns raw format codes (like <code>BK</code> or <code>MUSIC_CD</code>) in catalog results. This table lets you map those codes to friendlier display labels shown to patrons (e.g. <code>BK</code> → <em>Book</em>). Click <strong>Remove</strong> to delete a mapping, or use the form at the bottom to add a new one.</p>
+    </section>
+
+    <hr>
+
+    <!-- ══ MATERIAL TYPES ══ -->
+    <section id="material-types">
+      <h2>Material Types</h2>
+      <p>Material types are the item categories patrons choose when submitting a request — for example Book, DVD, or Audiobook. Patrons see these as a dropdown on the submission form.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/settings-material-types.jpg" alt="Material Types settings page">
+        <figcaption>Material Types — each type can be made active or inactive, and linked to selector groups.</figcaption>
+      </figure>
+
+      <p>Click <strong>+ New Material Type</strong> to add one. Click <strong>Edit</strong> on any row to change the name or toggle it active/inactive. Inactive types won't appear on the patron submission form or in filters.</p>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Deleting a material type will remove it from any requests that used it. It's better to set it <strong>Inactive</strong> to hide it without losing history.</div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ══ AUDIENCES ══ -->
+    <section id="audiences">
+      <h2>Audiences</h2>
+      <p>Audiences let patrons indicate who the item is for — Adult, Teen, Kids, etc. Like material types, patrons pick from these during submission.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/settings-audiences.jpg" alt="Audiences settings page">
+        <figcaption>Audiences — add, edit, or deactivate audience options.</figcaption>
+      </figure>
+
+      <p>Click <strong>+ New Audience</strong> to add one, or <strong>Edit</strong> to rename or deactivate an existing audience. Inactive audiences are hidden from the submission form.</p>
+    </section>
+
+    <hr>
+
+    <!-- ══ STATUSES ══ -->
+    <section id="statuses">
+      <h2>Statuses</h2>
+      <p>Statuses are the labels you apply to requests as you process them — for example Pending, On Order, or Purchased. You can customize them to match your workflow.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/settings-statuses.jpg" alt="Request Statuses settings page">
+        <figcaption>Statuses — each status has a color, sort order, and optional Terminal flag.</figcaption>
+      </figure>
+
+      <h3>Status fields</h3>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Name</td><td>The label shown in the interface, e.g. <em>On Order</em>.</td></tr>
+          <tr><td class="field-name">Color</td><td>The badge color used to visually distinguish this status in lists and detail pages. Use the color picker or type a hex code.</td></tr>
+          <tr><td class="field-name">Sort Order</td><td>Controls the order statuses appear in dropdowns. Lower numbers appear first.</td></tr>
+          <tr><td class="field-name">Terminal</td><td>Mark this if the status represents a <em>final</em> state (e.g. Purchased, Denied). Terminal statuses can be used to filter out "closed" requests.</td></tr>
+          <tr><td class="field-name">Active</td><td>Only active statuses appear in the Update Status dropdown. Inactive statuses are hidden from selectors but preserved in history.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Default statuses (Pending, Under Review, On Order, Purchased, Denied, ILL Referred) are seeded automatically. You can rename, recolor, or reorder them freely.</div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ══ USERS ══ -->
+    <section id="users">
+      <h2>Users</h2>
+      <p>Staff members who log into SFP via Microsoft Entra (Azure AD) are added here automatically the first time they sign in. You don't need to create accounts manually — just have staff log in and then assign their role here.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/settings-users.jpg" alt="Users settings page">
+        <figcaption>Users — each user's role, group assignments, and last login are shown here.</figcaption>
+      </figure>
+
+      <h3>Roles</h3>
+      <table class="field-table">
+        <thead><tr><th>Role</th><th>Access</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-admin">Admin</span></td>
+            <td>Full access to all requests, patrons, titles, and all Settings pages. Can manage users, groups, statuses, and configuration.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-selector">Selector</span></td>
+            <td>Access to Requests, Patrons, and Titles. Scoped to their assigned Groups — they only see requests that match their group's material types and audiences.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Editing a user</h3>
+      <p>Click <strong>Edit</strong> on any user to change their role, assign them to selector groups, or toggle their account active/inactive. Setting a user to Inactive prevents them from logging in without deleting their record.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>A selector with no group assignments can log in but won't see any requests in their queue. Always assign at least one group after changing a user's role to Selector.</div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ══ GROUPS ══ -->
+    <section id="groups">
+      <h2>Groups</h2>
+      <p>Groups control which requests each selector sees. A group is a combination of material types and audiences — selectors assigned to a group only see requests that match both.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/settings-groups.jpg" alt="Selector Groups settings page">
+        <figcaption>Selector Groups — each group scopes its members to specific material types and audiences.</figcaption>
+      </figure>
+
+      <p>For example, a group called <em>Adult Books</em> might include the Book material type and the Adult audience. Selectors in that group would only see adult book requests — not DVDs, not teen materials, etc.</p>
+
+      <h3>Creating or editing a group</h3>
+      <ol class="steps">
+        <li>Click <strong>+ New Group</strong> (or <strong>Edit</strong> on an existing one).</li>
+        <li>Give it a name and optional description.</li>
+        <li>Check the material types and audiences this group should cover.</li>
+        <li>Leave <strong>Active</strong> checked so it appears in user assignment dropdowns.</li>
+        <li>Click <strong>Create Group</strong> (or <strong>Save Changes</strong>).</li>
+      </ol>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>A selector can belong to multiple groups. Their request queue will show requests matching <em>any</em> of their assigned groups.</div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>If you deactivate a group, selectors assigned to it lose that scope from their queue. Reassign them to another group if needed.</div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ══ BACKUPS ══ -->
+    <section id="backups">
+      <h2>Backups</h2>
+      <p>The Backups page provides tools for exporting, importing, and restoring SFP data. It is divided into three areas: Configuration, Database &amp; Storage, and Backup Schedule.</p>
+
+      <h3>Configuration</h3>
+      <p>Export or import a JSON snapshot of all SFP settings, statuses, material types, audiences, selector groups, and catalog format labels. Use this to clone a configuration to another environment or to recover after accidental changes.</p>
+      <table class="field-table">
+        <thead><tr><th>Action</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Export Config</td><td>Downloads a <code>.json</code> file containing all current settings and lookup table data.</td></tr>
+          <tr><td class="field-name">Import Config</td><td>Upload a previously exported JSON file to restore or overwrite configuration. Existing records are upserted — nothing is deleted.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Database &amp; Storage</h3>
+      <p>Full data export and restore tools. Use with caution — these operate on the entire SFP database.</p>
+      <table class="field-table">
+        <thead><tr><th>Action</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Export Database</td><td>Downloads a full SQL dump of all SFP tables, including requests, patrons, and titles.</td></tr>
+          <tr><td class="field-name">Export Storage</td><td>Downloads a ZIP of the <code>storage/app</code> directory.</td></tr>
+          <tr><td class="field-name">Import Database</td><td>Restore the database from an uploaded SQL file. Replaces all existing data.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>The <strong>Wipe All Data</strong> option permanently truncates all SFP tables. You must type <strong>WIPE</strong> to confirm. This cannot be undone — export first.</div>
+      </div>
+
+      <h3>Backup Schedule</h3>
+      <p>Configure an automated backup cron job — choose frequency, what to include (config, database, storage), and where to save files. The schedule runs via Laravel's task scheduler; ensure a cron entry is set up on the server for <code>php artisan schedule:run</code>.</p>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.sidebar a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.sidebar a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

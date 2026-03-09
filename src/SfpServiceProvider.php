@@ -98,6 +98,17 @@ class SfpServiceProvider extends ServiceProvider
                 ->header('Cache-Control', 'public, max-age=31536000');
         })->name('request.assets.css');
 
+        // Help pages — served directly from resources/dist, no vendor:publish needed.
+        Route::get('sfp-settings-help.html', function () {
+            return response(file_get_contents(__DIR__ . '/../resources/dist/sfp-settings-help.html'), 200)
+                ->header('Content-Type', 'text/html');
+        })->name('request.assets.settings-help');
+
+        Route::get('sfp-selector-help.html', function () {
+            return response(file_get_contents(__DIR__ . '/../resources/dist/sfp-selector-help.html'), 200)
+                ->header('Content-Type', 'text/html');
+        })->name('request.assets.selector-help');
+
         $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
     }
 

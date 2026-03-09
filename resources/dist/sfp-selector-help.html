@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SFP — Selector Guide</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      color: #1f2937;
+      background: #f3f4f6;
+    }
+
+    /* ── Layout ── */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar nav ── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: #1e293b;
+      color: #cbd5e1;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 28px 0 40px;
+    }
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      padding: 0 20px 8px;
+    }
+    .sidebar a {
+      display: block;
+      padding: 7px 20px;
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .sidebar a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .sidebar a.active { color: #fff; border-left-color: #3b82f6; background: rgba(59,130,246,.12); }
+    .sidebar .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #64748b;
+      padding: 18px 20px 4px;
+    }
+
+    /* ── Main content ── */
+    main {
+      flex: 1;
+      max-width: 860px;
+      padding: 48px 48px 80px;
+    }
+
+    /* ── Sections ── */
+    section {
+      margin-bottom: 64px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 15px;
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #334155;
+      margin: 20px 0 6px;
+    }
+
+    p { margin-bottom: 12px; color: #374151; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── Screenshot ── */
+    .screenshot {
+      margin: 18px 0 24px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    .screenshot img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .screenshot figcaption {
+      padding: 8px 14px;
+      background: #f8fafc;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    /* ── Callout ── */
+    .callout {
+      display: flex;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    .callout-icon { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+    .callout.tip    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    .callout.warn   { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .callout.danger { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+    /* ── Step list ── */
+    ol.steps { padding-left: 0; list-style: none; counter-reset: step; }
+    ol.steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+    ol.steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    /* ── Tag / badge ── */
+    .badge {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .badge-pending  { background: #fef3c7; color: #b45309; }
+    .badge-ordered  { background: #d1fae5; color: #065f46; }
+    .badge-declined { background: #fee2e2; color: #991b1b; }
+    .badge-dup      { background: #fef9c3; color: #713f12; }
+
+    /* ── Field table ── */
+    .field-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; }
+    .field-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background: #f8fafc;
+      border-bottom: 2px solid #e2e8f0;
+      color: #374151;
+      font-weight: 600;
+    }
+    .field-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+      color: #374151;
+    }
+    .field-table tr:last-child td { border-bottom: none; }
+    .field-name { font-weight: 600; color: #0f172a; white-space: nowrap; }
+
+    /* ── Divider ── */
+    hr { border: none; border-top: 1px solid #e2e8f0; margin: 40px 0; }
+
+    /* ── Top bar (print / logo area) ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .topbar-logo {
+      font-size: 13px;
+      font-weight: 700;
+      color: #3b82f6;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      padding: 3px 10px;
+      letter-spacing: .04em;
+    }
+    .topbar-breadcrumb { font-size: 13px; color: #94a3b8; }
+
+    @media print {
+      .sidebar { display: none; }
+      main { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="sidebar-title">SFP Help</div>
+    <a href="#overview">Overview</a>
+    <div class="section-label">Requests</div>
+    <a href="#requests-list">Browsing requests</a>
+    <a href="#requests-detail">Reviewing a request</a>
+    <a href="#requests-status">Updating status</a>
+    <div class="section-label">Patrons</div>
+    <a href="#patrons-list">Patrons list</a>
+    <a href="#patron-detail">Patron detail</a>
+    <div class="section-label">Titles</div>
+    <a href="#titles-list">Titles list</a>
+    <a href="#title-detail">Title detail &amp; bulk update</a>
+    <div class="section-label">Tips</div>
+    <a href="#workflow">Daily workflow</a>
+    <a href="#flags">Understanding flags</a>
+    <a href="#notifications">Email notifications</a>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main>
+
+    <div class="topbar">
+      <span class="topbar-logo">SFP</span>
+      <span class="topbar-breadcrumb">Selector Guide</span>
+    </div>
+
+    <h1>Selector Guide</h1>
+    <p class="subtitle">How to review and act on patron purchase requests in SFP (Suggest for Purchase).</p>
+
+    <!-- ══════════════════════════════════════════ OVERVIEW -->
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>SFP collects purchase suggestions from patrons and puts them in one place for you to review. There are three main sections — <strong>Requests</strong>, <strong>Patrons</strong>, and <strong>Titles</strong> — accessible from the navigation bar at the top of every page.</p>
+      <p>As a selector, your main job is in <strong>Requests</strong>: look at what's been submitted, decide whether to order, and update the status accordingly.</p>
+    </section>
+
+    <!-- ══════════════════════════════════════════ REQUESTS LIST -->
+    <section id="requests-list">
+      <h2>Browsing Requests</h2>
+      <p>The <strong>Requests</strong> page shows every patron submission. By default, all statuses are shown — use the filters to narrow things down.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/requests-list.jpg" alt="Purchase Requests list page">
+        <figcaption>The Requests list, showing filters at the top and one entry flagged as a Duplicate.</figcaption>
+      </figure>
+
+      <h3>Filters</h3>
+      <table class="field-table">
+        <thead><tr><th>Filter</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Status</td><td>Narrow to a specific status, e.g. <em>Pending</em> to see unreviewed requests.</td></tr>
+          <tr><td class="field-name">Material Type</td><td>Filter to Books, DVDs, etc.</td></tr>
+          <tr><td class="field-name">Audience</td><td>Filter to Adult, Teen, Kids, etc.</td></tr>
+          <tr><td class="field-name">Search</td><td>Free-text search across title, author, and patron barcode.</td></tr>
+        </tbody>
+      </table>
+
+      <p>Select your filters and click <strong>Filter</strong>. Click <strong>Clear</strong> to reset. The count in the top-right corner updates to show how many results match.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Start each session by filtering to <strong>Status: Pending</strong> so you only see requests that haven't been acted on yet.</div>
+      </div>
+
+      <h3>Duplicate badge</h3>
+      <p>Requests marked <span class="badge badge-dup">Duplicate</span> were submitted by a different patron for the same title as an earlier request. You generally only need to act on the original — the duplicate will be resolved automatically.</p>
+    </section>
+
+    <!-- ══════════════════════════════════════════ REQUEST DETAIL -->
+    <section id="requests-detail">
+      <h2>Reviewing a Request</h2>
+      <p>Click <strong>View</strong> on any request to open its detail page. This is where you'll find everything the system knows about the submission.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/request-detail-top.jpg" alt="Request detail page">
+        <figcaption>Request detail — Material info on the left, Update Status panel on the right, Patron info below.</figcaption>
+      </figure>
+
+      <h3>Material section</h3>
+      <p>Shows the title, author, material type, audience, and any publication date or ISBN the system found. If ISBNdb returned a match, you'll see enriched data here (publisher, confirmed ISBN, etc.).</p>
+
+      <h3>Catalog &amp; ILL section</h3>
+      <p>This records what happened when the patron submitted their request:</p>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Catalog searched</td><td>Whether the system searched the catalog on the patron's behalf.</td></tr>
+          <tr><td class="field-name">Catalog results</td><td>How many catalog hits were found. If &gt; 0, the patron was prompted to place a hold instead.</td></tr>
+          <tr><td class="field-name">Catalog match accepted</td><td><em>Yes</em> means the patron agreed the catalog item matched — they should have placed a hold.</td></tr>
+          <tr><td class="field-name">ISBNdb searched / results</td><td>Whether the system looked up the title in ISBNdb to enrich metadata.</td></tr>
+          <tr><td class="field-name">ILL requested</td><td>Whether an interlibrary loan was requested for this item.</td></tr>
+        </tbody>
+      </table>
+
+      <p>You can click <strong>↺ Re-check catalog</strong> to run a fresh catalog search if you want to see if the item has been added since the request was submitted.</p>
+
+      <h3>Status History section</h3>
+      <p>A log of every status change, including who made it and any notes added. This is a read-only audit trail.</p>
+
+      <h3>Patron sidebar</h3>
+      <p>Shows the submitting patron's name, barcode, and contact info, plus whether they were verified in Polaris.</p>
+    </section>
+
+    <!-- ══════════════════════════════════════════ UPDATE STATUS -->
+    <section id="requests-status">
+      <h2>Updating a Request's Status</h2>
+      <p>The <strong>Update Status</strong> panel is always visible on the right side of any request detail page. This is how you record your decision.</p>
+
+      <ol class="steps">
+        <li>Choose a new status from the dropdown (e.g. <em>Ordered</em>, <em>Declined</em>, <em>On Hold</em>).</li>
+        <li>Optionally type a note — this is a good place to record why you ordered or declined.</li>
+        <li>Click <strong>Update Status</strong>. The change is saved immediately and added to the status history.</li>
+      </ol>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Notes are visible to admins and other selectors, but not to patrons. Use them to capture context, like an order number or a reason for declining.</div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">✉️</span>
+        <div>Some statuses are configured to <strong>Notify Patron</strong>. When you move a request to one of those statuses, SFP automatically emails the patron (if they have an email on file). Your admin controls which statuses trigger notifications under Settings → Statuses.</div>
+      </div>
+
+      <div class="callout danger">
+        <span class="callout-icon">⚠️</span>
+        <div><strong>Delete Request</strong> at the bottom of the page permanently removes the request and its history. The patron and title records are kept. Only use this to remove test entries or obvious errors.</div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ══════════════════════════════════════════ PATRONS LIST -->
+    <section id="patrons-list">
+      <h2>Patrons List</h2>
+      <p>The <strong>Patrons</strong> page shows people who have submitted requests. By default it shows only patrons with issues that may need attention — those not found in Polaris, those with data mismatches, or possible duplicates.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/patrons-list.jpg" alt="Patrons list page">
+        <figcaption>Patrons list, filtered to flagged records only. Check the "Show all patrons" box to see everyone.</figcaption>
+      </figure>
+
+      <h3>Polaris column</h3>
+      <p>Shows the result of looking the patron up in Polaris:</p>
+      <table class="field-table">
+        <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge" style="background:#d1fae5;color:#065f46">Found</span></td><td>Patron verified in Polaris.</td></tr>
+          <tr><td><span class="badge" style="background:#fee2e2;color:#991b1b">Not found</span></td><td>Barcode didn't match any Polaris record. Could be a typo or non-cardholder.</td></tr>
+          <tr><td><span class="badge badge-pending">Pending</span></td><td>Lookup hasn't run yet (queued job).</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Flags column</h3>
+      <table class="field-table">
+        <thead><tr><th>Flag</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge" style="background:#fef3c7;color:#b45309">Mismatch</span></td><td>The name or contact info the patron entered doesn't exactly match Polaris. Usually just a case difference — generally fine to ignore.</td></tr>
+          <tr><td><span class="badge" style="background:#fee2e2;color:#991b1b">Not in Polaris</span></td><td>Patron barcode was not found in Polaris. May warrant follow-up.</td></tr>
+        </tbody>
+      </table>
+
+      <p>Tick <strong>Show all patrons</strong> and click Filter to see every patron, not just flagged ones.</p>
+    </section>
+
+    <!-- ══════════════════════════════════════════ PATRON DETAIL -->
+    <section id="patron-detail">
+      <h2>Patron Detail</h2>
+      <p>Click <strong>View</strong> to open a patron record. You'll see what the patron submitted alongside what Polaris returned.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/patron-detail.jpg" alt="Patron detail page">
+        <figcaption>Patron detail — submitted data on the left, Polaris lookup results below with field-by-field comparison.</figcaption>
+      </figure>
+
+      <h3>Polaris Lookup section</h3>
+      <p>Compares each field — first name, last name, phone, email — between what the patron entered and what Polaris has on file. A <strong style="color:#059669">✓ Match</strong> is good; a <strong style="color:#dc2626">✗ Mismatch</strong> just means the values differ (often email vs. library email).</p>
+
+      <p>Click <strong>↺ Re-trigger lookup</strong> to run a fresh Polaris check — useful if the lookup was pending and you want to force it now.</p>
+
+      <h3>Manual Merge</h3>
+      <p>If you know two patron records are the same person (e.g., someone submitted twice with slightly different info), you can merge them here. Enter the ID of the patron record to <em>keep</em> in the "Winner patron ID" field, then click <strong>Review Merge →</strong> to preview before confirming.</p>
+    </section>
+
+    <hr>
+
+    <!-- ══════════════════════════════════════════ TITLES LIST -->
+    <section id="titles-list">
+      <h2>Titles List</h2>
+      <p>The <strong>Titles</strong> page groups requests by title, so you can see at a glance when multiple patrons have asked for the same item.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/titles-list.jpg" alt="Titles list page">
+        <figcaption>Titles list — the Requests column shows how many pending requests exist for each title. The Source column shows where the metadata came from.</figcaption>
+      </figure>
+
+      <h3>Source column</h3>
+      <table class="field-table">
+        <thead><tr><th>Source</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge" style="background:#e0e7ff;color:#3730a3">Submitted</span></td><td>Title info is exactly as the patron typed it — no ISBN or external data enrichment.</td></tr>
+          <tr><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">ISBNdb</span></td><td>The system matched this title to an ISBNdb record and enriched it with publisher, ISBN, etc.</td></tr>
+        </tbody>
+      </table>
+
+      <p>Use the <strong>Search</strong> box to find a specific title or author, and the <strong>Source</strong> dropdown to filter by data source.</p>
+    </section>
+
+    <!-- ══════════════════════════════════════════ TITLE DETAIL -->
+    <section id="title-detail">
+      <h2>Title Detail &amp; Bulk Status Update</h2>
+      <p>Click <strong>View</strong> on a title to see all the requests linked to it.</p>
+
+      <figure class="screenshot">
+        <img src="/vendor/sfp/img/help/title-detail.jpg" alt="Title detail page with bulk status update">
+        <figcaption>Title detail — all linked requests are listed, and the Bulk Status Update panel lets you update all of them at once.</figcaption>
+      </figure>
+
+      <h3>Requests table</h3>
+      <p>Lists every request for this title, with the patron name, the title as they typed it, audience, current status, and a link to the individual request.</p>
+
+      <h3>Bulk Status Update</h3>
+      <p>This is the fastest way to handle a popular title. Instead of opening each request individually, you can update all of them in one step:</p>
+      <ol class="steps">
+        <li>Choose a status from the <strong>New Status</strong> dropdown.</li>
+        <li>Optionally add a note (e.g. "Ordered — arriving next week").</li>
+        <li>Click <strong>Apply to All Requests</strong>.</li>
+      </ol>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Use Bulk Status Update when you've decided to order a title that multiple patrons requested — update them all to <em>Ordered</em> in one click rather than one by one.</div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ══════════════════════════════════════════ WORKFLOW -->
+    <section id="workflow">
+      <h2>Suggested Daily Workflow</h2>
+      <ol class="steps">
+        <li>Go to <strong>Requests</strong>, filter by <strong>Status: Pending</strong>.</li>
+        <li>Open each request. Check the title and author, note the audience and material type, and review the Catalog &amp; ILL section to see if a catalog check already ran.</li>
+        <li>Decide: order, decline, or hold. Update the status and add a note if helpful.</li>
+        <li>When you're done with a title that multiple patrons requested, use <strong>Titles → Bulk Status Update</strong> to close all related requests at once.</li>
+        <li>Periodically check the <strong>Patrons</strong> page for "Not in Polaris" flags and follow up as needed.</li>
+      </ol>
+    </section>
+
+    <!-- ══════════════════════════════════════════ NOTIFICATIONS -->
+    <section id="notifications">
+      <h2>Email Notifications</h2>
+      <p>SFP can send two kinds of automated emails. Your admin configures both under <strong>Settings → Notifications</strong>.</p>
+
+      <h3>Routing emails (to you)</h3>
+      <p>When a patron submits a new request, SFP looks at the request's material type and audience and routes a notification to the matching selector group. If your group has an email address configured, you'll receive these automatically — no action needed on your part.</p>
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>If you're not receiving routing emails, ask your admin to check that your selector group has a routing address set and that the material type/audience combination matches your group's scope.</div>
+      </div>
+
+      <h3>Status emails (to patrons)</h3>
+      <p>When you update a request's status, SFP checks whether that status has <strong>Notify Patron</strong> turned on. If it does — and the patron has an email address on file — SFP sends them an update automatically.</p>
+      <p>You don't need to do anything extra: the email fires as part of saving the status change. The content and subject line are controlled by your admin in Settings.</p>
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>To see which statuses trigger patron emails, check with your admin. Typically statuses like <em>On Order</em> or <em>Purchased</em> are set to notify, while internal workflow statuses are not.</div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ FLAGS -->
+    <section id="flags">
+      <h2>Understanding Common Flags &amp; Indicators</h2>
+
+      <table class="field-table">
+        <thead><tr><th>What you see</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-dup">Duplicate</span> on a request</td>
+            <td>Another patron has already requested this same title. The earlier request is the primary one.</td>
+          </tr>
+          <tr>
+            <td><em>Catalog results: 1 or more</em></td>
+            <td>The item was found in the catalog when the patron submitted. They were prompted to place a hold — this request may not need ordering.</td>
+          </tr>
+          <tr>
+            <td><em>Catalog match accepted: Yes</em></td>
+            <td>The patron confirmed the catalog item matched what they wanted. They should have placed a hold; ordering may be unnecessary.</td>
+          </tr>
+          <tr>
+            <td><em>ISBNdb results: 1 or more</em></td>
+            <td>The system found matching ISBN data and enriched the title record. The Material section may show publisher, ISBN, or a corrected publish date.</td>
+          </tr>
+          <tr>
+            <td><em>Found in Polaris: No</em></td>
+            <td>The patron's barcode wasn't verified. Their request is still valid, but they may have provided an incorrect barcode.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // Highlight active sidebar link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.sidebar a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.sidebar a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
