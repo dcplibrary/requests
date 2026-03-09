@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.9.0](https://github.com/dcplibrary/sfp/compare/v2.8.0...v2.9.0) (2026-03-09)
+
+
+### Features
+
+* add complex email editor and creator for notifications ([3e30550](https://github.com/dcplibrary/sfp/commit/3e30550cf2fa85ea4c9b4f3497dc3044082f503e))
+
 # [2.8.0](https://github.com/dcplibrary/sfp/compare/v2.7.1...v2.8.0) (2026-03-09)
 
 
