@@ -318,6 +318,14 @@ class SettingsSeeder extends Seeder
                 'description' => 'HTML body for patron status-change emails. Leave blank to use the built-in default.',
                 'tokens'      => json_encode(['{title}', '{author}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{submitted_date}', '{request_url}']),
             ],
+            [
+                'key'         => 'email_footer_text',
+                'value'       => 'Please do not reply to this message. Replies will not be routed to or seen by library staff. If you have any comments, please contact us at your library.',
+                'label'       => 'Email Footer Text',
+                'type'        => 'html',
+                'group'       => 'notifications',
+                'description' => 'Text shown in the footer of every notification email sent to patrons and staff.',
+            ],
 
             // --- Auto-order exclusions (popular authors) ---
             [
