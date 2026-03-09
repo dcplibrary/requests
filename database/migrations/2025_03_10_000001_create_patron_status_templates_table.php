@@ -24,9 +24,13 @@ return new class extends Migration
         });
 
         Schema::create('patron_status_template_request_status', function (Blueprint $table) {
-            $table->foreignId('patron_status_template_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('request_status_id')->constrained()->cascadeOnDelete();
+            $table->unsignedBigInteger('patron_status_template_id');
+            $table->unsignedBigInteger('request_status_id');
             $table->primary(['patron_status_template_id', 'request_status_id']);
+            $table->foreign('patron_status_template_id', 'pst_rq_patron_tpl_fk')
+                ->references('id')->on('patron_status_templates')->cascadeOnDelete();
+            $table->foreign('request_status_id', 'pst_rq_req_status_fk')
+                ->references('id')->on('request_statuses')->cascadeOnDelete();
         });
     }
 
