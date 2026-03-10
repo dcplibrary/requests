@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.15.3](https://github.com/dcplibrary/sfp/compare/v2.15.2...v2.15.3) (2026-03-10)
+
+
+### Bug Fixes
+
+* make field option sorting work ([12acc73](https://github.com/dcplibrary/sfp/commit/12acc73cc48b2141ba89da697cce26c396278238))
+
 ## [2.15.2](https://github.com/dcplibrary/sfp/compare/v2.15.1...v2.15.2) (2026-03-10)
 
 
