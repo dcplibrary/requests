@@ -182,24 +182,59 @@ class NotificationService
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /**
-     * Return unique, valid email addresses from selector groups that match
-     * the request's material type AND audience.
+     * Return unique, valid email addresses for staff routing: selectors who are
+     * in the groups that have access to this request, plus any group-level
+     * notification_emails (e.g. shared inboxes).
+     *
+     * - ILL requests: the group identified by ill_selector_group_id.
+     * - SFP requests: groups whose material type AND audience match the request.
      */
     private function getStaffRecipients(SfpRequest $request): array
     {
-        $groups = SelectorGroup::active()
-            ->whereNotNull('notification_emails')
-            ->where('notification_emails', '!=', '')
-            ->with(['materialTypes', 'audiences'])
-            ->get()
-            ->filter(fn ($group) =>
+        $groups = $this->getStaffRecipientGroups($request);
+        $emails = [];
+
+        foreach ($groups as $group) {
+            $this->collectEmailsFromGroup($group, $emails);
+        }
+
+        return array_values(array_unique(array_filter($emails)));
+    }
+
+    /**
+     * Groups that have access to this request (and thus should receive routing).
+     */
+    private function getStaffRecipientGroups(SfpRequest $request): \Illuminate\Support\Collection
+    {
+        $groups = collect();
+
+        if ($request->request_kind === 'ill') {
+            $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
+            if ($illGroupId > 0) {
+                $illGroup = SelectorGroup::active()->with('users')->find($illGroupId);
+                if ($illGroup) {
+                    $groups->push($illGroup);
+                }
+            }
+        } else {
+            $candidates = SelectorGroup::active()
+                ->with(['materialTypes', 'audiences', 'users'])
+                ->get();
+            $groups = $candidates->filter(fn ($group) =>
                 $group->materialTypes->contains('id', $request->material_type_id)
                 && $group->audiences->contains('id', $request->audience_id)
             );
+        }
 
-        $emails = [];
-        foreach ($groups as $group) {
-            // Supports comma-separated or newline-separated email lists
+        return $groups;
+    }
+
+    /**
+     * Append valid emails from a group: notification_emails list plus active users.
+     */
+    private function collectEmailsFromGroup(SelectorGroup $group, array &$emails): void
+    {
+        if ($group->notification_emails) {
             foreach (preg_split('/[\s,]+/', $group->notification_emails) as $email) {
                 $email = trim($email);
                 if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -208,7 +243,11 @@ class NotificationService
             }
         }
 
-        return array_unique($emails);
+        foreach ($group->users ?? [] as $user) {
+            if ($user->active && $user->email && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+                $emails[] = $user->email;
+            }
+        }
     }
 
     /**
