@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.11.1](https://github.com/dcplibrary/sfp/compare/v2.11.0...v2.11.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* redirect users without ill access to sfp once converted.  add notes field ([6e7fe46](https://github.com/dcplibrary/sfp/commit/6e7fe4672dbc73dacbf339879525fe76d191204d))
+
 # [2.11.0](https://github.com/dcplibrary/sfp/compare/v2.10.1...v2.11.0) (2026-03-10)
 
 
