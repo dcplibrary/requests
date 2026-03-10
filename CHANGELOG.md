@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.15.2](https://github.com/dcplibrary/sfp/compare/v2.15.1...v2.15.2) (2026-03-10)
+
+
+### Bug Fixes
+
+* compile css for convert to ill button ([cb87460](https://github.com/dcplibrary/sfp/commit/cb87460814a82aab9ec5af3ecf1bb84599c0b1c3))
+
 ## [2.15.1](https://github.com/dcplibrary/sfp/compare/v2.15.0...v2.15.1) (2026-03-10)
 
 
