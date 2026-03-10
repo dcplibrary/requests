@@ -95,11 +95,13 @@
                     <p class="text-xs text-gray-400 mt-0.5">Select status(es) that send this email. Only statuses with “Notify Patron” checked (in Statuses) will send.</p>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <select name="status_ids[]" multiple class="w-full border border-gray-300 rounded px-3 py-2 text-sm" size="{{ min(8, ($requestStatuses->count() ?: 1) + 1) }}">
+                    <select id="status-ids-select" name="status_ids[]" multiple class="w-full border border-gray-300 rounded px-3 py-2 text-sm" size="{{ min(8, ($requestStatuses->count() ?: 1) + 1) }}">
                         @foreach($requestStatuses as $st)
                         <option value="{{ $st->id }}" {{ in_array($st->id, old('status_ids', $template->requestStatuses->pluck('id')->all())) ? 'selected' : '' }}>{{ $st->name }}</option>
                         @endforeach
                     </select>
+                    <button type="button" onclick="Array.from(document.getElementById('status-ids-select').options).forEach(o => o.selected = false)"
+                            class="mt-1.5 text-xs text-gray-400 hover:text-red-500 hover:underline">Clear selection</button>
                 </div>
             </div>
 
@@ -110,11 +112,13 @@
                     <p class="text-xs text-gray-400 mt-0.5">Optional. Leave empty to use for all material types. Or select specific types so this template only sends for those.</p>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <select name="material_type_ids[]" multiple class="w-full border border-gray-300 rounded px-3 py-2 text-sm" size="{{ min(8, ($materialTypes->count() ?: 1) + 1) }}">
+                    <select id="material-type-ids-select" name="material_type_ids[]" multiple class="w-full border border-gray-300 rounded px-3 py-2 text-sm" size="{{ min(8, ($materialTypes->count() ?: 1) + 1) }}">
                         @foreach($materialTypes as $mt)
                         <option value="{{ $mt->id }}" {{ in_array($mt->id, old('material_type_ids', $template->materialTypes->pluck('id')->all())) ? 'selected' : '' }}>{{ $mt->name }}</option>
                         @endforeach
                     </select>
+                    <button type="button" onclick="Array.from(document.getElementById('material-type-ids-select').options).forEach(o => o.selected = false)"
+                            class="mt-1.5 text-xs text-gray-400 hover:text-red-500 hover:underline">Clear selection</button>
                 </div>
             </div>
 

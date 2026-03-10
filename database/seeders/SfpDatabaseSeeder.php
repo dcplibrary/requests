@@ -15,6 +15,7 @@ class SfpDatabaseSeeder extends Seeder
             MaterialTypesSeeder::class,
             AudiencesSeeder::class,
             RequestStatusesSeeder::class,
+            PatronStatusTemplatesSeeder::class,
             CatalogFormatLabelsSeeder::class,
             FormFieldsSeeder::class,
             ConsolesSeeder::class,
