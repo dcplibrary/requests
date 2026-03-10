@@ -98,6 +98,15 @@ class SfpServiceProvider extends ServiceProvider
                 ->header('Cache-Control', 'public, max-age=31536000');
         })->name('request.assets.css');
 
+        // Logo — served via URL so email clients (e.g. Gmail) don't strip it as a data: URI.
+        $logoPath = trim($routePrefix . '/assets/logo', '/');
+        Route::get($logoPath, function () {
+            $path = __DIR__ . '/../resources/images/dcpl-logo.png';
+            return response(file_get_contents($path), 200)
+                ->header('Content-Type', 'image/png')
+                ->header('Cache-Control', 'public, max-age=31536000');
+        })->name('request.assets.logo');
+
         // Help pages — served directly from resources/dist, no vendor:publish needed.
         Route::get('sfp-settings-help.html', function () {
             return response(file_get_contents(__DIR__ . '/../resources/dist/sfp-settings-help.html'), 200)
