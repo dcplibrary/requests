@@ -10,7 +10,7 @@ use Livewire\Component;
 
 /**
  * Admin component for managing field order and conditions per form.
- * Two separate lists (Suggest for Purchase, Inter-Library Loan) so each can be controlled independently.
+ * Two separate lists (Suggest for Purchase, Interlibrary Loan) so each can be controlled independently.
  */
 class FormFields extends Component
 {

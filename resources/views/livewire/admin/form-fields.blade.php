@@ -73,7 +73,7 @@
 
     {{-- Inter-Library Loan --}}
     <div>
-        <h3 class="text-base font-semibold text-gray-900 mb-3">Inter-Library Loan</h3>
+        <h3 class="text-base font-semibold text-gray-900 mb-3">Interlibrary Loan</h3>
         <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50">

@@ -48,7 +48,7 @@ class CustomFieldController extends Controller
             ]
         );
 
-        $formLabel = $form === 'ill' ? 'Inter-Library Loan' : 'Suggest for Purchase';
+        $formLabel = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
 
         return view('sfp::staff.custom-fields.edit-for-form', [
             'field'     => $field,
@@ -72,7 +72,7 @@ class CustomFieldController extends Controller
             ->first();
         abort_unless($option !== null, 404);
 
-        $formLabel  = $form === 'ill' ? 'Inter-Library Loan' : 'Suggest for Purchase';
+        $formLabel  = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
         $optionName = $option->name;
 
         return view('sfp::staff.custom-fields.edit-option-for-form', compact(

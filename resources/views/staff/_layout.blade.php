@@ -19,13 +19,13 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-<nav class="bg-white border-b border-gray-200 px-6 flex items-center gap-6 h-14">
+<nav class="bg-white border-b border-gray-200 px-6 flex items-stretch gap-6 h-14">
 
     {{-- Brand --}}
-    <x-sfp::logo :href="route('request.staff.requests.index')" />
+    <div class="flex items-center"><x-sfp::logo :href="route('request.staff.requests.index')" /></div>
 
-    {{-- Primary nav — visible to all --}}
-    <div class="flex items-center gap-1">
+    {{-- Primary nav — tabs aligned to bottom of header --}}
+    <div class="flex items-end gap-1">
         <a href="{{ route('request.staff.requests.index') }}"
            class="px-3 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-px
                   {{ request()->routeIs('request.staff.requests.*') && request()->get('kind') !== 'ill'

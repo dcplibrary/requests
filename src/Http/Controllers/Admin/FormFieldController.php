@@ -39,7 +39,7 @@ class FormFieldController extends Controller
                 'visible'            => true,
             ]
         );
-        $formLabel = $form === 'ill' ? 'Inter-Library Loan' : 'Suggest for Purchase';
+        $formLabel = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
 
         return view('sfp::staff.form-fields.edit-for-form', [
             'field'      => $field,
@@ -63,7 +63,7 @@ class FormFieldController extends Controller
         $option = $modelClass::where('slug', $slug)->first();
         abort_unless($option !== null, 404);
 
-        $formLabel  = $form === 'ill' ? 'Inter-Library Loan' : 'Suggest for Purchase';
+        $formLabel  = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
         $optionName = $option->name;
 
         return view('sfp::staff.form-fields.edit-option-for-form', compact(

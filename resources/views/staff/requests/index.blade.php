@@ -10,7 +10,7 @@
         @elseif($currentKind === 'sfp')
             Purchase Requests
         @else
-            Requests
+            Suggestions for Purchase
         @endif
     </h1>
     <span class="text-sm text-gray-500">{{ $requests->total() }} total</span>
