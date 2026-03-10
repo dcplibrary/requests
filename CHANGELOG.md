@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.9.3](https://github.com/dcplibrary/sfp/compare/v2.9.2...v2.9.3) (2026-03-10)
+
+
+### Bug Fixes
+
+* correct email and phone placeholder call in notificationservice ([c139f63](https://github.com/dcplibrary/sfp/commit/c139f63731843a79802ce32d0d3782fd32e125c5))
+
 ## [2.9.2](https://github.com/dcplibrary/sfp/compare/v2.9.1...v2.9.2) (2026-03-09)
 
 
