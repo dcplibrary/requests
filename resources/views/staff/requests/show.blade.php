@@ -271,29 +271,21 @@
         </div>
         @endif
 
-        {{-- Convert workflow --}}
+        {{-- Convert to ILL — shown only on SFP requests where patron opted in to ILL --}}
+        @if($showConvertToIll)
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Workflow</h2>
-            <form method="POST" action="{{ route('request.staff.requests.convert-kind', $sfpRequest) }}" class="space-y-3">
+            <form method="POST" action="{{ route('request.staff.requests.convert-kind', $sfpRequest) }}">
                 @csrf
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Convert to</label>
-                    <select name="to" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
-                        <option value="sfp" @selected($sfpRequest->request_kind === 'sfp')>SFP</option>
-                        <option value="ill" @selected($sfpRequest->request_kind === 'ill')>ILL</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
-                    <textarea name="note" rows="2" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
-                </div>
+                <input type="hidden" name="to" value="ill">
                 <button type="submit"
                         class="w-full px-4 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
-                        onclick="return confirm('Convert this request workflow?')">
-                    Convert
+                        onclick="return confirm('Convert this request to ILL?')">
+                    Convert to ILL
                 </button>
             </form>
         </div>
+        @endif
 
         {{-- Update status --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5"
@@ -323,12 +315,13 @@
                 </div>
 
                 {{-- Hidden fields populated by the modal before submit --}}
-                <input type="hidden" name="email_confirmed"   x-model="emailPayload.confirmed">
-                <input type="hidden" name="email_subject"     x-model="emailPayload.subject">
-                <input type="hidden" name="email_body"        x-model="emailPayload.body">
-                <input type="hidden" name="email_to"          x-model="emailPayload.to">
-                <input type="hidden" name="email_cc"          x-model="emailPayload.cc">
-                <input type="hidden" name="email_bcc"         x-model="emailPayload.bcc">
+                <input type="hidden" name="email_confirmed"    x-model="emailPayload.confirmed">
+                <input type="hidden" name="email_skip"         x-model="emailPayload.skip ? '1' : ''">
+                <input type="hidden" name="email_subject"      x-model="emailPayload.subject">
+                <input type="hidden" name="email_body"         x-model="emailPayload.body">
+                <input type="hidden" name="email_to"           x-model="emailPayload.to">
+                <input type="hidden" name="email_cc"           x-model="emailPayload.cc">
+                <input type="hidden" name="email_bcc"          x-model="emailPayload.bcc">
                 <input type="hidden" name="email_copy_to_self" x-model="emailPayload.copyToSelf ? '1' : ''">
 
                 <button type="submit"
@@ -362,6 +355,7 @@
 
                 emailPayload: {
                     confirmed:  '',
+                    skip:       false,
                     subject:    '',
                     body:       '',
                     to:         '',
@@ -421,6 +415,7 @@
                 /** "Send Status & Email" — populate payload and submit. */
                 sendWithEmail() {
                     this.emailPayload.confirmed  = '1';
+                    this.emailPayload.skip       = false;
                     this.emailPayload.subject    = this.emailPreview.subject;
                     this.emailPayload.body       = this.emailPreview.body;
                     this.emailPayload.to         = this.emailPreview.to;
@@ -428,14 +423,40 @@
                     this.emailPayload.bcc        = this.emailPreview.bcc;
                     this.emailPayload.copyToSelf = this.emailPreview.copyToSelf;
                     this.emailPreview.show       = false;
-                    this.$refs.statusForm.submit();
+                    this.$nextTick(() => this.$refs.statusForm.submit());
                 },
 
-                /** "Cancel (skip email)" — submit without email fields. */
+                /** "Cancel (skip email)" — save status, explicitly skip the email. */
                 cancelEmail() {
                     this.emailPayload.confirmed = '';
+                    this.emailPayload.skip      = true;
                     this.emailPreview.show      = false;
-                    this.$refs.statusForm.submit();
+                    this.$nextTick(() => this.$refs.statusForm.submit());
+                },
+
+                /** Set up Trix sync on init. */
+                init() {
+                    // When the modal opens, load body HTML into the Trix editor.
+                    this.$watch('emailPreview.show', (val) => {
+                        if (val) {
+                            this.$nextTick(() => this.loadEmailBodyIntoTrix());
+                        }
+                    });
+                    // Sync Trix edits back to emailPreview.body.
+                    document.addEventListener('trix-change', (e) => {
+                        if (e.target.getAttribute('input') === 'sfp-email-preview-body') {
+                            const input = document.getElementById('sfp-email-preview-body');
+                            if (input) this.emailPreview.body = input.value;
+                        }
+                    });
+                },
+
+                /** Load the current body HTML into the Trix editor. */
+                loadEmailBodyIntoTrix() {
+                    const trix = document.querySelector('trix-editor[input="sfp-email-preview-body"]');
+                    if (trix && trix.editor) {
+                        trix.editor.loadHTML(this.emailPreview.body || '');
+                    }
                 },
             };
         }

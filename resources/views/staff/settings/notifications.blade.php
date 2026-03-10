@@ -46,7 +46,10 @@
         <div class="notifications-panel bg-white rounded-lg border border-gray-200 mb-6 overflow-hidden {{ $isActive ? '' : 'hidden' }}"
              id="{{ $panelId }}"
              role="tabpanel"
-             aria-labelledby="notif-tab-{{ $tabId }}">
+             aria-labelledby="notif-tab-{{ $tabId }}"
+             @if($tabId === 'general')
+             x-data="{ previewEnabled: {{ (int)(bool)($settingsByTab['general'] ?? collect())->firstWhere('key','email_preview_enabled')?->value }} }"
+             @endif>
             <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
                 <h2 class="text-sm font-semibold text-gray-700">
                     {{ $tabId === 'general' ? 'General' : 'Emails' }}
@@ -84,7 +87,31 @@
                         </div>
                         <div class="flex-1 min-w-0 flex items-start justify-between gap-4">
                             <div>
-                            @if($setting->type === 'boolean')
+                            @if($setting->type === 'boolean' && $setting->key === 'email_preview_enabled')
+                                {{-- Preview toggle: drives the Alpine previewEnabled state --}}
+                                <input type="hidden" name="settings[{{ $i }}][value]" value="0">
+                                <input type="checkbox"
+                                       name="settings[{{ $i }}][value]"
+                                       value="1"
+                                       {{ $setting->value ? 'checked' : '' }}
+                                       @change="previewEnabled = $event.target.checked"
+                                       class="w-4 h-4 rounded border-gray-300 text-blue-600">
+
+                            @elseif($setting->type === 'boolean' && $setting->key === 'email_editing_enabled')
+                                {{-- Editing toggle: only active when preview is on --}}
+                                <div :class="previewEnabled ? '' : 'opacity-40 pointer-events-none'"
+                                     class="flex items-center gap-2">
+                                    <input type="hidden" name="settings[{{ $i }}][value]" value="0">
+                                    <input type="checkbox"
+                                           name="settings[{{ $i }}][value]"
+                                           value="1"
+                                           {{ $setting->value ? 'checked' : '' }}
+                                           :disabled="!previewEnabled"
+                                           class="w-4 h-4 rounded border-gray-300 text-blue-600">
+                                    <span x-show="!previewEnabled" class="text-xs text-gray-400 italic">Requires Preview enabled</span>
+                                </div>
+
+                            @elseif($setting->type === 'boolean')
                                 <input type="hidden" name="settings[{{ $i }}][value]" value="0">
                                 <input type="checkbox"
                                        name="settings[{{ $i }}][value]"

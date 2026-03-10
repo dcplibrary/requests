@@ -65,17 +65,17 @@ class NotificationService
      *  - The new RequestStatus has `notify_patron = true`
      *  - The patron has an email address on record
      */
-    public function notifyPatronStatusChange(SfpRequest $request): void
+    public function notifyPatronStatusChange(SfpRequest $request): bool
     {
-        if (! Setting::get('notifications_enabled', true)) return;
-        if (! Setting::get('patron_status_notification_enabled', true)) return;
+        if (! Setting::get('notifications_enabled', true)) return false;
+        if (! Setting::get('patron_status_notification_enabled', true)) return false;
 
         $request->loadMissing(['patron', 'materialType', 'audience', 'status']);
 
-        if (! $request->status?->notify_patron) return;
+        if (! $request->status?->notify_patron) return false;
 
         $patronEmail = $request->patron?->email;
-        if (! $patronEmail) return;
+        if (! $patronEmail) return false;
 
         $statusId = $request->request_status_id;
         $templates = PatronStatusTemplate::query()
@@ -101,7 +101,7 @@ class NotificationService
                     'error'      => $e->getMessage(),
                 ]);
             }
-            return;
+            return true;
         }
 
         foreach ($templates as $template) {
@@ -118,6 +118,8 @@ class NotificationService
                 ]);
             }
         }
+
+        return true;
     }
 
     /**

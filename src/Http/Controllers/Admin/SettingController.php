@@ -58,7 +58,7 @@ class SettingController extends Controller
             // Table may not exist
         }
 
-        // Core request tokens (always include these so they’re always listed).
+        // Core request tokens (always include these so they're always listed).
         $coreRequestTokens = ['{title}', '{author}', '{material_type}', '{audience}'];
         $availableTokens = array_values(array_unique(array_merge(
             $coreRequestTokens,
@@ -69,19 +69,21 @@ class SettingController extends Controller
 
         $notifications = Setting::where('group', 'notifications')->orderBy('label')->get();
         $keyToTab = [
-            'notifications_enabled' => 'general',
-            'email_footer_text' => 'general',
-            'staff_routing_enabled' => 'emails',
-            'staff_routing_subject' => 'emails',
-            'staff_routing_template' => 'emails',
+            'notifications_enabled'      => 'general',
+            'email_preview_enabled'      => 'general',
+            'email_editing_enabled'      => 'general',
+            'email_footer_text'          => 'general',
+            'staff_routing_enabled'      => 'emails',
+            'staff_routing_subject'      => 'emails',
+            'staff_routing_template'     => 'emails',
             'patron_status_notification_enabled' => 'emails',
-            'patron_status_subject' => 'emails',
-            'patron_status_template' => 'emails',
+            'patron_status_subject'      => 'emails',
+            'patron_status_template'     => 'emails',
         ];
         $tabOrder = ['general', 'emails'];
         $keyOrder = [
-            'general' => ['notifications_enabled', 'email_footer_text'],
-            'emails'  => [], // Enable/preview/test live on each email’s edit view
+            'general' => ['notifications_enabled', 'email_preview_enabled', 'email_editing_enabled', 'email_footer_text'],
+            'emails'  => [], // Enable/preview/test live on each email's edit view
         ];
         $settingsByTab = [];
         foreach ($tabOrder as $tab) {

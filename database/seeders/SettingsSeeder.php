@@ -133,7 +133,7 @@ class SettingsSeeder extends Seeder
             ],
             [
                 'key' => 'catalog_owned_message',
-                'value' => '<p><strong>Good news:</strong> this item is already in our catalog. Please place a hold in the catalog to get it as soon as it’s available.</p>',
+                'value' => '<p><strong>Good news:</strong> this item is already in our catalog. Please place a hold in the catalog to get it as soon as it\'s available.</p>',
                 'label' => 'Catalog Owned Message',
                 'type' => 'html',
                 'group' => 'messaging',

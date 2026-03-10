@@ -161,10 +161,22 @@ class RequestController extends Controller
                 $label = $val->value_text;
                 if ($val->value_slug) {
                     $label = $optionMaps[$val->custom_field_id][$val->value_slug] ?? $val->value_slug;
+                } elseif ($val->field?->type === 'checkbox') {
+                    $label = $val->value_text ? 'Yes' : 'No';
                 }
                 $customValueLabelByFieldId[$val->custom_field_id] = $label;
             }
         }
+
+        // Show "Convert to ILL" button when this is an SFP request and the patron
+        // opted in to ILL via any checkbox field whose label mentions "interlibrary".
+        $showConvertToIll = $sfpRequest->request_kind === 'sfp'
+            && $sfpRequest->customFieldValues->contains(function ($val) {
+                return $val->field
+                    && $val->field->type === 'checkbox'
+                    && stripos($val->field->label ?? '', 'interlibrary') !== false
+                    && $val->value_text;
+            });
 
         return view('sfp::staff.requests.show', [
             'sfpRequest' => $sfpRequest,
@@ -172,6 +184,7 @@ class RequestController extends Controller
             'customValueLabelByFieldId' => $customValueLabelByFieldId,
             'assignmentEnabled' => (bool) Setting::get('assignment_enabled', false),
             'staffUsers' => SfpUser::query()->where('active', true)->orderBy('name')->get(['id', 'name', 'email']),
+            'showConvertToIll' => $showConvertToIll,
         ]);
     }
 
@@ -332,14 +345,15 @@ class RequestController extends Controller
         }
 
         $httpRequest->validate([
-            'status_id'        => 'required|exists:request_statuses,id',
-            'note'             => 'nullable|string|max:2000',
-            'email_confirmed'  => 'nullable|boolean',
-            'email_subject'    => 'nullable|string|max:500',
-            'email_body'       => 'nullable|string',
-            'email_to'         => 'nullable|email',
-            'email_cc'         => 'nullable|string|max:1000',
-            'email_bcc'        => 'nullable|string|max:1000',
+            'status_id'          => 'required|exists:request_statuses,id',
+            'note'               => 'nullable|string|max:2000',
+            'email_confirmed'    => 'nullable|boolean',
+            'email_skip'         => 'nullable|boolean',
+            'email_subject'      => 'nullable|string|max:500',
+            'email_body'         => 'nullable|string',
+            'email_to'           => 'nullable|email',
+            'email_cc'           => 'nullable|string|max:1000',
+            'email_bcc'          => 'nullable|string|max:1000',
             'email_copy_to_self' => 'nullable|boolean',
         ]);
 
@@ -369,7 +383,7 @@ class RequestController extends Controller
         $sfpRequest->refresh();
 
         if ($httpRequest->boolean('email_confirmed')) {
-            // Staff reviewed (and optionally edited) the email in the preview modal.
+            // Staff reviewed (and optionally edited) the email in the preview modal — send it.
             $this->sendCustomPatronEmail(
                 subject:     (string) ($httpRequest->email_subject ?? ''),
                 body:        (string) ($httpRequest->email_body    ?? ''),
@@ -379,9 +393,23 @@ class RequestController extends Controller
                 copyToSelf:  $httpRequest->boolean('email_copy_to_self'),
                 sfpUserId:   $sfpUserId,
             );
+            $sfpRequest->statusHistory()->create([
+                'request_status_id' => $sfpRequest->request_status_id,
+                'user_id'           => $sfpUserId,
+                'note'              => 'Notification sent.',
+            ]);
+        } elseif ($httpRequest->boolean('email_skip')) {
+            // Staff saw the preview and chose to skip sending — do nothing.
         } else {
-            // No preview modal used — fall back to the standard notification path.
-            app(NotificationService::class)->notifyPatronStatusChange($sfpRequest);
+            // Preview was never shown (disabled or no email would fire) — use standard path.
+            $sent = app(NotificationService::class)->notifyPatronStatusChange($sfpRequest);
+            if ($sent) {
+                $sfpRequest->statusHistory()->create([
+                    'request_status_id' => $sfpRequest->request_status_id,
+                    'user_id'           => $sfpUserId,
+                    'note'              => 'Notification sent.',
+                ]);
+            }
         }
 
         return back()->with('success', 'Status updated.');
