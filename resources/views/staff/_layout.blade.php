@@ -22,11 +22,11 @@
 <nav class="bg-white border-b border-gray-200 px-6 flex items-stretch gap-6 h-14">
 
     {{-- Brand --}}
-    <div class="flex items-center"><x-sfp::logo :href="route('request.staff.requests.index')" /></div>
+    <div class="flex items-center"><x-sfp::logo :href="route('request.staff.requests.index', ['kind' => 'sfp'])" /></div>
 
     {{-- Primary nav — tabs aligned to bottom of header --}}
     <div class="flex items-end gap-1">
-        <a href="{{ route('request.staff.requests.index') }}"
+        <a href="{{ route('request.staff.requests.index', ['kind' => 'sfp']) }}"
            class="px-3 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-px
                   {{ request()->routeIs('request.staff.requests.*') && request()->get('kind') !== 'ill'
                       ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600'

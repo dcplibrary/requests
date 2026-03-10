@@ -69,9 +69,10 @@ class CustomFieldFilteringTest extends TestCase
         $this->bootDatabase();
         Cache::flush();
 
+        $now = date('Y-m-d H:i:s');
         Capsule::table('material_types')->insert([
-            ['id' => 1, 'name' => 'Book', 'slug' => 'book', 'active' => 1, 'has_other_text' => 0, 'sort_order' => 1, 'created_at' => now(), 'updated_at' => now()],
-            ['id' => 2, 'name' => 'DVD', 'slug' => 'dvd', 'active' => 1, 'has_other_text' => 0, 'sort_order' => 2, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 1, 'name' => 'Book', 'slug' => 'book', 'active' => 1, 'has_other_text' => 0, 'sort_order' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['id' => 2, 'name' => 'DVD', 'slug' => 'dvd', 'active' => 1, 'has_other_text' => 0, 'sort_order' => 2, 'created_at' => $now, 'updated_at' => $now],
         ]);
 
         $rBook = SfpRequest::create(['request_kind' => 'ill', 'material_type_id' => 1, 'audience_id' => null]);

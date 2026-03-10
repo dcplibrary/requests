@@ -105,7 +105,10 @@
 
     <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">Filter</button>
     @if(array_filter($filters))
-        <a href="{{ route('request.staff.requests.index') }}" class="px-4 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Clear</a>
+        @php
+            $clearParams = ($filters['kind'] ?? '') !== '' ? ['kind' => $filters['kind']] : [];
+        @endphp
+        <a href="{{ route('request.staff.requests.index', $clearParams) }}" class="px-4 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Clear</a>
     @endif
 </form>
 
