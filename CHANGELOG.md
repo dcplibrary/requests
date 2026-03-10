@@ -2,6 +2,14 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.11.2](https://github.com/dcplibrary/sfp/compare/v2.11.1...v2.11.2) (2026-03-10)
+
+
+### Bug Fixes
+
+* remove hypen from interlibrary loan ([aea61d3](https://github.com/dcplibrary/sfp/commit/aea61d34f003ea38fdb3911c46a1ca57c0e56cf7))
+* remove hyphen from interlibrary loan ([ad189e2](https://github.com/dcplibrary/sfp/commit/ad189e275284eb91742b478a85b562f451966b10))
+
 ## [2.11.1](https://github.com/dcplibrary/sfp/compare/v2.11.0...v2.11.1) (2026-03-10)
 
 
