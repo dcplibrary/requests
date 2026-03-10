@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.9.5](https://github.com/dcplibrary/sfp/compare/v2.9.4...v2.9.5) (2026-03-10)
+
+
+### Bug Fixes
+
+* add higher res logo ([aed0249](https://github.com/dcplibrary/sfp/commit/aed0249451392f809e3eb0bd0c21b707bc280396))
+
 ## [2.9.4](https://github.com/dcplibrary/sfp/compare/v2.9.3...v2.9.4) (2026-03-10)
 
 
