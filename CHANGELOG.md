@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.12.0](https://github.com/dcplibrary/sfp/compare/v2.11.2...v2.12.0) (2026-03-10)
+
+
+### Features
+
+* send notifications to selectors when a request comes in that they access to ([18ce433](https://github.com/dcplibrary/sfp/commit/18ce433106f78e36c248926cc47c3046306a4065))
+
 ## [2.11.2](https://github.com/dcplibrary/sfp/compare/v2.11.1...v2.11.2) (2026-03-10)
 
 
