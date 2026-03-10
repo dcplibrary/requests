@@ -68,6 +68,16 @@
     <section aria-labelledby="details-heading">
         <h2 id="details-heading" class="text-2xl font-bold text-gray-900 mb-6">Borrow Details</h2>
 
+        @if($limitReached)
+            <div class="mb-6">
+                <x-sfp::limit-reached
+                    kind="ill"
+                    :count="$limitCount"
+                    :until="$limitUntil ? \Illuminate\Support\Carbon::parse($limitUntil) : null"
+                />
+            </div>
+        @endif
+
         <div class="space-y-6 bg-white rounded-lg border border-gray-200 p-6">
             <fieldset>
                 <legend class="block text-sm font-medium text-gray-700 mb-2">I want to borrow <span class="text-red-600" aria-hidden="true">*</span></legend>

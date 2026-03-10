@@ -117,47 +117,69 @@ class Patron extends Model
     }
 
     /**
-     * Count requests within the configured rate-limit window.
+     * Count requests of the given kind within the configured rate-limit window.
+     *
+     * @param  'sfp'|'ill'  $kind
      */
-    public function recentRequestCount(): int
+    public function recentRequestCount(string $kind = 'sfp'): int
     {
-        return $this->requests()
-            ->where('created_at', '>=', $this->windowStart())
-            ->count();
+        $query = $this->requests()->where('created_at', '>=', $this->windowStart($kind));
+
+        if ($kind === 'ill') {
+            $query->where('request_kind', 'ill');
+        } else {
+            $query->where(fn ($q) => $q->whereNull('request_kind')->orWhere('request_kind', 'sfp'));
+        }
+
+        return $query->count();
     }
 
     /**
-     * Whether this patron has hit their submission limit.
+     * Whether this patron has hit their submission limit for the given kind.
+     * Blank or zero limit count is treated as unlimited (returns false).
+     *
+     * @param  'sfp'|'ill'  $kind
      */
-    public function hasReachedLimit(): bool
+    public function hasReachedLimit(string $kind = 'sfp'): bool
     {
-        $limit = (int) Setting::get('sfp_limit_count', 5);
-        return $this->recentRequestCount() >= $limit;
+        $key   = $kind === 'ill' ? 'ill_limit_count' : 'sfp_limit_count';
+        $raw   = Setting::get($key, $kind === 'sfp' ? '5' : '');
+        $limit = trim((string) $raw) === '' ? 0 : (int) $raw;
+        if ($limit <= 0) {
+            return false; // unlimited
+        }
+        return $this->recentRequestCount($kind) >= $limit;
     }
 
     /**
-     * The earliest date this patron can submit again.
+     * The earliest date this patron can submit again for the given kind.
      * For rolling windows this is tied to the oldest request in the window;
      * for calendar windows it is the fixed start of the next period.
+     *
+     * @param  'sfp'|'ill'  $kind
      */
-    public function nextAvailableDate(): ?Carbon
+    public function nextAvailableDate(string $kind = 'sfp'): ?Carbon
     {
-        $type = Setting::get('sfp_limit_window_type', 'rolling');
+        $prefix = $kind === 'ill' ? 'ill_limit_' : 'sfp_limit_';
+        $type   = Setting::get($prefix . 'window_type', 'rolling');
 
         if ($type === 'calendar_month') {
-            return $this->nextCalendarMonthStart();
+            return $this->nextCalendarMonthStart($kind);
         }
 
         if ($type === 'calendar_week') {
             return now()->addWeek()->startOfWeek(Carbon::MONDAY)->startOfDay();
         }
 
-        // Rolling: oldest request in the window + window length
-        $days   = (int) Setting::get('sfp_limit_window_days', 30);
-        $oldest = $this->requests()
-            ->where('created_at', '>=', $this->windowStart())
-            ->oldest()
-            ->first();
+        $daysSetting = $prefix . 'window_days';
+        $days        = (int) Setting::get($daysSetting, 30);
+        $query       = $this->requests()->where('created_at', '>=', $this->windowStart($kind));
+        if ($kind === 'ill') {
+            $query->where('request_kind', 'ill');
+        } else {
+            $query->where(fn ($q) => $q->whereNull('request_kind')->orWhere('request_kind', 'sfp'));
+        }
+        $oldest = $query->oldest()->first();
 
         return $oldest ? $oldest->created_at->copy()->addDays($days) : null;
     }
@@ -165,25 +187,31 @@ class Patron extends Model
     // ── Private helpers ────────────────────────────────────────────────────────
 
     /**
-     * The start of the current limit window, accounting for the window type.
+     * The start of the current limit window for the given kind.
+     *
+     * @param  'sfp'|'ill'  $kind
      */
-    private function windowStart(): Carbon
+    private function windowStart(string $kind = 'sfp'): Carbon
     {
-        $type = Setting::get('sfp_limit_window_type', 'rolling');
+        $prefix = $kind === 'ill' ? 'ill_limit_' : 'sfp_limit_';
+        $type   = Setting::get($prefix . 'window_type', 'rolling');
 
         return match ($type) {
-            'calendar_month' => $this->calendarMonthStart(),
+            'calendar_month' => $this->calendarMonthStart($kind),
             'calendar_week'  => now()->startOfWeek(Carbon::MONDAY)->startOfDay(),
-            default          => now()->subDays((int) Setting::get('sfp_limit_window_days', 30)),
+            default          => now()->subDays((int) Setting::get($prefix . 'window_days', 30)),
         };
     }
 
     /**
-     * Start of the current calendar-month period, based on the configured reset day.
+     * Start of the current calendar-month period for the given kind.
+     *
+     * @param  'sfp'|'ill'  $kind
      */
-    private function calendarMonthStart(): Carbon
+    private function calendarMonthStart(string $kind = 'sfp'): Carbon
     {
-        $resetDay = max(1, min(28, (int) Setting::get('sfp_limit_calendar_reset_day', 1)));
+        $prefix   = $kind === 'ill' ? 'ill_limit_' : 'sfp_limit_';
+        $resetDay = max(1, min(28, (int) Setting::get($prefix . 'calendar_reset_day', 1)));
         $now      = now();
 
         return $now->day >= $resetDay
@@ -192,11 +220,14 @@ class Patron extends Model
     }
 
     /**
-     * Start of the next calendar-month period.
+     * Start of the next calendar-month period for the given kind.
+     *
+     * @param  'sfp'|'ill'  $kind
      */
-    private function nextCalendarMonthStart(): Carbon
+    private function nextCalendarMonthStart(string $kind = 'sfp'): Carbon
     {
-        $resetDay = max(1, min(28, (int) Setting::get('sfp_limit_calendar_reset_day', 1)));
+        $prefix   = $kind === 'ill' ? 'ill_limit_' : 'sfp_limit_';
+        $resetDay = max(1, min(28, (int) Setting::get($prefix . 'calendar_reset_day', 1)));
         $now      = now();
 
         return $now->day >= $resetDay

@@ -64,6 +64,18 @@ class IllForm extends Component
 
     public ?int $createdRequestId = null;
 
+    /** ILL request limit: set when patron has reached their ILL limit (block submit, show message). */
+    public bool $limitReached = false;
+    public ?string $limitUntil = null;
+    public int $limitCount = 0;
+
+    public function getIllLimitCountProperty(): int
+    {
+        $raw = Setting::get('ill_limit_count', '');
+        $v = trim((string) $raw) === '' ? 0 : (int) $raw;
+        return $v > 0 ? $v : 0;
+    }
+
     public function mount(): void
     {
         // When a patron switches from the SFP form (e.g. after age-of-book warning) to ILL,
@@ -253,6 +265,15 @@ class IllForm extends Component
             'email'      => $this->email ?: null,
         ])['patron'];
 
+        if ($patron->hasReachedLimit('ill')) {
+            $this->limitReached = true;
+            $raw = Setting::get('ill_limit_count', '');
+            $this->limitCount   = trim((string) $raw) === '' ? 0 : (int) $raw;
+            $this->limitUntil   = $patron->nextAvailableDate('ill')?->format('F j, Y');
+            $this->processing   = false;
+            return;
+        }
+
         // Lightweight “already owned” check for book/audiobook/dvd material types.
         $materialSlug = $this->materialTypeSlug();
         $title = (string) ($this->custom['title'] ?? '');
@@ -346,6 +367,15 @@ class IllForm extends Component
 
     private function saveRequest(Patron $patron, ?array $isbndbData = null): void
     {
+        if ($patron->hasReachedLimit('ill')) {
+            $this->limitReached = true;
+            $raw = Setting::get('ill_limit_count', '');
+            $this->limitCount   = trim((string) $raw) === '' ? 0 : (int) $raw;
+            $this->limitUntil   = $patron->nextAvailableDate('ill')?->format('F j, Y');
+            $this->processing   = false;
+            return;
+        }
+
         $this->processing = true;
         $this->processingStep = 'Submitting your request...';
 

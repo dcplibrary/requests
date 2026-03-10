@@ -17,65 +17,68 @@
 
     @if($group === 'request_limits')
     {{-- ------------------------------------------------------------------ --}}
-    {{-- Custom section: conditionally shows window-type-dependent fields.   --}}
+    {{-- Custom section: SFP and ILL request limits (blank count = unlimited). --}}
     {{-- ------------------------------------------------------------------ --}}
     @php
-        $limitCountItem    = $items->firstWhere('key', 'sfp_limit_count');
-        $windowTypeItem    = $items->firstWhere('key', 'sfp_limit_window_type');
-        $windowDaysItem    = $items->firstWhere('key', 'sfp_limit_window_days');
-        $resetDayItem      = $items->firstWhere('key', 'sfp_limit_calendar_reset_day');
-        $initialWindowType = $windowTypeItem?->value ?? 'rolling';
+        $sfpLimitCount   = $items->firstWhere('key', 'sfp_limit_count');
+        $sfpWindowType   = $items->firstWhere('key', 'sfp_limit_window_type');
+        $sfpWindowDays   = $items->firstWhere('key', 'sfp_limit_window_days');
+        $sfpResetDay     = $items->firstWhere('key', 'sfp_limit_calendar_reset_day');
+        $illLimitCount   = $items->firstWhere('key', 'ill_limit_count');
+        $illWindowType   = $items->firstWhere('key', 'ill_limit_window_type');
+        $illWindowDays   = $items->firstWhere('key', 'ill_limit_window_days');
+        $illResetDay     = $items->firstWhere('key', 'ill_limit_calendar_reset_day');
+        $sfpWindowTypeVal = $sfpWindowType?->value ?? 'rolling';
+        $illWindowTypeVal = $illWindowType?->value ?? 'rolling';
     @endphp
     <div class="bg-white rounded-lg border border-gray-200 mb-6 overflow-hidden"
-         x-data="{ windowType: '{{ $initialWindowType }}' }">
+         x-data="{ sfpWindowType: '{{ $sfpWindowTypeVal }}', illWindowType: '{{ $illWindowTypeVal }}' }">
         <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 class="text-sm font-semibold text-gray-700">{{ $groupLabel }}</h2>
         </div>
         <div class="divide-y divide-gray-100">
 
-            {{-- Request Limit Count --}}
-            @if($limitCountItem)
-            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $limitCountItem->key }}">
+            {{-- ─── SFP request limits ─── --}}
+            <div class="px-5 py-2 pt-4">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">SFP request limits</h3>
+            </div>
+            @if($sfpLimitCount)
+            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $sfpLimitCount->key }}">
             <div class="px-5 py-4 flex items-start gap-6">
                 <div class="w-64 flex-shrink-0">
-                    <label class="block text-sm font-medium text-gray-800">{{ $limitCountItem->label ?? $limitCountItem->key }}</label>
-                    @if($limitCountItem->description)
-                        <p class="text-xs text-gray-400 mt-0.5">{{ $limitCountItem->description }}</p>
+                    <label class="block text-sm font-medium text-gray-800">{{ $sfpLimitCount->label ?? $sfpLimitCount->key }}</label>
+                    @if($sfpLimitCount->description)
+                        <p class="text-xs text-gray-400 mt-0.5">{{ $sfpLimitCount->description }}</p>
                     @endif
                 </div>
                 <div class="flex-1">
                     <div class="flex items-center gap-2">
                         <input type="number"
                                name="settings[{{ $i }}][value]"
-                               value="{{ old("settings.{$i}.value", $limitCountItem->value) }}"
-                               min="1"
+                               value="{{ old("settings.{$i}.value", $sfpLimitCount->value) }}"
+                               min="0"
+                               placeholder="Unlimited"
                                class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
-                        <span class="text-sm text-gray-500">requests</span>
+                        <span class="text-sm text-gray-500">requests (blank = unlimited)</span>
                     </div>
                 </div>
             </div>
             @php $i++; @endphp
             @endif
-
-            {{-- Limit Window Type (radio) --}}
-            @if($windowTypeItem)
-            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $windowTypeItem->key }}">
+            @if($sfpWindowType)
+            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $sfpWindowType->key }}">
             <div class="px-5 py-4 flex items-start gap-6">
                 <div class="w-64 flex-shrink-0">
-                    <label class="block text-sm font-medium text-gray-800">{{ $windowTypeItem->label ?? $windowTypeItem->key }}</label>
-                    @if($windowTypeItem->description)
-                        <p class="text-xs text-gray-400 mt-0.5">{{ $windowTypeItem->description }}</p>
+                    <label class="block text-sm font-medium text-gray-800">{{ $sfpWindowType->label ?? $sfpWindowType->key }}</label>
+                    @if($sfpWindowType->description)
+                        <p class="text-xs text-gray-400 mt-0.5">{{ $sfpWindowType->description }}</p>
                     @endif
                 </div>
                 <div class="flex-1">
                     <div class="flex flex-col gap-2.5">
                         @foreach(['rolling' => 'Rolling', 'calendar_month' => 'Calendar Month', 'calendar_week' => 'Calendar Week'] as $val => $lbl)
                         <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                            <input type="radio"
-                                   name="settings[{{ $i }}][value]"
-                                   value="{{ $val }}"
-                                   x-model="windowType"
-                                   class="w-4 h-4 border-gray-300 text-blue-600">
+                            <input type="radio" name="settings[{{ $i }}][value]" value="{{ $val }}" x-model="sfpWindowType" class="w-4 h-4 border-gray-300 text-blue-600">
                             {{ $lbl }}
                         </label>
                         @endforeach
@@ -84,48 +87,122 @@
             </div>
             @php $i++; @endphp
             @endif
-
-            {{-- Rolling Window Length — only visible when type is "rolling" --}}
-            @if($windowDaysItem)
-            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $windowDaysItem->key }}">
-            <div class="px-5 py-4 flex items-start gap-6" x-show="windowType === 'rolling'" x-cloak>
+            @if($sfpWindowDays)
+            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $sfpWindowDays->key }}">
+            <div class="px-5 py-4 flex items-start gap-6" x-show="sfpWindowType === 'rolling'" x-cloak>
                 <div class="w-64 flex-shrink-0">
-                    <label class="block text-sm font-medium text-gray-800">{{ $windowDaysItem->label ?? $windowDaysItem->key }}</label>
-                    @if($windowDaysItem->description)
-                        <p class="text-xs text-gray-400 mt-0.5">{{ $windowDaysItem->description }}</p>
+                    <label class="block text-sm font-medium text-gray-800">{{ $sfpWindowDays->label ?? $sfpWindowDays->key }}</label>
+                    @if($sfpWindowDays->description)
+                        <p class="text-xs text-gray-400 mt-0.5">{{ $sfpWindowDays->description }}</p>
                     @endif
                 </div>
                 <div class="flex-1">
                     <div class="flex items-center gap-2">
-                        <input type="number"
-                               name="settings[{{ $i }}][value]"
-                               value="{{ old("settings.{$i}.value", $windowDaysItem->value) }}"
-                               min="1"
-                               class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
+                        <input type="number" name="settings[{{ $i }}][value]" value="{{ old("settings.{$i}.value", $sfpWindowDays->value) }}" min="1" class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
                         <span class="text-sm text-gray-500">days</span>
                     </div>
                 </div>
             </div>
             @php $i++; @endphp
             @endif
-
-            {{-- Monthly Reset Day — only visible when type is "calendar_month" --}}
-            @if($resetDayItem)
-            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $resetDayItem->key }}">
-            <div class="px-5 py-4 flex items-start gap-6" x-show="windowType === 'calendar_month'" x-cloak>
+            @if($sfpResetDay)
+            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $sfpResetDay->key }}">
+            <div class="px-5 py-4 flex items-start gap-6" x-show="sfpWindowType === 'calendar_month'" x-cloak>
                 <div class="w-64 flex-shrink-0">
-                    <label class="block text-sm font-medium text-gray-800">{{ $resetDayItem->label ?? $resetDayItem->key }}</label>
-                    @if($resetDayItem->description)
-                        <p class="text-xs text-gray-400 mt-0.5">{{ $resetDayItem->description }}</p>
+                    <label class="block text-sm font-medium text-gray-800">{{ $sfpResetDay->label ?? $sfpResetDay->key }}</label>
+                    @if($sfpResetDay->description)
+                        <p class="text-xs text-gray-400 mt-0.5">{{ $sfpResetDay->description }}</p>
+                    @endif
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <input type="number" name="settings[{{ $i }}][value]" value="{{ old("settings.{$i}.value", $sfpResetDay->value) }}" min="1" max="28" class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
+                        <span class="text-sm text-gray-500">of each month</span>
+                    </div>
+                </div>
+            </div>
+            @php $i++; @endphp
+            @endif
+
+            {{-- ─── ILL request limits ─── --}}
+            <div class="px-5 py-2 pt-4 border-t border-gray-100">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">ILL request limits</h3>
+            </div>
+            @if($illLimitCount)
+            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $illLimitCount->key }}">
+            <div class="px-5 py-4 flex items-start gap-6">
+                <div class="w-64 flex-shrink-0">
+                    <label class="block text-sm font-medium text-gray-800">{{ $illLimitCount->label ?? $illLimitCount->key }}</label>
+                    @if($illLimitCount->description)
+                        <p class="text-xs text-gray-400 mt-0.5">{{ $illLimitCount->description }}</p>
                     @endif
                 </div>
                 <div class="flex-1">
                     <div class="flex items-center gap-2">
                         <input type="number"
                                name="settings[{{ $i }}][value]"
-                               value="{{ old("settings.{$i}.value", $resetDayItem->value) }}"
-                               min="1" max="28"
+                               value="{{ old("settings.{$i}.value", $illLimitCount->value) }}"
+                               min="0"
+                               placeholder="Unlimited"
                                class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
+                        <span class="text-sm text-gray-500">requests (blank = unlimited)</span>
+                    </div>
+                </div>
+            </div>
+            @php $i++; @endphp
+            @endif
+            @if($illWindowType)
+            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $illWindowType->key }}">
+            <div class="px-5 py-4 flex items-start gap-6">
+                <div class="w-64 flex-shrink-0">
+                    <label class="block text-sm font-medium text-gray-800">{{ $illWindowType->label ?? $illWindowType->key }}</label>
+                    @if($illWindowType->description)
+                        <p class="text-xs text-gray-400 mt-0.5">{{ $illWindowType->description }}</p>
+                    @endif
+                </div>
+                <div class="flex-1">
+                    <div class="flex flex-col gap-2.5">
+                        @foreach(['rolling' => 'Rolling', 'calendar_month' => 'Calendar Month', 'calendar_week' => 'Calendar Week'] as $val => $lbl)
+                        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                            <input type="radio" name="settings[{{ $i }}][value]" value="{{ $val }}" x-model="illWindowType" class="w-4 h-4 border-gray-300 text-blue-600">
+                            {{ $lbl }}
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @php $i++; @endphp
+            @endif
+            @if($illWindowDays)
+            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $illWindowDays->key }}">
+            <div class="px-5 py-4 flex items-start gap-6" x-show="illWindowType === 'rolling'" x-cloak>
+                <div class="w-64 flex-shrink-0">
+                    <label class="block text-sm font-medium text-gray-800">{{ $illWindowDays->label ?? $illWindowDays->key }}</label>
+                    @if($illWindowDays->description)
+                        <p class="text-xs text-gray-400 mt-0.5">{{ $illWindowDays->description }}</p>
+                    @endif
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <input type="number" name="settings[{{ $i }}][value]" value="{{ old("settings.{$i}.value", $illWindowDays->value) }}" min="1" class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
+                        <span class="text-sm text-gray-500">days</span>
+                    </div>
+                </div>
+            </div>
+            @php $i++; @endphp
+            @endif
+            @if($illResetDay)
+            <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $illResetDay->key }}">
+            <div class="px-5 py-4 flex items-start gap-6" x-show="illWindowType === 'calendar_month'" x-cloak>
+                <div class="w-64 flex-shrink-0">
+                    <label class="block text-sm font-medium text-gray-800">{{ $illResetDay->label ?? $illResetDay->key }}</label>
+                    @if($illResetDay->description)
+                        <p class="text-xs text-gray-400 mt-0.5">{{ $illResetDay->description }}</p>
+                    @endif
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <input type="number" name="settings[{{ $i }}][value]" value="{{ old("settings.{$i}.value", $illResetDay->value) }}" min="1" max="28" class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
                         <span class="text-sm text-gray-500">of each month</span>
                     </div>
                 </div>
