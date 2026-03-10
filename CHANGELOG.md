@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+# [2.13.0](https://github.com/dcplibrary/sfp/compare/v2.12.0...v2.13.0) (2026-03-10)
+
+
+### Features
+
+* add ill limit settings ([abefe4a](https://github.com/dcplibrary/sfp/commit/abefe4a2f0bc391d599423bb7ab3e7f087eb9ffd))
+
 # [2.12.0](https://github.com/dcplibrary/sfp/compare/v2.11.2...v2.12.0) (2026-03-10)
 
 
