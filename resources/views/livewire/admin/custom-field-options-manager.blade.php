@@ -20,7 +20,7 @@
     @if(count($items))
     <div class="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden bg-white">
         @foreach($items as $i => $item)
-        <div wire:key="cfo-{{ $item['id'] }}"
+        <div wire:key="cfo-{{ $i }}"
              x-data="{
                 editOpen: false,
                 confirmDelete: false,
@@ -32,12 +32,12 @@
         >
             <div class="flex items-center gap-3 px-3 py-2.5 {{ $item['active'] ? '' : 'opacity-60' }}">
                 <div class="flex flex-col gap-0.5 shrink-0">
-                    <button type="button" wire:click="moveUp({{ $item['id'] }})" @if($i === 0) disabled @endif
+                    <button type="button" wire:click="moveUp({{ $item['id'] }})" wire:loading.attr="disabled" @if($i === 0) disabled @endif
                             class="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none"
                             title="Move up">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
                     </button>
-                    <button type="button" wire:click="moveDown({{ $item['id'] }})" @if($i === count($items) - 1) disabled @endif
+                    <button type="button" wire:click="moveDown({{ $item['id'] }})" wire:loading.attr="disabled" @if($i === count($items) - 1) disabled @endif
                             class="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none"
                             title="Move down">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>

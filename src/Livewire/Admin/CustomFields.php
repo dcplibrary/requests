@@ -39,23 +39,29 @@ class CustomFields extends Component
     public function moveUp(int $index): void
     {
         if ($index <= 0) return;
+        $this->fields = array_values($this->fields);
         [$this->fields[$index - 1], $this->fields[$index]] = [$this->fields[$index], $this->fields[$index - 1]];
+        $this->fields = array_values($this->fields);
         $this->persistOrder();
     }
 
     public function moveDown(int $index): void
     {
         if ($index >= count($this->fields) - 1) return;
+        $this->fields = array_values($this->fields);
         [$this->fields[$index + 1], $this->fields[$index]] = [$this->fields[$index], $this->fields[$index + 1]];
+        $this->fields = array_values($this->fields);
         $this->persistOrder();
     }
 
     private function persistOrder(): void
     {
-        foreach ($this->fields as $i => $field) {
+        $rows = array_values($this->fields);
+        foreach ($rows as $i => $field) {
             CustomField::whereKey($field['id'])->update(['sort_order' => $i + 1]);
         }
-        $this->loadFromDb();
+        // Do NOT reload from DB — keeping the swapped in-memory array lets the user
+        // make multiple sequential reorders without Livewire state getting confused.
     }
 
     public function toggleActive(int $index): void

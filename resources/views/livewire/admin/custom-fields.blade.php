@@ -19,16 +19,18 @@
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @forelse($fields as $index => $field)
-                <tr class="hover:bg-gray-50 {{ $field['active'] ? '' : 'opacity-60' }}">
+                <tr wire:key="cf-{{ $index }}" class="hover:bg-gray-50 {{ $field['active'] ? '' : 'opacity-60' }}">
                     <td class="px-4 py-3">
                         <div class="flex flex-col gap-0.5">
                             <button type="button" wire:click="moveUp({{ $index }})"
+                                wire:loading.attr="disabled"
                                 @if($index === 0) disabled @endif
                                 class="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none"
                                 title="Move up">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
                             </button>
                             <button type="button" wire:click="moveDown({{ $index }})"
+                                wire:loading.attr="disabled"
                                 @if($index === count($fields) - 1) disabled @endif
                                 class="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none"
                                 title="Move down">

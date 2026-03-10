@@ -40,11 +40,15 @@ class FormFormFieldEdit extends Component
         $this->labelOverride = (string) ($pivot->label_override ?? '');
         $this->required      = (bool) $pivot->required;
         $this->visible       = (bool) $pivot->visible;
-        $this->condition     = $pivot->conditional_logic ?? ['match' => 'all', 'rules' => []];
-        $this->hasCondition  = ! empty($this->condition['rules']);
 
         // Determine if this field has options (material_type, audience, genre, console).
         $field = FormField::find($fieldId);
+
+        // Load per-form conditional logic; fall back to the base field's condition so the
+        // admin sees the effective condition rather than a blank state when none has been
+        // explicitly overridden on the pivot yet.
+        $this->condition    = $pivot->conditional_logic ?? ($field?->condition ?? ['match' => 'all', 'rules' => []]);
+        $this->hasCondition = ! empty($this->condition['rules']);
         if ($field) {
             $this->fieldKey  = $field->key;
             $this->hasOptions = in_array($field->key, FormFormFieldOptionsManager::OPTION_KEYS, true);
@@ -66,11 +70,11 @@ class FormFormFieldEdit extends Component
             'label_override'     => $labelOverride !== '' ? $labelOverride : null,
             'required'          => $this->required,
             'visible'           => $this->visible,
-            'conditional_logic' => $conditionalLogic ? json_encode($conditionalLogic) : null,
+            'conditional_logic' => $conditionalLogic,
         ]);
 
         session()->flash('success', 'Settings for this form updated.');
-        $this->redirect(route('request.staff.settings.form-fields'));
+        $this->redirect(route('request.staff.settings.form-fields', ['tab' => $this->formSlug]));
     }
 
     public function toggleHasCondition(): void

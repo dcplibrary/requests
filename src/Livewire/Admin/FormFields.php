@@ -20,8 +20,15 @@ class FormFields extends Component
     /** @var array<int, array<string, mixed>> ILL form fields + custom fields */
     public array $illFields = [];
 
+    /** Active tab: 'sfp' | 'ill' */
+    public string $activeFormTab = 'sfp';
+
     public function mount(): void
     {
+        $tab = request()->get('tab');
+        if (in_array($tab, ['sfp', 'ill'], true)) {
+            $this->activeFormTab = $tab;
+        }
         $this->loadFromDb();
     }
 
@@ -58,7 +65,7 @@ class FormFields extends Component
                 'key'                => $cf->key,
                 'label'              => $cf->label,
                 'type'               => $cf->type,
-                'active'             => (bool) $cf->active,
+                'active'             => (bool) $p->visible,
                 'required'           => (bool) $p->required,
                 'include_as_token'   => (bool) $cf->include_as_token,
                 'has_condition'      => ! empty($p->conditional_logic['rules'] ?? $cf->condition['rules'] ?? null),
@@ -92,7 +99,7 @@ class FormFields extends Component
                 'key'                => $cf->key,
                 'label'              => $cf->label,
                 'type'               => $cf->type,
-                'active'             => (bool) $cf->active,
+                'active'             => (bool) $p->visible,
                 'required'           => (bool) $p->required,
                 'include_as_token'   => (bool) $cf->include_as_token,
                 'has_condition'      => ! empty($p->conditional_logic['rules'] ?? $cf->condition['rules'] ?? null),
@@ -115,9 +122,9 @@ class FormFields extends Component
             'id'                => $f->id,
             'key'               => $f->key,
             'label'             => $pivot->label_override !== null && $pivot->label_override !== '' ? $pivot->label_override : $f->label,
-            'type'              => null,
+            'type'              => $f->type ?? 'text',
             'form_scope'        => $f->form_scope ?? 'global',
-            'active'            => $f->active,
+            'active'            => (bool) $pivot->visible,
             'required'          => (bool) $pivot->required,
             'include_as_token'  => (bool) $f->include_as_token,
             'has_condition'     => ! empty($condition['rules']),
@@ -152,8 +159,10 @@ class FormFields extends Component
         if ($index <= 0) {
             return;
         }
+        $this->sfpFields = array_values($this->sfpFields);
         [$this->sfpFields[$index - 1], $this->sfpFields[$index]] =
             [$this->sfpFields[$index], $this->sfpFields[$index - 1]];
+        $this->sfpFields = array_values($this->sfpFields);
         $this->persistSfp();
     }
 
@@ -162,8 +171,10 @@ class FormFields extends Component
         if ($index >= count($this->sfpFields) - 1) {
             return;
         }
+        $this->sfpFields = array_values($this->sfpFields);
         [$this->sfpFields[$index + 1], $this->sfpFields[$index]] =
             [$this->sfpFields[$index], $this->sfpFields[$index + 1]];
+        $this->sfpFields = array_values($this->sfpFields);
         $this->persistSfp();
     }
 
@@ -172,8 +183,10 @@ class FormFields extends Component
         if ($index <= 0) {
             return;
         }
+        $this->illFields = array_values($this->illFields);
         [$this->illFields[$index - 1], $this->illFields[$index]] =
             [$this->illFields[$index], $this->illFields[$index - 1]];
+        $this->illFields = array_values($this->illFields);
         $this->persistIll();
     }
 
@@ -182,35 +195,47 @@ class FormFields extends Component
         if ($index >= count($this->illFields) - 1) {
             return;
         }
+        $this->illFields = array_values($this->illFields);
         [$this->illFields[$index + 1], $this->illFields[$index]] =
             [$this->illFields[$index], $this->illFields[$index + 1]];
+        $this->illFields = array_values($this->illFields);
         $this->persistIll();
     }
 
     private function persistSfp(): void
     {
-        foreach ($this->sfpFields as $i => $row) {
+        $rows = array_values($this->sfpFields);
+        foreach ($rows as $i => $row) {
             $order = $i + 1;
-            if (($row['source'] ?? '') === 'form') {
+            $source = $row['source'] ?? '';
+            if ($source === 'form') {
                 FormFormField::where('id', $row['pivot_id'])->update(['sort_order' => $order]);
-            } else {
+            } elseif ($source === 'custom') {
                 FormCustomField::where('id', $row['pivot_id'])->update(['sort_order' => $order]);
             }
+            // Update the in-memory sort_order so subsequent moves stay in sync
+            $this->sfpFields[$i]['sort_order'] = $order;
         }
-        $this->loadFromDb();
+        // Do NOT reload from DB here — keeping the swapped in-memory array lets the user
+        // make multiple sequential reorders without Livewire state getting confused.
     }
 
     private function persistIll(): void
     {
-        foreach ($this->illFields as $i => $row) {
+        $rows = array_values($this->illFields);
+        foreach ($rows as $i => $row) {
             $order = $i + 1;
-            if ($row['source'] === 'form') {
+            $source = $row['source'] ?? '';
+            if ($source === 'form') {
                 FormFormField::where('id', $row['pivot_id'])->update(['sort_order' => $order]);
-            } else {
+            } elseif ($source === 'custom') {
                 FormCustomField::where('id', $row['pivot_id'])->update(['sort_order' => $order]);
             }
+            // Update the in-memory sort_order so subsequent moves stay in sync
+            $this->illFields[$i]['sort_order'] = $order;
         }
-        $this->loadFromDb();
+        // Do NOT reload from DB here — keeping the swapped in-memory array lets the user
+        // make multiple sequential reorders without Livewire state getting confused.
     }
 
     public function render()

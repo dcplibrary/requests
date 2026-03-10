@@ -123,20 +123,19 @@ class CustomField extends Model
     }
 
     /**
-     * @param array<string, string|null> $state key => selected slug/string
+     * Evaluate a condition array against current state (for form-specific conditional_logic).
+     *
+     * @param  array<string, string|null>  $state  key => selected slug/string
+     * @param  array{match?: string, rules?: array}  $condition  Same shape as condition/conditional_logic
      */
-    public function isVisibleFor(array $state): bool
+    public static function evaluateCondition(array $condition, array $state): bool
     {
-        if (! $this->active) {
-            return false;
-        }
-
-        if (empty($this->condition['rules'])) {
+        if (empty($condition['rules'])) {
             return true;
         }
 
-        $match = $this->condition['match'] ?? 'all';
-        $rules = $this->condition['rules'] ?? [];
+        $match = $condition['match'] ?? 'all';
+        $rules = $condition['rules'] ?? [];
 
         $results = array_map(function (array $rule) use ($state) {
             $field    = $rule['field'] ?? '';
@@ -158,6 +157,18 @@ class CustomField extends Model
         return $match === 'any'
             ? in_array(true, $results, true)
             : ! in_array(false, $results, true);
+    }
+
+    /**
+     * @param array<string, string|null> $state key => selected slug/string
+     */
+    public function isVisibleFor(array $state): bool
+    {
+        if (! $this->active) {
+            return false;
+        }
+
+        return static::evaluateCondition($this->condition ?? ['match' => 'all', 'rules' => []], $state);
     }
 
     /**

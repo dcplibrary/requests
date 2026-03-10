@@ -44,10 +44,15 @@ class FormCustomFieldEdit extends Component
         $this->labelOverride = (string) ($pivot->label_override ?? '');
         $this->required      = (bool) $pivot->required;
         $this->visible       = (bool) $pivot->visible;
-        $this->condition     = $pivot->conditional_logic ?? ['match' => 'all', 'rules' => []];
-        $this->hasCondition  = ! empty($this->condition['rules']);
 
         $field = CustomField::find($fieldId);
+
+        // Load per-form conditional logic; fall back to the base field's condition so the
+        // admin sees the effective condition rather than a blank state when none has been
+        // explicitly overridden on the pivot yet.
+        $this->condition    = $pivot->conditional_logic ?? ($field?->condition ?? ['match' => 'all', 'rules' => []]);
+        $this->hasCondition = ! empty($this->condition['rules']);
+
         if ($field) {
             $this->fieldType  = $field->type;
             $this->hasOptions = in_array($field->type, ['select', 'radio'], true);
@@ -65,11 +70,11 @@ class FormCustomFieldEdit extends Component
             'label_override'    => $labelOverride !== '' ? $labelOverride : null,
             'required'          => $this->required,
             'visible'           => $this->visible,
-            'conditional_logic' => $conditionalLogic ? json_encode($conditionalLogic) : null,
+            'conditional_logic' => $conditionalLogic,
         ]);
 
         session()->flash('success', 'Settings for this form updated.');
-        $this->redirect(route('request.staff.settings.form-fields'));
+        $this->redirect(route('request.staff.settings.form-fields', ['tab' => $this->formSlug]));
     }
 
     // ── Conditional logic ─────────────────────────────────────────────────────

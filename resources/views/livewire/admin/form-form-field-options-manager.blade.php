@@ -11,7 +11,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-100">
             @forelse($items as $index => $item)
-            <tr class="hover:bg-gray-50 {{ ! $item['globally_active'] ? 'opacity-50' : '' }}" wire:key="opt-{{ $item['slug'] }}">
+            <tr class="hover:bg-gray-50 {{ ! $item['globally_active'] ? 'opacity-50' : '' }}" wire:key="opt-{{ $index }}">
 
                 {{-- Sort buttons --}}
                 <td class="px-3 py-2">
@@ -19,6 +19,7 @@
                         <button
                             type="button"
                             wire:click="moveUp({{ $index }})"
+                            wire:loading.attr="disabled"
                             @disabled($index === 0)
                             class="p-0.5 rounded text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none"
                             title="Move up"
@@ -28,6 +29,7 @@
                         <button
                             type="button"
                             wire:click="moveDown({{ $index }})"
+                            wire:loading.attr="disabled"
                             @disabled($index === count($items) - 1)
                             class="p-0.5 rounded text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none"
                             title="Move down"

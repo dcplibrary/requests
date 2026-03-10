@@ -63,9 +63,10 @@ class FormCustomFieldOptionsManager extends Component
         if ($index <= 0) {
             return;
         }
+        $this->items = array_values($this->items);
         [$this->items[$index - 1], $this->items[$index]] = [$this->items[$index], $this->items[$index - 1]];
+        $this->items = array_values($this->items);
         $this->persistOrder();
-        $this->loadItems();
     }
 
     public function moveDown(int $index): void
@@ -73,9 +74,10 @@ class FormCustomFieldOptionsManager extends Component
         if ($index >= count($this->items) - 1) {
             return;
         }
+        $this->items = array_values($this->items);
         [$this->items[$index + 1], $this->items[$index]] = [$this->items[$index], $this->items[$index + 1]];
+        $this->items = array_values($this->items);
         $this->persistOrder();
-        $this->loadItems();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -121,12 +123,18 @@ class FormCustomFieldOptionsManager extends Component
      */
     private function persistOrder(): void
     {
-        foreach ($this->items as $i => $item) {
+        $rows = array_values($this->items);
+        foreach ($rows as $i => $item) {
+            $order = $i + 1;
             FormCustomFieldOption::updateOrInsert(
                 ['form_id' => $this->formId, 'custom_field_option_id' => $item['id']],
-                ['sort_order' => $i + 1]
+                ['sort_order' => $order]
             );
+            // Keep in-memory sort_order in sync so subsequent moves work correctly
+            $this->items[$i]['sort_order'] = $order;
         }
+        // Do NOT reload from DB — keeping the swapped in-memory array lets the user
+        // make multiple sequential reorders without Livewire state getting confused.
     }
 
     /** Build the URL for the per-option editor page. */

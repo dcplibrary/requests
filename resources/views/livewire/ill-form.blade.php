@@ -116,8 +116,15 @@
                     </label>
 
                     @if(in_array($field->type, ['radio'], true))
+                        @php
+                            $radioOptions = match ($field->key ?? '') {
+                                'audience' => $audienceOptions ?? [],
+                                'genre' => $genreOptions ?? [],
+                                default => $optionsByFieldId[$field->id] ?? [],
+                            };
+                        @endphp
                         <div class="space-y-1" role="radiogroup">
-                            @foreach(($optionsByFieldId[$field->id] ?? []) as $slug => $name)
+                            @foreach($radioOptions as $slug => $name)
                                 <label class="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-50 {{ ($custom[$field->key] ?? '') === $slug ? 'bg-blue-50 ring-1 ring-blue-200' : '' }}">
                                     <input type="radio" wire:model.live="custom.{{ $field->key }}" value="{{ $slug }}"
                                            class="text-blue-600 focus:ring-blue-500" />

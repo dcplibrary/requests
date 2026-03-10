@@ -115,42 +115,6 @@ class IllCustomFieldsSeeder extends Seeder
                 ]),
             ],
             [
-                'key' => 'article_author',
-                'label' => 'Author of Article',
-                'type' => 'text',
-                'step' => 2,
-                'request_kind' => 'ill',
-                'sort_order' => 21,
-                'active' => true,
-                'required' => false,
-                'include_as_token' => true,
-                'filterable' => false,
-                'condition' => json_encode([
-                    'match' => 'any',
-                    'rules' => [
-                        ['field' => 'material_type', 'operator' => 'in', 'values' => ['magazine-article', 'newspaper-microfilm']],
-                    ],
-                ]),
-            ],
-            [
-                'key' => 'article_title',
-                'label' => 'Title of Article',
-                'type' => 'text',
-                'step' => 2,
-                'request_kind' => 'ill',
-                'sort_order' => 22,
-                'active' => true,
-                'required' => false,
-                'include_as_token' => true,
-                'filterable' => false,
-                'condition' => json_encode([
-                    'match' => 'any',
-                    'rules' => [
-                        ['field' => 'material_type', 'operator' => 'in', 'values' => ['magazine-article', 'newspaper-microfilm']],
-                    ],
-                ]),
-            ],
-            [
                 'key' => 'volume_number',
                 'label' => 'Volume Number',
                 'type' => 'text',
@@ -260,6 +224,9 @@ class IllCustomFieldsSeeder extends Seeder
             'publication_date',
             'isbn_number',
         ])->delete();
+
+        // article_author and article_title are redundant with the global author/title form fields
+        DB::table('sfp_custom_fields')->whereIn('key', ['article_author', 'article_title'])->delete();
 
         // ILL now uses material_types (MaterialType model); remove borrow_type custom field
         DB::table('sfp_custom_fields')->where('key', 'borrow_type')->delete();

@@ -233,17 +233,20 @@ class OptionsManager extends Component
 
     public function moveUp(int $id): void
     {
+        $this->items = array_values($this->items);
         $idx = collect($this->items)->search(fn ($i) => $i['id'] === $id);
         if ($idx <= 0) {
             return;
         }
 
         $this->swapSortOrders($this->items[$idx]['id'], $this->items[$idx - 1]['id']);
-        $this->loadItems();
+        [$this->items[$idx - 1], $this->items[$idx]] = [$this->items[$idx], $this->items[$idx - 1]];
+        $this->items = array_values($this->items);
     }
 
     public function moveDown(int $id): void
     {
+        $this->items = array_values($this->items);
         $items = collect($this->items);
         $idx   = $items->search(fn ($i) => $i['id'] === $id);
 
@@ -252,7 +255,8 @@ class OptionsManager extends Component
         }
 
         $this->swapSortOrders($this->items[$idx]['id'], $this->items[$idx + 1]['id']);
-        $this->loadItems();
+        [$this->items[$idx + 1], $this->items[$idx]] = [$this->items[$idx], $this->items[$idx + 1]];
+        $this->items = array_values($this->items);
     }
 
     private function swapSortOrders(int $idA, int $idB): void

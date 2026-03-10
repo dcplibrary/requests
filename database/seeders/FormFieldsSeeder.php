@@ -47,15 +47,15 @@ class FormFieldsSeeder extends Seeder
             ],
         ]);
 
-        //                                                                  active   required  include_as_token
+        //                                                                  type       active   required  include_as_token
         $fields = [
-            ['key' => 'material_type', 'label' => 'Type of Material',           'sort_order' => 1,  'active' => true,  'required' => true,  'condition' => null,              'include_as_token' => false],
-            ['key' => 'audience',      'label' => 'Audience',                   'sort_order' => 2,  'active' => true,  'required' => true,  'condition' => null,              'include_as_token' => false],
-            ['key' => 'genre',         'label' => 'Genre',                      'sort_order' => 3,  'active' => true,  'required' => true,  'condition' => $genreCondition,   'include_as_token' => true],
-            ['key' => 'title',         'label' => 'Title',                      'sort_order' => 4,  'active' => true,  'required' => true,  'condition' => null,              'include_as_token' => false],
-            ['key' => 'author',        'label' => 'Author / Creator',           'sort_order' => 5,  'active' => true,  'required' => true,  'condition' => null,              'include_as_token' => false],
-            ['key' => 'isbn',          'label' => 'ISBN',                       'sort_order' => 6,  'active' => false, 'required' => false, 'condition' => null,              'include_as_token' => true],
-            ['key' => 'publish_date',  'label' => 'Publish / Release Date',     'sort_order' => 7,  'active' => true,  'required' => false, 'condition' => null,              'include_as_token' => true],
+            ['key' => 'material_type', 'label' => 'Type of Material',           'type' => 'select', 'sort_order' => 1,  'active' => true,  'required' => true,  'condition' => null,              'include_as_token' => false],
+            ['key' => 'audience',      'label' => 'Audience',                   'type' => 'radio',  'sort_order' => 2,  'active' => true,  'required' => true,  'condition' => null,              'include_as_token' => false],
+            ['key' => 'genre',         'label' => 'Genre',                      'type' => 'radio',  'sort_order' => 3,  'active' => true,  'required' => true,  'condition' => $genreCondition,   'include_as_token' => true],
+            ['key' => 'title',         'label' => 'Title',                      'type' => 'text',   'sort_order' => 4,  'active' => true,  'required' => true,  'condition' => null,              'include_as_token' => false],
+            ['key' => 'author',        'label' => 'Author / Creator',           'type' => 'text',   'sort_order' => 5,  'active' => true,  'required' => true,  'condition' => null,              'include_as_token' => false],
+            ['key' => 'isbn',          'label' => 'ISBN',                       'type' => 'text',   'sort_order' => 6,  'active' => false, 'required' => false, 'condition' => null,              'include_as_token' => true],
+            ['key' => 'publish_date',  'label' => 'Publish / Release Date',     'type' => 'date',   'sort_order' => 7,  'active' => true,  'required' => false, 'condition' => null,              'include_as_token' => true],
         ];
 
         foreach ($fields as $field) {

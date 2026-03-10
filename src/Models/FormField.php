@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int         $id
  * @property string      $key              Unique field identifier (e.g. 'genre', 'console')
  * @property string      $label            Human-readable label used in the admin UI
+ * @property string      $type             Input type: text, date, radio, select, etc.
  * @property int         $sort_order
  * @property bool        $active           When false the field is never rendered
  * @property bool        $required         When true, validation fails if the field is blank
@@ -35,7 +36,7 @@ class FormField extends Model
 
     protected $table = 'sfp_form_fields';
 
-    protected $fillable = ['key', 'label', 'sort_order', 'active', 'required', 'condition', 'include_as_token', 'form_scope', 'created_by', 'modified_by'];
+    protected $fillable = ['key', 'label', 'type', 'sort_order', 'active', 'required', 'condition', 'include_as_token', 'form_scope', 'created_by', 'modified_by'];
 
     protected $casts = [
         'active'    => 'boolean',

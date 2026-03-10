@@ -61,7 +61,7 @@
         @endphp
 
         <div
-            wire:key="opt-{{ $item['id'] }}"
+            wire:key="opt-{{ $i }}"
             x-data="{
                 editOpen: false,
                 confirmDelete: false,
@@ -88,6 +88,7 @@
                     <button
                         type="button"
                         wire:click="moveUp({{ $item['id'] }})"
+                        wire:loading.attr="disabled"
                         @if($i === 0) disabled @endif
                         class="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none"
                         title="Move up"
@@ -97,6 +98,7 @@
                     <button
                         type="button"
                         wire:click="moveDown({{ $item['id'] }})"
+                        wire:loading.attr="disabled"
                         @if($i === count($items) - 1) disabled @endif
                         class="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none"
                         title="Move down"
