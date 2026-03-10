@@ -120,6 +120,63 @@ class NotificationService
         }
     }
 
+    /**
+     * Render the patron status-change email for a given status without sending it.
+     *
+     * Runs the same gate checks as notifyPatronStatusChange(). Returns an
+     * associative array with 'subject', 'body', and 'to' keys when an email
+     * would be sent, or null when no email would be sent (gate checks fail,
+     * patron has no email, etc.).
+     *
+     * @return array{subject: string, body: string, to: string}|null
+     */
+    public function renderPatronEmail(SfpRequest $request, int $statusId): ?array
+    {
+        if (! Setting::get('notifications_enabled', true)) return null;
+        if (! Setting::get('patron_status_notification_enabled', true)) return null;
+
+        $status = \Dcplibrary\Sfp\Models\RequestStatus::find($statusId);
+        if (! $status?->notify_patron) return null;
+
+        $request->loadMissing(['patron', 'materialType', 'audience']);
+
+        $patronEmail = $request->patron?->email;
+        if (! $patronEmail) return null;
+
+        // Temporarily override the status relationship so placeholders resolve
+        // against the new status rather than the current one.
+        $request->setRelation('status', $status);
+        $request->request_status_id = $statusId;
+
+        $templates = \Dcplibrary\Sfp\Models\PatronStatusTemplate::query()
+            ->where('enabled', true)
+            ->whereHas('requestStatuses', fn ($q) => $q->where('request_statuses.id', $statusId))
+            ->ordered()
+            ->get();
+
+        if ($templates->isEmpty()) {
+            $subject = $this->replacePlaceholders(
+                (string) Setting::get('patron_status_subject', 'Update on your suggestion: {title}'),
+                $request
+            );
+            $body = $this->replacePlaceholders(
+                (string) Setting::get('patron_status_template', $this->defaultPatronTemplate()),
+                $request
+            );
+        } else {
+            // Use first matching template for preview.
+            $template = $templates->first();
+            $subject  = $this->replacePlaceholders($template->subject, $request);
+            $body     = $this->replacePlaceholders((string) $template->body, $request);
+        }
+
+        return [
+            'subject' => $subject,
+            'body'    => $body,
+            'to'      => $patronEmail,
+        ];
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /**

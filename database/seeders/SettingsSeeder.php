@@ -326,6 +326,22 @@ class SettingsSeeder extends Seeder
                 'group'       => 'notifications',
                 'description' => 'Text shown in the footer of every notification email sent to patrons and staff.',
             ],
+            [
+                'key'         => 'email_preview_enabled',
+                'value'       => '1',
+                'label'       => 'Email Preview Enabled',
+                'type'        => 'boolean',
+                'group'       => 'notifications',
+                'description' => 'When enabled, selectors will see a preview of the patron notification email before it is sent when updating a request status.',
+            ],
+            [
+                'key'         => 'email_editing_enabled',
+                'value'       => '0',
+                'label'       => 'Email Editing Enabled',
+                'type'        => 'boolean',
+                'group'       => 'notifications',
+                'description' => 'When enabled, selectors can edit the email subject, body, and recipients in the preview modal before sending.',
+            ],
 
             // --- Request limit messages ---
             [

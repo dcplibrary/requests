@@ -296,14 +296,19 @@
         </div>
 
         {{-- Update status --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
+        <div class="bg-white rounded-lg border border-gray-200 p-5"
+             x-data="statusUpdateForm('{{ route('request.staff.requests.preview-email', $sfpRequest) }}')">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Update Status</h2>
-            <form method="POST" action="{{ route('request.staff.requests.status', $sfpRequest) }}">
+            <form method="POST"
+                  action="{{ route('request.staff.requests.status', $sfpRequest) }}"
+                  @submit.prevent="handleSubmit($event)"
+                  x-ref="statusForm">
                 @csrf
                 @method('PATCH')
                 <div class="mb-3">
                     <label class="block text-xs font-medium text-gray-600 mb-1">New status</label>
-                    <select name="status_id" required class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
+                    <select name="status_id" required x-model="selectedStatusId"
+                            class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
                         <option value="">Select…</option>
                         @foreach($statuses as $s)
                             <option value="{{ $s->id }}" {{ $sfpRequest->request_status_id == $s->id ? 'selected' : '' }}>
@@ -316,11 +321,125 @@
                     <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
                     <textarea name="note" rows="3" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
                 </div>
-                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                    Update Status
+
+                {{-- Hidden fields populated by the modal before submit --}}
+                <input type="hidden" name="email_confirmed"   x-model="emailPayload.confirmed">
+                <input type="hidden" name="email_subject"     x-model="emailPayload.subject">
+                <input type="hidden" name="email_body"        x-model="emailPayload.body">
+                <input type="hidden" name="email_to"          x-model="emailPayload.to">
+                <input type="hidden" name="email_cc"          x-model="emailPayload.cc">
+                <input type="hidden" name="email_bcc"         x-model="emailPayload.bcc">
+                <input type="hidden" name="email_copy_to_self" x-model="emailPayload.copyToSelf ? '1' : ''">
+
+                <button type="submit"
+                        :disabled="loading"
+                        class="w-full px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-60">
+                    <span x-show="!loading">Update Status</span>
+                    <span x-show="loading" x-cloak>Checking…</span>
                 </button>
             </form>
+
+            @include('sfp::staff.requests._email-preview-modal')
         </div>
+
+        <script>
+        function statusUpdateForm(previewUrl) {
+            return {
+                selectedStatusId: '',
+                loading: false,
+
+                emailPreview: {
+                    show:           false,
+                    subject:        '',
+                    body:           '',
+                    to:             '',
+                    cc:             '',
+                    bcc:            '',
+                    staffEmail:     '',
+                    copyToSelf:     false,
+                    editingEnabled: false,
+                },
+
+                emailPayload: {
+                    confirmed:  '',
+                    subject:    '',
+                    body:       '',
+                    to:         '',
+                    cc:         '',
+                    bcc:        '',
+                    copyToSelf: false,
+                },
+
+                async handleSubmit(event) {
+                    const form = this.$refs.statusForm;
+
+                    if (!this.selectedStatusId) {
+                        form.submit();
+                        return;
+                    }
+
+                    this.loading = true;
+
+                    try {
+                        const url = previewUrl + '?status_id=' + encodeURIComponent(this.selectedStatusId);
+                        const res = await fetch(url, {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+
+                        if (!res.ok) throw new Error('Preview request failed');
+
+                        const data = await res.json();
+
+                        // If preview is disabled system-wide or no email would be sent, submit immediately.
+                        if (!data.preview_enabled || !data.would_send) {
+                            this.emailPayload.confirmed = '';
+                            form.submit();
+                            return;
+                        }
+
+                        // Populate and show the modal.
+                        this.emailPreview.subject        = data.subject        || '';
+                        this.emailPreview.body           = data.body           || '';
+                        this.emailPreview.to             = data.to             || '';
+                        this.emailPreview.cc             = '';
+                        this.emailPreview.bcc            = '';
+                        this.emailPreview.staffEmail     = data.staff_email    || '';
+                        this.emailPreview.copyToSelf     = false;
+                        this.emailPreview.editingEnabled = data.editing_enabled || false;
+                        this.emailPreview.show           = true;
+
+                    } catch (e) {
+                        // Network / JSON error — fall back to plain submit.
+                        console.error('Email preview fetch failed:', e);
+                        this.emailPayload.confirmed = '';
+                        form.submit();
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                /** "Send Status & Email" — populate payload and submit. */
+                sendWithEmail() {
+                    this.emailPayload.confirmed  = '1';
+                    this.emailPayload.subject    = this.emailPreview.subject;
+                    this.emailPayload.body       = this.emailPreview.body;
+                    this.emailPayload.to         = this.emailPreview.to;
+                    this.emailPayload.cc         = this.emailPreview.cc;
+                    this.emailPayload.bcc        = this.emailPreview.bcc;
+                    this.emailPayload.copyToSelf = this.emailPreview.copyToSelf;
+                    this.emailPreview.show       = false;
+                    this.$refs.statusForm.submit();
+                },
+
+                /** "Cancel (skip email)" — submit without email fields. */
+                cancelEmail() {
+                    this.emailPayload.confirmed = '';
+                    this.emailPreview.show      = false;
+                    this.$refs.statusForm.submit();
+                },
+            };
+        }
+        </script>
 
         {{-- Patron --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">

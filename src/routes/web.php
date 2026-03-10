@@ -53,9 +53,10 @@ Route::group([
 
             Route::get('/help/{page?}', [HelpController::class, 'show'])->name('help');
 
-            Route::get('/requests',                              [RequestController::class, 'index'])->name('requests.index');
-            Route::get('/requests/{sfpRequest}',               [RequestController::class, 'show'])->name('requests.show');
-            Route::patch('/requests/{sfpRequest}/status',      [RequestController::class, 'updateStatus'])->name('requests.status');
+            Route::get('/requests',                                       [RequestController::class, 'index'])->name('requests.index');
+            Route::get('/requests/{sfpRequest}',                        [RequestController::class, 'show'])->name('requests.show');
+            Route::get('/requests/{sfpRequest}/preview-email',          [RequestController::class, 'previewStatusEmail'])->name('requests.preview-email');
+            Route::patch('/requests/{sfpRequest}/status',               [RequestController::class, 'updateStatus'])->name('requests.status');
             Route::post('/requests/{sfpRequest}/catalog-recheck', [RequestController::class, 'recheckCatalog'])->name('requests.catalog-recheck');
             Route::post('/requests/{sfpRequest}/convert-kind',  [RequestController::class, 'convertKind'])->name('requests.convert-kind');
             Route::post('/requests/{sfpRequest}/claim',         [RequestController::class, 'claim'])->name('requests.claim');

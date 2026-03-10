@@ -13,6 +13,7 @@ use Dcplibrary\Sfp\Models\Setting;
 use Dcplibrary\Sfp\Models\User as SfpUser;
 use Dcplibrary\Sfp\Services\BibliocommonsService;
 use Dcplibrary\Sfp\Services\NotificationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class RequestController extends Controller
@@ -286,6 +287,40 @@ class RequestController extends Controller
         return back()->with('success', "Request converted: {$from} → {$to}.");
     }
 
+    /**
+     * Return a JSON preview of the patron email that would be sent for the
+     * given status change, without actually sending anything.
+     */
+    public function previewStatusEmail(Request $httpRequest, SfpRequest $sfpRequest): JsonResponse
+    {
+        $allowed = SfpRequest::query()
+            ->visibleTo($httpRequest->user())
+            ->whereKey($sfpRequest->getKey())
+            ->exists();
+        if (! $allowed) {
+            abort(403);
+        }
+
+        $httpRequest->validate([
+            'status_id' => 'required|integer|exists:request_statuses,id',
+        ]);
+
+        $statusId = (int) $httpRequest->status_id;
+        $preview  = app(NotificationService::class)->renderPatronEmail($sfpRequest, $statusId);
+
+        $staffEmail = $this->currentSfpUser($httpRequest)?->email;
+
+        return response()->json([
+            'would_send'      => $preview !== null,
+            'subject'         => $preview['subject'] ?? '',
+            'body'            => $preview['body']    ?? '',
+            'to'              => $preview['to']      ?? '',
+            'staff_email'     => $staffEmail ?? '',
+            'preview_enabled' => (bool) Setting::get('email_preview_enabled', true),
+            'editing_enabled' => (bool) Setting::get('email_editing_enabled', false),
+        ]);
+    }
+
     public function updateStatus(\Illuminate\Http\Request $httpRequest, SfpRequest $sfpRequest)
     {
         $allowed = SfpRequest::query()
@@ -297,8 +332,15 @@ class RequestController extends Controller
         }
 
         $httpRequest->validate([
-            'status_id' => 'required|exists:request_statuses,id',
-            'note'      => 'nullable|string|max:2000',
+            'status_id'        => 'required|exists:request_statuses,id',
+            'note'             => 'nullable|string|max:2000',
+            'email_confirmed'  => 'nullable|boolean',
+            'email_subject'    => 'nullable|string|max:500',
+            'email_body'       => 'nullable|string',
+            'email_to'         => 'nullable|email',
+            'email_cc'         => 'nullable|string|max:1000',
+            'email_bcc'        => 'nullable|string|max:1000',
+            'email_copy_to_self' => 'nullable|boolean',
         ]);
 
         $sfpUserId = $this->currentSfpUser($httpRequest)?->id;
@@ -325,9 +367,86 @@ class RequestController extends Controller
 
         // Reload so notify service sees the fresh status relationship.
         $sfpRequest->refresh();
-        app(NotificationService::class)->notifyPatronStatusChange($sfpRequest);
+
+        if ($httpRequest->boolean('email_confirmed')) {
+            // Staff reviewed (and optionally edited) the email in the preview modal.
+            $this->sendCustomPatronEmail(
+                subject:     (string) ($httpRequest->email_subject ?? ''),
+                body:        (string) ($httpRequest->email_body    ?? ''),
+                to:          (string) ($httpRequest->email_to      ?? ''),
+                cc:          (string) ($httpRequest->email_cc      ?? ''),
+                bcc:         (string) ($httpRequest->email_bcc     ?? ''),
+                copyToSelf:  $httpRequest->boolean('email_copy_to_self'),
+                sfpUserId:   $sfpUserId,
+            );
+        } else {
+            // No preview modal used — fall back to the standard notification path.
+            app(NotificationService::class)->notifyPatronStatusChange($sfpRequest);
+        }
 
         return back()->with('success', 'Status updated.');
+    }
+
+    /**
+     * Send a patron email with custom subject/body/recipients assembled in the
+     * email preview modal. Parsing CC/BCC from comma-separated strings.
+     */
+    private function sendCustomPatronEmail(
+        string  $subject,
+        string  $body,
+        string  $to,
+        string  $cc,
+        string  $bcc,
+        bool    $copyToSelf,
+        ?int    $sfpUserId,
+    ): void {
+        if (! $to) return;
+
+        $ccAddresses  = $this->parseAddressList($cc);
+        $bccAddresses = $this->parseAddressList($bcc);
+
+        if ($copyToSelf && $sfpUserId) {
+            $staffEmail = SfpUser::find($sfpUserId)?->email;
+            if ($staffEmail) {
+                $ccAddresses[] = $staffEmail;
+            }
+        }
+
+        // Deduplicate.
+        $ccAddresses  = array_unique(array_filter($ccAddresses));
+        $bccAddresses = array_unique(array_filter($bccAddresses));
+
+        try {
+            $mailer = \Illuminate\Support\Facades\Mail::to($to);
+            if (! empty($ccAddresses))  $mailer = $mailer->cc($ccAddresses);
+            if (! empty($bccAddresses)) $mailer = $mailer->bcc($bccAddresses);
+            $mailer->send(new \Dcplibrary\Sfp\Mail\SfpMail($subject, $body));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('SFP custom patron email failed', [
+                'to'    => $to,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Split a comma/semicolon/newline-separated address list into an array of
+     * trimmed, validated email strings.
+     *
+     * @return string[]
+     */
+    private function parseAddressList(string $raw): array
+    {
+        if (trim($raw) === '') return [];
+
+        $emails = [];
+        foreach (preg_split('/[\s,;]+/', $raw) as $part) {
+            $part = trim($part);
+            if ($part && filter_var($part, FILTER_VALIDATE_EMAIL)) {
+                $emails[] = $part;
+            }
+        }
+        return $emails;
     }
 
     public function recheckCatalog(SfpRequest $sfpRequest)
