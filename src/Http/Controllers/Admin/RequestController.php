@@ -168,15 +168,9 @@ class RequestController extends Controller
             }
         }
 
-        // Show "Convert to ILL" button when this is an SFP request and the patron
-        // opted in to ILL via any checkbox field whose label mentions "interlibrary".
+        // Show "Convert to ILL" button when this is an SFP request and ILL was requested.
         $showConvertToIll = $sfpRequest->request_kind === 'sfp'
-            && $sfpRequest->customFieldValues->contains(function ($val) {
-                return $val->field
-                    && $val->field->type === 'checkbox'
-                    && stripos($val->field->label ?? '', 'interlibrary') !== false
-                    && $val->value_text;
-            });
+            && $sfpRequest->ill_requested;
 
         return view('sfp::staff.requests.show', [
             'sfpRequest' => $sfpRequest,
