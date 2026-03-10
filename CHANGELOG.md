@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.15.1](https://github.com/dcplibrary/sfp/compare/v2.15.0...v2.15.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* update help docs ([864d9dd](https://github.com/dcplibrary/sfp/commit/864d9dda0adb76f6c5345fcce17cd1e1fc3b8842))
+
 # [2.15.0](https://github.com/dcplibrary/sfp/compare/v2.14.0...v2.15.0) (2026-03-10)
 
 
