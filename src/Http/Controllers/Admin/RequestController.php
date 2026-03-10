@@ -295,6 +295,10 @@ class RequestController extends Controller
         // Notify ILL staff when something is converted into ILL.
         if ($to === 'ill') {
             app(NotificationService::class)->notifyStaffNewRequest($sfpRequest->fresh());
+            // Redirect to the list — the user may not have ILL access so back() could 403.
+            return redirect()
+                ->route('request.staff.requests.index')
+                ->with('success', "Request #{$sfpRequest->id} converted to ILL.");
         }
 
         return back()->with('success', "Request converted: {$from} → {$to}.");

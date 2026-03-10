@@ -275,9 +275,13 @@
         @if($showConvertToIll)
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Workflow</h2>
-            <form method="POST" action="{{ route('request.staff.requests.convert-kind', $sfpRequest) }}">
+            <form method="POST" action="{{ route('request.staff.requests.convert-kind', $sfpRequest) }}" class="space-y-3">
                 @csrf
                 <input type="hidden" name="to" value="ill">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
+                    <textarea name="note" rows="2" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
+                </div>
                 <button type="submit"
                         class="w-full px-4 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
                         onclick="return confirm('Convert this request to ILL?')">
