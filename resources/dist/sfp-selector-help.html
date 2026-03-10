@@ -244,6 +244,7 @@
     <a href="#workflow">Daily workflow</a>
     <a href="#flags">Understanding flags</a>
     <a href="#notifications">Email notifications</a>
+    <a href="#convert-ill">Converting to ILL</a>
   </nav>
 
   <!-- ── Main ── -->
@@ -337,8 +338,8 @@
       <p>The <strong>Update Status</strong> panel is always visible on the right side of any request detail page. This is how you record your decision.</p>
 
       <ol class="steps">
-        <li>Choose a new status from the dropdown (e.g. <em>Ordered</em>, <em>Declined</em>, <em>On Hold</em>).</li>
-        <li>Optionally type a note — this is a good place to record why you ordered or declined.</li>
+        <li>Choose a new status from the dropdown (e.g. <em>On Order</em>, <em>Denied</em>, <em>Purchased</em>).</li>
+        <li>Optionally type a note — a good place to record why you ordered or declined.</li>
         <li>Click <strong>Update Status</strong>. The change is saved immediately and added to the status history.</li>
       </ol>
 
@@ -347,9 +348,28 @@
         <div>Notes are visible to admins and other selectors, but not to patrons. Use them to capture context, like an order number or a reason for declining.</div>
       </div>
 
+      <h3>Email preview modal</h3>
+      <p>If your admin has turned on <strong>Email Preview</strong> under Settings → Notifications → General, a preview modal appears before the status is saved whenever the new status would send a patron email. This lets you review — and optionally edit — the message before it goes out.</p>
+
+      <table class="field-table">
+        <thead><tr><th>Button</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Skip Email</td><td>Saves the status change but suppresses the patron email entirely for this update.</td></tr>
+          <tr><td class="field-name">Send Email</td><td>Sends the email as shown (or as edited) and saves the status change.</td></tr>
+          <tr><td class="field-name">Send me a copy</td><td>Check this before clicking Send Email to receive a BCC copy of the outgoing message at your staff email address.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">✏️</span>
+        <div>If <strong>Email Editing</strong> is also enabled, the To, Subject, CC, BCC, and body fields become editable in the modal. Changes only affect this one send — the template itself is not modified.</div>
+      </div>
+
+      <p>After a status change, the Status History section records the new status, any note you typed, and — if an email was sent — a separate <em>Notification sent.</em> entry confirming the email went out.</p>
+
       <div class="callout tip">
         <span class="callout-icon">✉️</span>
-        <div>Some statuses are configured to <strong>Notify Patron</strong>. When you move a request to one of those statuses, SFP automatically emails the patron (if they have an email on file). Your admin controls which statuses trigger notifications under Settings → Statuses.</div>
+        <div>If Email Preview is <em>off</em>, SFP sends the patron email automatically when you save — no modal appears. Your admin controls this under Settings → Notifications → General.</div>
       </div>
 
       <div class="callout danger">
@@ -480,21 +500,40 @@
     <!-- ══════════════════════════════════════════ NOTIFICATIONS -->
     <section id="notifications">
       <h2>Email Notifications</h2>
-      <p>SFP can send two kinds of automated emails. Your admin configures both under <strong>Settings → Notifications</strong>.</p>
+      <p>SFP sends two kinds of automated emails. Your admin configures both under <strong>Settings → Notifications</strong>.</p>
 
       <h3>Routing emails (to you)</h3>
-      <p>When a patron submits a new request, SFP looks at the request's material type and audience and routes a notification to the matching selector group. If your group has an email address configured, you'll receive these automatically — no action needed on your part.</p>
+      <p>When a patron submits a new request, SFP routes a notification to the matching selector group based on material type and audience. If your group has an email address configured, you'll receive these automatically — no action needed.</p>
       <div class="callout tip">
         <span class="callout-icon">💡</span>
         <div>If you're not receiving routing emails, ask your admin to check that your selector group has a routing address set and that the material type/audience combination matches your group's scope.</div>
       </div>
 
       <h3>Status emails (to patrons)</h3>
-      <p>When you update a request's status, SFP checks whether that status has <strong>Notify Patron</strong> turned on. If it does — and the patron has an email address on file — SFP sends them an update automatically.</p>
-      <p>You don't need to do anything extra: the email fires as part of saving the status change. The content and subject line are controlled by your admin in Settings.</p>
+      <p>When you update a request to a status that has <strong>Notify Patron</strong> enabled, SFP sends the patron an email (if they have an address on file). The content comes from the matching email template configured under Settings → Notifications → Emails.</p>
+      <p>If <strong>Email Preview</strong> is on, you'll see a preview modal before the email sends — see <a href="#requests-status">Updating a Request's Status</a> above. Either way, a <em>Notification sent.</em> entry appears in the status history confirming the email went out.</p>
       <div class="callout tip">
         <span class="callout-icon">💡</span>
-        <div>To see which statuses trigger patron emails, check with your admin. Typically statuses like <em>On Order</em> or <em>Purchased</em> are set to notify, while internal workflow statuses are not.</div>
+        <div>Statuses like <em>On Order</em>, <em>Purchased</em>, <em>Denied</em>, and <em>ILL Referred</em> are configured to notify patrons by default. Internal workflow statuses like <em>Pending</em> and <em>Under Review</em> are not.</div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ CONVERT TO ILL -->
+    <section id="convert-ill">
+      <h2>Converting a Request to ILL</h2>
+      <p>When a patron opted in to interlibrary loan during submission, a <strong>Workflow</strong> panel appears on the right side of the request detail page (SFP requests only). This lets you convert the request to the ILL workflow with one click.</p>
+
+      <ol class="steps">
+        <li>Open the SFP request. Look for the <strong>Workflow</strong> panel in the right sidebar — it only appears when the patron answered "Yes" to the interlibrary loan question.</li>
+        <li>Optionally type a note explaining the conversion (e.g. "Not in collection scope — sending to ILL").</li>
+        <li>Click <strong>Convert to ILL</strong> and confirm the prompt.</li>
+      </ol>
+
+      <p>After conversion you are redirected to the requests list. The request is now an ILL request and will appear in the queue of staff who have ILL access. A <em>Converted workflow: sfp → ill.</em> entry is added to the status history.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>If you don't have ILL group access, you won't see the converted request in your queue after the redirect — that's expected. ILL staff will pick it up from their own view.</div>
       </div>
     </section>
 

@@ -177,6 +177,7 @@
     <div class="section-label">Settings</div>
     <a href="#general">General</a>
     <a href="#notifications">Notifications</a>
+    <a href="#email-templates">Email Templates</a>
     <a href="#catalog">Catalog</a>
     <a href="#material-types">Material Types</a>
     <a href="#audiences">Audiences</a>
@@ -200,7 +201,7 @@
     <!-- ══ OVERVIEW ══ -->
     <section id="overview">
       <h2>Overview</h2>
-      <p>Settings are only accessible to <span class="badge badge-admin">Admin</span> users. You get there from the navigation bar — look for your name or avatar in the top right, or go directly via <strong>Settings</strong> in the nav. The sidebar inside Settings lets you jump between nine areas: General, Notifications, Catalog, Material Types, Audiences, Statuses, Users, Groups, and Backups.</p>
+      <p>Settings are only accessible to <span class="badge badge-admin">Admin</span> users. You get there from the navigation bar — look for your name or avatar in the top right, or go directly via <strong>Settings</strong> in the nav. The sidebar inside Settings lets you jump between these areas: General, Notifications (with General, Staff Email, and Default Patron Email tabs), Email Templates, Catalog, Material Types, Audiences, Statuses, Users, Groups, and Backups.</p>
       <p>Most changes take effect immediately after saving. A few (like messaging changes) are visible to patrons as soon as you save.</p>
     </section>
 
@@ -292,18 +293,26 @@
     <!-- ══ NOTIFICATIONS ══ -->
     <section id="notifications">
       <h2>Notifications</h2>
-      <p>Controls all automated emails SFP sends — to selectors when new requests arrive, and to patrons when their request status changes.</p>
+      <p>Controls all automated emails SFP sends — to selectors when new requests arrive, and to patrons when their request status changes. The Notifications settings page has three tabs: <strong>General</strong>, <strong>Staff Email</strong>, and <strong>Default Patron Email</strong>.</p>
 
-      <h3>Master switch</h3>
+      <h3>General tab</h3>
       <table class="field-table">
         <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
         <tbody>
-          <tr><td class="field-name">Enable Notifications</td><td>Global on/off for all SFP emails. Turn this off to silence everything without touching individual settings.</td></tr>
+          <tr><td class="field-name">Enable Notifications</td><td>Global on/off for all SFP emails. Disables everything without touching individual settings.</td></tr>
+          <tr><td class="field-name">Enable Patron Status Emails</td><td>Turn off to stop patron emails without disabling staff routing.</td></tr>
+          <tr><td class="field-name">Email Preview Enabled</td><td>When on, a preview modal appears every time a status change would send a patron email. Selectors can review the message — and optionally skip it — before it goes out.</td></tr>
+          <tr><td class="field-name">Email Editing Enabled</td><td>Only available when Email Preview is also on. Allows selectors to edit the To, Subject, CC, BCC, and body before sending. Changes apply to that send only — templates are not modified. This setting is automatically disabled if you turn off Email Preview.</td></tr>
         </tbody>
       </table>
 
-      <h3>Staff routing emails</h3>
-      <p>Sent to selector groups when a new request is submitted. Routing uses the request's material type and audience to find the matching group(s) and sends to each group's configured email address.</p>
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Enable Email Preview without Email Editing if you want selectors to see what will be sent but not change it. Enable both if you want selectors to be able to adjust messaging on a case-by-case basis.</div>
+      </div>
+
+      <h3>Staff Email tab</h3>
+      <p>Controls routing emails sent to selector groups when a new request is submitted.</p>
       <table class="field-table">
         <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
         <tbody>
@@ -313,25 +322,57 @@
         </tbody>
       </table>
 
-      <h3>Patron status emails</h3>
-      <p>Sent to the patron when their request moves to a status that has <strong>Notify Patron</strong> checked. The patron must have an email address on file.</p>
+      <h3>Default Patron Email tab</h3>
+      <p>A fallback subject and body used when no matching <a href="#email-templates">Email Template</a> exists for the triggered status. If you have templates configured for all your notification statuses, this tab is effectively unused.</p>
       <table class="field-table">
         <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
         <tbody>
-          <tr><td class="field-name">Enable Patron Status Emails</td><td>Turn off to stop patron emails without disabling staff routing.</td></tr>
-          <tr><td class="field-name">Patron Status — Subject</td><td>Subject line for patron status emails. Supports the same placeholders as staff routing.</td></tr>
-          <tr><td class="field-name">Patron Status — Email Body</td><td>HTML body for patron emails. Leave blank to use the built-in default template.</td></tr>
+          <tr><td class="field-name">Patron Status — Subject</td><td>Fallback subject line for patron status emails. Supports the same placeholders as staff routing.</td></tr>
+          <tr><td class="field-name">Patron Status — Email Body</td><td>Fallback HTML body. Leave blank to use the built-in default template.</td></tr>
         </tbody>
       </table>
 
       <div class="callout tip">
         <span class="callout-icon">💡</span>
-        <div>Available placeholders for subjects and bodies: <code>{title}</code>, <code>{author}</code>, <code>{patron_name}</code>, <code>{patron_first_name}</code>, <code>{material_type}</code>, <code>{audience}</code>, <code>{status}</code>, <code>{submitted_date}</code>, <code>{request_url}</code>.</div>
+        <div>Available placeholders: <code>{title}</code>, <code>{author}</code>, <code>{patron_name}</code>, <code>{patron_first_name}</code>, <code>{material_type}</code>, <code>{audience}</code>, <code>{status}</code>, <code>{submitted_date}</code>, <code>{request_url}</code>.</div>
       </div>
 
       <div class="callout tip">
         <span class="callout-icon">💡</span>
-        <div>To control which statuses trigger a patron email, edit the status under <strong>Settings → Statuses</strong> and check the <strong>Notify Patron</strong> option on that status.</div>
+        <div>To control which statuses trigger a patron email, edit the status under <strong>Settings → Statuses</strong> and check <strong>Notify Patron</strong>.</div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ══ EMAIL TEMPLATES ══ -->
+    <section id="email-templates">
+      <h2>Email Templates</h2>
+      <p>Email templates let you define per-status patron emails — a different subject, body, and message tone for each notification status. Templates are managed under <strong>Settings → Notifications → Emails</strong>.</p>
+      <p>When a patron email is triggered, SFP looks for an enabled template linked to that status (and optionally the request's material type). If a match is found, it's used. If no template matches, the fallback from the Default Patron Email tab is used instead.</p>
+
+      <h3>Template fields</h3>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Template name</td><td>Internal label — not shown to patrons. Use something descriptive like "Purchased notification".</td></tr>
+          <tr><td class="field-name">Enable</td><td>Uncheck to disable the template without deleting it. Disabled templates are never sent.</td></tr>
+          <tr><td class="field-name">Subject</td><td>The email subject line. Supports placeholders like <code>{title}</code> and <code>{patron_first_name}</code>. Use the Insert buttons below the field to add a placeholder without typing it.</td></tr>
+          <tr><td class="field-name">Email Body</td><td>Rich-text editor (Trix). Supports all placeholders. Use the Insert buttons below the editor to add tokens at the cursor position.</td></tr>
+          <tr><td class="field-name">Triggered by statuses</td><td>Select one or more statuses that send this template. Click <strong>Clear selection</strong> to deselect all. Only statuses with <strong>Notify Patron</strong> turned on will actually fire.</td></tr>
+          <tr><td class="field-name">Material types</td><td>Optional. Leave empty to match all material types, or select specific ones so this template only sends for those. Click <strong>Clear selection</strong> to remove all material type restrictions.</td></tr>
+          <tr><td class="field-name">Default template</td><td>Only one template can be marked default. It is used as a catch-all when a request's status matches no other template (regardless of material type).</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Default templates are seeded for On Order, Purchased, Denied, and ILL Referred. Edit them freely — re-running <code>request:seed-default</code> will not overwrite templates that already exist.</div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>If multiple templates match the same status (e.g. one for Books and one for DVDs), SFP sends all matching templates. Use material type restrictions to send targeted messages per format.</div>
       </div>
     </section>
 
@@ -431,7 +472,9 @@
         <tbody>
           <tr><td class="field-name">Name</td><td>The label shown in the interface, e.g. <em>On Order</em>.</td></tr>
           <tr><td class="field-name">Color</td><td>The badge color used to visually distinguish this status in lists and detail pages. Use the color picker or type a hex code.</td></tr>
+          <tr><td class="field-name">Description</td><td>A plain-language explanation of what this status means. Shown to patrons on the My Requests page so they understand where their request stands.</td></tr>
           <tr><td class="field-name">Sort Order</td><td>Controls the order statuses appear in dropdowns. Lower numbers appear first.</td></tr>
+          <tr><td class="field-name">Notify Patron</td><td>When checked, transitioning a request to this status will trigger a patron email (if notifications are enabled and the patron has an email address). Pair this with an <a href="#email-templates">Email Template</a> for that status.</td></tr>
           <tr><td class="field-name">Terminal</td><td>Mark this if the status represents a <em>final</em> state (e.g. Purchased, Denied). Terminal statuses can be used to filter out "closed" requests.</td></tr>
           <tr><td class="field-name">Active</td><td>Only active statuses appear in the Update Status dropdown. Inactive statuses are hidden from selectors but preserved in history.</td></tr>
         </tbody>
@@ -439,7 +482,7 @@
 
       <div class="callout tip">
         <span class="callout-icon">💡</span>
-        <div>Default statuses (Pending, Under Review, On Order, Purchased, Denied, ILL Referred) are seeded automatically. You can rename, recolor, or reorder them freely.</div>
+        <div>Default statuses (Pending, Under Review, On Order, Purchased, Denied, ILL Referred) are seeded automatically with descriptions and Notify Patron enabled. You can rename, recolor, or reorder them freely.</div>
       </div>
     </section>
 
