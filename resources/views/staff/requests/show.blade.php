@@ -147,7 +147,7 @@
                     <dd>{{ $sfpRequest->catalog_result_count ?? '—' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-gray-500">Catalog match accepted</dt>
+                    <dt class="text-gray-500">Patron accepted catalog match</dt>
                     <dd>{{ $sfpRequest->catalog_match_accepted ? 'Yes' : 'No' }}</dd>
                 </div>
                 @if($sfpRequest->catalog_match_bib_id)
