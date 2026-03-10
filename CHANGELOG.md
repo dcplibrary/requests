@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.9.4](https://github.com/dcplibrary/sfp/compare/v2.9.3...v2.9.4) (2026-03-10)
+
+
+### Bug Fixes
+
+* change dcpl_logo in email from embedded to serve from url ([318df6f](https://github.com/dcplibrary/sfp/commit/318df6fe7ca0f5ff9785bbc8128daf424c3aed84))
+
 ## [2.9.3](https://github.com/dcplibrary/sfp/compare/v2.9.2...v2.9.3) (2026-03-10)
 
 
