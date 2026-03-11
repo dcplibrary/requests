@@ -1,5 +1,17 @@
 # Changelog
 
+All notable changes to `dcplibrary/requests` are documented here.
+
+## [3.0.2](https://github.com/dcplibrary/requests/compare/v3.0.1...v3.0.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* merge changes ([dd646d3](https://github.com/dcplibrary/requests/commit/dd646d3c05849eacd3b42160418bcaa44884e987))
+* Rename SFP to Requests ([8af9dbe](https://github.com/dcplibrary/requests/commit/8af9dbecf53c165ec71eb258557595b6526e895e))
+
+# Changelog
+
 All notable changes to `dcplibrary/sfp` are documented here.
 
 ## [2.15.4](https://github.com/dcplibrary/requests/compare/v2.15.3...v2.15.4) (2026-03-11)
