@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/sfp` are documented here.
 
+## [2.15.4](https://github.com/dcplibrary/requests/compare/v2.15.3...v2.15.4) (2026-03-11)
+
+
+### Bug Fixes
+
+* prepare to prune data ([bda52ca](https://github.com/dcplibrary/requests/commit/bda52ca3350204b8b9fe6ea4cfde77ffa71c980e))
+
 ## [2.15.3](https://github.com/dcplibrary/sfp/compare/v2.15.2...v2.15.3) (2026-03-10)
 
 
