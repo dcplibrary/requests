@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Database\Seeders;
+namespace Dcplibrary\Requests\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;

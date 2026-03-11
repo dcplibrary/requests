@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', 'Settings')
 @section('settings-content')
 <form method="POST" action="{{ route('request.staff.settings.update') }}">

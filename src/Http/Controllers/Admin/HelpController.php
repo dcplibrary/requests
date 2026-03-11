@@ -1,8 +1,8 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
+use Dcplibrary\Requests\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -28,8 +28,8 @@ class HelpController extends Controller
         }
 
         if ($page === 'admin') {
-            $sfpUser = $this->currentSfpUser($request);
-            if (! $sfpUser || ! $sfpUser->isAdmin()) {
+            $staffUser = $this->currentStaffUser($request);
+            if (! $staffUser || ! $staffUser->isAdmin()) {
                 abort(403);
             }
         }
@@ -44,7 +44,7 @@ class HelpController extends Controller
             ? Str::markdown($md, ['html_input' => 'strip', 'allow_unsafe_links' => false])
             : nl2br(e($md));
 
-        $view = $request->boolean('popup') ? 'sfp::staff.help.popup' : 'sfp::staff.help.show';
+        $view = $request->boolean('popup') ? 'requests::staff.help.popup' : 'requests::staff.help.show';
 
         return view($view, [
             'title' => $meta['title'],

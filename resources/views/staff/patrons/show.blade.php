@@ -1,4 +1,4 @@
-@extends('sfp::staff._layout')
+@extends('requests::staff._layout')
 
 @section('title', 'Patron: ' . $patron->full_name)
 
@@ -261,7 +261,7 @@
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Submitted Data</h2>
-                <x-sfp::icon-btn :href="route('request.staff.patrons.edit', $patron)" variant="edit" label="Edit" />
+                <x-requests::icon-btn :href="route('request.staff.patrons.edit', $patron)" variant="edit" label="Edit" />
             </div>
             <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <div>
@@ -366,6 +366,7 @@
                     <tr>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">#</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Title</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Kind</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Type</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Status</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Date</th>
@@ -382,7 +383,13 @@
                                 <span class="ml-1 text-xs bg-yellow-100 text-yellow-700 px-1 py-0.5 rounded">Dup</span>
                             @endif
                         </td>
-                        <td class="px-3 py-2 text-gray-500 text-xs">{{ $req->materialType?->name ?? '—' }}</td>
+                        <td class="px-3 py-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                {{ $req->request_kind === 'ill' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700' }}">
+                                {{ strtoupper($req->request_kind ?? 'sfp') }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-2 text-gray-500 text-xs">{{ $req->fieldValueLabel('material_type') ?? '—' }}</td>
                         <td class="px-3 py-2">
                             @if($req->status)
                                 <span class="inline-block px-1.5 py-0.5 rounded text-xs font-medium"
@@ -395,7 +402,7 @@
                         </td>
                         <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">{{ $req->created_at->format('M j, Y') }}</td>
                         <td class="px-3 py-2 text-right">
-                            <x-sfp::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
+                            <x-requests::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
                         </td>
                     </tr>
                     @endforeach

@@ -1,11 +1,12 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\Form;
-use Dcplibrary\Sfp\Models\FormField;
-use Dcplibrary\Sfp\Models\FormFormFieldOption;
-use Dcplibrary\Sfp\Models\FormFormField;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\Form;
+use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Models\FormFieldOptionOverride;
 use Livewire\Component;
 
 /**
@@ -24,23 +25,29 @@ class FormFormFieldOptionEdit extends Component
     public string $labelOverride = '';
     public bool   $visible       = true;
 
+    /**
+     * @param  int     $fieldId
+     * @param  string  $optionSlug
+     * @param  string  $formSlug
+     * @return void
+     */
     public function mount(int $fieldId, string $optionSlug, string $formSlug): void
     {
         $this->fieldId    = $fieldId;
         $this->optionSlug = $optionSlug;
         $this->formSlug   = $formSlug;
 
-        // Look up the option's display name from the correct model.
-        $fieldKey  = FormField::findOrFail($fieldId)->key;
-        $modelClass = FormFormFieldOptionsManager::modelClassForKey($fieldKey);
-        $option = $modelClass ? $modelClass::where('slug', $optionSlug)->first() : null;
+        // Look up the option's display name from FieldOption.
+        $option = FieldOption::where('field_id', $fieldId)
+            ->where('slug', $optionSlug)
+            ->first();
         $this->optionName = $option?->name ?? $optionSlug;
 
         // Load any existing per-form override.
         $formModel = Form::bySlug($formSlug);
         if ($formModel) {
-            $override = FormFormFieldOption::where('form_id', $formModel->id)
-                ->where('form_field_id', $fieldId)
+            $override = FormFieldOptionOverride::where('form_id', $formModel->id)
+                ->where('field_id', $fieldId)
                 ->where('option_slug', $optionSlug)
                 ->first();
 
@@ -62,24 +69,24 @@ class FormFormFieldOptionEdit extends Component
             return;
         }
 
-        $formField = FormField::find($this->fieldId);
-        if (! $formField) {
+        $field = Field::find($this->fieldId);
+        if (! $field) {
             return;
         }
 
-        // Ensure the parent FormFormField pivot exists before creating option override.
-        $pivot = FormFormField::firstOrCreate(
-            ['form_id' => $formModel->id, 'form_field_id' => $this->fieldId],
+        // Ensure the parent FormFieldConfig exists before creating option override.
+        FormFieldConfig::firstOrCreate(
+            ['form_id' => $formModel->id, 'field_id' => $this->fieldId],
             ['sort_order' => 0, 'required' => false, 'visible' => true]
         );
 
         $labelOverride = trim($this->labelOverride);
 
-        FormFormFieldOption::updateOrInsert(
+        FormFieldOptionOverride::updateOrInsert(
             [
-                'form_id'       => $formModel->id,
-                'form_field_id' => $this->fieldId,
-                'option_slug'   => $this->optionSlug,
+                'form_id'     => $formModel->id,
+                'field_id'    => $this->fieldId,
+                'option_slug' => $this->optionSlug,
             ],
             [
                 'label_override' => $labelOverride !== '' ? $labelOverride : null,
@@ -96,6 +103,6 @@ class FormFormFieldOptionEdit extends Component
 
     public function render()
     {
-        return view('sfp::livewire.admin.form-form-field-option-edit');
+        return view('requests::livewire.admin.form-form-field-option-edit');
     }
 }

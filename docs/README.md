@@ -1,6 +1,6 @@
-# dcplibrary/sfp — Developer Documentation
+# dcplibrary/requests — Developer Documentation
 
-Suggest for Purchase (SFP) is a Laravel package that provides a patron-facing request form and a staff admin interface for the Daviess County Public Library's collection development workflow.
+A Laravel package that provides patron-facing request forms (SFP and ILL) and a staff admin interface for the Daviess County Public Library's collection development workflow.
 
 ## Table of Contents
 
@@ -20,23 +20,23 @@ Suggest for Purchase (SFP) is a Laravel package that provides a patron-facing re
 ## Quick Reference
 
 ```
-Patron form:   GET  /sfp
-Staff area:    GET  /sfp/staff/requests
-Titles:        GET  /sfp/staff/titles
-Catalog cfg:   GET  /sfp/staff/catalog
-Settings:      GET  /sfp/staff/settings
+Patron form:   GET  /request
+Staff area:    GET  /request/staff/requests
+Titles:        GET  /request/staff/titles
+Catalog cfg:   GET  /request/staff/catalog
+Settings:      GET  /request/staff/settings
 ```
 
-**Package namespace:** `Dcplibrary\Sfp`
-**View namespace:** `sfp::`
-**Blade component prefix:** `<x-sfp::logo />`
-**Livewire component:** `sfp-form`
+**Package namespace:** `Dcplibrary\Requests`
+**View namespace:** `requests::`
+**Blade component prefix:** `<x-requests::logo />`
+**Livewire component:** `requests-form`
 
 ## API Documentation
 
 API docs are generated from PHPDoc blocks and published via GitHub Pages:
 
-- [API Docs (phpDocumentor)](https://dcplibrary.github.io/sfp/)
+- [API Docs (phpDocumentor)](https://dcplibrary.github.io/requests/)
 
 ## Roles
 

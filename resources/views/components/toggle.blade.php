@@ -2,7 +2,7 @@
     Reusable pill-toggle switch.
 
     Usage:
-        <x-sfp::toggle :on="$field['active']" color="blue" wire:click="toggleActive({{ $index }})" />
+        <x-requests::toggle :on="$field['active']" color="blue" wire:click="toggleActive({{ $index }})" />
 
     Props:
         on    — bool   — whether the toggle is currently on

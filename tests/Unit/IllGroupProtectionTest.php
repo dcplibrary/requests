@@ -1,8 +1,8 @@
 <?php
 
-namespace Dcplibrary\Sfp\Tests\Unit;
+namespace Dcplibrary\Requests\Tests\Unit;
 
-use Dcplibrary\Sfp\Models\Setting;
+use Dcplibrary\Requests\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;

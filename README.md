@@ -1,6 +1,6 @@
-# dcplibrary/sfp
+# dcplibrary/requests
 
-A Laravel package for managing patron Suggest-for-Purchase (SFP) requests at the Daviess County Public Library. Provides a multi-step Livewire patron form, a role-based staff admin interface, Polaris ILS integration, Bibliocommons catalog scraping, and ISBNdb enrichment.
+A Laravel package for managing patron purchase requests and interlibrary loan requests at the Daviess County Public Library. Provides a multi-step Livewire patron form, a role-based staff admin interface, Polaris ILS integration, Bibliocommons catalog scraping, and ISBNdb enrichment.
 
 ---
 
@@ -23,11 +23,11 @@ Since this is a private package, add it to your consuming app's `composer.json` 
     "repositories": [
         {
             "type": "path",
-            "url": "../sfp"
+            "url": "../requests"
         }
     ],
     "require": {
-        "dcplibrary/sfp": "@dev"
+        "dcplibrary/requests": "@dev"
     }
 }
 ```
@@ -35,7 +35,7 @@ Since this is a private package, add it to your consuming app's `composer.json` 
 Then install:
 
 ```bash
-composer require dcplibrary/sfp
+composer require dcplibrary/requests
 ```
 
 ## Optional: Enable Livewire Blaze (recommended)
@@ -47,7 +47,7 @@ composer require livewire/blaze:^1.0
 php artisan view:clear
 ```
 
-The service provider (`Dcplibrary\Sfp\SfpServiceProvider`) is auto-discovered via the `extra.laravel.providers` key in `composer.json`.
+The service provider (`Dcplibrary\Requests\RequestsServiceProvider`) is auto-discovered via the `extra.laravel.providers` key in `composer.json`.
 
 ---
 
@@ -55,20 +55,20 @@ The service provider (`Dcplibrary\Sfp\SfpServiceProvider`) is auto-discovered vi
 
 ```bash
 # Publish everything at once
-php artisan vendor:publish --tag=sfp
+php artisan vendor:publish --tag=requests
 
 # Or individually:
-php artisan vendor:publish --tag=sfp-config      # config/sfp.php
-php artisan vendor:publish --tag=sfp-migrations  # database/migrations/
-php artisan vendor:publish --tag=sfp-seeders     # database/seeders/
-php artisan vendor:publish --tag=sfp-views       # resources/views/vendor/sfp/ (only if customizing)
+php artisan vendor:publish --tag=requests-config      # config/requests.php
+php artisan vendor:publish --tag=requests-migrations  # database/migrations/
+php artisan vendor:publish --tag=requests-seeders     # database/seeders/
+php artisan vendor:publish --tag=requests-views       # resources/views/vendor/requests/ (only if customizing)
 ```
 
 ---
 
 ## Configuration
 
-After publishing, edit `config/sfp.php`:
+After publishing, edit `config/requests.php`:
 
 ```php
 'route_prefix' => 'request',   // Patron form at /request, staff at /request/staff (SFP and ILL under request umbrella)
@@ -115,7 +115,7 @@ ENTRA_REDIRECT_URI="${APP_URL}/request/auth/callback"
 
 ```bash
 php artisan migrate
-php artisan db:seed --class="Dcplibrary\Sfp\Database\Seeders\SfpDatabaseSeeder"
+php artisan db:seed --class="Dcplibrary\Requests\Database\Seeders\RequestsDatabaseSeeder"
 ```
 
 The seeder inserts:
@@ -154,23 +154,23 @@ After install, the package registers these routes under your configured prefix (
 
 ## Staff Authentication
 
-The package does **not** ship login/logout routes. Protect staff routes using the host application's authentication by configuring `sfp.staff_middleware` in `config/sfp.php` (default: `['web', 'auth']`).
+The package does **not** ship login/logout routes. Protect staff routes using the host application's authentication by configuring `requests.staff_middleware` in `config/requests.php` (default: `['web', 'auth']`).
 
-When the authenticated user is **not** the package `Dcplibrary\Sfp\Models\User`, the package maps the staff user to `sfp_users` by **email** for authorization scoping and audit logging.
+When the authenticated user is **not** the package `Dcplibrary\Requests\Models\User`, the package maps the staff user to `sfp_users` by **email** for authorization scoping and audit logging.
 
 ---
 
 ## Architecture
 
 ### Patron Form
-`Dcplibrary\Sfp\Livewire\SfpForm` — 4-step Livewire component:
+`Dcplibrary\Requests\Livewire\RequestForm` — 4-step Livewire component:
 1. Patron information (barcode, name, phone, email)
 2. Material details (type, audience, title, author, date, ILL flag)
 3. Catalog + ISBNdb match resolution (interactive)
 4. Confirmation
 
 ### Staff Interface (`/{prefix}/staff/*`)
-Role-based access via the `sfp` auth guard:
+Role-based access via the `request` auth guard:
 - **Admin**: full access + settings + CRUD for all lookup tables
 - **Selector**: scoped to requests matching their selector group (material types + audiences)
 
@@ -179,7 +179,7 @@ Role-based access via the `sfp` auth guard:
 |-------|-------|-------|
 | `Patron` | `patrons` | Barcode-unique; Polaris verification fields |
 | `Material` | `materials` | Deduplicated by title+author; enriched by ISBNdb |
-| `SfpRequest` | `requests` | Core transaction; tracks search attempts |
+|| `PatronRequest` | `requests` | Core transaction; tracks search attempts |
 | `RequestStatus` | `request_statuses` | Seeded; admin-manageable |
 | `RequestStatusHistory` | `request_status_history` | Full audit trail |
 | `Setting` | `settings` | All business rules; 1-hour cached; admin UI |

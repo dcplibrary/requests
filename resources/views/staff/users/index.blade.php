@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', 'Users')
 @section('settings-content')
 <div class="flex items-center justify-between mb-6">
@@ -34,14 +34,14 @@
                     {{ $user->selectorGroups->pluck('name')->join(', ') ?: '—' }}
                 </td>
                 <td class="px-4 py-3">
-                    <x-sfp::status-pill :active="$user->active" />
+                    <x-requests::status-pill :active="$user->active" />
                 </td>
                 <td class="px-4 py-3 text-gray-500 text-xs">
                     {{ $user->last_login_at?->diffForHumans() ?? '—' }}
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-sfp::icon-btn :href="route('request.staff.users.edit', $user)" variant="edit" label="Edit" />
-                    <x-sfp::icon-btn :href="route('request.staff.users.remove', $user)" variant="remove" label="Remove" />
+                    <x-requests::icon-btn :href="route('request.staff.users.edit', $user)" variant="edit" label="Edit" />
+                    <x-requests::icon-btn :href="route('request.staff.users.remove', $user)" variant="remove" label="Remove" />
                 </td>
             </tr>
             @empty

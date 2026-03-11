@@ -1,11 +1,11 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
-use Dcplibrary\Sfp\Models\SelectorGroup;
-use Dcplibrary\Sfp\Models\User;
-use Dcplibrary\Sfp\Models\RequestStatusHistory;
+use Dcplibrary\Requests\Http\Controllers\Controller;
+use Dcplibrary\Requests\Models\SelectorGroup;
+use Dcplibrary\Requests\Models\User;
+use Dcplibrary\Requests\Models\RequestStatusHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -13,14 +13,14 @@ class UserController extends Controller
 {
     public function index()
     {
-        return view('sfp::staff.users.index', [
+        return view('requests::staff.users.index', [
             'users' => User::orderBy('name')->get(),
         ]);
     }
 
     public function edit(User $user)
     {
-        return view('sfp::staff.users.form', [
+        return view('requests::staff.users.form', [
             'user'   => $user,
             'groups' => SelectorGroup::active()->orderBy('name')->get(),
         ]);
@@ -49,15 +49,15 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         $request = request();
-        $sfpUser = $this->currentSfpUser($request);
-        if (! $sfpUser || ! $sfpUser->isAdmin()) {
+        $staffUser = $this->currentStaffUser($request);
+        if (! $staffUser || ! $staffUser->isAdmin()) {
             abort(403);
         }
 
         // If staff auth uses the package guard, the IDs will match. If the host
-        // app authenticates with a different user model, map to the SFP user by
+        // app authenticates with a different user model, map to the staff user by
         // email so we can still prevent self-deletion.
-        if ($sfpUser && $user->id === $sfpUser->id) {
+        if ($staffUser && $user->id === $staffUser->id) {
             return back()->withErrors(['error' => 'You cannot delete your own account.']);
         }
 
@@ -66,7 +66,7 @@ class UserController extends Controller
 
         if ($historyCount > 0 || $groupsCount > 0) {
             $data = $request->validate([
-                'reassign_to_id' => 'required|integer|exists:sfp_users,id|different:' . $user->id,
+                'reassign_to_id' => 'required|integer|exists:staff_users,id|different:' . $user->id,
                 'transfer_history' => 'nullable|boolean',
                 'transfer_groups'  => 'nullable|boolean',
             ]);
@@ -114,12 +114,12 @@ class UserController extends Controller
     public function confirmDelete(User $user)
     {
         $request = request();
-        $sfpUser = $this->currentSfpUser($request);
-        if (! $sfpUser || ! $sfpUser->isAdmin()) {
+        $staffUser = $this->currentStaffUser($request);
+        if (! $staffUser || ! $staffUser->isAdmin()) {
             abort(403);
         }
 
-        if ($user->id === $sfpUser->id) {
+        if ($user->id === $staffUser->id) {
             return back()->withErrors(['error' => 'You cannot delete your own account.']);
         }
 
@@ -159,7 +159,7 @@ class UserController extends Controller
             return back()->withErrors(['error' => 'You must create another user before removing this one (records need a reassignment target).']);
         }
 
-        return view('sfp::staff.settings.reassign-delete', [
+        return view('requests::staff.settings.reassign-delete', [
             'title'       => 'Remove User',
             'itemLabel'   => "{$user->name} ({$user->email})",
             'impacts'     => [

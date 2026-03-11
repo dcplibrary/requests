@@ -14,15 +14,13 @@ return new class extends Migration
             // --- Foreign keys ---
             $table->foreignId('patron_id')->constrained()->cascadeOnDelete();
             $table->foreignId('material_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('audience_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('material_type_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('request_status_id')->constrained()->restrictOnDelete();
 
             // --- Request kind and assignment ---
             $table->string('request_kind', 20)->default('sfp'); // sfp|ill
-            $table->foreignId('assigned_to_user_id')->nullable()->constrained('sfp_users')->nullOnDelete();
+            $table->foreignId('assigned_to_user_id')->nullable()->constrained('staff_users')->nullOnDelete();
             $table->timestamp('assigned_at')->nullable();
-            $table->foreignId('assigned_by_user_id')->nullable()->constrained('sfp_users')->nullOnDelete();
+            $table->foreignId('assigned_by_user_id')->nullable()->constrained('staff_users')->nullOnDelete();
 
             // --- Raw submitted data (always preserved as entered) ---
             $table->string('submitted_title');
@@ -32,12 +30,8 @@ return new class extends Migration
             // --- "Other" material type free text ---
             $table->string('other_material_text')->nullable();
 
-            // --- Fiction / Nonfiction classification ---
-            $table->string('genre')->nullable();
-
-            // --- Patron's additional info ---
-            $table->text('where_heard')->nullable();
-            $table->boolean('ill_requested')->default(false); // final checkbox
+            // --- ILL opt-in ---
+            $table->boolean('ill_requested')->default(false);
 
             // --- Catalog (Bibliocommons) search tracking ---
             $table->boolean('catalog_searched')->default(false);

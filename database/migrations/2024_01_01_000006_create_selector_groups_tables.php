@@ -20,29 +20,21 @@ return new class extends Migration
         // Users can belong to many groups
         Schema::create('selector_group_user', function (Blueprint $table) {
             $table->foreignId('selector_group_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained('sfp_users')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('staff_users')->cascadeOnDelete();
             $table->primary(['selector_group_id', 'user_id']);
         });
 
-        // Groups are scoped to specific material types
-        Schema::create('selector_group_material_type', function (Blueprint $table) {
+        // Groups are scoped to field options (material types, audiences, genres, etc.)
+        Schema::create('selector_group_field_option', function (Blueprint $table) {
             $table->foreignId('selector_group_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('material_type_id')->constrained()->cascadeOnDelete();
-            $table->primary(['selector_group_id', 'material_type_id']);
-        });
-
-        // Groups are scoped to specific audiences
-        Schema::create('selector_group_audience', function (Blueprint $table) {
-            $table->foreignId('selector_group_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('audience_id')->constrained()->cascadeOnDelete();
-            $table->primary(['selector_group_id', 'audience_id']);
+            $table->foreignId('field_option_id')->constrained('field_options')->cascadeOnDelete();
+            $table->primary(['selector_group_id', 'field_option_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('selector_group_audience');
-        Schema::dropIfExists('selector_group_material_type');
+        Schema::dropIfExists('selector_group_field_option');
         Schema::dropIfExists('selector_group_user');
         Schema::dropIfExists('selector_groups');
     }

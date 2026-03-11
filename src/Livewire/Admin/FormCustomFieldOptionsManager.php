@@ -1,17 +1,17 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\CustomFieldOption;
-use Dcplibrary\Sfp\Models\FormCustomField;
-use Dcplibrary\Sfp\Models\FormCustomFieldOption;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Models\FormFieldOptionOverride;
 use Illuminate\Support\Facades\URL;
 use Livewire\Component;
 
 /**
  * Per-form option manager for select/radio CustomFields.
  *
- * Displays a table of options drawn from sfp_custom_field_options and merged
+ * Displays a table of options drawn from custom_field_options and merged
  * with any per-form overrides in form_custom_field_options.  Provides:
  *   - Visible toggle  (per-form; does not affect the global active state)
  *   - Up / down reordering (stored in sort_order on form_custom_field_options)
@@ -35,7 +35,7 @@ class FormCustomFieldOptionsManager extends Component
         $this->fieldId  = $fieldId;
         $this->formSlug = $formSlug;
 
-        $pivot = FormCustomField::find($pivotId);
+        $pivot = FormFieldConfig::find($pivotId);
         $this->formId = $pivot ? $pivot->form_id : 0;
 
         $this->loadItems();
@@ -43,15 +43,22 @@ class FormCustomFieldOptionsManager extends Component
 
     // ── Public actions ────────────────────────────────────────────────────────
 
+    /**
+     * Toggle per-form visibility for an option.
+     *
+     * @param  int  $optionId
+     * @return void
+     */
     public function toggleVisible(int $optionId): void
     {
+        $opt     = FieldOption::find($optionId);
         $current = collect($this->items)->firstWhere('id', $optionId);
-        if (! $current) {
+        if (! $current || ! $opt) {
             return;
         }
 
-        FormCustomFieldOption::updateOrInsert(
-            ['form_id' => $this->formId, 'custom_field_option_id' => $optionId],
+        FormFieldOptionOverride::updateOrInsert(
+            ['form_id' => $this->formId, 'field_id' => $this->fieldId, 'option_slug' => $opt->slug],
             ['visible' => ! $current['visible']]
         );
 
@@ -82,6 +89,11 @@ class FormCustomFieldOptionsManager extends Component
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * Load options from field_options merged with per-form overrides.
+     *
+     * @return void
+     */
     private function loadItems(): void
     {
         if ($this->formId === 0) {
@@ -89,29 +101,26 @@ class FormCustomFieldOptionsManager extends Component
             return;
         }
 
-        $baseOptions = CustomFieldOption::where('custom_field_id', $this->fieldId)
-            ->orderBy('sort_order')
+        $baseOptions = FieldOption::where('field_id', $this->fieldId)
+            ->ordered()
             ->get();
 
-        $optionIds = $baseOptions->pluck('id')->all();
-
-        $overrides = FormCustomFieldOption::where('form_id', $this->formId)
-            ->whereIn('custom_field_option_id', $optionIds)
+        $overrides = FormFieldOptionOverride::where('form_id', $this->formId)
+            ->where('field_id', $this->fieldId)
             ->get()
-            ->keyBy('custom_field_option_id');
+            ->keyBy('option_slug');
 
-        $items = $baseOptions->map(function (CustomFieldOption $opt, int $modelIndex) use ($overrides) {
-            $override = $overrides->get($opt->id);
+        $items = $baseOptions->map(function (FieldOption $opt, int $modelIndex) use ($overrides) {
+            $override = $overrides->get($opt->slug);
+
             return [
-                'id'             => $opt->id,
-                'name'           => $opt->name,
-                'slug'           => $opt->slug,
-                'globally_active'=> (bool) $opt->active,
-                'visible'        => $override ? (bool) $override->visible : true,
-                'label_override' => (string) ($override?->label_override ?? ''),
-                // Use override sort_order when present; else fall back to model position
-                // (scaled so any override sorts before any unoverridden default).
-                'sort_order'     => $override ? $override->sort_order : ($modelIndex + 1) * 10000,
+                'id'              => $opt->id,
+                'slug'            => $opt->slug,
+                'name'            => $opt->name,
+                'globally_active' => (bool) $opt->active,
+                'visible'         => $override ? (bool) $override->visible : true,
+                'label_override'  => (string) ($override?->label_override ?? ''),
+                'sort_order'      => $override ? $override->sort_order : ($modelIndex + 1) * 10000,
             ];
         });
 
@@ -121,32 +130,34 @@ class FormCustomFieldOptionsManager extends Component
     /**
      * Persist the current in-memory order to form_custom_field_options.
      */
+    /**
+     * Persist the current in-memory order to form_field_option_overrides.
+     *
+     * @return void
+     */
     private function persistOrder(): void
     {
         $rows = array_values($this->items);
         foreach ($rows as $i => $item) {
             $order = $i + 1;
-            FormCustomFieldOption::updateOrInsert(
-                ['form_id' => $this->formId, 'custom_field_option_id' => $item['id']],
+            FormFieldOptionOverride::updateOrInsert(
+                ['form_id' => $this->formId, 'field_id' => $this->fieldId, 'option_slug' => $item['slug']],
                 ['sort_order' => $order]
             );
-            // Keep in-memory sort_order in sync so subsequent moves work correctly
             $this->items[$i]['sort_order'] = $order;
         }
-        // Do NOT reload from DB — keeping the swapped in-memory array lets the user
-        // make multiple sequential reorders without Livewire state getting confused.
     }
 
     /** Build the URL for the per-option editor page. */
     public function editUrl(int $optionId): string
     {
-        $prefix = trim(config('sfp.route_prefix', 'request'), '/');
+        $prefix = trim(config('requests.route_prefix', 'request'), '/');
         return URL::to('/' . $prefix . '/staff/settings/custom-fields/' . $this->fieldId
             . '/form/' . $this->formSlug . '/options/' . $optionId . '/edit');
     }
 
     public function render()
     {
-        return view('sfp::livewire.admin.form-custom-field-options-manager');
+        return view('requests::livewire.admin.form-custom-field-options-manager');
     }
 }

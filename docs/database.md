@@ -291,7 +291,7 @@ Per-form custom field config: label override, order, required, visible, step, co
 |--------|------|-------|
 | `id` | bigint PK | |
 | `form_id` | bigint FK | → forms, cascade delete |
-| `custom_field_id` | bigint FK | → sfp_custom_fields, cascade delete |
+| `custom_field_id` | bigint FK | → custom_fields, cascade delete |
 | `label_override` | string | Nullable |
 | `sort_order` | smallint | Default 0 |
 | `required` | boolean | Default false |
@@ -306,13 +306,13 @@ Per-form custom field config: label override, order, required, visible, step, co
 
 ## form_custom_field_options
 
-Per-form overrides for a custom field option (label, order, visible, conditional logic). When no row exists, the base `sfp_custom_field_options` values apply.
+Per-form overrides for a custom field option (label, order, visible, conditional logic). When no row exists, the base `custom_field_options` values apply.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | bigint PK | |
 | `form_id` | bigint FK | → forms, cascade delete |
-| `custom_field_option_id` | bigint FK | → sfp_custom_field_options, cascade delete |
+| `custom_field_option_id` | bigint FK | → custom_field_options, cascade delete |
 | `label_override` | string | Nullable |
 | `sort_order` | smallint | Default 0 |
 | `visible` | boolean | Default true |

@@ -1,8 +1,8 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\CustomField;
+use Dcplibrary\Requests\Models\Field;
 use Livewire\Component;
 
 class CustomFieldEdit extends Component
@@ -26,7 +26,7 @@ class CustomFieldEdit extends Component
 
     public function mount(int $fieldId): void
     {
-        $field = CustomField::findOrFail($fieldId);
+        $field = Field::findOrFail($fieldId);
 
         $this->fieldId        = $fieldId;
         $this->label          = $field->label;
@@ -111,12 +111,12 @@ class CustomFieldEdit extends Component
             ? $this->condition
             : null;
 
-        CustomField::whereKey($this->fieldId)->update([
+        Field::whereKey($this->fieldId)->update([
             'label'            => $this->label,
             'key'              => $this->key,
             'type'             => $this->type,
             'step'             => $this->step,
-            'request_kind'     => $this->requestKind,
+            'scope'            => $this->requestKind,
             'required'         => $this->required,
             'active'           => $this->active,
             'include_as_token' => $this->includeAsToken,
@@ -128,40 +128,36 @@ class CustomFieldEdit extends Component
         $this->redirect(route('request.staff.settings.custom-fields'));
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
-        $field = CustomField::findOrFail($this->fieldId);
+        $field = Field::findOrFail($this->fieldId);
 
-        // Condition fields: material_type (ILL uses MaterialType) plus any select/radio custom field keys.
+        // Condition fields: material_type plus any select/radio field keys.
         $conditionFieldKeys = array_values(array_unique(array_merge(
             ['material_type'],
-            CustomField::query()
+            Field::query()
                 ->whereIn('type', ['select', 'radio'])
                 ->orderBy('sort_order')
                 ->pluck('key')
                 ->all()
         )));
 
-        // For rule value pickers: custom field options, plus material_type from MaterialType (for ILL conditions).
-        $optionsByKey = CustomField::query()
+        // For rule value pickers: field options keyed by field key.
+        $optionsByKey = Field::query()
             ->whereIn('key', $conditionFieldKeys)
             ->with(['options' => fn ($q) => $q->active()->ordered()])
             ->get()
-            ->mapWithKeys(fn (CustomField $f) => [$f->key => $f->options->pluck('name', 'slug')->all()])
+            ->mapWithKeys(fn (Field $f) => [$f->key => $f->options->pluck('name', 'slug')->all()])
             ->all();
 
-        $optionsByKey['material_type'] = \Dcplibrary\Sfp\Models\MaterialType::query()
-            ->where('active', true)
-            ->ordered()
-            ->get()
-            ->pluck('name', 'slug')
-            ->all();
-
-        return view('sfp::livewire.admin.custom-field-edit', [
-            'field'             => $field,
-            'conditionFieldKeys'=> $conditionFieldKeys,
-            'optionsByKey'      => $optionsByKey,
-            'showOptionsManager'=> in_array($field->type, ['select', 'radio'], true),
+        return view('requests::livewire.admin.custom-field-edit', [
+            'field'              => $field,
+            'conditionFieldKeys' => $conditionFieldKeys,
+            'optionsByKey'       => $optionsByKey,
+            'showOptionsManager' => in_array($field->type, ['select', 'radio'], true),
         ]);
     }
 }

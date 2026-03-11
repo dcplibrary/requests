@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Tests\Unit;
+namespace Dcplibrary\Requests\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;

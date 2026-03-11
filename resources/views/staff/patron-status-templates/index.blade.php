@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', 'Patron Status Templates')
 @section('settings-content')
 <div class="flex items-center justify-between mb-6">
@@ -37,10 +37,10 @@
                     @endif
                 </td>
                 <td class="px-4 py-3 text-gray-600">
-                    @if($tpl->materialTypes->isEmpty())
+                    @if($tpl->fieldOptions->isEmpty())
                         <span class="text-gray-400">All</span>
                     @else
-                        {{ $tpl->materialTypes->pluck('name')->join(', ') }}
+                        {{ $tpl->fieldOptions->pluck('name')->join(', ') }}
                     @endif
                 </td>
                 <td class="px-4 py-3">
@@ -56,8 +56,8 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-sfp::icon-btn :href="route('request.staff.patron-status-templates.edit', $tpl)" variant="edit" label="Edit" />
-                    <x-sfp::icon-btn :href="route('request.staff.patron-status-templates.delete', $tpl)" variant="delete" label="Delete" />
+                    <x-requests::icon-btn :href="route('request.staff.patron-status-templates.edit', $tpl)" variant="edit" label="Edit" />
+                    <x-requests::icon-btn :href="route('request.staff.patron-status-templates.delete', $tpl)" variant="delete" label="Delete" />
                 </td>
             </tr>
             @empty

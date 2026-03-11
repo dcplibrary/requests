@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Models;
+namespace Dcplibrary\Requests\Models;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A bibliographic item referenced by one or more SFP requests.
+ * A bibliographic item referenced by one or more patron requests.
  *
  * Materials are created from three sources (tracked via `source`):
  * - `submitted` — patron-entered data only, no external match found
@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null      $edition
  * @property string|null      $overview
  * @property string           $source             'submitted'|'isbndb'|'polaris'
- * @property int|null         $material_type_id
+ * @property int|null         $material_type_option_id  FK→field_options (material type)
  */
 class Material extends Model
 {
@@ -45,21 +45,22 @@ class Material extends Model
         'edition',
         'overview',
         'source',
-        'material_type_id',
+        'material_type_option_id',
     ];
 
     protected $casts = [
         'exact_publish_date' => 'date',
     ];
 
-    public function materialType(): BelongsTo
+    /** The material type option from the unified field_options table. */
+    public function materialTypeOption(): BelongsTo
     {
-        return $this->belongsTo(MaterialType::class);
+        return $this->belongsTo(FieldOption::class, 'material_type_option_id');
     }
 
     public function requests(): HasMany
     {
-        return $this->hasMany(SfpRequest::class);
+        return $this->hasMany(PatronRequest::class);
     }
 
     /**
@@ -71,9 +72,9 @@ class Material extends Model
      *
      * Resolution order:
      *  1. null user → no rows
-     *  2. Already a Dcplibrary\Sfp\Models\User → use directly
-     *  3. Any other Authenticatable → look up SFP user by email
-     *  4. No SFP user found → if APP_ENV=local show all, else no rows
+     *  2. Already a Dcplibrary\Requests\Models\User → use directly
+     *  3. Any other Authenticatable → look up staff user by email
+     *  4. No staff user found → if APP_ENV=local show all, else no rows
      *  5. Admin → all rows
      *  6. Selector → filter by accessible material_type_ids
      */
@@ -83,26 +84,26 @@ class Material extends Model
             return $query->whereRaw('1 = 0');
         }
 
-        if ($user instanceof \Dcplibrary\Sfp\Models\User) {
-            $sfpUser = $user;
+        if ($user instanceof \Dcplibrary\Requests\Models\User) {
+            $staffUser = $user;
         } else {
-            $sfpUser = \Dcplibrary\Sfp\Models\User::where('email', $user->email ?? '')->first();
+            $staffUser = \Dcplibrary\Requests\Models\User::where('email', $user->email ?? '')->first();
         }
 
-        if ($sfpUser === null) {
+        if ($staffUser === null) {
             if (app()->environment('local')) {
                 return $query;
             }
             return $query->whereRaw('1 = 0');
         }
 
-        if ($sfpUser->isAdmin()) {
+        if ($staffUser->isAdmin()) {
             return $query;
         }
 
-        $materialTypeIds = $sfpUser->accessibleMaterialTypeIds();
+        $materialTypeOptionIds = $staffUser->accessibleFieldOptionIds('material_type');
 
-        return $query->whereIn('material_type_id', $materialTypeIds);
+        return $query->whereIn('material_type_option_id', $materialTypeOptionIds);
     }
 
     /**

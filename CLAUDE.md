@@ -1,7 +1,7 @@
-# dcplibrary/sfp — AI Assistant Rules
+# dcplibrary/requests — AI Assistant Rules
 
 ## Package Overview
-Laravel package (`dcplibrary/sfp`) for DCP Library staff portal. Installed via Composer in host Laravel apps.
+Laravel package (`dcplibrary/requests`) for DCP Library staff portal. Installed via Composer in host Laravel apps.
 
 ---
 
@@ -11,42 +11,42 @@ Laravel package (`dcplibrary/sfp`) for DCP Library staff portal. Installed via C
 The package ships its own compiled CSS — no host app configuration required.
 
 - **Build command:** `npm run build:css` (run from the package root)
-- **Input:** `resources/css/sfp.css` (Tailwind entry point)
-- **Output:** `resources/dist/sfp.css` — **committed to the repo**, ships inside the package
-- **Served via:** a dedicated asset route registered in `SfpServiceProvider`
+- **Input:** `resources/css/requests.css` (Tailwind entry point)
+- **Output:** `resources/dist/requests.css` — **committed to the repo**, ships inside the package
+- **Served via:** a dedicated asset route registered in `RequestsServiceProvider`
 
 ### Asset route (Horizon/Telescope pattern)
-`SfpServiceProvider::registerRoutes()` registers:
+`RequestsServiceProvider::registerRoutes()` registers:
 ```
 GET /{prefix}/assets/css  →  named route: request.assets.css
 ```
-(Default prefix is `request`; config key `sfp.route_prefix`.)
-This streams `resources/dist/sfp.css` directly from inside `vendor/dcplibrary/sfp/` with a 1-year cache header. No files are copied to the host app's `public/` directory.
+(Default prefix is `request`; config key `requests.route_prefix`.)
+This streams `resources/dist/requests.css` directly from inside `vendor/dcplibrary/requests/` with a 1-year cache header. No files are copied to the host app's `public/` directory.
 
 ### Layout files
 All four layout files load CSS via the named route:
 ```blade
 <link rel="stylesheet" href="{{ route('request.assets.css') }}">
 ```
-**Never** use `asset('vendor/sfp/css/sfp.css')` — that requires vendor:publish and is the old pattern.
+**Never** use `asset('vendor/requests/css/requests.css')` — that requires vendor:publish and is the old pattern.
 
 ### Deployment (prod server)
-After `composer update dcplibrary/sfp`: **nothing extra needed.**
-- `resources/dist/sfp.css` is already in the package
+After `composer update dcplibrary/requests`: **nothing extra needed.**
+- `resources/dist/requests.css` is already in the package
 - The route serves it automatically
-- No `vendor:publish --tag=sfp-assets`, no deploy script changes, no host app Tailwind config changes
+- No `vendor:publish --tag=requests-assets`, no deploy script changes, no host app Tailwind config changes
 
 ### When to rebuild CSS
-Run `npm run build:css` and commit `resources/dist/sfp.css` any time you:
+Run `npm run build:css` and commit `resources/dist/requests.css` any time you:
 - Add or change Tailwind classes in any view (`resources/views/**/*.blade.php`)
 - Add or change Tailwind classes in any PHP source file (`src/**/*.php`)
-- Change `resources/css/sfp.css` (the Tailwind entry point)
+- Change `resources/css/requests.css` (the Tailwind entry point)
 
 ### Watch mode (local dev)
 ```bash
 npm run watch:css
 ```
-Watches for view/source changes and rebuilds `resources/dist/sfp.css` automatically. Still need to commit the rebuilt file before pushing.
+Watches for view/source changes and rebuilds `resources/dist/requests.css` automatically. Still need to commit the rebuilt file before pushing.
 
 ---
 
@@ -54,13 +54,13 @@ Watches for view/source changes and rebuilds `resources/dist/sfp.css` automatica
 
 | Tag | What it publishes |
 |---|---|
-| `sfp-config` | `config/sfp.php` |
-| `sfp-migrations` | database migrations |
-| `sfp-seeders` | database seeders |
-| `sfp-views` | Blade views (optional override only) |
-| `sfp` | all of the above |
+| `requests-config` | `config/requests.php` |
+| `requests-migrations` | database migrations |
+| `requests-seeders` | database seeders |
+| `requests-views` | Blade views (optional override only) |
+| `requests` | all of the above |
 
-**`sfp-assets` no longer exists.** CSS is served via route, not published.
+**`requests-assets` no longer exists.** CSS is served via route, not published.
 
 ---
 
@@ -121,7 +121,7 @@ The barcode check is a real gate: if Polaris is reachable and confirms the barco
 - `false` — Polaris confirmed barcode NOT found → **block**, show error message
 - `null` — Polaris unavailable, timed out, or not configured → **allow through** (fail-open)
 
-The fail-open (`null`) case only covers infrastructure failures, not confirmed invalid barcodes. The logic in `SfpForm::nextStep()` is:
+The fail-open (`null`) case only covers infrastructure failures, not confirmed invalid barcodes. The logic in `RequestForm::nextStep()` is:
 ```php
 if ($exists === false) {
     $this->barcodeNotFound = true;
@@ -145,8 +145,8 @@ If any of these are missing, Polaris integration is skipped silently.
 ## Artisan Commands
 
 ```bash
-php artisan sfp:backup            # run a backup
-php artisan sfp:backup --prune    # run a backup then prune old files
+php artisan requests:backup            # run a backup
+php artisan requests:backup --prune    # run a backup then prune old files
 ```
 
 Prune cutoff is controlled by the `backup_retention_days` setting (default: 30).
@@ -157,13 +157,13 @@ Prune cutoff is controlled by the `backup_retention_days` setting (default: 30).
 
 - **Roles:** `sfp_users.role` is `admin` or `selector` only. There is no `ill` role.
 - **ILL access** is group-based: the setting `ill_selector_group_id` holds the ID of the selector group whose members may view and work the ILL queue. That group can be named anything (e.g. "ILL", "Cathats"). Use `User::hasIllAccess()` to check (returns true for admins or users in that group).
-- Request visibility (`SfpRequest::scopeVisibleTo`) and the staff layout (ILL tab) already use this group check. Do not rely on a role called `ill`.
+- Request visibility (`PatronRequest::scopeVisibleTo`) and the staff layout (ILL tab) already use this group check. Do not rely on a role called `ill`.
 
 ---
 
 ## Forms (presentation layer)
 
-Form-specific presentation (which material types/fields appear, their label/order/required/visibility/step/conditional logic) is stored in a **forms** table and pivot tables — not on the core data tables (material_types, sfp_custom_fields).
+Form-specific presentation (which material types/fields appear, their label/order/required/visibility/step/conditional logic) is stored in a **forms** table and pivot tables — not on the core data tables (material_types, custom_fields).
 
 ### Tables
 - **forms** — `id`, `name`, `slug` (e.g. `ill`, `sfp`). Seeded with "Interlibrary Loan" (ill) and "Suggest for Purchase" (sfp).

@@ -1,10 +1,10 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
-use Dcplibrary\Sfp\Models\CatalogFormatLabel;
-use Dcplibrary\Sfp\Models\Setting;
+use Dcplibrary\Requests\Http\Controllers\Controller;
+use Dcplibrary\Requests\Models\CatalogFormatLabel;
+use Dcplibrary\Requests\Models\Setting;
 use Illuminate\Http\Request;
 
 class CatalogController extends Controller
@@ -14,7 +14,7 @@ class CatalogController extends Controller
         $settings = Setting::allGrouped()
             ->only(['catalog', 'syndetics', 'isbndb']);
 
-        return view('sfp::staff.catalog.index', [
+        return view('requests::staff.catalog.index', [
             'settings'     => $settings,
             'formatLabels' => CatalogFormatLabel::orderBy('format_code')->get(),
         ]);

@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 
 @section('title', $title)
 

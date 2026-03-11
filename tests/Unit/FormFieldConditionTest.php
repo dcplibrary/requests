@@ -1,24 +1,22 @@
 <?php
 
-namespace Dcplibrary\Sfp\Tests\Unit;
+namespace Dcplibrary\Requests\Tests\Unit;
 
-use Dcplibrary\Sfp\Models\CustomField;
-use Dcplibrary\Sfp\Models\FormField;
+use Dcplibrary\Requests\Models\Field;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for the conditional-logic engine shared by FormField and CustomField.
+ * Unit tests for the conditional-logic engine on the unified Field model.
  *
- * Both models implement identical isVisibleFor() / isRequiredFor() logic.
  * Tests cover: match modes (all/any), operators (in/not_in), edge cases
  * (inactive, no condition, empty state, unknown operator).
  *
  * No database or Laravel boot required — fields are instantiated in memory.
  *
- * @see \Dcplibrary\Sfp\Models\FormField::isVisibleFor()
- * @see \Dcplibrary\Sfp\Models\CustomField::isVisibleFor()
+ * @see \Dcplibrary\Requests\Models\Field::isVisibleFor()
+ * @see \Dcplibrary\Requests\Models\Field::evaluateCondition()
  */
 class FormFieldConditionTest extends TestCase
 {
@@ -27,16 +25,16 @@ class FormFieldConditionTest extends TestCase
     // -------------------------------------------------------------------------
 
     /**
-     * Build a FormField with the given condition array.
+     * Build a Field with the given condition array.
      *
-     * @param array|null $condition
-     * @param bool       $active
-     * @param bool       $required
-     * @return FormField
+     * @param  array|null  $condition
+     * @param  bool        $active
+     * @param  bool        $required
+     * @return Field
      */
-    private function formField(?array $condition, bool $active = true, bool $required = false): FormField
+    private function formField(?array $condition, bool $active = true, bool $required = false): Field
     {
-        $f = new FormField();
+        $f = new Field();
         $f->key       = 'test_field';
         $f->active    = $active;
         $f->required  = $required;
@@ -46,16 +44,16 @@ class FormFieldConditionTest extends TestCase
     }
 
     /**
-     * Build a CustomField with the given condition array.
+     * Alias for formField — kept so existing tests referencing customField() still pass.
      *
-     * @param array|null $condition
-     * @param bool       $active
-     * @param bool       $required
-     * @return CustomField
+     * @param  array|null  $condition
+     * @param  bool        $active
+     * @param  bool        $required
+     * @return Field
      */
-    private function customField(?array $condition, bool $active = true, bool $required = false): CustomField
+    private function customField(?array $condition, bool $active = true, bool $required = false): Field
     {
-        $f = new CustomField();
+        $f = new Field();
         $f->key       = 'test_custom';
         $f->active    = $active;
         $f->required  = $required;

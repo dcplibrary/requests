@@ -1,10 +1,10 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
-use Dcplibrary\Sfp\Models\RequestStatusHistory;
-use Dcplibrary\Sfp\Models\RequestStatus;
+use Dcplibrary\Requests\Http\Controllers\Controller;
+use Dcplibrary\Requests\Models\RequestStatusHistory;
+use Dcplibrary\Requests\Models\RequestStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -13,14 +13,14 @@ class RequestStatusController extends Controller
 {
     public function index()
     {
-        return view('sfp::staff.statuses.index', [
+        return view('requests::staff.statuses.index', [
             'statuses' => RequestStatus::orderBy('sort_order')->get(),
         ]);
     }
 
     public function create()
     {
-        return view('sfp::staff.statuses.form', ['status' => new RequestStatus()]);
+        return view('requests::staff.statuses.form', ['status' => new RequestStatus()]);
     }
 
     public function store(Request $request)
@@ -42,7 +42,7 @@ class RequestStatusController extends Controller
 
     public function edit(RequestStatus $status)
     {
-        return view('sfp::staff.statuses.form', ['status' => $status]);
+        return view('requests::staff.statuses.form', ['status' => $status]);
     }
 
     public function update(Request $request, RequestStatus $status)
@@ -65,8 +65,8 @@ class RequestStatusController extends Controller
     public function destroy(RequestStatus $status)
     {
         $request = request();
-        $sfpUser = $this->currentSfpUser($request);
-        if (! $sfpUser || ! $sfpUser->isAdmin()) {
+        $staffUser = $this->currentStaffUser($request);
+        if (! $staffUser || ! $staffUser->isAdmin()) {
             abort(403);
         }
 
@@ -101,8 +101,8 @@ class RequestStatusController extends Controller
     public function confirmDelete(RequestStatus $status)
     {
         $request = request();
-        $sfpUser = $this->currentSfpUser($request);
-        if (! $sfpUser || ! $sfpUser->isAdmin()) {
+        $staffUser = $this->currentStaffUser($request);
+        if (! $staffUser || ! $staffUser->isAdmin()) {
             abort(403);
         }
 
@@ -144,7 +144,7 @@ class RequestStatusController extends Controller
 
         $hasDependencies = $requestsCount > 0 || $historyCount > 0;
 
-        return view('sfp::staff.settings.reassign-delete', [
+        return view('requests::staff.settings.reassign-delete', [
             'title'             => 'Delete Status',
             'itemLabel'         => $status->name,
             'hasDependencies'   => $hasDependencies,

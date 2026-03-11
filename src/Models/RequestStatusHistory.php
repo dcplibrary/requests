@@ -1,14 +1,14 @@
 <?php
 
-namespace Dcplibrary\Sfp\Models;
+namespace Dcplibrary\Requests\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * An audit log entry recording a status transition for an SFP request.
+ * An audit log entry recording a status transition for a patron request.
  *
- * Created by `SfpRequest::transitionStatus()`. The `user_id` is null for
+ * Created by `PatronRequest::transitionStatus()`. The `user_id` is null for
  * system-initiated transitions (e.g. automatic status set on submission).
  *
  * @property int         $id
@@ -26,7 +26,7 @@ class RequestStatusHistory extends Model
     /** The request this history entry belongs to. */
     public function request(): BelongsTo
     {
-        return $this->belongsTo(SfpRequest::class, 'request_id');
+        return $this->belongsTo(PatronRequest::class, 'request_id');
     }
 
     /** The status set by this transition. */

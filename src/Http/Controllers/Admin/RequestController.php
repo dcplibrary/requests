@@ -1,18 +1,16 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
-use Dcplibrary\Sfp\Models\Audience;
-use Dcplibrary\Sfp\Models\CustomField;
-use Dcplibrary\Sfp\Models\CustomFieldOption;
-use Dcplibrary\Sfp\Models\MaterialType;
-use Dcplibrary\Sfp\Models\RequestStatus;
-use Dcplibrary\Sfp\Models\SfpRequest;
-use Dcplibrary\Sfp\Models\Setting;
-use Dcplibrary\Sfp\Models\User as SfpUser;
-use Dcplibrary\Sfp\Services\BibliocommonsService;
-use Dcplibrary\Sfp\Services\NotificationService;
+use Dcplibrary\Requests\Http\Controllers\Controller;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\RequestStatus;
+use Dcplibrary\Requests\Models\PatronRequest;
+use Dcplibrary\Requests\Models\Setting;
+use Dcplibrary\Requests\Models\User as StaffUser;
+use Dcplibrary\Requests\Services\BibliocommonsService;
+use Dcplibrary\Requests\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,7 +20,7 @@ class RequestController extends Controller
     {
         $user = $request->user();
 
-        $query = SfpRequest::with(['patron', 'material', 'materialType', 'audience', 'status', 'assignedTo'])
+        $query = PatronRequest::with(['patron', 'material', 'status', 'assignedTo', 'fieldValues.field'])
             ->visibleTo($user)
             ->latest();
 
@@ -37,10 +35,28 @@ class RequestController extends Controller
             $query->whereHas('status', fn ($q) => $q->where('slug', $request->status));
         }
         if ($request->filled('material_type')) {
-            $query->where('material_type_id', $request->material_type);
+            $mtFieldId = Field::where('key', 'material_type')->value('id');
+            if ($mtFieldId) {
+                $query->whereExists(function ($sub) use ($request, $mtFieldId) {
+                    $sub->selectRaw('1')
+                        ->from('request_field_values')
+                        ->whereColumn('request_field_values.request_id', 'requests.id')
+                        ->where('request_field_values.field_id', $mtFieldId)
+                        ->where('request_field_values.value', $request->material_type);
+                });
+            }
         }
         if ($request->filled('audience')) {
-            $query->where('audience_id', $request->audience);
+            $audFieldId = Field::where('key', 'audience')->value('id');
+            if ($audFieldId) {
+                $query->whereExists(function ($sub) use ($request, $audFieldId) {
+                    $sub->selectRaw('1')
+                        ->from('request_field_values')
+                        ->whereColumn('request_field_values.request_id', 'requests.id')
+                        ->where('request_field_values.field_id', $audFieldId)
+                        ->where('request_field_values.value', $request->audience);
+                });
+            }
         }
         if ($request->filled('search')) {
             $term = '%' . $request->search . '%';
@@ -56,19 +72,19 @@ class RequestController extends Controller
         $assignmentEnabled = (bool) Setting::get('assignment_enabled', false);
         $assigned = $request->get('assigned');
         if ($assignmentEnabled && is_string($assigned) && $assigned !== '') {
-            $currentSfpUser = $this->currentSfpUser($request);
-            if ($assigned === 'me' && $currentSfpUser) {
-                $query->where('assigned_to_user_id', $currentSfpUser->id);
+            $currentStaffUser = $this->currentStaffUser($request);
+            if ($assigned === 'me' && $currentStaffUser) {
+                $query->where('assigned_to_user_id', $currentStaffUser->id);
             } elseif ($assigned === 'unassigned') {
                 $query->whereNull('assigned_to_user_id');
             }
         }
 
-        // Filter by dynamic custom fields (select/radio with value_slug)
+        // Filter by dynamic fields (select/radio with value slug)
         $cfKey = $request->get('cf');
         $cfValue = $request->get('cf_value');
         if (is_string($cfKey) && $cfKey !== '' && is_string($cfValue) && $cfValue !== '') {
-            $field = CustomField::query()
+            $field = Field::query()
                 ->where('key', $cfKey)
                 ->where('filterable', true)
                 ->whereIn('type', ['select', 'radio'])
@@ -78,17 +94,17 @@ class RequestController extends Controller
             if ($field) {
                 $query->whereExists(function ($sub) use ($field, $cfValue) {
                     $sub->selectRaw('1')
-                        ->from('sfp_request_custom_field_values as rcfv')
-                        ->whereColumn('rcfv.request_id', 'requests.id')
-                        ->where('rcfv.custom_field_id', $field->id)
-                        ->where('rcfv.value_slug', $cfValue);
+                        ->from('request_field_values as rfv')
+                        ->whereColumn('rfv.request_id', 'requests.id')
+                        ->where('rfv.field_id', $field->id)
+                        ->where('rfv.value', $cfValue);
                 });
             }
         }
 
         $requests = $query->paginate(30)->withQueryString();
 
-        $customFilterFields = CustomField::query()
+        $customFilterFields = Field::query()
             ->where('filterable', true)
             ->whereIn('type', ['select', 'radio'])
             ->when($kind, fn ($q) => $q->forKind($kind))
@@ -98,109 +114,111 @@ class RequestController extends Controller
         $selectedCustomField = null;
         if (is_string($cfKey) && $cfKey !== '') {
             $selectedCustomField = $customFilterFields->firstWhere('key', $cfKey)
-                ?? CustomField::query()->where('key', $cfKey)->first();
+                ?? Field::query()->where('key', $cfKey)->first();
         }
 
         $customFilterOptions = collect();
         if ($selectedCustomField) {
-            $customFilterOptions = CustomFieldOption::query()
-                ->where('custom_field_id', $selectedCustomField->id)
+            $customFilterOptions = FieldOption::query()
+                ->where('field_id', $selectedCustomField->id)
                 ->active()
                 ->ordered()
                 ->get(['slug', 'name']);
         }
 
-        return view('sfp::staff.requests.index', [
-            'requests'      => $requests,
-            'statuses'      => RequestStatus::active()->get(),
-            'materialTypes' => MaterialType::active()->get(),
-            'audiences'     => Audience::active()->get(),
-            'filters'       => $request->only(['kind', 'status', 'material_type', 'audience', 'search', 'cf', 'cf_value', 'assigned']),
-            'currentKind'   => $kind,
-            'customFilterFields' => $customFilterFields,
+        $mtField  = Field::where('key', 'material_type')->first();
+        $audField = Field::where('key', 'audience')->first();
+
+        return view('requests::staff.requests.index', [
+            'requests'       => $requests,
+            'statuses'       => RequestStatus::active()->get(),
+            'materialTypes'  => $mtField ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->get() : collect(),
+            'audiences'      => $audField ? FieldOption::where('field_id', $audField->id)->active()->ordered()->get() : collect(),
+            'filters'        => $request->only(['kind', 'status', 'material_type', 'audience', 'search', 'cf', 'cf_value', 'assigned']),
+            'currentKind'    => $kind,
+            'customFilterFields'  => $customFilterFields,
             'customFilterOptions' => $customFilterOptions,
-            'assignmentEnabled' => $assignmentEnabled,
+            'assignmentEnabled'   => $assignmentEnabled,
         ]);
     }
 
-    public function show(SfpRequest $sfpRequest)
+    public function show(PatronRequest $patronRequest)
     {
         $user = request()->user();
-        $allowed = SfpRequest::query()
+        $allowed = PatronRequest::query()
             ->visibleTo($user)
-            ->whereKey($sfpRequest->getKey())
+            ->whereKey($patronRequest->getKey())
             ->exists();
         if (! $allowed) {
             abort(403);
         }
 
-        $sfpRequest->load([
+        $patronRequest->load([
             'patron',
-            'material.materialType',
-            'materialType',
-            'audience',
+            'material',
             'status',
             'statusHistory.status',
             'statusHistory.user',
-            'customFieldValues.field',
+            'fieldValues.field',
             'assignedTo',
             'assignedBy',
         ]);
 
-        $customValueLabelByFieldId = [];
-        $fieldIds = $sfpRequest->customFieldValues->pluck('custom_field_id')->unique()->values()->all();
+        $fieldValueLabelByFieldId = [];
+        $fieldIds = $patronRequest->fieldValues->pluck('field_id')->unique()->values()->all();
         if (! empty($fieldIds)) {
-            $optionMaps = CustomFieldOption::query()
-                ->whereIn('custom_field_id', $fieldIds)
+            $optionMaps = FieldOption::query()
+                ->whereIn('field_id', $fieldIds)
                 ->get()
-                ->groupBy('custom_field_id')
+                ->groupBy('field_id')
                 ->map(fn ($group) => $group->pluck('name', 'slug')->all())
                 ->all();
 
-            foreach ($sfpRequest->customFieldValues as $val) {
-                $label = $val->value_text;
-                if ($val->value_slug) {
-                    $label = $optionMaps[$val->custom_field_id][$val->value_slug] ?? $val->value_slug;
-                } elseif ($val->field?->type === 'checkbox') {
-                    $label = $val->value_text ? 'Yes' : 'No';
+            foreach ($patronRequest->fieldValues as $val) {
+                $label = $val->value;
+                $field = $val->field;
+                if ($field && in_array($field->type, ['select', 'radio'])) {
+                    $label = $optionMaps[$val->field_id][$val->value] ?? $val->value;
+                } elseif ($field && $field->type === 'checkbox') {
+                    $label = $val->value ? 'Yes' : 'No';
                 }
-                $customValueLabelByFieldId[$val->custom_field_id] = $label;
+                $fieldValueLabelByFieldId[$val->field_id] = $label;
             }
         }
 
         // Show "Convert to ILL" button when this is an SFP request and ILL was requested.
-        $showConvertToIll = $sfpRequest->request_kind === 'sfp'
-            && $sfpRequest->ill_requested;
+        $showConvertToIll = $patronRequest->request_kind === 'sfp'
+            && $patronRequest->ill_requested;
 
-        return view('sfp::staff.requests.show', [
-            'sfpRequest' => $sfpRequest,
+        return view('requests::staff.requests.show', [
+            'patronRequest' => $patronRequest,
             'statuses'   => RequestStatus::active()->get(),
-            'customValueLabelByFieldId' => $customValueLabelByFieldId,
+            'fieldValueLabelByFieldId' => $fieldValueLabelByFieldId,
             'assignmentEnabled' => (bool) Setting::get('assignment_enabled', false),
-            'staffUsers' => SfpUser::query()->where('active', true)->orderBy('name')->get(['id', 'name', 'email']),
+            'staffUsers' => StaffUser::query()->where('active', true)->orderBy('name')->get(['id', 'name', 'email']),
             'showConvertToIll' => $showConvertToIll,
         ]);
     }
 
-    public function assign(Request $httpRequest, SfpRequest $sfpRequest)
+    public function assign(Request $httpRequest, PatronRequest $patronRequest)
     {
         abort_unless(Setting::get('assignment_enabled', false), 404);
 
-        $allowed = SfpRequest::query()
+        $allowed = PatronRequest::query()
             ->visibleTo($httpRequest->user())
-            ->whereKey($sfpRequest->getKey())
+            ->whereKey($patronRequest->getKey())
             ->exists();
         if (! $allowed) abort(403);
 
         $data = $httpRequest->validate([
-            'assigned_to_user_id' => 'nullable|integer|exists:sfp_users,id',
+            'assigned_to_user_id' => 'nullable|integer|exists:staff_users,id',
         ]);
 
-        $actor = $this->currentSfpUser($httpRequest);
+        $actor = $this->currentStaffUser($httpRequest);
         $newAssigneeId = $data['assigned_to_user_id'] ?? null;
 
-        $was = $sfpRequest->assigned_to_user_id;
-        $sfpRequest->update([
+        $was = $patronRequest->assigned_to_user_id;
+        $patronRequest->update([
             'assigned_to_user_id' => $newAssigneeId,
             'assigned_at' => $newAssigneeId ? now() : null,
             'assigned_by_user_id' => $actor?->id,
@@ -209,8 +227,8 @@ class RequestController extends Controller
         $note = $newAssigneeId
             ? (($was ? 'Reassigned' : 'Assigned') . " to user #{$newAssigneeId}.")
             : 'Unassigned.';
-        $sfpRequest->statusHistory()->create([
-            'request_status_id' => $sfpRequest->request_status_id,
+        $patronRequest->statusHistory()->create([
+            'request_status_id' => $patronRequest->request_status_id,
             'user_id' => $actor?->id,
             'note' => $note,
         ]);
@@ -218,31 +236,31 @@ class RequestController extends Controller
         return back()->with('success', 'Assignment updated.');
     }
 
-    public function claim(Request $httpRequest, SfpRequest $sfpRequest)
+    public function claim(Request $httpRequest, PatronRequest $patronRequest)
     {
         abort_unless(Setting::get('assignment_enabled', false), 404);
 
-        $allowed = SfpRequest::query()
+        $allowed = PatronRequest::query()
             ->visibleTo($httpRequest->user())
-            ->whereKey($sfpRequest->getKey())
+            ->whereKey($patronRequest->getKey())
             ->exists();
         if (! $allowed) abort(403);
 
-        $actor = $this->currentSfpUser($httpRequest);
+        $actor = $this->currentStaffUser($httpRequest);
         if (! $actor) abort(403);
 
-        if ($sfpRequest->assigned_to_user_id) {
+        if ($patronRequest->assigned_to_user_id) {
             return back()->withErrors(['error' => 'This request is already assigned.']);
         }
 
-        $sfpRequest->update([
+        $patronRequest->update([
             'assigned_to_user_id' => $actor->id,
             'assigned_at' => now(),
             'assigned_by_user_id' => $actor->id,
         ]);
 
-        $sfpRequest->statusHistory()->create([
-            'request_status_id' => $sfpRequest->request_status_id,
+        $patronRequest->statusHistory()->create([
+            'request_status_id' => $patronRequest->request_status_id,
             'user_id' => $actor->id,
             'note' => 'Claimed by staff user.',
         ]);
@@ -250,11 +268,11 @@ class RequestController extends Controller
         return back()->with('success', 'Request claimed.');
     }
 
-    public function convertKind(Request $httpRequest, SfpRequest $sfpRequest)
+    public function convertKind(Request $httpRequest, PatronRequest $patronRequest)
     {
-        $allowed = SfpRequest::query()
+        $allowed = PatronRequest::query()
             ->visibleTo($httpRequest->user())
-            ->whereKey($sfpRequest->getKey())
+            ->whereKey($patronRequest->getKey())
             ->exists();
         if (! $allowed) {
             abort(403);
@@ -265,34 +283,34 @@ class RequestController extends Controller
             'note' => 'nullable|string|max:2000',
         ]);
 
-        $from = $sfpRequest->request_kind ?: 'sfp';
+        $from = $patronRequest->request_kind ?: 'sfp';
         $to   = $data['to'];
 
         if ($from === $to) {
             return back()->with('success', "Request is already '{$to}'.");
         }
 
-        $sfpRequest->update([
+        $patronRequest->update([
             'request_kind'  => $to,
-            'ill_requested' => $to === 'ill' ? true : $sfpRequest->ill_requested,
+            'ill_requested' => $to === 'ill' ? true : $patronRequest->ill_requested,
         ]);
 
-        $sfpUserId = $this->currentSfpUser($httpRequest)?->id;
+        $staffUserId = $this->currentStaffUser($httpRequest)?->id;
         $note = trim((string) ($data['note'] ?? ''));
         $notePrefix = "Converted workflow: {$from} → {$to}.";
-        $sfpRequest->statusHistory()->create([
-            'request_status_id' => $sfpRequest->request_status_id,
-            'user_id'           => $sfpUserId,
+        $patronRequest->statusHistory()->create([
+            'request_status_id' => $patronRequest->request_status_id,
+            'user_id'           => $staffUserId,
             'note'              => $note ? "{$notePrefix} {$note}" : $notePrefix,
         ]);
 
         // Notify ILL staff when something is converted into ILL.
         if ($to === 'ill') {
-            app(NotificationService::class)->notifyStaffNewRequest($sfpRequest->fresh());
+            app(NotificationService::class)->notifyStaffNewRequest($patronRequest->fresh());
             // Redirect to the list — the user may not have ILL access so back() could 403.
             return redirect()
                 ->route('request.staff.requests.index')
-                ->with('success', "Request #{$sfpRequest->id} converted to ILL.");
+                ->with('success', "Request #{$patronRequest->id} converted to ILL.");
         }
 
         return back()->with('success', "Request converted: {$from} → {$to}.");
@@ -302,11 +320,11 @@ class RequestController extends Controller
      * Return a JSON preview of the patron email that would be sent for the
      * given status change, without actually sending anything.
      */
-    public function previewStatusEmail(Request $httpRequest, SfpRequest $sfpRequest): JsonResponse
+    public function previewStatusEmail(Request $httpRequest, PatronRequest $patronRequest): JsonResponse
     {
-        $allowed = SfpRequest::query()
+        $allowed = PatronRequest::query()
             ->visibleTo($httpRequest->user())
-            ->whereKey($sfpRequest->getKey())
+            ->whereKey($patronRequest->getKey())
             ->exists();
         if (! $allowed) {
             abort(403);
@@ -317,9 +335,9 @@ class RequestController extends Controller
         ]);
 
         $statusId = (int) $httpRequest->status_id;
-        $preview  = app(NotificationService::class)->renderPatronEmail($sfpRequest, $statusId);
+        $preview  = app(NotificationService::class)->renderPatronEmail($patronRequest, $statusId);
 
-        $staffEmail = $this->currentSfpUser($httpRequest)?->email;
+        $staffEmail = $this->currentStaffUser($httpRequest)?->email;
 
         return response()->json([
             'would_send'      => $preview !== null,
@@ -332,11 +350,11 @@ class RequestController extends Controller
         ]);
     }
 
-    public function updateStatus(\Illuminate\Http\Request $httpRequest, SfpRequest $sfpRequest)
+    public function updateStatus(\Illuminate\Http\Request $httpRequest, PatronRequest $patronRequest)
     {
-        $allowed = SfpRequest::query()
+        $allowed = PatronRequest::query()
             ->visibleTo($httpRequest->user())
-            ->whereKey($sfpRequest->getKey())
+            ->whereKey($patronRequest->getKey())
             ->exists();
         if (! $allowed) {
             abort(403);
@@ -355,30 +373,30 @@ class RequestController extends Controller
             'email_copy_to_self' => 'nullable|boolean',
         ]);
 
-        $sfpUserId = $this->currentSfpUser($httpRequest)?->id;
-        $sfpRequest->transitionStatus(
+        $staffUserId = $this->currentStaffUser($httpRequest)?->id;
+        $patronRequest->transitionStatus(
             $httpRequest->status_id,
-            $sfpUserId,
+            $staffUserId,
             $httpRequest->note
         );
 
         // Auto-claim on status update (only if assignment is enabled and currently unassigned).
-        if (Setting::get('assignment_enabled', false) && $sfpUserId && ! $sfpRequest->assigned_to_user_id) {
-            $sfpRequest->update([
-                'assigned_to_user_id' => $sfpUserId,
+        if (Setting::get('assignment_enabled', false) && $staffUserId && ! $patronRequest->assigned_to_user_id) {
+            $patronRequest->update([
+                'assigned_to_user_id' => $staffUserId,
                 'assigned_at'         => now(),
-                'assigned_by_user_id' => $sfpUserId,
+                'assigned_by_user_id' => $staffUserId,
             ]);
 
-            $sfpRequest->statusHistory()->create([
-                'request_status_id' => $sfpRequest->request_status_id,
-                'user_id'           => $sfpUserId,
+            $patronRequest->statusHistory()->create([
+                'request_status_id' => $patronRequest->request_status_id,
+                'user_id'           => $staffUserId,
                 'note'              => 'Auto-claimed on status update.',
             ]);
         }
 
         // Reload so notify service sees the fresh status relationship.
-        $sfpRequest->refresh();
+        $patronRequest->refresh();
 
         if ($httpRequest->boolean('email_confirmed')) {
             // Staff reviewed (and optionally edited) the email in the preview modal — send it.
@@ -389,22 +407,22 @@ class RequestController extends Controller
                 cc:          (string) ($httpRequest->email_cc      ?? ''),
                 bcc:         (string) ($httpRequest->email_bcc     ?? ''),
                 copyToSelf:  $httpRequest->boolean('email_copy_to_self'),
-                sfpUserId:   $sfpUserId,
+                staffUserId: $staffUserId,
             );
-            $sfpRequest->statusHistory()->create([
-                'request_status_id' => $sfpRequest->request_status_id,
-                'user_id'           => $sfpUserId,
+            $patronRequest->statusHistory()->create([
+                'request_status_id' => $patronRequest->request_status_id,
+                'user_id'           => $staffUserId,
                 'note'              => 'Notification sent.',
             ]);
         } elseif ($httpRequest->boolean('email_skip')) {
             // Staff saw the preview and chose to skip sending — do nothing.
         } else {
             // Preview was never shown (disabled or no email would fire) — use standard path.
-            $sent = app(NotificationService::class)->notifyPatronStatusChange($sfpRequest);
+            $sent = app(NotificationService::class)->notifyPatronStatusChange($patronRequest);
             if ($sent) {
-                $sfpRequest->statusHistory()->create([
-                    'request_status_id' => $sfpRequest->request_status_id,
-                    'user_id'           => $sfpUserId,
+                $patronRequest->statusHistory()->create([
+                    'request_status_id' => $patronRequest->request_status_id,
+                    'user_id'           => $staffUserId,
                     'note'              => 'Notification sent.',
                 ]);
             }
@@ -424,15 +442,15 @@ class RequestController extends Controller
         string  $cc,
         string  $bcc,
         bool    $copyToSelf,
-        ?int    $sfpUserId,
+        ?int    $staffUserId,
     ): void {
         if (! $to) return;
 
         $ccAddresses  = $this->parseAddressList($cc);
         $bccAddresses = $this->parseAddressList($bcc);
 
-        if ($copyToSelf && $sfpUserId) {
-            $staffEmail = SfpUser::find($sfpUserId)?->email;
+        if ($copyToSelf && $staffUserId) {
+            $staffEmail = StaffUser::find($staffUserId)?->email;
             if ($staffEmail) {
                 $ccAddresses[] = $staffEmail;
             }
@@ -446,9 +464,9 @@ class RequestController extends Controller
             $mailer = \Illuminate\Support\Facades\Mail::to($to);
             if (! empty($ccAddresses))  $mailer = $mailer->cc($ccAddresses);
             if (! empty($bccAddresses)) $mailer = $mailer->bcc($bccAddresses);
-            $mailer->send(new \Dcplibrary\Sfp\Mail\SfpMail($subject, $body));
+            $mailer->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SFP custom patron email failed', [
+            \Illuminate\Support\Facades\Log::error('Custom patron email failed', [
                 'to'    => $to,
                 'error' => $e->getMessage(),
             ]);
@@ -475,23 +493,23 @@ class RequestController extends Controller
         return $emails;
     }
 
-    public function recheckCatalog(SfpRequest $sfpRequest)
+    public function recheckCatalog(PatronRequest $patronRequest)
     {
-        $allowed = SfpRequest::query()
+        $allowed = PatronRequest::query()
             ->visibleTo(request()->user())
-            ->whereKey($sfpRequest->getKey())
+            ->whereKey($patronRequest->getKey())
             ->exists();
         if (! $allowed) {
             abort(403);
         }
 
-        $audience = Audience::find($sfpRequest->audience_id);
+        $audienceSlug = $patronRequest->fieldValue('audience') ?? 'adult';
 
         $result = app(BibliocommonsService::class)->search(
-            $sfpRequest->submitted_title,
-            $sfpRequest->submitted_author,
-            $audience?->bibliocommons_value ?? 'adult',
-            $sfpRequest->submitted_publish_date ?: null
+            $patronRequest->submitted_title,
+            $patronRequest->submitted_author,
+            $audienceSlug,
+            $patronRequest->submitted_publish_date ?: null
         );
 
         // Accept first physical book format, fall back to first result
@@ -499,7 +517,7 @@ class RequestController extends Controller
             ?? collect($result['results'])->firstWhere('format', 'LPRINT')
             ?? ($result['results'][0] ?? null);
 
-        $sfpRequest->update([
+        $patronRequest->update([
             'catalog_searched'       => true,
             'catalog_result_count'   => $result['total'],
             'catalog_match_accepted' => $match !== null,
@@ -513,26 +531,26 @@ class RequestController extends Controller
         return back()->with('success', $message);
     }
 
-    public function destroy(Request $httpRequest, SfpRequest $sfpRequest)
+    public function destroy(Request $httpRequest, PatronRequest $patronRequest)
     {
-        $allowed = SfpRequest::query()
+        $allowed = PatronRequest::query()
             ->visibleTo($httpRequest->user())
-            ->whereKey($sfpRequest->getKey())
+            ->whereKey($patronRequest->getKey())
             ->exists();
         if (! $allowed) {
             abort(403);
         }
 
-        // Destructive action: restrict to SFP admins.
-        $sfpUser = $this->currentSfpUser($httpRequest);
-        if (! $sfpUser || ! $sfpUser->isAdmin()) {
+        // Destructive action: restrict to admins.
+        $staffUser = $this->currentStaffUser($httpRequest);
+        if (! $staffUser || ! $staffUser->isAdmin()) {
             abort(403);
         }
 
-        $sfpRequest->delete();
+        $patronRequest->delete();
 
         return redirect()
             ->route('request.staff.requests.index')
-            ->with('success', "Request #{$sfpRequest->id} deleted.");
+            ->with('success', "Request #{$patronRequest->id} deleted.");
     }
 }

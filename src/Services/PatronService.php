@@ -1,9 +1,9 @@
 <?php
 
-namespace Dcplibrary\Sfp\Services;
+namespace Dcplibrary\Requests\Services;
 
-use Dcplibrary\Sfp\Jobs\LookupPatronInPolaris;
-use Dcplibrary\Sfp\Models\Patron;
+use Dcplibrary\Requests\Jobs\LookupPatronInPolaris;
+use Dcplibrary\Requests\Models\Patron;
 
 /**
  * Creates or retrieves patrons during form submission.
@@ -37,8 +37,8 @@ class PatronService
 
         // Queue Polaris lookup — runs after submission
         LookupPatronInPolaris::dispatch($patron->id)
-            ->onConnection(config('sfp.queue.connection'))
-            ->onQueue(config('sfp.queue.name'));
+            ->onConnection(config('requests.queue.connection'))
+            ->onQueue(config('requests.queue.name'));
 
         return ['patron' => $patron, 'created' => true];
     }

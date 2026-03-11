@@ -1,4 +1,4 @@
-@extends('sfp::staff._layout')
+@extends('requests::staff._layout')
 
 @section('title', 'Edit Patron: ' . $patron->full_name)
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Tests\Integration;
+namespace Dcplibrary\Requests\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -38,7 +38,7 @@ class BibliocommonsSearchTest extends TestCase
 
         $ctx  = stream_context_create(['http' => [
             'timeout' => 15,
-            'header'  => "User-Agent: Mozilla/5.0 (compatible; SfpBot/1.0)\r\nAccept: application/json\r\n",
+            'header'  => "User-Agent: Mozilla/5.0 (compatible; RequestsBot/1.0)\r\nAccept: application/json\r\n",
         ]]);
 
         $body = @file_get_contents($url, false, $ctx);

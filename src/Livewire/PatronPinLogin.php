@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire;
+namespace Dcplibrary\Requests\Livewire;
 
 use Blashbrook\PAPIClient\PAPIClient;
 use GuzzleHttp\Exception\GuzzleException;
@@ -22,7 +22,7 @@ class PatronPinLogin extends Component
 
     public function login(): void
     {
-        $key = 'sfp-pin-login:' . request()->ip();
+        $key = 'requests-pin-login:' . request()->ip();
         if (! RateLimiter::attempt($key, 5, fn () => true, 60)) {
             $this->addError('pin', 'Too many attempts. Please wait a minute and try again.');
             return;
@@ -51,7 +51,7 @@ class PatronPinLogin extends Component
                 return;
             }
 
-            session(['sfp_authenticated_barcode' => $barcode]);
+            session(['requests_authenticated_barcode' => $barcode]);
 
             $this->redirect(route('request.patron.requests'));
         } catch (GuzzleException) {
@@ -61,6 +61,6 @@ class PatronPinLogin extends Component
 
     public function render()
     {
-        return view('sfp::livewire.patron-pin-login');
+        return view('requests::livewire.patron-pin-login');
     }
 }

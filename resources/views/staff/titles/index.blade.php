@@ -1,4 +1,4 @@
-@extends('sfp::staff._layout')
+@extends('requests::staff._layout')
 
 @section('title', 'Titles')
 
@@ -39,6 +39,7 @@
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Author</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">ISBN</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Type</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Kind</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Requests</th>
                 <th class="px-4 py-3"></th>
             </tr>
@@ -65,7 +66,17 @@
                     {{ $material->isbn13 ?: ($material->isbn ?: '—') }}
                 </td>
                 <td class="px-4 py-3 text-gray-500 text-xs">
-                    {{ $material->materialType?->name ?? '—' }}
+                    {{ $material->materialTypeOption?->name ?? '—' }}
+                </td>
+                <td class="px-4 py-3">
+                    <div class="flex flex-wrap gap-1">
+                        @foreach($material->requests->pluck('request_kind')->unique()->sort() as $kind)
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                {{ $kind === 'ill' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700' }}">
+                                {{ strtoupper($kind ?? 'sfp') }}
+                            </span>
+                        @endforeach
+                    </div>
                 </td>
                 <td class="px-4 py-3">
                     <div class="flex flex-wrap gap-1">
@@ -86,12 +97,12 @@
                     </div>
                 </td>
                 <td class="px-4 py-3 text-right">
-                    <x-sfp::icon-btn :href="route('request.staff.titles.show', $material)" variant="view" label="View" />
+                    <x-requests::icon-btn :href="route('request.staff.titles.show', $material)" variant="view" label="View" />
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" class="px-4 py-10 text-center text-gray-400">No titles found.</td>
+                <td colspan="7" class="px-4 py-10 text-center text-gray-400">No titles found.</td>
             </tr>
             @endforelse
         </tbody>

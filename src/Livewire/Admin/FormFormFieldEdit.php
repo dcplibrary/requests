@@ -1,12 +1,11 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\Audience;
-use Dcplibrary\Sfp\Models\Form;
-use Dcplibrary\Sfp\Models\FormField;
-use Dcplibrary\Sfp\Models\FormFormField;
-use Dcplibrary\Sfp\Models\MaterialType;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\Form;
+use Dcplibrary\Requests\Models\FormFieldConfig;
 use Livewire\Component;
 
 /**
@@ -36,13 +35,12 @@ class FormFormFieldEdit extends Component
         $this->fieldId  = $fieldId;
         $this->formSlug = $formSlug;
 
-        $pivot = FormFormField::findOrFail($pivotId);
+        $pivot = FormFieldConfig::findOrFail($pivotId);
         $this->labelOverride = (string) ($pivot->label_override ?? '');
         $this->required      = (bool) $pivot->required;
         $this->visible       = (bool) $pivot->visible;
 
-        // Determine if this field has options (material_type, audience, genre, console).
-        $field = FormField::find($fieldId);
+        $field = Field::find($fieldId);
 
         // Load per-form conditional logic; fall back to the base field's condition so the
         // admin sees the effective condition rather than a blank state when none has been
@@ -50,8 +48,8 @@ class FormFormFieldEdit extends Component
         $this->condition    = $pivot->conditional_logic ?? ($field?->condition ?? ['match' => 'all', 'rules' => []]);
         $this->hasCondition = ! empty($this->condition['rules']);
         if ($field) {
-            $this->fieldKey  = $field->key;
-            $this->hasOptions = in_array($field->key, FormFormFieldOptionsManager::OPTION_KEYS, true);
+            $this->fieldKey   = $field->key;
+            $this->hasOptions = in_array($field->type, ['select', 'radio'], true);
         }
 
         // Resolve the Form model ID needed by the options manager.
@@ -66,8 +64,8 @@ class FormFormFieldEdit extends Component
             : null;
 
         $labelOverride = trim($this->labelOverride);
-        FormFormField::where('id', $this->pivotId)->update([
-            'label_override'     => $labelOverride !== '' ? $labelOverride : null,
+        FormFieldConfig::where('id', $this->pivotId)->update([
+            'label_override'    => $labelOverride !== '' ? $labelOverride : null,
             'required'          => $this->required,
             'visible'           => $this->visible,
             'conditional_logic' => $conditionalLogic,
@@ -126,11 +124,21 @@ class FormFormFieldEdit extends Component
         $this->condition['rules'][$ruleIndex]['values'] = $values;
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
-        return view('sfp::livewire.admin.form-form-field-edit', [
-            'materialTypeOptions' => MaterialType::orderBy('sort_order')->pluck('name', 'slug'),
-            'audienceOptions'     => Audience::orderBy('sort_order')->pluck('name', 'slug'),
+        $mtField  = Field::where('key', 'material_type')->first();
+        $audField = Field::where('key', 'audience')->first();
+
+        return view('requests::livewire.admin.form-form-field-edit', [
+            'materialTypeOptions' => $mtField
+                ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->pluck('name', 'slug')
+                : collect(),
+            'audienceOptions'     => $audField
+                ? FieldOption::where('field_id', $audField->id)->active()->ordered()->pluck('name', 'slug')
+                : collect(),
         ]);
     }
 }

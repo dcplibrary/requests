@@ -5,9 +5,9 @@
 ## Package Structure
 
 ```
-dcplibrary/sfp/
+dcplibrary/requests/
 ├── config/
-│   └── sfp.php                        Package config defaults
+│   └── requests.php                   Package config defaults
 ├── database/
 │   ├── migrations/                    11 migration files (ordered 000001–000011)
 │   └── seeders/                       7 seeders + master SfpDatabaseSeeder
@@ -17,9 +17,9 @@ dcplibrary/sfp/
 │       ├── components/
 │       │   └── logo.blade.php         DCPL logo anonymous Blade component
 │       ├── layouts/
-│       │   └── sfp.blade.php          Patron form base layout
+│       │   └── requests.blade.php     Patron form base layout
 │       ├── livewire/
-│       │   └── sfp-form.blade.php     4-step patron request form
+│       │   └── request-form.blade.php 4-step patron request form
 │       └── staff/                     Staff admin UI views
 │           ├── _layout.blade.php      Staff nav + auth layout
 │           ├── settings/
@@ -36,11 +36,11 @@ dcplibrary/sfp/
 │           ├── users/
 │           └── groups/
 └── src/
-    ├── SfpServiceProvider.php
+    ├── RequestsServiceProvider.php
     ├── Http/Controllers/Admin/        10 staff controllers
-    ├── Jobs/                          LookupPatronInPolaris, ProcessSfpRequest
+    ├── Jobs/                          LookupPatronInPolaris, ProcessPatronRequest
     ├── Livewire/
-    │   └── SfpForm.php                Main patron-facing Livewire component
+    │   └── RequestForm.php            Main patron-facing Livewire component
     ├── Models/                        11 Eloquent models
     ├── routes/
     │   └── web.php                    All routes (public + staff)
@@ -49,17 +49,17 @@ dcplibrary/sfp/
 
 ## Service Provider
 
-`SfpServiceProvider` bootstraps the package in `boot()`:
+`RequestsServiceProvider` bootstraps the package in `boot()`:
 
 1. **Routes** — loaded from `src/routes/web.php`
-2. **Views** — registered under the `sfp` namespace; anonymous components registered at `sfp::components`
-3. **Livewire** — `sfp-form` component registered
+2. **Views** — registered under the `requests` namespace; anonymous components registered at `requests::components`
+3. **Livewire** — `requests-form` component registered
 4. **Migrations** — loaded from `database/migrations` (console-only)
-5. **Publishables** — four publish tags: `sfp-config`, `sfp-migrations`, `sfp-seeders`, `sfp-views` (plus the umbrella `sfp` tag)
+5. **Publishables** — four publish tags: `requests-config`, `requests-migrations`, `requests-seeders`, `requests-views` (plus the umbrella `requests` tag)
 
 ## Routing
 
-All routes share the configured prefix (default: `/sfp`).
+All routes share the configured prefix (default: `/request`).
 
 | Visibility | Middleware config key | Default middleware |
 |-----------|----------------------|-------------------|
@@ -85,17 +85,17 @@ Full route list: see [controllers.md](controllers.md).
 The DCPL logo is an anonymous Blade component registered via:
 
 ```php
-Blade::anonymousComponentNamespace('sfp::components', 'sfp');
+Blade::anonymousComponentNamespace('requests::components', 'requests');
 ```
 
 Usage:
 
 ```blade
 {{-- Default link to url('/') --}}
-<x-sfp::logo />
+<x-requests::logo />
 
 {{-- Custom href --}}
-<x-sfp::logo :href="route('request.staff.requests.index')" />
+<x-requests::logo :href="route('request.staff.requests.index')" />
 ```
 
 The component renders the 4-panel DCPL SVG logo alongside `config('app.name')`.

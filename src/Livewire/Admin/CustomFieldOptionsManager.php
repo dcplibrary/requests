@@ -1,10 +1,10 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\CustomField;
-use Dcplibrary\Sfp\Models\CustomFieldOption;
-use Dcplibrary\Sfp\Models\RequestCustomFieldValue;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\RequestFieldValue;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
@@ -26,13 +26,16 @@ class CustomFieldOptionsManager extends Component
         $this->loadItems();
     }
 
+    /**
+     * @return void
+     */
     private function loadItems(): void
     {
-        $field = CustomField::findOrFail($this->fieldId);
+        $field = Field::findOrFail($this->fieldId);
         $this->lockedBy = $this->buildLockedMap($field);
 
         $this->items = $field->options()->ordered()->get()
-            ->map(fn (CustomFieldOption $o) => [
+            ->map(fn (FieldOption $o) => [
                 'id'        => $o->id,
                 'name'      => $o->name,
                 'slug'      => $o->slug,
@@ -49,29 +52,34 @@ class CustomFieldOptionsManager extends Component
      *
      * @return array<string, array<int, array{label: string, key: string}>>
      */
-    private function buildLockedMap(CustomField $field): array
+    /**
+     * Lock option slugs referenced by conditional rules or existing submissions.
+     *
+     * @param  Field  $field
+     * @return array<string, array<int, array{label: string, key: string}>>
+     */
+    private function buildLockedMap(Field $field): array
     {
         $map = [];
 
-        // 1) Slugs referenced in conditional logic of other custom fields
-        CustomField::whereNotNull('condition')->get()->each(function (CustomField $cf) use (&$map, $field) {
-            foreach ($cf->condition['rules'] ?? [] as $rule) {
+        // 1) Slugs referenced in conditional logic of other fields
+        Field::whereNotNull('condition')->get()->each(function (Field $f) use (&$map, $field) {
+            foreach ($f->condition['rules'] ?? [] as $rule) {
                 if (($rule['field'] ?? '') !== $field->key) {
                     continue;
                 }
                 foreach ($rule['values'] ?? [] as $slug) {
-                    $map[$slug][] = ['label' => $cf->label, 'key' => $cf->key];
+                    $map[$slug][] = ['label' => $f->label, 'key' => $f->key];
                 }
             }
         });
 
-        // 2) Slugs already used in stored request values
-        $used = RequestCustomFieldValue::query()
-            ->where('custom_field_id', $field->id)
-            ->whereNotNull('value_slug')
-            ->select('value_slug')
+        // 2) Slugs already used in stored request field values
+        $used = RequestFieldValue::query()
+            ->where('field_id', $field->id)
+            ->select('value')
             ->distinct()
-            ->pluck('value_slug')
+            ->pluck('value')
             ->all();
         foreach ($used as $slug) {
             $map[$slug][] = ['label' => 'Existing submissions', 'key' => $field->key];
@@ -85,7 +93,7 @@ class CustomFieldOptionsManager extends Component
         $name = trim($this->newName);
         if ($name === '') return;
 
-        $field = CustomField::findOrFail($this->fieldId);
+        $field = Field::findOrFail($this->fieldId);
 
         $slugBase = Str::slug($name);
         $slug = $this->uniqueSlug($slugBase, $field->id);
@@ -109,8 +117,8 @@ class CustomFieldOptionsManager extends Component
         $slug = trim($slug);
         if ($name === '' || $slug === '') return;
 
-        $option = CustomFieldOption::findOrFail($id);
-        $field  = CustomField::findOrFail($this->fieldId);
+        $option = FieldOption::findOrFail($id);
+        $field  = Field::findOrFail($this->fieldId);
 
         $original = $option->slug;
         if ($slug !== $original) {
@@ -121,7 +129,7 @@ class CustomFieldOptionsManager extends Component
         }
 
         // Ensure uniqueness within the field.
-        $conflict = CustomFieldOption::where('custom_field_id', $field->id)
+        $conflict = FieldOption::where('field_id', $field->id)
             ->where('slug', $slug)
             ->where('id', '!=', $id)
             ->exists();
@@ -133,9 +141,13 @@ class CustomFieldOptionsManager extends Component
         $this->loadItems();
     }
 
+    /**
+     * @param  int  $id
+     * @return void
+     */
     public function toggleActive(int $id): void
     {
-        $option = CustomFieldOption::findOrFail($id);
+        $option = FieldOption::findOrFail($id);
         $option->update(['active' => ! $option->active]);
         $this->loadItems();
     }
@@ -163,26 +175,41 @@ class CustomFieldOptionsManager extends Component
         $this->items = array_values($this->items);
     }
 
+    /**
+     * @param  int  $idA
+     * @param  int  $idB
+     * @return void
+     */
     private function swapSortOrders(int $idA, int $idB): void
     {
-        $a = CustomFieldOption::findOrFail($idA);
-        $b = CustomFieldOption::findOrFail($idB);
+        $a = FieldOption::findOrFail($idA);
+        $b = FieldOption::findOrFail($idB);
         [$a->sort_order, $b->sort_order] = [$b->sort_order, $a->sort_order];
         $a->save();
         $b->save();
     }
 
+    /**
+     * @param  int  $id
+     * @return void
+     */
     public function deleteItem(int $id): void
     {
-        CustomFieldOption::destroy($id);
+        FieldOption::destroy($id);
         $this->loadItems();
     }
 
+    /**
+     * @param  string    $base
+     * @param  int       $fieldId
+     * @param  int|null  $excludeId
+     * @return string
+     */
     private function uniqueSlug(string $base, int $fieldId, ?int $excludeId = null): string
     {
         $slug = $base;
         $i = 1;
-        $query = fn (string $s) => CustomFieldOption::where('custom_field_id', $fieldId)
+        $query = fn (string $s) => FieldOption::where('field_id', $fieldId)
             ->where('slug', $s)
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId));
 
@@ -193,11 +220,14 @@ class CustomFieldOptionsManager extends Component
         return $slug;
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
-        $field = CustomField::findOrFail($this->fieldId);
+        $field = Field::findOrFail($this->fieldId);
 
-        return view('sfp::livewire.admin.custom-field-options-manager', [
+        return view('requests::livewire.admin.custom-field-options-manager', [
             'field' => $field,
         ]);
     }

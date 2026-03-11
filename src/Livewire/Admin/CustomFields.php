@@ -1,8 +1,8 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\CustomField;
+use Dcplibrary\Requests\Models\Field;
 use Livewire\Component;
 
 class CustomFields extends Component
@@ -17,15 +17,15 @@ class CustomFields extends Component
 
     private function loadFromDb(): void
     {
-        $this->fields = CustomField::ordered()
+        $this->fields = Field::ordered()
             ->get()
-            ->map(fn (CustomField $f) => [
+            ->map(fn (Field $f) => [
                 'id'              => $f->id,
                 'key'             => $f->key,
                 'label'           => $f->label,
                 'type'            => $f->type,
                 'step'            => $f->step,
-                'request_kind'    => $f->request_kind,
+                'scope'           => $f->scope,
                 'active'          => (bool) $f->active,
                 'required'        => (bool) $f->required,
                 'include_as_token'=> (bool) $f->include_as_token,
@@ -58,7 +58,7 @@ class CustomFields extends Component
     {
         $rows = array_values($this->fields);
         foreach ($rows as $i => $field) {
-            CustomField::whereKey($field['id'])->update(['sort_order' => $i + 1]);
+            Field::whereKey($field['id'])->update(['sort_order' => $i + 1]);
         }
         // Do NOT reload from DB — keeping the swapped in-memory array lets the user
         // make multiple sequential reorders without Livewire state getting confused.
@@ -67,13 +67,13 @@ class CustomFields extends Component
     public function toggleActive(int $index): void
     {
         $this->fields[$index]['active'] = ! $this->fields[$index]['active'];
-        CustomField::whereKey($this->fields[$index]['id'])->update(['active' => $this->fields[$index]['active']]);
+        Field::whereKey($this->fields[$index]['id'])->update(['active' => $this->fields[$index]['active']]);
         $this->loadFromDb();
     }
 
     public function render()
     {
-        return view('sfp::livewire.admin.custom-fields');
+        return view('requests::livewire.admin.custom-fields');
     }
 }
 

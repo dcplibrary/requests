@@ -1,9 +1,9 @@
 <?php
 
-namespace Dcplibrary\Sfp\Tests\Integration;
+namespace Dcplibrary\Requests\Tests\Integration;
 
-use Dcplibrary\Sfp\Models\SfpRequest;
-use Dcplibrary\Sfp\Models\User;
+use Dcplibrary\Requests\Models\PatronRequest;
+use Dcplibrary\Requests\Models\User;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
@@ -11,18 +11,39 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Integration tests for SfpRequest::scopeVisibleTo() permission logic.
+ * Integration tests for PatronRequest::scopeVisibleTo() permission logic.
+ *
+ * Uses the unified schema: selector_group_field_option pivot, request_field_values
+ * EAV table, and fields/field_options lookup tables.
  *
  * Boots a single SQLite in-memory database once, then resets data between tests.
  * No external services or MySQL required — safe for GitHub Actions CI.
  *
- * @see \Dcplibrary\Sfp\Models\SfpRequest::scopeVisibleTo()
+ * @see \Dcplibrary\Requests\Models\PatronRequest::scopeVisibleTo()
  * @see docs/permissions.md
  */
 class RequestPermissionsTest extends TestCase
 {
     /** @var bool Whether the SQLite schema has been created. */
     private static bool $booted = false;
+
+    /** @var int Field ID for 'material_type'. */
+    private static int $mtFieldId;
+
+    /** @var int Field ID for 'audience'. */
+    private static int $audFieldId;
+
+    /** @var int FieldOption ID for 'book' (material_type). */
+    private static int $bookOptId;
+
+    /** @var int FieldOption ID for 'dvd' (material_type). */
+    private static int $dvdOptId;
+
+    /** @var int FieldOption ID for 'adult' (audience). */
+    private static int $adultOptId;
+
+    /** @var int FieldOption ID for 'kids' (audience). */
+    private static int $kidsOptId;
 
     // -------------------------------------------------------------------------
     // Shared setup
@@ -53,7 +74,7 @@ class RequestPermissionsTest extends TestCase
 
         $schema = $capsule->schema();
 
-        $schema->create('sfp_users', function (Blueprint $table) {
+        $schema->create('staff_users', function (Blueprint $table) {
             $table->increments('id');
             $table->string('name')->nullable();
             $table->string('email')->nullable();
@@ -74,21 +95,48 @@ class RequestPermissionsTest extends TestCase
             $table->integer('user_id');
         });
 
-        $schema->create('selector_group_material_type', function (Blueprint $table) {
+        $schema->create('selector_group_field_option', function (Blueprint $table) {
             $table->integer('selector_group_id');
-            $table->integer('material_type_id');
+            $table->integer('field_option_id');
         });
 
-        $schema->create('selector_group_audience', function (Blueprint $table) {
-            $table->integer('selector_group_id');
-            $table->integer('audience_id');
+        $schema->create('fields', function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('key');
+            $table->string('label');
+            $table->string('type')->default('select');
+            $table->integer('step')->default(2);
+            $table->string('scope')->default('both');
+            $table->integer('sort_order')->default(0);
+            $table->boolean('active')->default(true);
+            $table->timestamp('deleted_at')->nullable();
+            $table->timestamps();
+        });
+
+        $schema->create('field_options', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('field_id');
+            $table->string('name');
+            $table->string('slug');
+            $table->integer('sort_order')->default(0);
+            $table->boolean('active')->default(true);
+            $table->text('metadata')->nullable();
+            $table->timestamp('deleted_at')->nullable();
+            $table->timestamps();
+        });
+
+        $schema->create('request_field_values', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('request_id');
+            $table->integer('field_id');
+            $table->text('value')->nullable();
+            $table->timestamps();
+            $table->unique(['request_id', 'field_id']);
         });
 
         $schema->create('requests', function (Blueprint $table) {
             $table->increments('id');
             $table->string('request_kind')->default('sfp');
-            $table->integer('material_type_id')->nullable();
-            $table->integer('audience_id')->nullable();
             $table->integer('assigned_to_user_id')->nullable();
             $table->timestamps();
         });
@@ -105,22 +153,45 @@ class RequestPermissionsTest extends TestCase
             $table->timestamps();
         });
 
+        // Seed lookup data: material_type + audience fields and their options.
+        $now = date('Y-m-d H:i:s');
+
+        Capsule::table('fields')->insert([
+            ['key' => 'material_type', 'label' => 'Material Type', 'type' => 'select', 'sort_order' => 1, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'audience', 'label' => 'Audience', 'type' => 'select', 'sort_order' => 2, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        self::$mtFieldId  = (int) Capsule::table('fields')->where('key', 'material_type')->value('id');
+        self::$audFieldId = (int) Capsule::table('fields')->where('key', 'audience')->value('id');
+
+        Capsule::table('field_options')->insert([
+            ['field_id' => self::$mtFieldId,  'name' => 'Book',  'slug' => 'book',  'sort_order' => 1, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['field_id' => self::$mtFieldId,  'name' => 'DVD',   'slug' => 'dvd',   'sort_order' => 2, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['field_id' => self::$audFieldId, 'name' => 'Adult', 'slug' => 'adult', 'sort_order' => 1, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['field_id' => self::$audFieldId, 'name' => 'Kids',  'slug' => 'kids',  'sort_order' => 2, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        self::$bookOptId  = (int) Capsule::table('field_options')->where('slug', 'book')->value('id');
+        self::$dvdOptId   = (int) Capsule::table('field_options')->where('slug', 'dvd')->value('id');
+        self::$adultOptId = (int) Capsule::table('field_options')->where('slug', 'adult')->value('id');
+        self::$kidsOptId  = (int) Capsule::table('field_options')->where('slug', 'kids')->value('id');
+
         self::$booted = true;
     }
 
     /**
-     * Truncate all tables and flush the cache between tests.
+     * Truncate transactional tables and flush the cache between tests.
      *
      * @return void
      */
     private function resetData(): void
     {
         Capsule::table('requests')->delete();
-        Capsule::table('sfp_users')->delete();
+        Capsule::table('request_field_values')->delete();
+        Capsule::table('staff_users')->delete();
         Capsule::table('selector_groups')->delete();
         Capsule::table('selector_group_user')->delete();
-        Capsule::table('selector_group_material_type')->delete();
-        Capsule::table('selector_group_audience')->delete();
+        Capsule::table('selector_group_field_option')->delete();
         Capsule::table('settings')->delete();
         Cache::flush();
     }
@@ -184,7 +255,7 @@ class RequestPermissionsTest extends TestCase
     }
 
     /**
-     * Insert a user into sfp_users.
+     * Insert a user into staff_users.
      *
      * @param int    $id
      * @param string $role
@@ -194,7 +265,7 @@ class RequestPermissionsTest extends TestCase
     private function createUser(int $id, string $role = 'selector', string $name = 'User'): User
     {
         $now = date('Y-m-d H:i:s');
-        Capsule::table('sfp_users')->insert([
+        Capsule::table('staff_users')->insert([
             'id'         => $id,
             'name'       => $name,
             'email'      => strtolower($name) . $id . '@example.com',
@@ -225,14 +296,13 @@ class RequestPermissionsTest extends TestCase
     }
 
     /**
-     * Create a selector group with its material type and audience pivots.
+     * Create a selector group with its field option pivots.
      *
      * @param int   $id
-     * @param int[] $materialTypeIds
-     * @param int[] $audienceIds
+     * @param int[] $fieldOptionIds  IDs from the field_options table
      * @return void
      */
-    private function createGroup(int $id, array $materialTypeIds, array $audienceIds): void
+    private function createGroup(int $id, array $fieldOptionIds): void
     {
         $now = date('Y-m-d H:i:s');
         Capsule::table('selector_groups')->insert([
@@ -243,47 +313,60 @@ class RequestPermissionsTest extends TestCase
             'updated_at' => $now,
         ]);
 
-        foreach ($materialTypeIds as $mt) {
-            Capsule::table('selector_group_material_type')->insert([
+        foreach ($fieldOptionIds as $optId) {
+            Capsule::table('selector_group_field_option')->insert([
                 'selector_group_id' => $id,
-                'material_type_id'  => $mt,
-            ]);
-        }
-
-        foreach ($audienceIds as $aud) {
-            Capsule::table('selector_group_audience')->insert([
-                'selector_group_id' => $id,
-                'audience_id'       => $aud,
+                'field_option_id'   => $optId,
             ]);
         }
     }
 
     /**
-     * Insert a request row and return its ID.
+     * Insert a request row with optional EAV field values.
      *
-     * @param string   $kind
-     * @param int|null $materialTypeId
-     * @param int|null $audienceId
-     * @param int|null $assignedTo
+     * @param string      $kind
+     * @param string|null $materialTypeSlug  Stored in request_field_values
+     * @param string|null $audienceSlug      Stored in request_field_values
+     * @param int|null    $assignedTo
      * @return int
      */
     private function insertRequest(
         string $kind = 'sfp',
-        ?int $materialTypeId = null,
-        ?int $audienceId = null,
+        ?string $materialTypeSlug = null,
+        ?string $audienceSlug = null,
         ?int $assignedTo = null,
     ): int {
         $now = date('Y-m-d H:i:s');
         Capsule::table('requests')->insert([
             'request_kind'        => $kind,
-            'material_type_id'    => $materialTypeId,
-            'audience_id'         => $audienceId,
             'assigned_to_user_id' => $assignedTo,
             'created_at'          => $now,
             'updated_at'          => $now,
         ]);
 
-        return (int) Capsule::connection()->getPdo()->lastInsertId();
+        $requestId = (int) Capsule::connection()->getPdo()->lastInsertId();
+
+        if ($materialTypeSlug !== null) {
+            Capsule::table('request_field_values')->insert([
+                'request_id' => $requestId,
+                'field_id'   => self::$mtFieldId,
+                'value'      => $materialTypeSlug,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        if ($audienceSlug !== null) {
+            Capsule::table('request_field_values')->insert([
+                'request_id' => $requestId,
+                'field_id'   => self::$audFieldId,
+                'value'      => $audienceSlug,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        return $requestId;
     }
 
     /**
@@ -294,7 +377,7 @@ class RequestPermissionsTest extends TestCase
      */
     private function visibleIds(?User $user): array
     {
-        return SfpRequest::query()
+        return PatronRequest::query()
             ->visibleTo($user)
             ->orderBy('id')
             ->pluck('id')
@@ -309,7 +392,7 @@ class RequestPermissionsTest extends TestCase
     public function null_user_sees_nothing(): void
     {
         $this->seedVisibilitySettings(openAccess: true);
-        $this->insertRequest('sfp', 1, 10);
+        $this->insertRequest('sfp', 'book', 'adult');
         $this->insertRequest('ill');
 
         $this->assertSame([], $this->visibleIds(null));
@@ -325,7 +408,7 @@ class RequestPermissionsTest extends TestCase
         $this->seedVisibilitySettings(openAccess: false, strictGroups: true);
 
         $admin = $this->createUser(1, 'admin');
-        $sfp   = $this->insertRequest('sfp', 1, 10);
+        $sfp   = $this->insertRequest('sfp', 'book', 'adult');
         $ill   = $this->insertRequest('ill');
 
         $this->assertSame([$sfp, $ill], $this->visibleIds($admin));
@@ -341,7 +424,7 @@ class RequestPermissionsTest extends TestCase
         $this->seedVisibilitySettings(openAccess: true);
 
         $selector = $this->createUser(1);
-        $sfp      = $this->insertRequest('sfp', 1, 10);
+        $sfp      = $this->insertRequest('sfp', 'book', 'adult');
         $ill      = $this->insertRequest('ill');
 
         $this->assertSame([$sfp, $ill], $this->visibleIds($selector));
@@ -357,8 +440,8 @@ class RequestPermissionsTest extends TestCase
         $this->seedVisibilitySettings(openAccess: false, strictGroups: false);
 
         $selector = $this->createUser(1);
-        $sfp1     = $this->insertRequest('sfp', 1, 10);
-        $sfp2     = $this->insertRequest('sfp', 2, 20);
+        $sfp1     = $this->insertRequest('sfp', 'book', 'adult');
+        $sfp2     = $this->insertRequest('sfp', 'dvd', 'kids');
         $ill      = $this->insertRequest('ill');
 
         $visible = $this->visibleIds($selector);
@@ -377,14 +460,14 @@ class RequestPermissionsTest extends TestCase
     {
         $this->seedVisibilitySettings(strictGroups: true);
 
-        // Group 100: Book(1) × Adult(10)
-        $this->createGroup(100, [1], [10]);
+        // Group 100: Book × Adult
+        $this->createGroup(100, [self::$bookOptId, self::$adultOptId]);
 
         $selector = $this->createUser(1);
         $this->addToGroups(1, [100]);
 
-        $match   = $this->insertRequest('sfp', 1, 10);
-        $noMatch = $this->insertRequest('sfp', 2, 20);
+        $match   = $this->insertRequest('sfp', 'book', 'adult');
+        $noMatch = $this->insertRequest('sfp', 'dvd', 'kids');
 
         $this->assertSame([$match], $this->visibleIds($selector));
     }
@@ -394,18 +477,18 @@ class RequestPermissionsTest extends TestCase
     {
         $this->seedVisibilitySettings(strictGroups: true);
 
-        // Group 100: Book(1) × Adult(10)
-        // Group 200: DVD(2) × Kids(20)
-        $this->createGroup(100, [1], [10]);
-        $this->createGroup(200, [2], [20]);
+        // Group 100: Book × Adult
+        // Group 200: DVD × Kids
+        $this->createGroup(100, [self::$bookOptId, self::$adultOptId]);
+        $this->createGroup(200, [self::$dvdOptId, self::$kidsOptId]);
 
         $selector = $this->createUser(1);
         $this->addToGroups(1, [100, 200]);
 
-        $inScopeA = $this->insertRequest('sfp', 1, 10);
-        $inScopeB = $this->insertRequest('sfp', 2, 20);
-        $bridged1 = $this->insertRequest('sfp', 1, 20); // Book × Kids — no group covers this
-        $bridged2 = $this->insertRequest('sfp', 2, 10); // DVD × Adult — no group covers this
+        $inScopeA = $this->insertRequest('sfp', 'book', 'adult');
+        $inScopeB = $this->insertRequest('sfp', 'dvd', 'kids');
+        $bridged1 = $this->insertRequest('sfp', 'book', 'kids');   // Book × Kids — no group covers this
+        $bridged2 = $this->insertRequest('sfp', 'dvd', 'adult');   // DVD × Adult — no group covers this
 
         $visible = $this->visibleIds($selector);
 
@@ -421,7 +504,7 @@ class RequestPermissionsTest extends TestCase
 
         $selector = $this->createUser(1);
 
-        $this->insertRequest('sfp', 1, 10);
+        $this->insertRequest('sfp', 'book', 'adult');
         $this->insertRequest('ill');
 
         $this->assertSame([], $this->visibleIds($selector));
@@ -436,7 +519,7 @@ class RequestPermissionsTest extends TestCase
     {
         $this->seedVisibilitySettings(strictGroups: true, illGroupId: 999);
 
-        $this->createGroup(999, [], []);
+        $this->createGroup(999, []);
         $member = $this->createUser(1);
         $this->addToGroups(1, [999]);
 
@@ -464,7 +547,7 @@ class RequestPermissionsTest extends TestCase
 
         $selector = $this->createUser(1);
 
-        $sfp = $this->insertRequest('sfp', 1, 10);
+        $sfp = $this->insertRequest('sfp', 'book', 'adult');
         $ill = $this->insertRequest('ill');
 
         $visible = $this->visibleIds($selector);
@@ -484,7 +567,7 @@ class RequestPermissionsTest extends TestCase
 
         $selector = $this->createUser(1);
         // No group memberships — strict scoping would block SFP.
-        $assigned = $this->insertRequest('sfp', 1, 10, assignedTo: 1);
+        $assigned = $this->insertRequest('sfp', 'book', 'adult', assignedTo: 1);
 
         $this->assertSame([$assigned], $this->visibleIds($selector));
     }
@@ -511,7 +594,7 @@ class RequestPermissionsTest extends TestCase
 
         $selector = $this->createUser(1);
         // Assigned but assignment_enabled is off — should not see it.
-        $assigned = $this->insertRequest('sfp', 1, 10, assignedTo: 1);
+        $assigned = $this->insertRequest('sfp', 'book', 'adult', assignedTo: 1);
 
         $this->assertSame([], $this->visibleIds($selector));
     }
@@ -525,16 +608,16 @@ class RequestPermissionsTest extends TestCase
     {
         $this->seedVisibilitySettings(strictGroups: true);
 
-        $this->createGroup(100, [1], [10]); // Book × Adult
-        $this->createGroup(200, [2], [20]); // DVD × Kids
+        $this->createGroup(100, [self::$bookOptId, self::$adultOptId]); // Book × Adult
+        $this->createGroup(200, [self::$dvdOptId, self::$kidsOptId]);   // DVD × Kids
 
         $alice = $this->createUser(1, name: 'Alice');
         $bob   = $this->createUser(2, name: 'Bob');
         $this->addToGroups(1, [100]);
         $this->addToGroups(2, [200]);
 
-        $bookAdult = $this->insertRequest('sfp', 1, 10);
-        $dvdKids   = $this->insertRequest('sfp', 2, 20);
+        $bookAdult = $this->insertRequest('sfp', 'book', 'adult');
+        $dvdKids   = $this->insertRequest('sfp', 'dvd', 'kids');
 
         $this->assertSame([$bookAdult], $this->visibleIds($alice));
         $this->assertSame([$dvdKids], $this->visibleIds($bob));
@@ -545,15 +628,15 @@ class RequestPermissionsTest extends TestCase
     {
         $this->seedVisibilitySettings(strictGroups: true, illGroupId: 999);
 
-        $this->createGroup(100, [1], [10]); // Book × Adult
-        $this->createGroup(999, [], []);    // ILL group
+        $this->createGroup(100, [self::$bookOptId, self::$adultOptId]); // Book × Adult
+        $this->createGroup(999, []);                                    // ILL group
 
         $selectorWithIll = $this->createUser(1, name: 'WithILL');
         $selectorNoIll   = $this->createUser(2, name: 'NoILL');
         $this->addToGroups(1, [100, 999]);
         $this->addToGroups(2, [100]);
 
-        $sfp = $this->insertRequest('sfp', 1, 10);
+        $sfp = $this->insertRequest('sfp', 'book', 'adult');
         $ill = $this->insertRequest('ill');
 
         $this->assertSame([$sfp, $ill], $this->visibleIds($selectorWithIll));

@@ -21,7 +21,7 @@
                 @forelse($fields as $index => $field)
                 <tr wire:key="cf-{{ $index }}" class="hover:bg-gray-50 {{ $field['active'] ? '' : 'opacity-60' }}">
                     <td class="px-4 py-3">
-                        <x-sfp::sort-btns :value="$index" :first="$index === 0" :last="$index === count($fields) - 1" size="md" />
+                        <x-requests::sort-btns :value="$index" :first="$index === 0" :last="$index === count($fields) - 1" size="md" />
                     </td>
 
                     <td class="px-4 py-3 font-medium text-gray-900">{{ $field['label'] }}</td>
@@ -60,15 +60,15 @@
                     </td>
 
                     <td class="px-4 py-3">
-                        <x-sfp::status-pill :active="$field['required']" active-label="Required" :show-inactive="false" />
+                        <x-requests::status-pill :active="$field['required']" active-label="Required" :show-inactive="false" />
                     </td>
 
                     <td class="px-4 py-3">
-                        <x-sfp::status-pill :active="$field['active']" />
+                        <x-requests::status-pill :active="$field['active']" />
                     </td>
 
                     <td class="px-4 py-3 text-right">
-                        <x-sfp::icon-btn
+                        <x-requests::icon-btn
                             :href="route('request.staff.settings.custom-fields.edit', ['field' => $field['id']])"
                             variant="edit"
                             label="Edit"

@@ -1,13 +1,13 @@
 <?php
 
-namespace Dcplibrary\Sfp\Models;
+namespace Dcplibrary\Requests\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A workflow status for SFP requests (e.g. Pending, On Order, Purchased, Denied).
+ * A workflow status for patron requests (e.g. Pending, On Order, Purchased, Denied).
  *
  * `is_terminal` flags statuses that represent a resolved state — staff UIs can
  * use this to indicate a request requires no further action. Color is a hex
@@ -36,7 +36,7 @@ class RequestStatus extends Model
     /** Requests currently in this status. */
     public function requests(): HasMany
     {
-        return $this->hasMany(SfpRequest::class, 'request_status_id');
+        return $this->hasMany(PatronRequest::class, 'request_status_id');
     }
 
     /** History entries that transitioned to this status. */

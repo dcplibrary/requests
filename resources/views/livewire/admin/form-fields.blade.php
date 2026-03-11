@@ -38,11 +38,11 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    @forelse($sfpFields as $index => $field)
-                    <tr wire:key="sfp-{{ $index }}" class="hover:bg-gray-50 {{ $field['active'] ? '' : 'opacity-60' }}">
+                    @forelse($suggestFields as $index => $field)
+                    <tr wire:key="suggest-{{ $index }}" class="hover:bg-gray-50 {{ $field['active'] ? '' : 'opacity-60' }}">
                         <td class="px-4 py-3">
-                            <x-sfp::sort-btns :value="$index" up="moveUpSfp" down="moveDownSfp"
-                                :first="$index === 0" :last="$index === count($sfpFields) - 1" size="md" />
+                            <x-requests::sort-btns :value="$index" up="moveUpSuggest" down="moveDownSuggest"
+                                :first="$index === 0" :last="$index === count($suggestFields) - 1" size="md" />
                         </td>
                         <td class="px-4 py-3 font-medium text-gray-900">{{ $field['label'] }}</td>
                         <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ $field['key'] }}</td>
@@ -61,13 +61,13 @@
                             @endif
                         </td>
                         <td class="px-4 py-3">
-                            <x-sfp::status-pill :active="$field['required']" active-label="Required" :show-inactive="false" />
+                            <x-requests::status-pill :active="$field['required']" active-label="Required" :show-inactive="false" />
                         </td>
                         <td class="px-4 py-3">
-                            <x-sfp::status-pill :active="$field['active']" />
+                            <x-requests::status-pill :active="$field['active']" />
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <x-sfp::icon-btn :href="$field['edit_url']" variant="edit" label="Edit" />
+                            <x-requests::icon-btn :href="$field['edit_url']" variant="edit" label="Edit" />
                         </td>
                     </tr>
                     @empty
@@ -103,7 +103,7 @@
                     @forelse($illFields as $index => $field)
                     <tr wire:key="ill-{{ $index }}" class="hover:bg-gray-50 {{ $field['active'] ? '' : 'opacity-60' }}">
                         <td class="px-4 py-3">
-                            <x-sfp::sort-btns :value="$index" up="moveUpIll" down="moveDownIll"
+                            <x-requests::sort-btns :value="$index" up="moveUpIll" down="moveDownIll"
                                 :first="$index === 0" :last="$index === count($illFields) - 1" size="md" />
                         </td>
                         <td class="px-4 py-3 font-medium text-gray-900">{{ $field['label'] }}</td>
@@ -123,13 +123,13 @@
                             @endif
                         </td>
                         <td class="px-4 py-3">
-                            <x-sfp::status-pill :active="$field['required']" active-label="Required" :show-inactive="false" />
+                            <x-requests::status-pill :active="$field['required']" active-label="Required" :show-inactive="false" />
                         </td>
                         <td class="px-4 py-3">
-                            <x-sfp::status-pill :active="$field['active']" />
+                            <x-requests::status-pill :active="$field['active']" />
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <x-sfp::icon-btn :href="$field['edit_url']" variant="edit" label="Edit" />
+                            <x-requests::icon-btn :href="$field['edit_url']" variant="edit" label="Edit" />
                         </td>
                     </tr>
                     @empty

@@ -1,4 +1,4 @@
-@extends('sfp::staff._layout')
+@extends('requests::staff._layout')
 
 @section('title', $material->title)
 
@@ -80,7 +80,7 @@
                 </div>
                 <div>
                     <dt class="text-xs text-gray-500 mb-0.5">Type</dt>
-                    <dd class="text-gray-700">{{ $material->materialType?->name ?? '—' }}</dd>
+                    <dd class="text-gray-700">{{ $material->materialTypeOption?->name ?? '—' }}</dd>
                 </div>
                 @if($material->isbn || $material->isbn13)
                 <div>
@@ -154,7 +154,7 @@
                                 <span class="text-gray-400">/ {{ $req->submitted_author }}</span>
                             @endif
                         </td>
-                        <td class="px-3 py-2 text-gray-500 text-xs">{{ $req->audience?->name ?? '—' }}</td>
+                        <td class="px-3 py-2 text-gray-500 text-xs">{{ $req->fieldValueLabel('audience') ?? '—' }}</td>
                         <td class="px-3 py-2">
                             @if($req->status)
                                 <span class="inline-block px-1.5 py-0.5 rounded text-xs font-medium"
@@ -169,7 +169,7 @@
                             {{ $req->created_at->format('M j, Y') }}
                         </td>
                         <td class="px-3 py-2 text-right">
-                            <x-sfp::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
+                            <x-requests::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
                         </td>
                     </tr>
                     @endforeach

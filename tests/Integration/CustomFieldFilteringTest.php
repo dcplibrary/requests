@@ -1,27 +1,46 @@
 <?php
 
-namespace Dcplibrary\Sfp\Tests\Integration;
+namespace Dcplibrary\Requests\Tests\Integration;
 
-use Dcplibrary\Sfp\Models\SfpRequest;
+use Dcplibrary\Requests\Models\PatronRequest;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Integration tests for filtering requests by field values (EAV).
+ *
+ * Replaces the former material_type_id column filter with a
+ * request_field_values join against the unified field/option tables.
+ *
+ * @see \Dcplibrary\Requests\Models\RequestFieldValue
+ */
 class CustomFieldFilteringTest extends TestCase
 {
+    /** @var bool */
     private static bool $booted = false;
 
+    /** @var int Field ID for 'material_type'. */
+    private static int $mtFieldId;
+
+    /**
+     * Boot the in-memory SQLite database and create all required tables.
+     *
+     * @return void
+     */
     private function bootDatabase(): void
     {
-        if (self::$booted) return;
+        if (self::$booted) {
+            return;
+        }
 
         $capsule = new Capsule();
         $capsule->addConnection([
-            'driver' => 'sqlite',
+            'driver'   => 'sqlite',
             'database' => ':memory:',
-            'prefix' => '',
+            'prefix'   => '',
         ]);
 
         $capsule->setAsGlobal();
@@ -29,22 +48,40 @@ class CustomFieldFilteringTest extends TestCase
 
         $schema = $capsule->schema();
 
-        $schema->create('material_types', function (Blueprint $table) {
+        $schema->create('fields', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('key');
+            $table->string('label');
+            $table->string('type')->default('select');
+            $table->integer('sort_order')->default(0);
             $table->boolean('active')->default(true);
-            $table->boolean('has_other_text')->default(false);
-            $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
+        });
+
+        $schema->create('field_options', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('field_id');
+            $table->string('name');
+            $table->string('slug');
+            $table->integer('sort_order')->default(0);
+            $table->boolean('active')->default(true);
+            $table->timestamp('deleted_at')->nullable();
+            $table->timestamps();
+        });
+
+        $schema->create('request_field_values', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('request_id');
+            $table->integer('field_id');
+            $table->text('value')->nullable();
+            $table->timestamps();
+            $table->unique(['request_id', 'field_id']);
         });
 
         $schema->create('requests', function (Blueprint $table) {
             $table->increments('id');
             $table->string('request_kind')->default('sfp');
             $table->integer('assigned_to_user_id')->nullable();
-            $table->integer('material_type_id')->nullable();
-            $table->integer('audience_id')->nullable();
             $table->timestamps();
         });
 
@@ -60,28 +97,59 @@ class CustomFieldFilteringTest extends TestCase
             $table->timestamps();
         });
 
+        // Seed material_type field and options.
+        $now = date('Y-m-d H:i:s');
+        Capsule::table('fields')->insert([
+            'key' => 'material_type', 'label' => 'Material Type', 'type' => 'select',
+            'sort_order' => 1, 'active' => 1, 'created_at' => $now, 'updated_at' => $now,
+        ]);
+
+        self::$mtFieldId = (int) Capsule::table('fields')->where('key', 'material_type')->value('id');
+
+        Capsule::table('field_options')->insert([
+            ['field_id' => self::$mtFieldId, 'name' => 'Book', 'slug' => 'book', 'sort_order' => 1, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['field_id' => self::$mtFieldId, 'name' => 'DVD',  'slug' => 'dvd',  'sort_order' => 2, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
         self::$booted = true;
     }
 
+    /**
+     * Filter ILL requests by material_type value via EAV join.
+     *
+     * Verifies that the request_field_values table correctly stores and
+     * filters material_type values that were previously on the requests table.
+     */
     #[Test]
-    public function filtering_ill_requests_by_material_type_id_returns_only_matching_requests(): void
+    public function filtering_ill_requests_by_material_type_value_returns_only_matching_requests(): void
     {
         $this->bootDatabase();
         Cache::flush();
 
         $now = date('Y-m-d H:i:s');
-        Capsule::table('material_types')->insert([
-            ['id' => 1, 'name' => 'Book', 'slug' => 'book', 'active' => 1, 'has_other_text' => 0, 'sort_order' => 1, 'created_at' => $now, 'updated_at' => $now],
-            ['id' => 2, 'name' => 'DVD', 'slug' => 'dvd', 'active' => 1, 'has_other_text' => 0, 'sort_order' => 2, 'created_at' => $now, 'updated_at' => $now],
+
+        // Create requests.
+        $rBook = PatronRequest::create(['request_kind' => 'ill']);
+        $rDvd  = PatronRequest::create(['request_kind' => 'ill']);
+        $rSfp  = PatronRequest::create(['request_kind' => 'sfp']);
+
+        // Store material_type as EAV in request_field_values.
+        Capsule::table('request_field_values')->insert([
+            ['request_id' => $rBook->id, 'field_id' => self::$mtFieldId, 'value' => 'book', 'created_at' => $now, 'updated_at' => $now],
+            ['request_id' => $rDvd->id,  'field_id' => self::$mtFieldId, 'value' => 'dvd',  'created_at' => $now, 'updated_at' => $now],
+            ['request_id' => $rSfp->id,  'field_id' => self::$mtFieldId, 'value' => 'book', 'created_at' => $now, 'updated_at' => $now],
         ]);
 
-        $rBook = SfpRequest::create(['request_kind' => 'ill', 'material_type_id' => 1, 'audience_id' => null]);
-        $rDvd  = SfpRequest::create(['request_kind' => 'ill', 'material_type_id' => 2, 'audience_id' => null]);
-        $rSfp  = SfpRequest::create(['request_kind' => 'sfp', 'material_type_id' => 1, 'audience_id' => 1]);
-
-        $visible = SfpRequest::query()
+        // Filter ILL requests by material_type = 'book' via request_field_values join.
+        $visible = PatronRequest::query()
             ->where('request_kind', 'ill')
-            ->where('material_type_id', 1)
+            ->whereExists(function ($sub) {
+                $sub->selectRaw('1')
+                    ->from('request_field_values')
+                    ->whereColumn('request_field_values.request_id', 'requests.id')
+                    ->where('request_field_values.field_id', self::$mtFieldId)
+                    ->where('request_field_values.value', 'book');
+            })
             ->orderBy('id')
             ->pluck('id')
             ->all();
@@ -91,4 +159,3 @@ class CustomFieldFilteringTest extends TestCase
         $this->assertNotContains($rSfp->id, $visible);
     }
 }
-

@@ -1,8 +1,8 @@
 <?php
 
-namespace Dcplibrary\Sfp\Database\Seeders;
+namespace Dcplibrary\Requests\Database\Seeders;
 
-use Dcplibrary\Sfp\Models\Form;
+use Dcplibrary\Requests\Models\Form;
 use Illuminate\Database\Seeder;
 
 class FormsSeeder extends Seeder

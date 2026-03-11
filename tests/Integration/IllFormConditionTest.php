@@ -1,9 +1,9 @@
 <?php
 
-namespace Dcplibrary\Sfp\Tests\Integration;
+namespace Dcplibrary\Requests\Tests\Integration;
 
-use Dcplibrary\Sfp\Models\CustomField;
-use Dcplibrary\Sfp\Models\FormCustomField;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FormFieldConfig;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
@@ -11,23 +11,19 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Integration tests for ILL form conditional logic.
+ * Integration tests for ILL form conditional logic using the unified Field model.
  *
- * Verifies that per-form conditional logic stored on the FormCustomField
- * pivot (conditional_logic, required, visible columns) is respected by
+ * Verifies that per-form conditional logic stored on FormFieldConfig
+ * (conditional_logic, required, visible columns) is respected by
  * the ILL form's field resolution and visibility evaluation.
  *
- * @see \Dcplibrary\Sfp\Models\CustomField::evaluateCondition()
- * @see \Dcplibrary\Sfp\Livewire\IllForm::getVisibleCustomFieldsProperty()
+ * @see \Dcplibrary\Requests\Models\Field::evaluateCondition()
+ * @see \Dcplibrary\Requests\Livewire\IllForm::getVisibleCustomFieldsProperty()
  */
 class IllFormConditionTest extends TestCase
 {
     /** @var bool */
     private static bool $booted = false;
-
-    // -------------------------------------------------------------------------
-    // Shared setup
-    // -------------------------------------------------------------------------
 
     /**
      * Boot the in-memory SQLite database and create all required tables.
@@ -59,13 +55,13 @@ class IllFormConditionTest extends TestCase
             $table->timestamps();
         });
 
-        $schema->create('sfp_custom_fields', function (Blueprint $table) {
+        $schema->create('fields', function (Blueprint $table) {
             $table->increments('id');
             $table->string('key');
             $table->string('label');
             $table->string('type')->default('text');
             $table->integer('step')->default(2);
-            $table->string('request_kind')->default('ill');
+            $table->string('scope')->default('ill');
             $table->integer('sort_order')->default(0);
             $table->boolean('active')->default(true);
             $table->boolean('required')->default(false);
@@ -79,15 +75,14 @@ class IllFormConditionTest extends TestCase
             $table->timestamps();
         });
 
-        $schema->create('form_custom_fields', function (Blueprint $table) {
+        $schema->create('form_field_config', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('form_id');
-            $table->integer('custom_field_id');
+            $table->integer('field_id');
             $table->string('label_override')->nullable();
             $table->integer('sort_order')->default(0);
             $table->boolean('required')->default(false);
             $table->boolean('visible')->default(true);
-            $table->integer('step')->default(2);
             $table->text('conditional_logic')->nullable();
             $table->timestamps();
         });
@@ -103,14 +98,12 @@ class IllFormConditionTest extends TestCase
     private function resetData(): void
     {
         Capsule::table('forms')->delete();
-        Capsule::table('sfp_custom_fields')->delete();
-        Capsule::table('form_custom_fields')->delete();
+        Capsule::table('fields')->delete();
+        Capsule::table('form_field_config')->delete();
         Cache::flush();
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    /** {@inheritdoc} */
     protected function setUp(): void
     {
         parent::setUp();
@@ -118,9 +111,7 @@ class IllFormConditionTest extends TestCase
         $this->resetData();
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     /**
      * Seed the ILL form row and return its ID.
@@ -131,292 +122,192 @@ class IllFormConditionTest extends TestCase
     {
         $now = date('Y-m-d H:i:s');
         Capsule::table('forms')->insert([
-            'id'         => 1,
-            'name'       => 'Interlibrary Loan',
-            'slug'       => 'ill',
-            'created_at' => $now,
-            'updated_at' => $now,
+            'id' => 1, 'name' => 'Interlibrary Loan', 'slug' => 'ill',
+            'created_at' => $now, 'updated_at' => $now,
         ]);
 
         return 1;
     }
 
     /**
-     * Create a custom field with an optional base-level condition.
+     * Create a field with an optional base-level condition.
      *
-     * @param string     $key
-     * @param array|null $condition  The base-model condition (null = always visible).
-     * @param bool       $required
-     * @return CustomField
+     * @param  string      $key
+     * @param  array|null  $condition
+     * @param  bool        $required
+     * @return Field
      */
-    private function createCustomField(string $key, ?array $condition = null, bool $required = false): CustomField
+    private function createField(string $key, ?array $condition = null, bool $required = false): Field
     {
         $now = date('Y-m-d H:i:s');
-        Capsule::table('sfp_custom_fields')->insert([
-            'key'          => $key,
-            'label'        => ucfirst($key),
-            'type'         => 'text',
-            'step'         => 2,
-            'request_kind' => 'ill',
-            'sort_order'   => 0,
-            'active'       => 1,
-            'required'     => $required ? 1 : 0,
-            'condition'    => $condition ? json_encode($condition) : null,
-            'created_at'   => $now,
-            'updated_at'   => $now,
+        Capsule::table('fields')->insert([
+            'key' => $key, 'label' => ucfirst($key), 'type' => 'text',
+            'step' => 2, 'scope' => 'ill', 'sort_order' => 0,
+            'active' => 1, 'required' => $required ? 1 : 0,
+            'condition' => $condition ? json_encode($condition) : null,
+            'created_at' => $now, 'updated_at' => $now,
         ]);
 
-        return CustomField::where('key', $key)->firstOrFail();
+        return Field::where('key', $key)->firstOrFail();
     }
 
     /**
-     * Attach a custom field to the ILL form with optional pivot-level conditional logic.
+     * Attach a field to the ILL form via FormFieldConfig.
      *
-     * @param int        $formId
-     * @param int        $customFieldId
-     * @param array|null $conditionalLogic
-     * @param bool       $required
-     * @param bool       $visible
-     * @return FormCustomField
+     * @param  int         $formId
+     * @param  int         $fieldId
+     * @param  array|null  $conditionalLogic
+     * @param  bool        $required
+     * @param  bool        $visible
+     * @return FormFieldConfig
      */
     private function attachToForm(
         int $formId,
-        int $customFieldId,
+        int $fieldId,
         ?array $conditionalLogic = null,
         bool $required = false,
         bool $visible = true,
-    ): FormCustomField {
+    ): FormFieldConfig {
         $now = date('Y-m-d H:i:s');
-        Capsule::table('form_custom_fields')->insert([
-            'form_id'           => $formId,
-            'custom_field_id'   => $customFieldId,
-            'sort_order'        => 0,
-            'required'          => $required ? 1 : 0,
-            'visible'           => $visible ? 1 : 0,
-            'step'              => 2,
+        Capsule::table('form_field_config')->insert([
+            'form_id' => $formId, 'field_id' => $fieldId,
+            'sort_order' => 0, 'required' => $required ? 1 : 0,
+            'visible' => $visible ? 1 : 0,
             'conditional_logic' => $conditionalLogic ? json_encode($conditionalLogic) : null,
-            'created_at'        => $now,
-            'updated_at'        => $now,
+            'created_at' => $now, 'updated_at' => $now,
         ]);
 
-        return FormCustomField::where('custom_field_id', $customFieldId)
+        return FormFieldConfig::where('field_id', $fieldId)
             ->where('form_id', $formId)
             ->firstOrFail();
     }
 
     /**
-     * Simulate how IllForm now resolves a field: merge pivot overrides onto base,
-     * then evaluate using CustomField::evaluateCondition().
+     * Simulate how IllForm resolves visibility: pivot visible → condition eval.
      *
-     * @param CustomField     $field
-     * @param FormCustomField $pivot
-     * @param array           $state
+     * @param  Field            $field
+     * @param  FormFieldConfig  $pivot
+     * @param  array            $state
      * @return bool
      */
-    private function evaluateAsIllFormDoes(CustomField $field, FormCustomField $pivot, array $state): bool
+    private function evaluateAsIllFormDoes(Field $field, FormFieldConfig $pivot, array $state): bool
     {
         if (! $field->active) {
             return false;
         }
-
-        // IllForm now checks pivot visible flag first.
         if (! $pivot->visible) {
             return false;
         }
-
-        // Condition comes from pivot, falling back to base.
         $condition = $pivot->conditional_logic ?? $field->condition ?? ['match' => 'all', 'rules' => []];
 
-        return CustomField::evaluateCondition($condition, $state);
+        return Field::evaluateCondition($condition, $state);
     }
 
     /**
-     * Resolve the effective required flag the way IllForm now does:
-     * pivot required, gated by visibility.
+     * Resolve the effective required flag.
      *
-     * @param CustomField     $field
-     * @param FormCustomField $pivot
-     * @param array           $state
+     * @param  Field            $field
+     * @param  FormFieldConfig  $pivot
+     * @param  array            $state
      * @return bool
      */
-    private function isRequiredAsIllFormDoes(CustomField $field, FormCustomField $pivot, array $state): bool
+    private function isRequiredAsIllFormDoes(Field $field, FormFieldConfig $pivot, array $state): bool
     {
         return (bool) $pivot->required && $this->evaluateAsIllFormDoes($field, $pivot, $state);
     }
 
-    // =========================================================================
-    // Baseline: base-model conditions still work
-    // =========================================================================
-
-    // =========================================================================
-    // Base-model fallback: when pivot has no conditional_logic, base condition applies
-    // =========================================================================
+    // ── Base-model fallback ─────────────────────────────────────────────────
 
     #[Test]
     public function base_condition_is_used_when_pivot_has_no_override(): void
     {
         $formId = $this->seedIllForm();
-
-        $field = $this->createCustomField('notes', condition: [
+        $field  = $this->createField('notes', condition: [
             'match' => 'all',
-            'rules' => [
-                ['field' => 'material_type', 'operator' => 'in', 'values' => ['book']],
-            ],
+            'rules' => [['field' => 'material_type', 'operator' => 'in', 'values' => ['book']]],
         ]);
-
-        // Pivot has no conditional_logic — should fall back to base condition.
         $pivot = $this->attachToForm($formId, $field->id);
 
-        $this->assertTrue(
-            $this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'book']),
-            'Base condition shows field when material_type matches'
-        );
-
-        $this->assertFalse(
-            $this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'dvd']),
-            'Base condition hides field when material_type does not match'
-        );
+        $this->assertTrue($this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'book']));
+        $this->assertFalse($this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'dvd']));
     }
 
-    // =========================================================================
-    // Pivot conditional_logic overrides base condition
-    // =========================================================================
+    // ── Pivot conditional_logic overrides base ──────────────────────────────
 
     #[Test]
     public function pivot_condition_hides_field_when_state_does_not_match(): void
     {
         $formId = $this->seedIllForm();
-
-        // Base model has NO condition — always visible at the field level.
-        $field = $this->createCustomField('pickup_location', condition: null);
-
-        // Pivot says: only show when material_type is 'book'.
-        $pivot = $this->attachToForm($formId, $field->id, conditionalLogic: [
+        $field  = $this->createField('pickup_location');
+        $pivot  = $this->attachToForm($formId, $field->id, conditionalLogic: [
             'match' => 'all',
-            'rules' => [
-                ['field' => 'material_type', 'operator' => 'in', 'values' => ['book']],
-            ],
+            'rules' => [['field' => 'material_type', 'operator' => 'in', 'values' => ['book']]],
         ]);
 
-        $this->assertFalse(
-            $this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'dvd']),
-            'Pivot condition hides field for dvd even though base has no condition'
-        );
+        $this->assertFalse($this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'dvd']));
     }
 
     #[Test]
     public function pivot_condition_shows_field_when_state_matches(): void
     {
         $formId = $this->seedIllForm();
-
-        $field = $this->createCustomField('pickup_location', condition: null);
-
-        $pivot = $this->attachToForm($formId, $field->id, conditionalLogic: [
+        $field  = $this->createField('pickup_location');
+        $pivot  = $this->attachToForm($formId, $field->id, conditionalLogic: [
             'match' => 'all',
-            'rules' => [
-                ['field' => 'material_type', 'operator' => 'in', 'values' => ['book']],
-            ],
+            'rules' => [['field' => 'material_type', 'operator' => 'in', 'values' => ['book']]],
         ]);
 
-        $this->assertTrue(
-            $this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'book']),
-            'Pivot condition shows field when material_type matches'
-        );
+        $this->assertTrue($this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'book']));
     }
 
     #[Test]
     public function pivot_condition_overrides_base_condition(): void
     {
         $formId = $this->seedIllForm();
-
-        // Base condition says: show only for 'book'.
-        $field = $this->createCustomField('edition', condition: [
+        $field  = $this->createField('edition', condition: [
             'match' => 'all',
-            'rules' => [
-                ['field' => 'material_type', 'operator' => 'in', 'values' => ['book']],
-            ],
+            'rules' => [['field' => 'material_type', 'operator' => 'in', 'values' => ['book']]],
         ]);
-
-        // Pivot condition says: show only for 'dvd' (overrides base).
         $pivot = $this->attachToForm($formId, $field->id, conditionalLogic: [
             'match' => 'all',
-            'rules' => [
-                ['field' => 'material_type', 'operator' => 'in', 'values' => ['dvd']],
-            ],
+            'rules' => [['field' => 'material_type', 'operator' => 'in', 'values' => ['dvd']]],
         ]);
 
-        // Pivot wins: visible for dvd, hidden for book.
-        $this->assertTrue(
-            $this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'dvd']),
-            'Pivot condition overrides base — shows field for dvd'
-        );
-
-        $this->assertFalse(
-            $this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'book']),
-            'Pivot condition overrides base — hides field for book'
-        );
+        $this->assertTrue($this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'dvd']));
+        $this->assertFalse($this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'book']));
     }
 
-    // =========================================================================
-    // Pivot required flag overrides base
-    // =========================================================================
+    // ── Pivot required flag ─────────────────────────────────────────────────
 
     #[Test]
     public function pivot_required_flag_is_used_instead_of_base(): void
     {
         $formId = $this->seedIllForm();
+        $field  = $this->createField('volume', required: false);
+        $pivot  = $this->attachToForm($formId, $field->id, required: true);
 
-        // Base: not required
-        $field = $this->createCustomField('volume', condition: null, required: false);
-
-        // Pivot: required = true
-        $pivot = $this->attachToForm($formId, $field->id, required: true);
-
-        $state = ['material_type' => 'book'];
-
-        $this->assertTrue(
-            $this->isRequiredAsIllFormDoes($field, $pivot, $state),
-            'Pivot required=true makes field required when visible'
-        );
+        $this->assertTrue($this->isRequiredAsIllFormDoes($field, $pivot, ['material_type' => 'book']));
     }
 
     #[Test]
     public function pivot_required_false_overrides_base_required_true(): void
     {
         $formId = $this->seedIllForm();
+        $field  = $this->createField('volume', required: true);
+        $pivot  = $this->attachToForm($formId, $field->id, required: false);
 
-        // Base: required
-        $field = $this->createCustomField('volume', condition: null, required: true);
-
-        // Pivot: required = false
-        $pivot = $this->attachToForm($formId, $field->id, required: false);
-
-        $state = ['material_type' => 'book'];
-
-        $this->assertFalse(
-            $this->isRequiredAsIllFormDoes($field, $pivot, $state),
-            'Pivot required=false overrides base required=true'
-        );
+        $this->assertFalse($this->isRequiredAsIllFormDoes($field, $pivot, ['material_type' => 'book']));
     }
 
-    // =========================================================================
-    // Pivot visible=false hides field entirely
-    // =========================================================================
+    // ── Pivot visible=false ─────────────────────────────────────────────────
 
     #[Test]
     public function pivot_visible_false_hides_field_entirely(): void
     {
         $formId = $this->seedIllForm();
+        $field  = $this->createField('hidden_note');
+        $pivot  = $this->attachToForm($formId, $field->id, visible: false);
 
-        // Base: active, no condition (always visible)
-        $field = $this->createCustomField('hidden_note', condition: null);
-
-        // Pivot: visible = false (admin turned it off for this form)
-        $pivot = $this->attachToForm($formId, $field->id, visible: false);
-
-        $this->assertFalse(
-            $this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'book']),
-            'Pivot visible=false hides field regardless of condition'
-        );
+        $this->assertFalse($this->evaluateAsIllFormDoes($field, $pivot, ['material_type' => 'book']));
     }
 }

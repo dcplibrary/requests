@@ -1,8 +1,8 @@
 <?php
 
-namespace Dcplibrary\Sfp\Database\Seeders;
+namespace Dcplibrary\Requests\Database\Seeders;
 
-use Dcplibrary\Sfp\Models\Setting;
+use Dcplibrary\Requests\Models\Setting;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Cache;
 
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Cache;
  *
  * Or from a package test / console:
  *
- *   (new \Dcplibrary\Sfp\Database\Seeders\DefaultSettingsSeeder())->run();
+ *   (new \Dcplibrary\Requests\Database\Seeders\DefaultSettingsSeeder())->run();
  */
 class DefaultSettingsSeeder extends Seeder
 {

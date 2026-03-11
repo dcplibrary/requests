@@ -1,8 +1,8 @@
 <?php
 
-namespace Dcplibrary\Sfp\Database\Seeders;
+namespace Dcplibrary\Requests\Database\Seeders;
 
-use Dcplibrary\Sfp\Models\User;
+use Dcplibrary\Requests\Models\User;
 use Illuminate\Database\Seeder;
 
 class UsersSeeder extends Seeder
@@ -11,17 +11,17 @@ class UsersSeeder extends Seeder
      * Seed an initial admin user.
      *
      * On first deploy, run:
-     *   php artisan db:seed --class=Dcplibrary\\Sfp\\Database\\Seeders\\SfpDatabaseSeeder
+     *   php artisan db:seed --class=Dcplibrary\\Requests\\Database\\Seeders\\RequestsDatabaseSeeder
      *
      * The entra_id will be populated automatically on first login via Entra SSO.
-     * Override the email via the SFP_ADMIN_EMAIL environment variable.
+     * Override the email via the REQUESTS_ADMIN_EMAIL environment variable.
      */
     public function run(): void
     {
         User::firstOrCreate(
-            ['email' => env('SFP_ADMIN_EMAIL', 'blashbrook@dcplibrary.org')],
+            ['email' => env('REQUESTS_ADMIN_EMAIL', 'blashbrook@dcplibrary.org')],
             [
-                'name'   => env('SFP_ADMIN_NAME', 'SFP Admin'),
+                'name'   => env('REQUESTS_ADMIN_NAME', 'Requests Admin'),
                 'role'   => 'admin',
                 'active' => true,
             ]

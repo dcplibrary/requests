@@ -1,4 +1,4 @@
-@extends('sfp::staff._layout')
+@extends('requests::staff._layout')
 
 @section('content')
 <div class="mb-6">
@@ -33,7 +33,7 @@
             @endforeach
 
             <div class="border-t border-gray-200 p-3">
-                <a href="{{ asset('sfp-settings-help.html') }}"
+                <a href="{{ asset('requests-settings-help.html') }}"
                    target="_blank"
                    rel="noopener noreferrer"
                    class="text-sm text-blue-600 hover:underline"

@@ -1,4 +1,4 @@
-@extends('sfp::staff._layout')
+@extends('requests::staff._layout')
 
 @section('title', ($currentKind === 'ill' ? 'ILL Requests' : ($currentKind === 'sfp' ? 'SFP Requests' : 'Requests')))
 
@@ -162,8 +162,8 @@
                         <span class="inline-block mt-0.5 text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">Duplicate</span>
                     @endif
                 </td>
-                <td class="px-4 py-3 text-gray-600">{{ $req->materialType?->name ?? '—' }}</td>
-                <td class="px-4 py-3 text-gray-600">{{ $req->audience?->name ?? '—' }}</td>
+                <td class="px-4 py-3 text-gray-600">{{ $req->fieldValueLabel('material_type') ?? '—' }}</td>
+                <td class="px-4 py-3 text-gray-600">{{ $req->fieldValueLabel('audience') ?? '—' }}</td>
                 <td class="px-4 py-3">
                     @if($req->patron)
                         <div class="text-gray-900">{{ $req->patron->name_last }}, {{ $req->patron->name_first }}</div>
@@ -186,7 +186,7 @@
                     {{ $req->created_at->format('M j, Y') }}
                 </td>
                 <td class="px-4 py-3 text-right">
-                    <x-sfp::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
+                    <x-requests::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
                 </td>
             </tr>
             @empty

@@ -18,20 +18,20 @@ Require the package from GitHub using a VCS repository in the host app's `compos
 
 ```json
 "repositories": {
-    "dcplibrary-sfp": {
+    "dcplibrary-requests": {
         "type": "vcs",
-        "url": "https://github.com/dcplibrary/sfp.git"
+        "url": "https://github.com/dcplibrary/requests.git"
     }
 },
 "require": {
-    "dcplibrary/sfp": "dev-main"
+    "dcplibrary/requests": "dev-main"
 }
 ```
 
 Then run:
 
 ```bash
-composer require dcplibrary/sfp:dev-main
+composer require dcplibrary/requests:dev-main
 ```
 
 ## Optional: Enable Livewire Blaze (recommended)
@@ -55,7 +55,7 @@ The package is loaded via a Composer path repository so changes are reflected im
 "repositories": {
     "0": {
         "type": "path",
-        "url": "../sfp"
+        "url": "../requests"
     }
 }
 ```
@@ -63,10 +63,10 @@ The package is loaded via a Composer path repository so changes are reflected im
 The vendor symlink points to the package root:
 
 ```
-sfp-laravel/vendor/dcplibrary/sfp → ../../../sfp/
+sfp-laravel/vendor/dcplibrary/requests → ../../../requests/
 ```
 
-> **Note:** The symlink points to the **main** `sfp` repo, not any active worktree. Changes in a worktree must be merged to `main` before `sfp-laravel` picks them up. See [Deployment Workflow](#deployment-workflow-development) below.
+> **Note:** The symlink points to the **main** `requests` repo, not any active worktree. Changes in a worktree must be merged to `main` before `sfp-laravel` picks them up. See [Deployment Workflow](#deployment-workflow-development) below.
 
 The service provider is auto-discovered via `composer.json` `extra.laravel.providers`.
 
@@ -115,10 +115,10 @@ Admins can then manage the user's selector group assignments via **Settings → 
 Publish the config:
 
 ```bash
-php artisan vendor:publish --tag=sfp-config
+php artisan vendor:publish --tag=requests-config
 ```
 
-Or manually create `config/sfp.php` in the host app:
+Or manually create `config/requests.php` in the host app:
 
 ```php
 return [
@@ -150,26 +150,26 @@ return [
 php artisan migrate
 
 # Seed all default data (or include in host app DatabaseSeeder)
-php artisan db:seed --class=Dcplibrary\\Sfp\\Database\\Seeders\\SfpDatabaseSeeder
+php artisan db:seed --class=Dcplibrary\\Requests\\Database\\Seeders\\RequestsDatabaseSeeder
 
 # Or simply:
 php artisan db:seed
 
 # Seed only missing settings (never overwrites existing values). Safe to run anytime:
-php artisan db:seed --class=Dcplibrary\\Sfp\\Database\\Seeders\\DefaultSettingsSeeder
+php artisan db:seed --class=Dcplibrary\\Requests\\Database\\Seeders\\DefaultSettingsSeeder
 ```
 
-The host app's `DatabaseSeeder` should call `SfpDatabaseSeeder` directly:
+The host app's `DatabaseSeeder` should call `RequestsDatabaseSeeder` directly:
 
 ```php
-$this->call(\Dcplibrary\Sfp\Database\Seeders\SfpDatabaseSeeder::class);
+$this->call(\Dcplibrary\Requests\Database\Seeders\RequestsDatabaseSeeder::class);
 ```
 
 To publish migrations and seeders to the host app (for customization):
 
 ```bash
-php artisan vendor:publish --tag=sfp-migrations
-php artisan vendor:publish --tag=sfp-seeders
+php artisan vendor:publish --tag=requests-migrations
+php artisan vendor:publish --tag=requests-seeders
 ```
 
 ## Cache Clearing After Updates
@@ -218,10 +218,10 @@ No database or full Laravel container is required for the unit suite. A `tests/b
 
 ## Deployment Workflow (Development)
 
-Changes made in the worktree (`sfp/.claude/worktrees/{name}`) must be merged to the main `sfp` repo for `sfp-laravel` to pick them up (the vendor symlink points to the main repo, not the worktree):
+Changes made in the worktree (`requests/.claude/worktrees/{name}`) must be merged to the main `requests` repo for `sfp-laravel` to pick them up (the vendor symlink points to the main repo, not the worktree):
 
 ```bash
-# In the main sfp repo
+# In the main requests repo
 git merge claude/{worktree-name} --no-edit
 
 # In sfp-laravel

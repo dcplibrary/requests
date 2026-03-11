@@ -1,33 +1,33 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire;
+namespace Dcplibrary\Requests\Livewire;
 
-use Dcplibrary\Sfp\Models\Patron;
-use Dcplibrary\Sfp\Models\Setting;
-use Dcplibrary\Sfp\Models\SfpRequest;
-use Dcplibrary\Sfp\Services\NotificationService;
+use Dcplibrary\Requests\Models\Patron;
+use Dcplibrary\Requests\Models\Setting;
+use Dcplibrary\Requests\Models\PatronRequest;
+use Dcplibrary\Requests\Services\NotificationService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-#[Layout('sfp::layouts.sfp')]
+#[Layout('requests::layouts.requests')]
 class PatronRequests extends Component
 {
     public function mount(): void
     {
-        if (! session()->has('sfp_authenticated_barcode')) {
+        if (! session()->has('requests_authenticated_barcode')) {
             $this->redirect(route('request.form'));
         }
     }
 
     public function logout(): void
     {
-        session()->forget('sfp_authenticated_barcode');
+        session()->forget('requests_authenticated_barcode');
         $this->redirect(route('request.form'));
     }
 
     public function convertToIll(int $requestId): void
     {
-        $barcode = session('sfp_authenticated_barcode');
+        $barcode = session('requests_authenticated_barcode');
         if (! $barcode) {
             $this->redirect(route('request.form'));
             return;
@@ -39,8 +39,8 @@ class PatronRequests extends Component
             return;
         }
 
-        /** @var SfpRequest|null $req */
-        $req = SfpRequest::whereKey($requestId)
+        /** @var PatronRequest|null $req */
+        $req = PatronRequest::whereKey($requestId)
             ->where('patron_id', $patron->id)
             ->first();
 
@@ -70,18 +70,18 @@ class PatronRequests extends Component
 
     public function render()
     {
-        $barcode      = session('sfp_authenticated_barcode');
+        $barcode      = session('requests_authenticated_barcode');
         $patron       = $barcode ? Patron::where('barcode', $barcode)->first() : null;
         $limitReached = $patron?->hasReachedLimit() ?? false;
         $limitUntil   = $limitReached ? $patron->nextAvailableDate() : null;
         $requests     = $patron
-            ? SfpRequest::with(['status', 'materialType'])
+            ? PatronRequest::with(['status', 'materialType'])
                 ->where('patron_id', $patron->id)
                 ->latest()
                 ->get()
             : collect();
 
-        return view('sfp::livewire.patron-requests', [
+        return view('requests::livewire.patron-requests', [
             'patron'       => $patron,
             'requests'     => $requests,
             'limitReached' => $limitReached,

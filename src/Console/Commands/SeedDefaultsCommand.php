@@ -1,22 +1,22 @@
 <?php
 
-namespace Dcplibrary\Sfp\Console\Commands;
+namespace Dcplibrary\Requests\Console\Commands;
 
-use Dcplibrary\Sfp\Database\Seeders\SfpDatabaseSeeder;
+use Dcplibrary\Requests\Database\Seeders\RequestsDatabaseSeeder;
 use Illuminate\Console\Command;
 
 class SeedDefaultsCommand extends Command
 {
-    protected $signature = 'request:seed-default';
+    protected $signature = 'requests:seed-defaults';
 
-    protected $description = 'Seed all default SFP data (settings, forms, form fields, statuses, material types, etc.).';
+    protected $description = 'Seed all default data (settings, forms, form fields, statuses, etc.).';
 
     public function handle(): int
     {
-        $this->info('Seeding SFP defaults...');
+        $this->info('Seeding defaults...');
 
         $this->call('db:seed', [
-            '--class' => SfpDatabaseSeeder::class,
+            '--class' => RequestsDatabaseSeeder::class,
             '--force' => true,
         ]);
 

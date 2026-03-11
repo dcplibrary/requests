@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Models;
+namespace Dcplibrary\Requests\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * A library patron who has submitted at least one SFP request.
+ * A library patron who has submitted at least one patron request.
  *
  * Patrons are identified by their library card barcode. On first submission a
  * `LookupPatronInPolaris` job is queued to validate and enrich the record against
@@ -71,10 +71,10 @@ class Patron extends Model
         'email_matches' => 'boolean',
     ];
 
-    /** All SFP requests submitted by this patron. */
+    /** All patron requests submitted by this patron. */
     public function requests(): HasMany
     {
-        return $this->hasMany(SfpRequest::class);
+        return $this->hasMany(PatronRequest::class);
     }
 
     /**

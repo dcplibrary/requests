@@ -1,17 +1,14 @@
 <?php
 
-namespace Dcplibrary\Sfp\Services;
+namespace Dcplibrary\Requests\Services;
 
-use Dcplibrary\Sfp\Mail\SfpMail;
-use Dcplibrary\Sfp\Models\Console;
-use Dcplibrary\Sfp\Models\CustomField;
-use Dcplibrary\Sfp\Models\CustomFieldOption;
-use Dcplibrary\Sfp\Models\FormField;
-use Dcplibrary\Sfp\Models\Genre;
-use Dcplibrary\Sfp\Models\PatronStatusTemplate;
-use Dcplibrary\Sfp\Models\SelectorGroup;
-use Dcplibrary\Sfp\Models\Setting;
-use Dcplibrary\Sfp\Models\SfpRequest;
+use Dcplibrary\Requests\Mail\RequestMail;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\PatronStatusTemplate;
+use Dcplibrary\Requests\Models\SelectorGroup;
+use Dcplibrary\Requests\Models\Setting;
+use Dcplibrary\Requests\Models\PatronRequest;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -26,7 +23,7 @@ class NotificationService
      * material type AND audience scope both match the request, and which
      * have a notification_emails value set.
      */
-    public function notifyStaffNewRequest(SfpRequest $request): void
+    public function notifyStaffNewRequest(PatronRequest $request): void
     {
         if (! Setting::get('notifications_enabled', true)) return;
         if (! Setting::get('staff_routing_enabled', true)) return;
@@ -34,7 +31,7 @@ class NotificationService
         $recipients = $this->getStaffRecipients($request);
         if (empty($recipients)) return;
 
-        $request->loadMissing(['patron', 'materialType', 'audience', 'status']);
+        $request->loadMissing(['patron', 'fieldValues.field', 'status']);
 
         $subject = $this->replacePlaceholders(
             (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}'),
@@ -45,9 +42,9 @@ class NotificationService
 
         foreach ($recipients as $email) {
             try {
-                Mail::to($email)->send(new SfpMail($subject, $body));
+                Mail::to($email)->send(new RequestMail($subject, $body));
             } catch (\Throwable $e) {
-                Log::error('SFP staff routing email failed', [
+                Log::error('Staff routing email failed', [
                     'to'         => $email,
                     'request_id' => $request->id,
                     'error'      => $e->getMessage(),
@@ -65,12 +62,12 @@ class NotificationService
      *  - The new RequestStatus has `notify_patron = true`
      *  - The patron has an email address on record
      */
-    public function notifyPatronStatusChange(SfpRequest $request): bool
+    public function notifyPatronStatusChange(PatronRequest $request): bool
     {
         if (! Setting::get('notifications_enabled', true)) return false;
         if (! Setting::get('patron_status_notification_enabled', true)) return false;
 
-        $request->loadMissing(['patron', 'materialType', 'audience', 'status']);
+        $request->loadMissing(['patron', 'fieldValues.field', 'status']);
 
         if (! $request->status?->notify_patron) return false;
 
@@ -93,9 +90,9 @@ class NotificationService
             $bodyTemplate = (string) Setting::get('patron_status_template', $this->defaultPatronTemplate());
             $body = $this->replacePlaceholders($bodyTemplate, $request);
             try {
-                Mail::to($patronEmail)->send(new SfpMail($subject, $body));
+                Mail::to($patronEmail)->send(new RequestMail($subject, $body));
             } catch (\Throwable $e) {
-                Log::error('SFP patron status email failed', [
+                Log::error('Patron status email failed', [
                     'patron_id'  => $request->patron_id,
                     'request_id' => $request->id,
                     'error'      => $e->getMessage(),
@@ -108,9 +105,9 @@ class NotificationService
             try {
                 $subject = $this->replacePlaceholders($template->subject, $request);
                 $body = $this->replacePlaceholders((string) $template->body, $request);
-                Mail::to($patronEmail)->send(new SfpMail($subject, $body));
+                Mail::to($patronEmail)->send(new RequestMail($subject, $body));
             } catch (\Throwable $e) {
-                Log::error('SFP patron status email failed', [
+                Log::error('Patron status email failed', [
                     'patron_id'  => $request->patron_id,
                     'request_id' => $request->id,
                     'template_id'=> $template->id,
@@ -132,15 +129,15 @@ class NotificationService
      *
      * @return array{subject: string, body: string, to: string}|null
      */
-    public function renderPatronEmail(SfpRequest $request, int $statusId): ?array
+    public function renderPatronEmail(PatronRequest $request, int $statusId): ?array
     {
         if (! Setting::get('notifications_enabled', true)) return null;
         if (! Setting::get('patron_status_notification_enabled', true)) return null;
 
-        $status = \Dcplibrary\Sfp\Models\RequestStatus::find($statusId);
+        $status = \Dcplibrary\Requests\Models\RequestStatus::find($statusId);
         if (! $status?->notify_patron) return null;
 
-        $request->loadMissing(['patron', 'materialType', 'audience']);
+        $request->loadMissing(['patron', 'fieldValues.field']);
 
         $patronEmail = $request->patron?->email;
         if (! $patronEmail) return null;
@@ -150,7 +147,7 @@ class NotificationService
         $request->setRelation('status', $status);
         $request->request_status_id = $statusId;
 
-        $templates = \Dcplibrary\Sfp\Models\PatronStatusTemplate::query()
+        $templates = \Dcplibrary\Requests\Models\PatronStatusTemplate::query()
             ->where('enabled', true)
             ->whereHas('requestStatuses', fn ($q) => $q->where('request_statuses.id', $statusId))
             ->ordered()
@@ -189,7 +186,7 @@ class NotificationService
      * - ILL requests: the group identified by ill_selector_group_id.
      * - SFP requests: groups whose material type AND audience match the request.
      */
-    private function getStaffRecipients(SfpRequest $request): array
+    private function getStaffRecipients(PatronRequest $request): array
     {
         $groups = $this->getStaffRecipientGroups($request);
         $emails = [];
@@ -204,7 +201,7 @@ class NotificationService
     /**
      * Groups that have access to this request (and thus should receive routing).
      */
-    private function getStaffRecipientGroups(SfpRequest $request): \Illuminate\Support\Collection
+    private function getStaffRecipientGroups(PatronRequest $request): \Illuminate\Support\Collection
     {
         $groups = collect();
 
@@ -217,13 +214,24 @@ class NotificationService
                 }
             }
         } else {
+            // Look up the request's material_type and audience slugs from field values.
+            $request->loadMissing('fieldValues.field');
+            $mtSlug  = $request->fieldValue('material_type');
+            $audSlug = $request->fieldValue('audience');
+
+            // Resolve those slugs to FieldOption IDs.
+            $mtOptionId  = $mtSlug  ? FieldOption::whereHas('field', fn ($q) => $q->where('key', 'material_type'))->where('slug', $mtSlug)->value('id')  : null;
+            $audOptionId = $audSlug ? FieldOption::whereHas('field', fn ($q) => $q->where('key', 'audience'))->where('slug', $audSlug)->value('id') : null;
+
             $candidates = SelectorGroup::active()
-                ->with(['materialTypes', 'audiences', 'users'])
+                ->with(['fieldOptions', 'users'])
                 ->get();
-            $groups = $candidates->filter(fn ($group) =>
-                $group->materialTypes->contains('id', $request->material_type_id)
-                && $group->audiences->contains('id', $request->audience_id)
-            );
+
+            $groups = $candidates->filter(function ($group) use ($mtOptionId, $audOptionId) {
+                $optionIds = $group->fieldOptions->pluck('id');
+                return ($mtOptionId && $optionIds->contains($mtOptionId))
+                    && ($audOptionId && $optionIds->contains($audOptionId));
+            });
         }
 
         return $groups;
@@ -276,7 +284,7 @@ class NotificationService
      *   {ill_requested}     — "Yes" or "No"
      *   {<key>}             — any other active form field value stored on the request
      */
-    private function replacePlaceholders(string $template, SfpRequest $request): string
+    private function replacePlaceholders(string $template, PatronRequest $request): string
     {
         $patron     = $request->patron;
         $patronName = trim(($patron?->name_first ?? '') . ' ' . ($patron?->name_last ?? ''));
@@ -288,91 +296,68 @@ class NotificationService
             '{patron_first_name}' => $patron?->name_first        ?? '',
             '{patron_email}'      => $patron?->effective_email   ?? '',
             '{patron_phone}'      => $patron?->effective_phone  ?? '',
-            '{material_type}'     => $request->materialType?->name ?? '',
-            '{audience}'          => $request->audience?->name     ?? '',
+            '{material_type}'     => $request->fieldValueLabel('material_type') ?? '',
+            '{audience}'          => $request->fieldValueLabel('audience')       ?? '',
             '{status}'            => $request->status?->name       ?? '',
             '{status_description}' => $request->status?->description ?? '',
             '{submitted_date}'    => $request->created_at?->format('F j, Y') ?? '',
             '{request_url}'       => route('request.staff.requests.show', $request),
         ];
 
-        // Extend with dynamic form-field tokens.
-        foreach (FormField::tokenFields() as $field) {
-            $map["{{$field->key}}"] = $this->formFieldValue($field->key, $request);
-        }
-
-        // Extend with dynamic custom-field tokens.
+        // Extend with dynamic field tokens from the unified fields table.
+        $request->loadMissing('fieldValues.field');
         $kind = $request->request_kind ?: 'sfp';
-        $customFields = CustomField::query()
+        $tokenFields = Field::query()
             ->where('active', true)
             ->where('include_as_token', true)
             ->forKind($kind)
             ->ordered()
             ->get();
 
-        $request->loadMissing(['customFieldValues']);
-        $valuesByFieldId = $request->customFieldValues->keyBy('custom_field_id');
-
-        $fieldIds = $customFields->pluck('id')->all();
-        $optionsByFieldId = CustomFieldOption::query()
-            ->whereIn('custom_field_id', $fieldIds)
-            ->get()
-            ->groupBy('custom_field_id')
-            ->map(fn ($g) => $g->pluck('name', 'slug')->all())
-            ->all();
-
-        foreach ($customFields as $field) {
-            $val = $valuesByFieldId[$field->id] ?? null;
+        foreach ($tokenFields as $field) {
             $token = "{{$field->key}}";
+            if (isset($map[$token])) {
+                continue; // already populated by core placeholders
+            }
 
-            if (! $val) {
-                $map[$token] = '';
+            $slug = $request->fieldValue($field->key);
+
+            if ($slug === null || $slug === '') {
+                // Fall back to direct model attributes for legacy columns.
+                $map[$token] = $this->legacyFieldValue($field->key, $request);
                 continue;
             }
 
-            if ($val->value_slug) {
-                $map[$token] = $optionsByFieldId[$field->id][$val->value_slug] ?? $val->value_slug;
+            // For select/radio fields, resolve slug to human label.
+            if (in_array($field->type, ['select', 'radio'], true)) {
+                $map[$token] = $request->fieldValueLabel($field->key) ?? $slug;
+            } elseif ($field->type === 'checkbox') {
+                $map[$token] = $slug === '1' ? 'Yes' : ($slug === '0' ? 'No' : $slug);
             } else {
-                $raw = (string) ($val->value_text ?? '');
-                $map[$token] = $field->type === 'checkbox'
-                    ? ($raw === '1' ? 'Yes' : ($raw === '0' ? 'No' : $raw))
-                    : $raw;
+                $map[$token] = $slug;
             }
-        }
-
-        // Legacy: SFP requests may have where_heard on the request column before it became a custom field.
-        if ($kind === 'sfp' && (($map['{where_heard}'] ?? '') === '') && $request->where_heard) {
-            $map['{where_heard}'] = $request->where_heard;
-        }
-
-        // Legacy: SFP requests may have console slug in other_material_text before it became a custom field.
-        if ($kind === 'sfp' && (($map['{console}'] ?? '') === '') && $request->other_material_text) {
-            $map['{console}'] = Console::where('slug', $request->other_material_text)->value('name') ?? $request->other_material_text;
         }
 
         return str_replace(array_keys($map), array_values($map), $template);
     }
 
     /**
-     * Resolve a form field's submitted value for use in notification tokens.
+     * Resolve legacy field values that may still live as direct model attributes
+     * rather than in the EAV request_field_values table.
      *
-     * Special handling:
-     *   genre        — slug stored on request; resolved to human-readable Genre name
-     *   console      — slug stored in other_material_text; resolved to Console name
-     *   ill_requested — boolean cast to "Yes" / "No"
-     *   isbn         — pulled from the linked Material record
-     *   publish_date — maps to submitted_publish_date column
-     *   all others   — direct attribute access on the request model
+     * @param  string         $key
+     * @param  PatronRequest  $request
+     * @return string
      */
-    private function formFieldValue(string $key, SfpRequest $request): string
+    private function legacyFieldValue(string $key, PatronRequest $request): string
     {
         return match ($key) {
-            'genre'        => Genre::where('slug', $request->genre ?? '')->value('name') ?? ($request->genre ?? ''),
-            'console'      => Console::where('slug', $request->other_material_text ?? '')->value('name') ?? ($request->other_material_text ?? ''),
             'ill_requested' => $request->ill_requested === null ? '' : ($request->ill_requested ? 'Yes' : 'No'),
-            'isbn'         => $request->material?->isbn ?? $request->material?->isbn13 ?? '',
-            'publish_date' => $request->submitted_publish_date ?? '',
-            default        => (string) ($request->{$key} ?? ''),
+            'isbn'          => $request->material?->isbn ?? $request->material?->isbn13 ?? '',
+            'publish_date'  => $request->submitted_publish_date ?? '',
+            'where_heard'   => (string) ($request->where_heard ?? ''),
+            'console'       => (string) ($request->other_material_text ?? ''),
+            default         => (string) ($request->{$key} ?? ''),
         };
     }
 

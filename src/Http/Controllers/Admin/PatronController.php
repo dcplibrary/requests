@@ -1,11 +1,11 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
-use Dcplibrary\Sfp\Jobs\LookupPatronInPolaris;
-use Dcplibrary\Sfp\Models\Patron;
-use Dcplibrary\Sfp\Models\SfpRequest;
+use Dcplibrary\Requests\Http\Controllers\Controller;
+use Dcplibrary\Requests\Jobs\LookupPatronInPolaris;
+use Dcplibrary\Requests\Models\Patron;
+use Dcplibrary\Requests\Models\PatronRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -53,7 +53,7 @@ class PatronController extends Controller
 
         $patrons = $query->paginate(30)->withQueryString();
 
-        return view('sfp::staff.patrons.index', [
+        return view('requests::staff.patrons.index', [
             'patrons'               => $patrons,
             'suspectedDuplicateIds' => $suspectedDuplicateIds,
             'showAll'               => $showAll,
@@ -67,11 +67,11 @@ class PatronController extends Controller
 
     public function show(Patron $patron)
     {
-        $patron->load(['requests.status', 'requests.materialType', 'ignoredDuplicates']);
+        $patron->load(['requests.status', 'requests.fieldValues.field', 'ignoredDuplicates']);
 
         $suspects = $this->getSuspectsForPatron($patron);
 
-        return view('sfp::staff.patrons.show', [
+        return view('requests::staff.patrons.show', [
             'patron'  => $patron,
             'suspects' => $suspects,
         ]);
@@ -83,7 +83,7 @@ class PatronController extends Controller
 
     public function edit(Patron $patron)
     {
-        return view('sfp::staff.patrons.edit', [
+        return view('requests::staff.patrons.edit', [
             'patron' => $patron,
         ]);
     }
@@ -118,8 +118,8 @@ class PatronController extends Controller
         $patron->update(['polaris_lookup_attempted' => false]);
 
         LookupPatronInPolaris::dispatch($patron->id)
-            ->onConnection(config('sfp.queue.connection'))
-            ->onQueue(config('sfp.queue.name'));
+            ->onConnection(config('requests.queue.connection'))
+            ->onQueue(config('requests.queue.name'));
 
         return back()->with('success', 'Polaris lookup queued. Refresh in a moment to see updated data.');
     }
@@ -162,7 +162,7 @@ class PatronController extends Controller
         $loser->load('requests.status');
         $winner->load('requests.status');
 
-        return view('sfp::staff.patrons.merge', [
+        return view('requests::staff.patrons.merge', [
             'loser'  => $loser,
             'winner' => $winner,
         ]);
@@ -222,7 +222,7 @@ class PatronController extends Controller
             }
 
             // Move all of the loser's requests to the winner
-            $movedCount = SfpRequest::where('patron_id', $loser->id)
+            $movedCount = PatronRequest::where('patron_id', $loser->id)
                 ->update(['patron_id' => $winner->id]);
 
             // Delete the loser

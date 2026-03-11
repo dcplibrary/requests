@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', $group->exists ? 'Edit Group' : 'New Group')
 @section('settings-content')
 <div class="mb-6 flex items-center gap-3">
@@ -27,7 +27,7 @@
                 @forelse($materialTypes as $type)
                 <div class="flex items-center gap-2 mb-1.5">
                     <input type="checkbox" name="material_types[]" id="mt_{{ $type->id }}" value="{{ $type->id }}"
-                           {{ in_array($type->id, old('material_types', $group->materialTypes->pluck('id')->toArray())) ? 'checked' : '' }}
+                           {{ in_array($type->id, old('material_types', $group->fieldOptions->filter(fn($o) => $o->field?->key === 'material_type')->pluck('id')->toArray())) ? 'checked' : '' }}
                            class="w-4 h-4 rounded border-gray-300 text-blue-600">
                     <label for="mt_{{ $type->id }}" class="text-sm text-gray-700">{{ $type->name }}</label>
                 </div>
@@ -40,7 +40,7 @@
                 @forelse($audiences as $audience)
                 <div class="flex items-center gap-2 mb-1.5">
                     <input type="checkbox" name="audiences[]" id="aud_{{ $audience->id }}" value="{{ $audience->id }}"
-                           {{ in_array($audience->id, old('audiences', $group->audiences->pluck('id')->toArray())) ? 'checked' : '' }}
+                           {{ in_array($audience->id, old('audiences', $group->fieldOptions->filter(fn($o) => $o->field?->key === 'audience')->pluck('id')->toArray())) ? 'checked' : '' }}
                            class="w-4 h-4 rounded border-gray-300 text-blue-600">
                     <label for="aud_{{ $audience->id }}" class="text-sm text-gray-700">{{ $audience->name }}</label>
                 </div>

@@ -18,7 +18,7 @@
     {{-- Submission limit warning --}}
     @if($limitReached)
         <div class="mb-6">
-            <x-sfp::limit-reached :count="$limitCount" :until="$limitUntil" />
+            <x-requests::limit-reached :count="$limitCount" :until="$limitUntil" />
         </div>
     @endif
 
@@ -51,8 +51,8 @@
                         <p class="text-sm text-gray-500">
                             {{ $req->submitted_author }}
                         </p>
-                        @if($req->materialType)
-                            <p class="text-xs text-gray-400 mt-0.5">{{ $req->materialType->name }}</p>
+                        @if($req->fieldValueLabel('material_type'))
+                            <p class="text-xs text-gray-400 mt-0.5">{{ $req->fieldValueLabel('material_type') }}</p>
                         @endif
                         <p class="text-xs text-gray-400 mt-0.5">
                             Kind: <span class="font-mono">{{ strtoupper($req->request_kind ?? 'sfp') }}</span>

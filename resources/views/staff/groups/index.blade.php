@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', 'Selector Groups')
 @section('settings-content')
 <div class="flex items-center justify-between mb-6">
@@ -29,18 +29,18 @@
                     @endif
                 </td>
                 <td class="px-4 py-3 text-gray-600 text-xs">
-                    {{ $group->materialTypes->pluck('name')->join(', ') ?: '—' }}
+                    {{ $group->fieldOptions->filter(fn($o) => $o->field?->key === 'material_type')->pluck('name')->join(', ') ?: '—' }}
                 </td>
                 <td class="px-4 py-3 text-gray-600 text-xs">
-                    {{ $group->audiences->pluck('name')->join(', ') ?: '—' }}
+                    {{ $group->fieldOptions->filter(fn($o) => $o->field?->key === 'audience')->pluck('name')->join(', ') ?: '—' }}
                 </td>
                 <td class="px-4 py-3 text-gray-600">{{ $group->users->count() }}</td>
                 <td class="px-4 py-3">
-                    <x-sfp::status-pill :active="$group->active" />
+                    <x-requests::status-pill :active="$group->active" />
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-sfp::icon-btn :href="route('request.staff.groups.edit', $group)" variant="edit" label="Edit" />
-                    <x-sfp::icon-form-btn :action="route('request.staff.groups.destroy', $group)" label="Delete" confirm="Delete this group?" />
+                    <x-requests::icon-btn :href="route('request.staff.groups.edit', $group)" variant="edit" label="Edit" />
+                    <x-requests::icon-form-btn :action="route('request.staff.groups.destroy', $group)" label="Delete" confirm="Delete this group?" />
                 </td>
             </tr>
             @empty

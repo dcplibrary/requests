@@ -1,5 +1,5 @@
 {
-    "name": "dcplibrary/sfp",
+    "name": "dcplibrary/requests",
     "description": "Suggest for Purchase package for the Daviess County Public Library — patron form + staff admin UI",
     "type": "library",
     "license": "proprietary",
@@ -22,19 +22,19 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Dcplibrary\\Sfp\\Tests\\": "tests/"
+            "Dcplibrary\\Requests\\Tests\\": "tests/"
         }
     },
     "autoload": {
         "psr-4": {
-            "Dcplibrary\\Sfp\\": "src/",
-            "Dcplibrary\\Sfp\\Database\\Seeders\\": "database/seeders/"
+            "Dcplibrary\\Requests\\": "src/",
+            "Dcplibrary\\Requests\\Database\\Seeders\\": "database/seeders/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Dcplibrary\\Sfp\\SfpServiceProvider"
+                "Dcplibrary\\Requests\\RequestsServiceProvider"
             ]
         }
     },

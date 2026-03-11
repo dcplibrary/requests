@@ -1,12 +1,10 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\Audience;
-use Dcplibrary\Sfp\Models\Console;
-use Dcplibrary\Sfp\Models\FormFormFieldOption;
-use Dcplibrary\Sfp\Models\Genre;
-use Dcplibrary\Sfp\Models\MaterialType;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\FormFieldOptionOverride;
 use Illuminate\Support\Facades\URL;
 use Livewire\Component;
 
@@ -45,6 +43,12 @@ class FormFormFieldOptionsManager extends Component
 
     // ── Public actions ────────────────────────────────────────────────────────
 
+    /**
+     * Toggle per-form visibility for an option slug.
+     *
+     * @param  string  $slug
+     * @return void
+     */
     public function toggleVisible(string $slug): void
     {
         $current = collect($this->items)->firstWhere('slug', $slug);
@@ -52,8 +56,8 @@ class FormFormFieldOptionsManager extends Component
             return;
         }
 
-        FormFormFieldOption::updateOrInsert(
-            ['form_id' => $this->formId, 'form_field_id' => $this->fieldId, 'option_slug' => $slug],
+        FormFieldOptionOverride::updateOrInsert(
+            ['form_id' => $this->formId, 'field_id' => $this->fieldId, 'option_slug' => $slug],
             ['visible' => ! $current['visible']]
         );
 
@@ -84,31 +88,31 @@ class FormFormFieldOptionsManager extends Component
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * Load options from field_options merged with per-form overrides.
+     *
+     * @return void
+     */
     private function loadItems(): void
     {
-        $modelClass = $this->modelClassForKey($this->fieldKey);
-        if (! $modelClass) {
-            $this->items = [];
-            return;
-        }
+        $baseOptions = FieldOption::where('field_id', $this->fieldId)
+            ->ordered()
+            ->get();
 
-        $baseOptions = $modelClass::orderBy('sort_order')->get();
-
-        $overrides = FormFormFieldOption::where('form_id', $this->formId)
-            ->where('form_field_id', $this->fieldId)
+        $overrides = FormFieldOptionOverride::where('form_id', $this->formId)
+            ->where('field_id', $this->fieldId)
             ->get()
             ->keyBy('option_slug');
 
-        $items = $baseOptions->map(function ($opt, int $modelIndex) use ($overrides) {
+        $items = $baseOptions->map(function (FieldOption $opt, int $modelIndex) use ($overrides) {
             $override = $overrides->get($opt->slug);
+
             return [
                 'slug'           => $opt->slug,
                 'name'           => $opt->name,
-                'globally_active'=> (bool) $opt->active,
+                'globally_active' => (bool) $opt->active,
                 'visible'        => $override ? (bool) $override->visible : true,
                 'label_override' => (string) ($override?->label_override ?? ''),
-                // Use override sort_order when available; otherwise fall back to model position (scaled
-                // so any override < any unoverridden default when sorted together).
                 'sort_order'     => $override ? $override->sort_order : ($modelIndex + 1) * 10000,
             ];
         });
@@ -120,44 +124,34 @@ class FormFormFieldOptionsManager extends Component
      * Persist the current in-memory order to form_form_field_options.
      * Writes (or updates) every row so the display order is fully captured.
      */
+    /**
+     * Persist the current in-memory order to form_field_option_overrides.
+     *
+     * @return void
+     */
     private function persistOrder(): void
     {
         $rows = array_values($this->items);
         foreach ($rows as $i => $item) {
             $order = $i + 1;
-            FormFormFieldOption::updateOrInsert(
-                ['form_id' => $this->formId, 'form_field_id' => $this->fieldId, 'option_slug' => $item['slug']],
+            FormFieldOptionOverride::updateOrInsert(
+                ['form_id' => $this->formId, 'field_id' => $this->fieldId, 'option_slug' => $item['slug']],
                 ['sort_order' => $order]
             );
-            // Keep in-memory sort_order in sync so subsequent moves work correctly
             $this->items[$i]['sort_order'] = $order;
         }
-        // Do NOT reload from DB — keeping the swapped in-memory array lets the user
-        // make multiple sequential reorders without Livewire state getting confused.
-    }
-
-    /** Map a FormField key to its underlying option model class. */
-    public static function modelClassForKey(string $key): ?string
-    {
-        return match ($key) {
-            'material_type' => MaterialType::class,
-            'audience'      => Audience::class,
-            'genre'         => Genre::class,
-            'console'       => Console::class,
-            default         => null,
-        };
     }
 
     /** Build the URL for the per-option editor page. */
     public function editUrl(string $slug): string
     {
-        $prefix = trim(config('sfp.route_prefix', 'request'), '/');
+        $prefix = trim(config('requests.route_prefix', 'request'), '/');
         return URL::to('/' . $prefix . '/staff/settings/form-fields/' . $this->fieldId
             . '/form/' . $this->formSlug . '/options/' . $slug . '/edit');
     }
 
     public function render()
     {
-        return view('sfp::livewire.admin.form-form-field-options-manager');
+        return view('requests::livewire.admin.form-form-field-options-manager');
     }
 }

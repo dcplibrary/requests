@@ -1,8 +1,8 @@
 <?php
 
-namespace Dcplibrary\Sfp\Services;
+namespace Dcplibrary\Requests\Services;
 
-use Dcplibrary\Sfp\Models\Setting;
+use Dcplibrary\Requests\Models\Setting;
 
 /**
  * Generates book cover image URLs.

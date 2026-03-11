@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', 'Backups')
 @section('settings-content')
 
@@ -169,7 +169,7 @@
             <h3 class="text-sm font-semibold text-gray-700 mb-1">Save to Server</h3>
             <p class="text-sm text-gray-500 mb-4">
                 Write a backup directly to
-                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">storage/app/sfp-backups</code>
+                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">storage/app/requests-backups</code>
                 on the server. Files saved here appear in the Server Backups section below and
                 survive browser sessions — no download required.
             </p>
@@ -259,9 +259,9 @@
         <div class="p-5">
             <p class="text-sm text-gray-500">
                 No backup files found in
-                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">storage/app/sfp-backups</code>.
+                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">storage/app/requests-backups</code>.
                 Use <strong>Save to Server Now</strong> above or run
-                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">php artisan sfp:backup --config --db</code>
+                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">php artisan requests:backup --config --db</code>
                 to create server-side backups.
             </p>
         </div>
@@ -423,7 +423,7 @@
         <div class="p-5">
             <h3 class="text-sm font-semibold text-gray-700 mb-1">Backup Schedule</h3>
             <p class="text-sm text-gray-500 mb-5">
-                Use <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">php artisan sfp:backup</code>
+                Use <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">php artisan requests:backup</code>
                 on a schedule via Docker cron or the Laravel scheduler. Use
                 <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">--prune</code>
                 to automatically delete old backups as part of the same job.
@@ -474,7 +474,7 @@
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Backup output path <span class="text-gray-400 font-normal">(inside container)</span></label>
                     <input type="text" id="sched-path"
-                           value="/var/www/html/storage/app/sfp-backups"
+                           value="/var/www/html/storage/app/requests-backups"
                            class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
                 </div>
 
@@ -491,7 +491,7 @@
                     <label class="block text-xs font-medium text-gray-600 mb-1">Generated cron line</label>
                     <div id="sched-output"
                          class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 font-mono text-xs overflow-x-auto whitespace-nowrap select-all cursor-text">
-                        0 2 * * * www-data php /var/www/html/artisan sfp:backup --config --db --prune --path=/var/www/html/storage/app/sfp-backups >> /var/log/sfp-backup.log 2>&1
+                        0 2 * * * www-data php /var/www/html/artisan requests:backup --config --db --prune --path=/var/www/html/storage/app/requests-backups >> /var/log/requests-backup.log 2>&1
                     </div>
                     <p class="mt-1.5 text-xs text-gray-400">Click to select all. Add this to your container's crontab.</p>
                 </div>
@@ -503,13 +503,13 @@
                 <h3 class="text-xs font-semibold text-gray-600 mb-2">Docker setup</h3>
                 <pre class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 text-xs overflow-x-auto leading-relaxed"># Option A — cron inside the container
 RUN apt-get install -y cron
-COPY crontab /etc/cron.d/sfp-backup
-RUN chmod 0644 /etc/cron.d/sfp-backup &amp;&amp; crontab /etc/cron.d/sfp-backup
+COPY crontab /etc/cron.d/requests-backup
+RUN chmod 0644 /etc/cron.d/requests-backup &amp;&amp; crontab /etc/cron.d/requests-backup
 CMD ["cron", "-f"]
 
 # Option B — Laravel scheduler (add to your docker CMD / supervisor)
 # In App\Console\Kernel::schedule():
-#   $schedule->command('sfp:backup --config --db --prune')->daily();</pre>
+#   $schedule->command('requests:backup --config --db --prune')->daily();</pre>
             </div>
         </div>
 
@@ -533,9 +533,9 @@ CMD ["cron", "-f"]
         if (el('sched-prune').checked)   flags.push('--prune');
         if (path) flags.push('--path=' + path);
 
-        var cmd = expr + ' www-data php ' + app + '/artisan sfp:backup';
+        var cmd = expr + ' www-data php ' + app + '/artisan requests:backup';
         if (flags.length) cmd += ' ' + flags.join(' ');
-        cmd += ' >> /var/log/sfp-backup.log 2>&1';
+        cmd += ' >> /var/log/requests-backup.log 2>&1';
 
         el('sched-output').textContent = cmd;
     }

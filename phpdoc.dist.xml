@@ -29,7 +29,7 @@
                 <extension>php</extension>
             </extensions>
 
-            <default-package-name>dcplibrary/sfp</default-package-name>
+            <default-package-name>dcplibrary/requests</default-package-name>
         </api>
     </version>
 </phpdocumentor>

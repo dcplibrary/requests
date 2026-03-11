@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Tests\Integration;
+namespace Dcplibrary\Requests\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -42,7 +42,7 @@ class IsbnDbSearchTest extends TestCase
         $ctx = stream_context_create(['http' => [
             'timeout' => 15,
             'header'  => implode("\r\n", [
-                "User-Agent: SfpBot/1.0",
+                "User-Agent: RequestsBot/1.0",
                 "Accept: application/json",
                 "Authorization: {$this->apiKey}",
             ]),

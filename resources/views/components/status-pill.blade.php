@@ -2,8 +2,8 @@
     Reusable status indicator pill.
 
     Usage:
-        <x-sfp::status-pill :active="$record->active" />
-        <x-sfp::status-pill :active="$field['required']" active-label="Required" inactive-label="Optional" />
+        <x-requests::status-pill :active="$record->active" />
+        <x-requests::status-pill :active="$field['required']" active-label="Required" inactive-label="Optional" />
 
     Props:
         active         — bool   — current state

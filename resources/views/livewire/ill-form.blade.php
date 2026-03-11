@@ -70,7 +70,7 @@
 
         @if($limitReached)
             <div class="mb-6">
-                <x-sfp::limit-reached
+                <x-requests::limit-reached
                     kind="ill"
                     :count="$limitCount"
                     :until="$limitUntil ? \Illuminate\Support\Carbon::parse($limitUntil) : null"

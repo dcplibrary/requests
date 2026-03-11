@@ -40,7 +40,7 @@
       "@semantic-release/changelog",
       {
         "changelogFile": "CHANGELOG.md",
-        "changelogTitle": "# Changelog\n\nAll notable changes to `dcplibrary/sfp` are documented here."
+        "changelogTitle": "# Changelog\n\nAll notable changes to `dcplibrary/requests` are documented here."
       }
     ],
     [

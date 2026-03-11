@@ -1,17 +1,14 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\Audience;
-use Dcplibrary\Sfp\Models\Console;
-use Dcplibrary\Sfp\Models\FormField;
-use Dcplibrary\Sfp\Models\Genre;
-use Dcplibrary\Sfp\Models\MaterialType;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
 use Livewire\Component;
 
 /**
  * Edit a single FormField — label, required, active, and conditional logic.
- * Mounted from the form-fields edit page via @livewire('sfp-admin-form-field-edit').
+ * Mounted from the form-fields edit page via @livewire('requests-admin-form-field-edit').
  */
 class FormFieldEdit extends Component
 {
@@ -30,12 +27,12 @@ class FormFieldEdit extends Component
 
     public function mount(int $fieldId): void
     {
-        $field = FormField::findOrFail($fieldId);
+        $field = Field::findOrFail($fieldId);
 
         $this->fieldId        = $fieldId;
         $this->label          = $field->label;
-        $this->required       = $field->required;
-        $this->active         = $field->active;
+        $this->required       = (bool) $field->required;
+        $this->active         = (bool) $field->active;
         $this->includeAsToken = (bool) $field->include_as_token;
         $this->condition      = $field->condition ?? ['match' => 'all', 'rules' => []];
         $this->hasCondition   = ! empty($this->condition['rules']);
@@ -53,15 +50,13 @@ class FormFieldEdit extends Component
             ? $this->condition
             : null;
 
-        FormField::where('id', $this->fieldId)->update([
-            'label'           => $this->label,
-            'required'        => $this->required,
-            'active'          => $this->active,
-            'include_as_token'=> $this->includeAsToken,
-            'condition'       => $condition ? json_encode($condition) : null,
+        Field::where('id', $this->fieldId)->update([
+            'label'            => $this->label,
+            'required'         => $this->required,
+            'active'           => $this->active,
+            'include_as_token' => $this->includeAsToken,
+            'condition'        => $condition ? json_encode($condition) : null,
         ]);
-
-        FormField::bustCache();
 
         session()->flash('success', "'{$this->label}' updated.");
         $this->redirect(route('request.staff.settings.form-fields'));
@@ -123,37 +118,27 @@ class FormFieldEdit extends Component
 
     // ── Render ────────────────────────────────────────────────────────────────
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
-        /** @var FormField $field */
-        $field = FormField::findOrFail($this->fieldId);
+        /** @var Field $field */
+        $field = Field::findOrFail($this->fieldId);
 
-        $optionFieldConfig = [
-            'material_type' => [
-                'class'          => MaterialType::class,
-                'title'          => 'Material Type Options',
-                'conditionField' => 'material_type',
-                'extraFields'    => [
-                    ['key' => 'has_other_text', 'label' => 'Other text input', 'type' => 'boolean'],
-                ],
-            ],
-            'audience' => [
-                'class'          => Audience::class,
-                'title'          => 'Audience Options',
-                'conditionField' => 'audience',
-                'extraFields'    => [
-                    ['key' => 'bibliocommons_value', 'label' => 'BiblioCommons value', 'type' => 'text'],
-                ],
-            ],
-            'genre'   => ['class' => Genre::class,   'title' => 'Genre Options',   'conditionField' => null, 'extraFields' => []],
-            'console' => ['class' => Console::class, 'title' => 'Console Options', 'conditionField' => null, 'extraFields' => []],
-        ];
+        // Condition field keys for rule value pickers.
+        $mtField  = Field::where('key', 'material_type')->first();
+        $audField = Field::where('key', 'audience')->first();
 
-        return view('sfp::livewire.admin.form-field-edit', [
-            'fieldKey'          => $field->key,
-            'optionConfig'      => $optionFieldConfig[$field->key] ?? null,
-            'materialTypeOptions' => MaterialType::orderBy('sort_order')->pluck('name', 'slug'),
-            'audienceOptions'   => Audience::orderBy('sort_order')->pluck('name', 'slug'),
+        return view('requests::livewire.admin.form-field-edit', [
+            'fieldKey'            => $field->key,
+            'showOptionsManager'  => in_array($field->type, ['select', 'radio'], true),
+            'materialTypeOptions' => $mtField
+                ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->pluck('name', 'slug')
+                : collect(),
+            'audienceOptions'     => $audField
+                ? FieldOption::where('field_id', $audField->id)->active()->ordered()->pluck('name', 'slug')
+                : collect(),
         ]);
     }
 }

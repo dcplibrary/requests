@@ -1,9 +1,9 @@
 <?php
 
-namespace Dcplibrary\Sfp\Jobs;
+namespace Dcplibrary\Requests\Jobs;
 
 use Blashbrook\PAPIClient\PAPIClient;
-use Dcplibrary\Sfp\Models\Patron;
+use Dcplibrary\Requests\Models\Patron;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

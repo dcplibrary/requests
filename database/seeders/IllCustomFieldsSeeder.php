@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Database\Seeders;
+namespace Dcplibrary\Requests\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -202,7 +202,7 @@ class IllCustomFieldsSeeder extends Seeder
         ];
 
         foreach ($fields as $field) {
-            DB::table('sfp_custom_fields')->updateOrInsert(
+            DB::table('custom_fields')->updateOrInsert(
                 ['key' => $field['key']],
                 array_merge($field, ['updated_at' => $now, 'created_at' => $now])
             );
@@ -210,7 +210,7 @@ class IllCustomFieldsSeeder extends Seeder
 
         // Remove custom fields consolidated into sfp_form_fields (title, author, publish_date, isbn)
         // where_heard is now a custom field for SFP only — do not delete
-        DB::table('sfp_custom_fields')->whereIn('key', [
+        DB::table('custom_fields')->whereIn('key', [
             'title',
             'author',
             'publish_date',
@@ -218,7 +218,7 @@ class IllCustomFieldsSeeder extends Seeder
         ])->delete();
 
         // Remove legacy ILL-only keys (old names)
-        DB::table('sfp_custom_fields')->whereIn('key', [
+        DB::table('custom_fields')->whereIn('key', [
             'ill_title',
             'ill_author',
             'publication_date',
@@ -226,10 +226,10 @@ class IllCustomFieldsSeeder extends Seeder
         ])->delete();
 
         // article_author and article_title are redundant with the global author/title form fields
-        DB::table('sfp_custom_fields')->whereIn('key', ['article_author', 'article_title'])->delete();
+        DB::table('custom_fields')->whereIn('key', ['article_author', 'article_title'])->delete();
 
         // ILL now uses material_types (MaterialType model); remove borrow_type custom field
-        DB::table('sfp_custom_fields')->where('key', 'borrow_type')->delete();
+        DB::table('custom_fields')->where('key', 'borrow_type')->delete();
     }
 }
 

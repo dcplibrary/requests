@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Services;
+namespace Dcplibrary\Requests\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  *     generic title (e.g. "The Bible Tells Me So") buries the right book
  *     beyond the first page of results.
  *
- * The API key is read from `config('sfp.isbndb.key')`.
+ * The API key is read from `config('requests.isbndb.key')`.
  */
 class IsbnDbService
 {
@@ -25,7 +25,7 @@ class IsbnDbService
 
     public function __construct()
     {
-        $this->apiKey = config('sfp.isbndb.key', '');
+        $this->apiKey = config('requests.isbndb.key', '');
     }
 
     /**

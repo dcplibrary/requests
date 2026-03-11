@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', $type->exists ? 'Edit Material Type' : 'New Material Type')
 @section('settings-content')
 <div class="mb-6 flex items-center gap-3">

@@ -84,7 +84,7 @@
             <div class="flex items-center gap-3 px-3 py-2.5 {{ $item['active'] ? '' : 'opacity-60' }}">
 
                 {{-- Sort buttons --}}
-                <x-sfp::sort-btns :value="$item['id']" :first="$i === 0" :last="$i === count($items) - 1" />
+                <x-requests::sort-btns :value="$item['id']" :first="$i === 0" :last="$i === count($items) - 1" />
 
                 {{-- Name + slug + inline annotations --}}
                 <div class="flex-1 min-w-0 flex items-baseline gap-2 flex-wrap">
@@ -108,14 +108,14 @@
                 </div>
 
                 {{-- Active status pill --}}
-                <x-sfp::status-pill :active="$item['active']" />
+                <x-requests::status-pill :active="$item['active']" />
 
                 {{-- Edit + Delete icons --}}
                 <div class="flex items-center gap-0.5 shrink-0">
                     <template x-if="!confirmDelete">
                         <span class="flex items-center gap-0.5">
-                            <x-sfp::icon-btn variant="edit"   label="Edit"   x-on:click="editOpen = !editOpen" />
-                            <x-sfp::icon-btn variant="delete" label="Delete" x-on:click="confirmDelete = true" />
+                            <x-requests::icon-btn variant="edit"   label="Edit"   x-on:click="editOpen = !editOpen" />
+                            <x-requests::icon-btn variant="delete" label="Delete" x-on:click="confirmDelete = true" />
                         </span>
                     </template>
                     <template x-if="confirmDelete">

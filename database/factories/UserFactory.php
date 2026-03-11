@@ -1,12 +1,12 @@
 <?php
 
-namespace Dcplibrary\Sfp\Database\Factories;
+namespace Dcplibrary\Requests\Database\Factories;
 
-use Dcplibrary\Sfp\Models\User;
+use Dcplibrary\Requests\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * Factory for sfp_users staff accounts.
+ * Factory for staff_users accounts.
  *
  * Default state: active selector.
  * States: admin(), ill(), inactive().

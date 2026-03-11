@@ -1,16 +1,16 @@
 <?php
 
-namespace Dcplibrary\Sfp\Models;
+namespace Dcplibrary\Requests\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
- * A named group that scopes selector users to specific material types and audiences.
+ * A named group that scopes selector users to specific field options.
  *
- * Selectors assigned to a group can only see requests whose material type and
- * audience both fall within that group's scope. A selector with no group
- * assignments sees no requests. Admins bypass group scoping entirely.
+ * Selectors assigned to a group can only see requests whose field option values
+ * (material type, audience, etc.) fall within that group's scope. A selector with
+ * no group assignments sees no requests. Admins bypass group scoping entirely.
  *
  * @property int         $id
  * @property string      $name
@@ -32,16 +32,27 @@ class SelectorGroup extends Model
         return $this->belongsToMany(User::class, 'selector_group_user');
     }
 
-    /** Material types covered by this group. */
-    public function materialTypes(): BelongsToMany
+    /** Field options (material types, audiences, etc.) covered by this group. */
+    public function fieldOptions(): BelongsToMany
     {
-        return $this->belongsToMany(MaterialType::class, 'selector_group_material_type');
+        return $this->belongsToMany(
+            FieldOption::class,
+            'selector_group_field_option',
+            'selector_group_id',
+            'field_option_id'
+        );
     }
 
-    /** Audiences covered by this group. */
-    public function audiences(): BelongsToMany
+    /**
+     * Field options for a specific field key (e.g. 'material_type', 'audience').
+     *
+     * @param  string  $fieldKey
+     * @return BelongsToMany
+     */
+    public function fieldOptionsForKey(string $fieldKey): BelongsToMany
     {
-        return $this->belongsToMany(Audience::class, 'selector_group_audience');
+        return $this->fieldOptions()
+            ->whereHas('field', fn ($q) => $q->where('key', $fieldKey));
     }
 
     /** Scope to active groups only. */

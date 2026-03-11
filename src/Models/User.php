@@ -1,18 +1,18 @@
 <?php
 
-namespace Dcplibrary\Sfp\Models;
+namespace Dcplibrary\Requests\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
- * Staff user account for the SFP admin interface.
+ * Staff user account for the admin interface.
  *
- * Stored in the `sfp_users` table (separate from the host application's users).
+ * Stored in the `staff_users` table (separate from the host application's users).
  * Authenticated via Azure Entra ID (OIDC). Role controls what data a user can see:
  * - `admin`    — full access to all requests, patrons, titles, and settings
- * - `selector` — access scoped to their assigned SelectorGroups (material types, audiences)
+ * - `selector` — access scoped to their assigned SelectorGroups (field options)
  *
  * ILL access is not a role; it is determined by group membership. The setting
  * `ill_selector_group_id` points to the selector group that may view and work
@@ -29,7 +29,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  */
 class User extends Authenticatable
 {
-    protected $table = 'sfp_users';
+    protected $table = 'staff_users';
 
     protected $fillable = ['name', 'email', 'entra_id', 'role', 'active', 'last_login_at'];
 
@@ -86,38 +86,37 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the material type IDs this user can see via their selector groups.
+     * Get the field option IDs this user can access via their selector groups.
+     * Optionally filtered by field key (e.g. 'material_type', 'audience').
      * Admins can see all.
+     *
+     * @param  string|null  $fieldKey  Limit to options belonging to this field key.
+     * @return array<int>
      */
-    public function accessibleMaterialTypeIds(): array
+    public function accessibleFieldOptionIds(?string $fieldKey = null): array
     {
+        $baseQuery = FieldOption::query();
+
+        if ($fieldKey !== null) {
+            $baseQuery->whereHas('field', fn ($q) => $q->where('key', $fieldKey));
+        }
+
         if ($this->isAdmin()) {
-            return MaterialType::pluck('id')->toArray();
+            return $baseQuery->pluck('id')->toArray();
         }
 
         return $this->selectorGroups()
-            ->with('materialTypes')
+            ->with('fieldOptions')
             ->get()
-            ->flatMap(fn ($group) => $group->materialTypes->pluck('id'))
-            ->unique()
-            ->values()
-            ->toArray();
-    }
-
-    /**
-     * Get the audience IDs this user can see via their selector groups.
-     * Admins can see all.
-     */
-    public function accessibleAudienceIds(): array
-    {
-        if ($this->isAdmin()) {
-            return Audience::pluck('id')->toArray();
-        }
-
-        return $this->selectorGroups()
-            ->with('audiences')
-            ->get()
-            ->flatMap(fn ($group) => $group->audiences->pluck('id'))
+            ->flatMap(function ($group) use ($fieldKey) {
+                $options = $group->fieldOptions;
+                if ($fieldKey !== null) {
+                    $options = $options->filter(
+                        fn (FieldOption $opt) => $opt->field && $opt->field->key === $fieldKey
+                    );
+                }
+                return $options->pluck('id');
+            })
             ->unique()
             ->values()
             ->toArray();

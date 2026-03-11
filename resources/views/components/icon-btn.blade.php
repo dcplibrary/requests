@@ -2,11 +2,11 @@
     Icon button — renders as <a href> for navigation or <button> for Livewire/Alpine actions.
 
     Usage (link):
-        <x-sfp::icon-btn :href="route('request.staff.statuses.edit', $status)" variant="edit" label="Edit" />
+        <x-requests::icon-btn :href="route('request.staff.statuses.edit', $status)" variant="edit" label="Edit" />
 
     Usage (Livewire button — no href):
-        <x-sfp::icon-btn variant="edit" label="Edit" wire:click="openEdit({{ $id }})" />
-        <x-sfp::icon-btn variant="delete" label="Delete" x-on:click="confirm('Delete?') && $wire.deleteItem({{ $id }})" />
+        <x-requests::icon-btn variant="edit" label="Edit" wire:click="openEdit({{ $id }})" />
+        <x-requests::icon-btn variant="delete" label="Delete" x-on:click="confirm('Delete?') && $wire.deleteItem({{ $id }})" />
 
     Props:
         href    — string|null — when provided renders <a>, otherwise renders <button>

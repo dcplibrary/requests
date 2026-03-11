@@ -1,4 +1,4 @@
-@extends('sfp::staff._layout')
+@extends('requests::staff._layout')
 
 @section('title', 'Patrons')
 
@@ -100,7 +100,7 @@
                     </div>
                 </td>
                 <td class="px-4 py-3 text-right">
-                    <x-sfp::icon-btn :href="route('request.staff.patrons.show', $patron)" variant="view" label="View" />
+                    <x-requests::icon-btn :href="route('request.staff.patrons.show', $patron)" variant="view" label="View" />
                 </td>
             </tr>
             @empty

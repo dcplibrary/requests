@@ -27,8 +27,8 @@ return new class extends Migration
             // Source of enrichment
             $table->enum('source', ['submitted', 'isbndb', 'polaris'])->default('submitted');
 
-            // FK to material type (nullable — "Other" type stores text on request instead)
-            $table->foreignId('material_type_id')->nullable()->constrained()->nullOnDelete();
+            // FK to material type option (nullable — "Other" type stores text on request instead)
+            $table->foreignId('material_type_option_id')->nullable()->constrained('field_options')->nullOnDelete();
 
             $table->timestamps();
 

@@ -1,11 +1,10 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\Audience;
-use Dcplibrary\Sfp\Models\CustomField;
-use Dcplibrary\Sfp\Models\FormCustomField;
-use Dcplibrary\Sfp\Models\MaterialType;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FormFieldConfig;
 use Livewire\Component;
 
 /**
@@ -40,12 +39,12 @@ class FormCustomFieldEdit extends Component
         $this->fieldId  = $fieldId;
         $this->formSlug = $formSlug;
 
-        $pivot = FormCustomField::findOrFail($pivotId);
+        $pivot = FormFieldConfig::findOrFail($pivotId);
         $this->labelOverride = (string) ($pivot->label_override ?? '');
         $this->required      = (bool) $pivot->required;
         $this->visible       = (bool) $pivot->visible;
 
-        $field = CustomField::find($fieldId);
+        $field = Field::find($fieldId);
 
         // Load per-form conditional logic; fall back to the base field's condition so the
         // admin sees the effective condition rather than a blank state when none has been
@@ -66,7 +65,7 @@ class FormCustomFieldEdit extends Component
             : null;
 
         $labelOverride = trim($this->labelOverride);
-        FormCustomField::where('id', $this->pivotId)->update([
+        FormFieldConfig::where('id', $this->pivotId)->update([
             'label_override'    => $labelOverride !== '' ? $labelOverride : null,
             'required'          => $this->required,
             'visible'           => $this->visible,
@@ -128,11 +127,21 @@ class FormCustomFieldEdit extends Component
         $this->condition['rules'][$ruleIndex]['values'] = $values;
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
-        return view('sfp::livewire.admin.form-custom-field-edit', [
-            'materialTypeOptions' => MaterialType::orderBy('sort_order')->pluck('name', 'slug'),
-            'audienceOptions'     => Audience::orderBy('sort_order')->pluck('name', 'slug'),
+        $mtField  = Field::where('key', 'material_type')->first();
+        $audField = Field::where('key', 'audience')->first();
+
+        return view('requests::livewire.admin.form-custom-field-edit', [
+            'materialTypeOptions' => $mtField
+                ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->pluck('name', 'slug')
+                : collect(),
+            'audienceOptions'     => $audField
+                ? FieldOption::where('field_id', $audField->id)->active()->ordered()->pluck('name', 'slug')
+                : collect(),
         ]);
     }
 }

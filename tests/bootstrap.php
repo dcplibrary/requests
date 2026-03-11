@@ -1,7 +1,7 @@
 <?php
 
 /**
- * PHPUnit bootstrap for the dcplibrary/sfp package.
+ * PHPUnit bootstrap for the dcplibrary/requests package.
  *
  * This package uses individual illuminate/* components rather than the full
  * laravel/framework bundle. However, src/Models/User.php extends
@@ -23,7 +23,7 @@ if (! function_exists('app')) {
     /**
      * Minimal test stub for Laravel's app() helper.
      *
-     * Used by SfpRequest::scopeVisibleTo() to allow dev-only behavior checks like
+     * Used by PatronRequest::scopeVisibleTo() to allow dev-only behavior checks like
      * app()->environment('local') even when laravel/framework isn't installed.
      */
     function app()
@@ -56,13 +56,13 @@ if (! class_exists(\Illuminate\Foundation\Auth\User::class)) {
      *
      * The real class (in laravel/framework) extends Eloquent Model and
      * implements Authenticatable + other contracts. This stub does the same
-     * with only what's needed to make SfpUser instantiable in unit tests.
+     * with only what's needed to make StaffUser instantiable in unit tests.
      */
     class Illuminate_Foundation_Auth_User_Stub
         extends \Illuminate\Database\Eloquent\Model
         implements \Illuminate\Contracts\Auth\Authenticatable
     {
-        protected $table = 'sfp_users';
+        protected $table = 'staff_users';
 
         public function getAuthIdentifierName()
         {

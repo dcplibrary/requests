@@ -2,14 +2,14 @@
     Reusable up/down sort button pair for Livewire sortable lists.
 
     Usage (index-based, default method names):
-        <x-sfp::sort-btns :value="$index" :first="$index === 0" :last="$index === count($items) - 1" />
+        <x-requests::sort-btns :value="$index" :first="$index === 0" :last="$index === count($items) - 1" />
 
     Usage (index-based, custom method names):
-        <x-sfp::sort-btns :value="$index" up="moveUpSfp" down="moveDownSfp"
-            :first="$index === 0" :last="$index === count($sfpFields) - 1" />
+        <x-requests::sort-btns :value="$index" up="moveUpSuggest" down="moveDownSuggest"
+            :first="$index === 0" :last="$index === count($suggestFields) - 1" />
 
     Usage (ID-based):
-        <x-sfp::sort-btns :value="$item['id']" :first="$loop->first" :last="$loop->last" />
+        <x-requests::sort-btns :value="$item['id']" :first="$loop->first" :last="$loop->last" />
 
     Props:
         value   — int       — argument passed to the up/down method

@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', 'Catalog Settings')
 @section('settings-content')
 
@@ -93,7 +93,7 @@
                                class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
                     </td>
                     <td class="px-5 py-3 text-right">
-                        <x-sfp::icon-btn variant="delete" label="Remove" data-delete-fl="{{ $fl->id }}" />
+                        <x-requests::icon-btn variant="delete" label="Remove" data-delete-fl="{{ $fl->id }}" />
                     </td>
                 </tr>
                 @endforeach

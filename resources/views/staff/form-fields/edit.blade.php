@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', 'Edit Field: ' . $field->label)
 @section('settings-content')
 
@@ -8,6 +8,6 @@
     <h1 class="text-xl font-bold text-gray-900">{{ $field->label }}</h1>
 </div>
 
-@livewire('sfp-admin-form-field-edit', ['fieldId' => $field->id])
+@livewire('requests-admin-form-field-edit', ['fieldId' => $field->id])
 
 @endsection

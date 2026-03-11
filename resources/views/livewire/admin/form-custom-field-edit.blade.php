@@ -123,7 +123,7 @@
             <h2 class="text-sm font-semibold text-gray-700">Options</h2>
             <span class="text-xs text-gray-400">Visibility and order are per-form; Edit sets a label override for this form.</span>
         </div>
-        <livewire:sfp-admin-form-custom-field-options
+        <livewire:requests-admin-form-custom-field-options
             :pivotId="$pivotId"
             :fieldId="$fieldId"
             :formSlug="$formSlug"

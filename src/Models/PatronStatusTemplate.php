@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Models;
+namespace Dcplibrary\Requests\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -39,14 +39,14 @@ class PatronStatusTemplate extends Model
         );
     }
 
-    /** Material types this template applies to; empty = all. */
-    public function materialTypes(): BelongsToMany
+    /** Field options (e.g. material types) this template applies to; empty = all. */
+    public function fieldOptions(): BelongsToMany
     {
         return $this->belongsToMany(
-            MaterialType::class,
-            'patron_status_template_material_type',
+            FieldOption::class,
+            'patron_status_template_field_option',
             'patron_status_template_id',
-            'material_type_id'
+            'field_option_id'
         );
     }
 

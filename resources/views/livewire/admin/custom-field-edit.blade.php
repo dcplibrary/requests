@@ -137,7 +137,7 @@
     @if($showOptionsManager)
     <div class="bg-white rounded-lg border border-gray-200 p-6">
         <h2 class="text-sm font-semibold text-gray-700 mb-4">Options</h2>
-        @livewire('sfp-admin-custom-field-options', ['fieldId' => $field->id], key('cfo-' . $field->id))
+        @livewire('requests-admin-custom-field-options', ['fieldId' => $field->id], key('cfo-' . $field->id))
     </div>
     @endif
 

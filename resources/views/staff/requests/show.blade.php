@@ -1,19 +1,19 @@
-@extends('sfp::staff._layout')
+@extends('requests::staff._layout')
 
-@section('title', 'Request #' . $sfpRequest->id)
+@section('title', 'Request #' . $patronRequest->id)
 
 @section('content')
 <div class="mb-6 flex items-center gap-3">
     <a href="{{ route('request.staff.requests.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Back to requests</a>
     <span class="text-gray-300">/</span>
-    <h1 class="text-xl font-bold text-gray-900">Request #{{ $sfpRequest->id }}</h1>
-    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $sfpRequest->request_kind === 'ill' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700' }}">
-        {{ strtoupper($sfpRequest->request_kind ?? 'sfp') }}
+    <h1 class="text-xl font-bold text-gray-900">Request #{{ $patronRequest->id }}</h1>
+    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $patronRequest->request_kind === 'ill' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700' }}">
+        {{ strtoupper($patronRequest->request_kind ?? 'sfp') }}
     </span>
-    @if($sfpRequest->status)
+    @if($patronRequest->status)
         <span class="inline-block px-2 py-0.5 rounded text-xs font-medium"
-              style="background-color: {{ $sfpRequest->status->color }}22; color: {{ $sfpRequest->status->color }};">
-            {{ $sfpRequest->status->name }}
+              style="background-color: {{ $patronRequest->status->color }}22; color: {{ $patronRequest->status->color }};">
+            {{ $patronRequest->status->name }}
         </span>
     @endif
 </div>
@@ -26,61 +26,65 @@
         {{-- Material --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                {{ $sfpRequest->request_kind === 'ill' ? 'ILL Summary' : 'Material' }}
+                {{ $patronRequest->request_kind === 'ill' ? 'ILL Summary' : 'Material' }}
             </h2>
             <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 <div>
                     <dt class="text-gray-500">Type</dt>
-                    <dd class="font-medium">{{ $sfpRequest->materialType?->name ?? '—' }}</dd>
+                    <dd class="font-medium">{{ $patronRequest->fieldValueLabel('material_type') ?? '—' }}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">Audience</dt>
-                    <dd class="font-medium">{{ $sfpRequest->audience?->name ?? '—' }}</dd>
+                    <dd class="font-medium">{{ $patronRequest->fieldValueLabel('audience') ?? '—' }}</dd>
                 </div>
                 <div class="col-span-2">
                     <dt class="text-gray-500">Title</dt>
-                    <dd class="font-medium">{{ $sfpRequest->material?->title ?? $sfpRequest->submitted_title ?? '—' }}</dd>
+                    <dd class="font-medium">{{ $patronRequest->material?->title ?? $patronRequest->submitted_title ?? '—' }}</dd>
                 </div>
                 <div class="col-span-2">
                     <dt class="text-gray-500">Author</dt>
-                    <dd class="font-medium">{{ $sfpRequest->material?->author ?? $sfpRequest->submitted_author ?? '—' }}</dd>
+                    <dd class="font-medium">{{ $patronRequest->material?->author ?? $patronRequest->submitted_author ?? '—' }}</dd>
                 </div>
-                @if($sfpRequest->submitted_publish_date)
+                @if($patronRequest->submitted_publish_date)
                 <div>
                     <dt class="text-gray-500">Pub. Date (submitted)</dt>
-                    <dd class="font-medium">{{ $sfpRequest->submitted_publish_date }}</dd>
+                    <dd class="font-medium">{{ $patronRequest->submitted_publish_date }}</dd>
                 </div>
                 @endif
-                @if($sfpRequest->material?->publish_date)
+                @if($patronRequest->material?->publish_date)
                 <div>
                     <dt class="text-gray-500">Pub. Date (ISBNdb)</dt>
-                    <dd class="font-medium">{{ $sfpRequest->material->publish_date }}</dd>
+                    <dd class="font-medium">{{ $patronRequest->material->publish_date }}</dd>
                 </div>
                 @endif
-                @if($sfpRequest->material?->isbn)
+                @if($patronRequest->material?->isbn)
                 <div>
                     <dt class="text-gray-500">ISBN</dt>
-                    <dd class="font-mono font-medium">{{ $sfpRequest->material->isbn13 ?? $sfpRequest->material->isbn }}</dd>
+                    <dd class="font-mono font-medium">{{ $patronRequest->material->isbn13 ?? $patronRequest->material->isbn }}</dd>
                 </div>
                 @endif
-                @if($sfpRequest->material?->publisher)
+                @if($patronRequest->material?->publisher)
                 <div>
                     <dt class="text-gray-500">Publisher</dt>
-                    <dd class="font-medium">{{ $sfpRequest->material->publisher }}</dd>
+                    <dd class="font-medium">{{ $patronRequest->material->publisher }}</dd>
                 </div>
                 @endif
-                @if($sfpRequest->other_material_text)
+                @if($patronRequest->other_material_text)
                 <div class="col-span-2">
                     <dt class="text-gray-500">Other / Notes</dt>
-                    <dd class="font-medium">{{ $sfpRequest->other_material_text }}</dd>
+                    <dd class="font-medium">{{ $patronRequest->other_material_text }}</dd>
                 </div>
                 @endif
             </dl>
         </div>
 
-        @if($sfpRequest->request_kind === 'sfp')
+        @if($patronRequest->request_kind === 'sfp')
             @php
-                $sfpCustomVals = $sfpRequest->customFieldValues->filter(fn ($v) => $v->field?->request_kind === 'sfp')->sortBy(fn ($v) => $v->field?->sort_order ?? 9999)->values();
+                $coreKeys = ['material_type', 'audience', 'title', 'author', 'publish_date', 'isbn'];
+                $sfpCustomVals = $patronRequest->fieldValues->filter(fn ($v) =>
+                    $v->field && ! in_array($v->field->key, $coreKeys)
+                    && in_array($v->field->scope, ['sfp', 'both'])
+                )->sortBy(fn ($v) => $v->field?->sort_order ?? 9999)->values();
             @endphp
             @if($sfpCustomVals->isNotEmpty())
         <div class="bg-white rounded-lg border border-gray-200 p-5">
@@ -90,7 +94,7 @@
                     <div class="md:col-span-1">
                         <dt class="text-gray-500">{{ $val->field?->label ?? $val->field?->key ?? 'Field' }}</dt>
                         <dd class="font-medium">
-                            {{ $customValueLabelByFieldId[$val->custom_field_id] ?? ($val->value_text ?? $val->value_slug ?? '—') }}
+                            {{ $fieldValueLabelByFieldId[$val->field_id] ?? ($val->value ?? '—') }}
                         </dd>
                     </div>
                 @endforeach
@@ -99,13 +103,14 @@
             @endif
         @endif
 
-        @if($sfpRequest->request_kind === 'ill')
+        @if($patronRequest->request_kind === 'ill')
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">ILL Details</h2>
             @php
-                $vals = $sfpRequest->customFieldValues
-                    ->sortBy(fn($v) => $v->field?->sort_order ?? 9999)
-                    ->values();
+                $coreKeys = $coreKeys ?? ['material_type', 'audience', 'title', 'author', 'publish_date', 'isbn'];
+                $vals = $patronRequest->fieldValues->filter(fn ($v) =>
+                    $v->field && ! in_array($v->field->key, $coreKeys)
+                )->sortBy(fn($v) => $v->field?->sort_order ?? 9999)->values();
             @endphp
             @if($vals->isEmpty())
                 <p class="text-sm text-gray-400">No custom field values recorded.</p>
@@ -115,7 +120,7 @@
                         <div class="md:col-span-1">
                             <dt class="text-gray-500">{{ $val->field?->label ?? $val->field?->key ?? 'Field' }}</dt>
                             <dd class="font-medium">
-                                {{ $customValueLabelByFieldId[$val->custom_field_id] ?? ($val->value_text ?? $val->value_slug ?? '—') }}
+                                {{ $fieldValueLabelByFieldId[$val->field_id] ?? ($val->value ?? '—') }}
                             </dd>
                         </div>
                     @endforeach
@@ -128,7 +133,7 @@
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Catalog &amp; ILL</h2>
-                <form method="POST" action="{{ route('request.staff.requests.catalog-recheck', $sfpRequest) }}">
+                <form method="POST" action="{{ route('request.staff.requests.catalog-recheck', $patronRequest) }}">
                     @csrf
                     <button type="submit"
                             class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -140,50 +145,50 @@
             <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 <div>
                     <dt class="text-gray-500">Catalog searched</dt>
-                    <dd>{{ $sfpRequest->catalog_searched ? 'Yes' : 'No' }}</dd>
+                    <dd>{{ $patronRequest->catalog_searched ? 'Yes' : 'No' }}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">Catalog results</dt>
-                    <dd>{{ $sfpRequest->catalog_result_count ?? '—' }}</dd>
+                    <dd>{{ $patronRequest->catalog_result_count ?? '—' }}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">Patron accepted catalog match</dt>
-                    <dd>{{ $sfpRequest->catalog_match_accepted ? 'Yes' : 'No' }}</dd>
+                    <dd>{{ $patronRequest->catalog_match_accepted ? 'Yes' : 'No' }}</dd>
                 </div>
-                @if($sfpRequest->catalog_match_bib_id)
+                @if($patronRequest->catalog_match_bib_id)
                 <div>
                     <dt class="text-gray-500">Bib ID</dt>
                     <dd>
-                        <a href="https://dcpl.bibliocommons.com/v2/record/{{ $sfpRequest->catalog_match_bib_id }}"
+                        <a href="https://dcpl.bibliocommons.com/v2/record/{{ $patronRequest->catalog_match_bib_id }}"
                            target="_blank"
                            class="font-mono text-blue-600 hover:underline">
-                            {{ $sfpRequest->catalog_match_bib_id }}
+                            {{ $patronRequest->catalog_match_bib_id }}
                         </a>
                     </dd>
                 </div>
                 @endif
                 <div>
                     <dt class="text-gray-500">ISBNdb searched</dt>
-                    <dd>{{ $sfpRequest->isbndb_searched ? 'Yes' : 'No' }}</dd>
+                    <dd>{{ $patronRequest->isbndb_searched ? 'Yes' : 'No' }}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">ISBNdb results</dt>
-                    <dd>{{ $sfpRequest->isbndb_result_count ?? '—' }}</dd>
+                    <dd>{{ $patronRequest->isbndb_result_count ?? '—' }}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">ILL requested</dt>
-                    <dd>{{ $sfpRequest->ill_requested ? 'Yes' : 'No' }}</dd>
+                    <dd>{{ $patronRequest->ill_requested ? 'Yes' : 'No' }}</dd>
                 </div>
-                @if($sfpRequest->is_duplicate)
+                @if($patronRequest->is_duplicate)
                 <div>
                     <dt class="text-gray-500">Duplicate of</dt>
                     <dd>
-                        @if($sfpRequest->duplicateOf)
-                            <a href="{{ route('request.staff.requests.show', $sfpRequest->duplicateOf) }}" class="text-blue-600 hover:underline">
-                                #{{ $sfpRequest->duplicate_of_request_id }}
+                        @if($patronRequest->duplicateOf)
+                            <a href="{{ route('request.staff.requests.show', $patronRequest->duplicateOf) }}" class="text-blue-600 hover:underline">
+                                #{{ $patronRequest->duplicate_of_request_id }}
                             </a>
                         @else
-                            #{{ $sfpRequest->duplicate_of_request_id }}
+                            #{{ $patronRequest->duplicate_of_request_id }}
                         @endif
                     </dd>
                 </div>
@@ -194,11 +199,11 @@
         {{-- Status history --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Status History</h2>
-            @if($sfpRequest->statusHistory->isEmpty())
+            @if($patronRequest->statusHistory->isEmpty())
                 <p class="text-sm text-gray-400">No status history.</p>
             @else
                 <ol class="space-y-3">
-                    @foreach($sfpRequest->statusHistory as $entry)
+                    @foreach($patronRequest->statusHistory as $entry)
                     <li class="flex gap-3 text-sm">
                         <div class="mt-1 w-2 h-2 rounded-full bg-gray-300 flex-shrink-0"></div>
                         <div>
@@ -226,22 +231,22 @@
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Assignment</h2>
 
-            @if($sfpRequest->assignedTo)
+            @if($patronRequest->assignedTo)
                 <div class="mb-3">
                     <p class="text-sm font-medium text-gray-900">
-                        {{ $sfpRequest->assignedTo->name ?: $sfpRequest->assignedTo->email }}
+                        {{ $patronRequest->assignedTo->name ?: $patronRequest->assignedTo->email }}
                     </p>
-                    <p class="text-xs text-gray-400">{{ $sfpRequest->assignedTo->email }}</p>
-                    @if($sfpRequest->assigned_at)
-                        <p class="text-xs text-gray-400 mt-1">Assigned {{ $sfpRequest->assigned_at->format('M j, Y g:ia') }}</p>
+                    <p class="text-xs text-gray-400">{{ $patronRequest->assignedTo->email }}</p>
+                    @if($patronRequest->assigned_at)
+                        <p class="text-xs text-gray-400 mt-1">Assigned {{ $patronRequest->assigned_at->format('M j, Y g:ia') }}</p>
                     @endif
                 </div>
             @else
                 <p class="text-sm text-gray-400 mb-3">Unassigned</p>
             @endif
 
-            @if(! $sfpRequest->assigned_to_user_id)
-                <form method="POST" action="{{ route('request.staff.requests.claim', $sfpRequest) }}" class="mb-3">
+            @if(! $patronRequest->assigned_to_user_id)
+                <form method="POST" action="{{ route('request.staff.requests.claim', $patronRequest) }}" class="mb-3">
                     @csrf
                     <button type="submit"
                             class="w-full px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700">
@@ -250,14 +255,14 @@
                 </form>
             @endif
 
-            <form method="POST" action="{{ route('request.staff.requests.assign', $sfpRequest) }}" class="space-y-3">
+            <form method="POST" action="{{ route('request.staff.requests.assign', $patronRequest) }}" class="space-y-3">
                 @csrf
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Assign to</label>
                     <select name="assigned_to_user_id" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
                         <option value="">Unassigned</option>
                         @foreach($staffUsers as $u)
-                            <option value="{{ $u->id }}" @selected($sfpRequest->assigned_to_user_id == $u->id)>
+                            <option value="{{ $u->id }}" @selected($patronRequest->assigned_to_user_id == $u->id)>
                                 {{ $u->name ?: $u->email }} ({{ $u->email }})
                             </option>
                         @endforeach
@@ -275,7 +280,7 @@
         @if($showConvertToIll)
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Workflow</h2>
-            <form method="POST" action="{{ route('request.staff.requests.convert-kind', $sfpRequest) }}" class="space-y-3">
+            <form method="POST" action="{{ route('request.staff.requests.convert-kind', $patronRequest) }}" class="space-y-3">
                 @csrf
                 <input type="hidden" name="to" value="ill">
                 <div>
@@ -293,10 +298,10 @@
 
         {{-- Update status --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5"
-             x-data="statusUpdateForm('{{ route('request.staff.requests.preview-email', $sfpRequest) }}')">
+             x-data="statusUpdateForm('{{ route('request.staff.requests.preview-email', $patronRequest) }}')">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Update Status</h2>
             <form method="POST"
-                  action="{{ route('request.staff.requests.status', $sfpRequest) }}"
+                  action="{{ route('request.staff.requests.status', $patronRequest) }}"
                   @submit.prevent="handleSubmit($event)"
                   x-ref="statusForm">
                 @csrf
@@ -307,7 +312,7 @@
                             class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
                         <option value="">Select…</option>
                         @foreach($statuses as $s)
-                            <option value="{{ $s->id }}" {{ $sfpRequest->request_status_id == $s->id ? 'selected' : '' }}>
+                            <option value="{{ $s->id }}" {{ $patronRequest->request_status_id == $s->id ? 'selected' : '' }}>
                                 {{ $s->name }}
                             </option>
                         @endforeach
@@ -336,7 +341,7 @@
                 </button>
             </form>
 
-            @include('sfp::staff.requests._email-preview-modal')
+            @include('requests::staff.requests._email-preview-modal')
         </div>
 
         <script>
@@ -448,8 +453,8 @@
                     });
                     // Sync Trix edits back to emailPreview.body.
                     document.addEventListener('trix-change', (e) => {
-                        if (e.target.getAttribute('input') === 'sfp-email-preview-body') {
-                            const input = document.getElementById('sfp-email-preview-body');
+                        if (e.target.getAttribute('input') === 'requests-email-preview-body') {
+                            const input = document.getElementById('requests-email-preview-body');
                             if (input) this.emailPreview.body = input.value;
                         }
                     });
@@ -457,7 +462,7 @@
 
                 /** Load the current body HTML into the Trix editor. */
                 loadEmailBodyIntoTrix() {
-                    const trix = document.querySelector('trix-editor[input="sfp-email-preview-body"]');
+                    const trix = document.querySelector('trix-editor[input="requests-email-preview-body"]');
                     if (trix && trix.editor) {
                         trix.editor.loadHTML(this.emailPreview.body || '');
                     }
@@ -469,31 +474,31 @@
         {{-- Patron --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Patron</h2>
-            @if($sfpRequest->patron)
+            @if($patronRequest->patron)
                 <dl class="space-y-2 text-sm">
                     <div>
                         <dt class="text-gray-500 text-xs">Name</dt>
-                        <dd class="font-medium">{{ $sfpRequest->patron->name_last }}, {{ $sfpRequest->patron->name_first }}</dd>
+                        <dd class="font-medium">{{ $patronRequest->patron->name_last }}, {{ $patronRequest->patron->name_first }}</dd>
                     </div>
                     <div>
                         <dt class="text-gray-500 text-xs">Barcode</dt>
-                        <dd class="font-mono">{{ $sfpRequest->patron->barcode }}</dd>
+                        <dd class="font-mono">{{ $patronRequest->patron->barcode }}</dd>
                     </div>
-                    @if($sfpRequest->patron->email)
+                    @if($patronRequest->patron->email)
                     <div>
                         <dt class="text-gray-500 text-xs">Email</dt>
-                        <dd>{{ $sfpRequest->patron->email }}</dd>
+                        <dd>{{ $patronRequest->patron->email }}</dd>
                     </div>
                     @endif
-                    @if($sfpRequest->patron->phone)
+                    @if($patronRequest->patron->phone)
                     <div>
                         <dt class="text-gray-500 text-xs">Phone</dt>
-                        <dd>{{ $sfpRequest->patron->phone }}</dd>
+                        <dd>{{ $patronRequest->patron->phone }}</dd>
                     </div>
                     @endif
                     <div>
                         <dt class="text-gray-500 text-xs">Found in Polaris</dt>
-                        <dd>{{ $sfpRequest->patron->found_in_polaris ? 'Yes' : 'No' }}</dd>
+                        <dd>{{ $patronRequest->patron->found_in_polaris ? 'Yes' : 'No' }}</dd>
                     </div>
                 </dl>
             @else
@@ -507,11 +512,11 @@
             <dl class="space-y-2 text-sm">
                 <div>
                     <dt class="text-gray-500 text-xs">Submitted</dt>
-                    <dd>{{ $sfpRequest->created_at->format('M j, Y g:ia') }}</dd>
+                    <dd>{{ $patronRequest->created_at->format('M j, Y g:ia') }}</dd>
                 </div>
                 @php
-                    $whereHeardVal = $sfpRequest->customFieldValues->first(fn ($v) => $v->field?->key === 'where_heard');
-                    $whereHeardDisplay = $whereHeardVal?->value_text ?? $sfpRequest->where_heard;
+                    $whereHeardVal = $patronRequest->fieldValues->first(fn ($v) => $v->field?->key === 'where_heard');
+                    $whereHeardDisplay = $whereHeardVal?->value ?? null;
                 @endphp
                 @if($whereHeardDisplay)
                 <div>
@@ -525,13 +530,13 @@
         {{-- Danger zone --}}
         <div class="bg-white rounded-lg border border-red-200 p-5">
             <h2 class="text-sm font-semibold text-red-700 uppercase tracking-wide mb-3">Danger Zone</h2>
-            <form method="POST" action="{{ route('request.staff.requests.destroy', $sfpRequest) }}">
+            <form method="POST" action="{{ route('request.staff.requests.destroy', $patronRequest) }}">
                 @csrf
                 @method('DELETE')
                 <button
                     type="submit"
                     class="w-full px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                    onclick="return confirm('Delete Request #{{ $sfpRequest->id }}? This cannot be undone.')"
+                    onclick="return confirm('Delete Request #{{ $patronRequest->id }}? This cannot be undone.')"
                 >
                     Delete Request
                 </button>

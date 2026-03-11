@@ -1,15 +1,15 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
-use Dcplibrary\Sfp\Jobs\PruneBackupsJob;
-use Dcplibrary\Sfp\Models\Audience;
-use Dcplibrary\Sfp\Models\CatalogFormatLabel;
-use Dcplibrary\Sfp\Models\MaterialType;
-use Dcplibrary\Sfp\Models\RequestStatus;
-use Dcplibrary\Sfp\Models\SelectorGroup;
-use Dcplibrary\Sfp\Models\Setting;
+use Dcplibrary\Requests\Http\Controllers\Controller;
+use Dcplibrary\Requests\Jobs\PruneBackupsJob;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\CatalogFormatLabel;
+use Dcplibrary\Requests\Models\RequestStatus;
+use Dcplibrary\Requests\Models\SelectorGroup;
+use Dcplibrary\Requests\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -18,12 +18,12 @@ use ZipArchive;
 
 class BackupController extends Controller
 {
-    /** Directory where artisan sfp:backup writes files. */
+    /** Directory where artisan requests:backup writes files. */
     private string $backupDir;
 
     public function __construct()
     {
-        $this->backupDir = storage_path('app/sfp-backups');
+        $this->backupDir = storage_path('app/requests-backups');
     }
 
     // ── View ──────────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ class BackupController extends Controller
     {
         $retentionDays = (int) (Setting::where('key', 'backup_retention_days')->value('value') ?: 30);
 
-        return view('sfp::staff.settings.backups', [
+        return view('requests::staff.settings.backups', [
             'serverFiles'   => $this->scanServerFiles(),
             'retentionDays' => $retentionDays,
         ]);
@@ -45,7 +45,7 @@ class BackupController extends Controller
         $payload = [
             'version'     => 1,
             'exported_at' => now()->toIso8601String(),
-            'app'         => 'dcplibrary/sfp',
+            'app'         => 'dcplibrary/requests',
             'data'        => [
                 'settings' => Setting::orderBy('group')->orderBy('key')
                     ->get(['key', 'value'])
@@ -56,23 +56,19 @@ class BackupController extends Controller
                     ->get(['slug', 'name', 'color', 'is_terminal', 'sort_order', 'active'])
                     ->toArray(),
 
-                'material_types' => MaterialType::orderBy('sort_order')
-                    ->get(['slug', 'name', 'has_other_text', 'sort_order', 'active'])
-                    ->toArray(),
+                'material_types' => $this->exportFieldOptions('material_type'),
 
-                'audiences' => Audience::orderBy('sort_order')
-                    ->get(['slug', 'name', 'bibliocommons_value', 'sort_order', 'active'])
-                    ->toArray(),
+                'audiences' => $this->exportFieldOptions('audience'),
 
-                'selector_groups' => SelectorGroup::with('materialTypes', 'audiences')
+                'selector_groups' => SelectorGroup::with('fieldOptions.field')
                     ->orderBy('name')
                     ->get()
                     ->map(fn ($g) => [
                         'name'                => $g->name,
                         'description'         => $g->description,
                         'active'              => $g->active,
-                        'material_type_slugs' => $g->materialTypes->pluck('slug')->all(),
-                        'audience_slugs'      => $g->audiences->pluck('slug')->all(),
+                        'material_type_slugs' => $g->fieldOptions->filter(fn ($o) => $o->field?->key === 'material_type')->pluck('slug')->all(),
+                        'audience_slugs'      => $g->fieldOptions->filter(fn ($o) => $o->field?->key === 'audience')->pluck('slug')->all(),
                     ])
                     ->all(),
 
@@ -82,7 +78,7 @@ class BackupController extends Controller
             ],
         ];
 
-        $filename = 'sfp-config-' . now()->format('Y-m-d-His') . '.json';
+        $filename = 'requests-config-' . now()->format('Y-m-d-His') . '.json';
         $json     = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
         return response($json, 200, [
@@ -115,7 +111,7 @@ class BackupController extends Controller
     public function restoreFromServer(Request $request)
     {
         $request->validate([
-            'filename' => ['required', 'string', 'regex:/^sfp-[\w\-]+\.(sql|json)$/'],
+            'filename' => ['required', 'string', 'regex:/^requests-[\w\-]+\.(sql|json)$/'],
         ]);
 
         $filename = $request->input('filename');
@@ -166,7 +162,7 @@ class BackupController extends Controller
     public function downloadFromServer(Request $request)
     {
         $request->validate([
-            'filename' => ['required', 'string', 'regex:/^sfp-[\w\-]+\.(sql|json|zip)$/'],
+            'filename' => ['required', 'string', 'regex:/^requests-[\w\-]+\.(sql|json|zip)$/'],
         ]);
 
         $filename = $request->query('filename');
@@ -218,10 +214,10 @@ class BackupController extends Controller
         $tables = $this->listTables();
         $q      = $this->qi(...);   // identifier-quoting shorthand
 
-        $sql  = "-- SFP Database Backup\n";
+        $sql  = "-- Requests Database Backup\n";
         $sql .= "-- Exported:  " . now()->toIso8601String() . "\n";
         $sql .= "-- Database:  {$dbName}\n";
-        $sql .= "-- Generator: dcplibrary/sfp\n\n";
+        $sql .= "-- Generator: dcplibrary/requests\n\n";
         $sql .= $this->fkOff() . ";\n\n";
 
         foreach ($tables as $table) {
@@ -253,7 +249,7 @@ class BackupController extends Controller
 
         $sql .= $this->fkOn() . ";\n";
 
-        $filename = 'sfp-database-' . now()->format('Y-m-d-His') . '.sql';
+        $filename = 'requests-database-' . now()->format('Y-m-d-His') . '.sql';
 
         return response($sql, 200, [
             'Content-Type'        => 'application/octet-stream',
@@ -288,7 +284,7 @@ class BackupController extends Controller
     // ── Save backup to server ─────────────────────────────────────────────────
 
     /**
-     * Write one or both backup files directly to storage/app/sfp-backups
+     * Write one or both backup files directly to storage/app/requests-backups
      * without sending a download to the browser.
      */
     public function saveToServer(Request $request)
@@ -314,7 +310,7 @@ class BackupController extends Controller
                 $payload = [
                     'version'     => 1,
                     'exported_at' => now()->toIso8601String(),
-                    'app'         => 'dcplibrary/sfp',
+                    'app'         => 'dcplibrary/requests',
                     'data'        => [
                         'settings' => Setting::orderBy('group')->orderBy('key')
                             ->get(['key', 'value'])
@@ -323,29 +319,25 @@ class BackupController extends Controller
                         'request_statuses' => RequestStatus::orderBy('sort_order')
                             ->get(['slug', 'name', 'color', 'is_terminal', 'sort_order', 'active'])
                             ->toArray(),
-                        'material_types' => MaterialType::orderBy('sort_order')
-                            ->get(['slug', 'name', 'has_other_text', 'sort_order', 'active'])
-                            ->toArray(),
-                        'audiences' => Audience::orderBy('sort_order')
-                            ->get(['slug', 'name', 'bibliocommons_value', 'sort_order', 'active'])
-                            ->toArray(),
-                        'selector_groups' => SelectorGroup::with('materialTypes', 'audiences')
+                        'material_types' => $this->exportFieldOptions('material_type'),
+                        'audiences' => $this->exportFieldOptions('audience'),
+                        'selector_groups' => SelectorGroup::with('fieldOptions.field')
                             ->orderBy('name')->get()
                             ->map(fn ($g) => [
                                 'name'                => $g->name,
                                 'description'         => $g->description,
                                 'active'              => $g->active,
-                                'material_type_slugs' => $g->materialTypes->pluck('slug')->all(),
-                                'audience_slugs'      => $g->audiences->pluck('slug')->all(),
+                                'material_type_slugs' => $g->fieldOptions->filter(fn ($o) => $o->field?->key === 'material_type')->pluck('slug')->all(),
+                                'audience_slugs'      => $g->fieldOptions->filter(fn ($o) => $o->field?->key === 'audience')->pluck('slug')->all(),
                             ])->all(),
                         'catalog_format_labels' => CatalogFormatLabel::orderBy('id')
                             ->get(['format_code', 'label'])->toArray(),
                     ],
                 ];
 
-                $file = $this->backupDir . DIRECTORY_SEPARATOR . "sfp-config-{$timestamp}.json";
+                $file = $this->backupDir . DIRECTORY_SEPARATOR . "requests-config-{$timestamp}.json";
                 file_put_contents($file, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-                $written[] = "sfp-config-{$timestamp}.json";
+                $written[] = "requests-config-{$timestamp}.json";
             } catch (\Throwable $e) {
                 $errors[] = "Config backup failed: {$e->getMessage()}";
             }
@@ -359,10 +351,10 @@ class BackupController extends Controller
                 $tables = $this->listTables();
                 $q      = $this->qi(...);
 
-                $sql  = "-- SFP Database Backup\n";
+                $sql  = "-- Requests Database Backup\n";
                 $sql .= "-- Exported:  " . now()->toIso8601String() . "\n";
                 $sql .= "-- Database:  {$dbName}\n";
-                $sql .= "-- Generator: dcplibrary/sfp (manual)\n\n";
+                $sql .= "-- Generator: dcplibrary/requests (manual)\n\n";
                 $sql .= $this->fkOff() . ";\n\n";
 
                 foreach ($tables as $table) {
@@ -388,9 +380,9 @@ class BackupController extends Controller
 
                 $sql .= $this->fkOn() . ";\n";
 
-                $file = $this->backupDir . DIRECTORY_SEPARATOR . "sfp-database-{$timestamp}.sql";
+                $file = $this->backupDir . DIRECTORY_SEPARATOR . "requests-database-{$timestamp}.sql";
                 file_put_contents($file, $sql);
-                $written[] = "sfp-database-{$timestamp}.sql";
+                $written[] = "requests-database-{$timestamp}.sql";
             } catch (\Throwable $e) {
                 $errors[] = "Database backup failed: {$e->getMessage()}";
             }
@@ -409,7 +401,7 @@ class BackupController extends Controller
     public function exportStorage()
     {
         $storagePath = storage_path('app');
-        $filename    = 'sfp-storage-' . now()->format('Y-m-d-His') . '.zip';
+        $filename    = 'requests-storage-' . now()->format('Y-m-d-His') . '.zip';
         $tmpPath     = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $filename;
 
         $zip = new ZipArchive();
@@ -509,42 +501,14 @@ class BackupController extends Controller
                 $results[] = "{$upserted} request status(es) restored";
             }
 
-            // Material Types
+            // Material Types (field_options for 'material_type')
             if (! empty($data['material_types'])) {
-                $upserted = 0;
-                foreach ($data['material_types'] as $row) {
-                    $slug = $row['slug'] ?? Str::slug($row['name']);
-                    MaterialType::updateOrCreate(
-                        ['slug' => $slug],
-                        [
-                            'name'           => $row['name'],
-                            'has_other_text' => (bool) ($row['has_other_text'] ?? false),
-                            'sort_order'     => (int)  ($row['sort_order'] ?? 0),
-                            'active'         => (bool) ($row['active'] ?? true),
-                        ]
-                    );
-                    $upserted++;
-                }
-                $results[] = "{$upserted} material type(s) restored";
+                $results[] = $this->importFieldOptions('material_type', $data['material_types']) . ' material type(s) restored';
             }
 
-            // Audiences
+            // Audiences (field_options for 'audience')
             if (! empty($data['audiences'])) {
-                $upserted = 0;
-                foreach ($data['audiences'] as $row) {
-                    $slug = $row['slug'] ?? Str::slug($row['name']);
-                    Audience::updateOrCreate(
-                        ['slug' => $slug],
-                        [
-                            'name'               => $row['name'],
-                            'bibliocommons_value' => $row['bibliocommons_value'] ?? null,
-                            'sort_order'         => (int)  ($row['sort_order'] ?? 0),
-                            'active'             => (bool) ($row['active'] ?? true),
-                        ]
-                    );
-                    $upserted++;
-                }
-                $results[] = "{$upserted} audience(s) restored";
+                $results[] = $this->importFieldOptions('audience', $data['audiences']) . ' audience(s) restored';
             }
 
             // Selector Groups
@@ -559,15 +523,22 @@ class BackupController extends Controller
                         ]
                     );
 
+                    $optionIds = collect();
                     if (isset($row['material_type_slugs'])) {
-                        $mtIds = MaterialType::whereIn('slug', $row['material_type_slugs'])->pluck('id');
-                        $group->materialTypes()->sync($mtIds);
+                        $optionIds = $optionIds->merge(
+                            FieldOption::whereHas('field', fn ($q) => $q->where('key', 'material_type'))
+                                ->whereIn('slug', $row['material_type_slugs'])
+                                ->pluck('id')
+                        );
                     }
-
                     if (isset($row['audience_slugs'])) {
-                        $audIds = Audience::whereIn('slug', $row['audience_slugs'])->pluck('id');
-                        $group->audiences()->sync($audIds);
+                        $optionIds = $optionIds->merge(
+                            FieldOption::whereHas('field', fn ($q) => $q->where('key', 'audience'))
+                                ->whereIn('slug', $row['audience_slugs'])
+                                ->pluck('id')
+                        );
                     }
+                    $group->fieldOptions()->sync($optionIds->all());
 
                     $upserted++;
                 }
@@ -608,7 +579,7 @@ class BackupController extends Controller
             return $groups;
         }
 
-        $files = glob($this->backupDir . DIRECTORY_SEPARATOR . 'sfp-*.{json,sql,zip}', GLOB_BRACE) ?: [];
+        $files = glob($this->backupDir . DIRECTORY_SEPARATOR . 'requests-*.{json,sql,zip}', GLOB_BRACE) ?: [];
 
         foreach ($files as $path) {
             $name = basename($path);
@@ -762,5 +733,79 @@ class BackupController extends Controller
         return DB::connection()->getDriverName() === 'sqlite'
             ? '"' . $name . '"'
             : '`' . $name . '`';
+    }
+
+    /**
+     * Export field options for a given field key in the legacy backup format.
+     *
+     * @param  string  $fieldKey  e.g. 'material_type', 'audience'
+     * @return list<array<string, mixed>>
+     */
+    private function exportFieldOptions(string $fieldKey): array
+    {
+        $field = Field::where('key', $fieldKey)->first();
+        if (! $field) {
+            return [];
+        }
+
+        return FieldOption::where('field_id', $field->id)
+            ->ordered()
+            ->get()
+            ->map(function (FieldOption $o) {
+                $meta = $o->metadata;
+                if (is_string($meta)) {
+                    $meta = json_decode($meta, true) ?: [];
+                }
+
+                return array_merge(
+                    [
+                        'slug'       => $o->slug,
+                        'name'       => $o->name,
+                        'sort_order' => $o->sort_order,
+                        'active'     => $o->active,
+                    ],
+                    is_array($meta) ? $meta : []
+                );
+            })
+            ->all();
+    }
+
+    /**
+     * Import field options from the legacy backup format.
+     *
+     * @param  string                    $fieldKey  e.g. 'material_type', 'audience'
+     * @param  list<array<string, mixed>> $rows
+     * @return int  Number of upserted rows
+     */
+    private function importFieldOptions(string $fieldKey, array $rows): int
+    {
+        $field = Field::where('key', $fieldKey)->first();
+        if (! $field) {
+            return 0;
+        }
+
+        $knownMeta = ['has_other_text', 'ill_enabled', 'isbndb_searchable', 'bibliocommons_value'];
+        $upserted  = 0;
+
+        foreach ($rows as $row) {
+            $slug = $row['slug'] ?? Str::slug($row['name']);
+            $metadata = array_filter(
+                array_intersect_key($row, array_flip($knownMeta)),
+                fn ($v) => $v !== null
+            );
+
+            FieldOption::updateOrCreate(
+                ['field_id' => $field->id, 'slug' => $slug],
+                [
+                    'name'       => $row['name'],
+                    'metadata'   => $metadata ?: null,
+                    'sort_order' => (int)  ($row['sort_order'] ?? 0),
+                    'active'     => (bool) ($row['active'] ?? true),
+                ]
+            );
+            $upserted++;
+        }
+
+        return $upserted;
     }
 }

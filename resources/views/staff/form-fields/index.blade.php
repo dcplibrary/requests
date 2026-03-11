@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 
 @section('settings-content')
 
@@ -11,6 +11,6 @@
     </div>
 </div>
 
-@livewire('sfp-admin-form-fields')
+@livewire('requests-admin-form-fields')
 
 @endsection

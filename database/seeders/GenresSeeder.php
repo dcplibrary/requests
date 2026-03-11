@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Database\Seeders;
+namespace Dcplibrary\Requests\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +15,7 @@ class GenresSeeder extends Seeder
         ];
 
         foreach ($genres as $genre) {
-            DB::table('sfp_genres')->updateOrInsert(
+            DB::table('genres')->updateOrInsert(
                 ['slug' => $genre['slug']],
                 array_merge($genre, ['created_at' => now(), 'updated_at' => now()])
             );

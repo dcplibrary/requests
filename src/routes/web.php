@@ -1,47 +1,44 @@
 <?php
 
-use Dcplibrary\Sfp\Http\Controllers\Admin\AudienceController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\BackupController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\CatalogController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\HelpController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\TitleController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\MaterialTypeController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\PatronController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\PatronStatusTemplateController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\RequestController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\RequestStatusController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\SelectorGroupController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\FormFieldController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\CustomFieldController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\SettingController;
-use Dcplibrary\Sfp\Http\Controllers\Admin\UserController;
-use Dcplibrary\Sfp\Livewire\PatronRequests;
-use Dcplibrary\Sfp\Livewire\SfpForm;
-use Dcplibrary\Sfp\Livewire\IllForm;
+use Dcplibrary\Requests\Http\Controllers\Admin\BackupController;
+use Dcplibrary\Requests\Http\Controllers\Admin\CatalogController;
+use Dcplibrary\Requests\Http\Controllers\Admin\HelpController;
+use Dcplibrary\Requests\Http\Controllers\Admin\TitleController;
+use Dcplibrary\Requests\Http\Controllers\Admin\PatronController;
+use Dcplibrary\Requests\Http\Controllers\Admin\PatronStatusTemplateController;
+use Dcplibrary\Requests\Http\Controllers\Admin\RequestController;
+use Dcplibrary\Requests\Http\Controllers\Admin\RequestStatusController;
+use Dcplibrary\Requests\Http\Controllers\Admin\SelectorGroupController;
+use Dcplibrary\Requests\Http\Controllers\Admin\FormFieldController;
+use Dcplibrary\Requests\Http\Controllers\Admin\CustomFieldController;
+use Dcplibrary\Requests\Http\Controllers\Admin\SettingController;
+use Dcplibrary\Requests\Http\Controllers\Admin\UserController;
+use Dcplibrary\Requests\Livewire\PatronRequests;
+use Dcplibrary\Requests\Livewire\RequestForm;
+use Dcplibrary\Requests\Livewire\IllForm;
 use Illuminate\Support\Facades\Route;
 
-$prefix          = config('sfp.route_prefix', 'request');
-$middleware      = config('sfp.middleware', ['web']);
+$prefix          = config('requests.route_prefix', 'request');
+$middleware      = config('requests.middleware', ['web']);
 $staffMiddleware = array_merge(
-    config('sfp.staff_middleware', ['web', 'auth']),
+    config('requests.staff_middleware', ['web', 'auth']),
     ['request.role']
 );
-
-// --- Public: ILL Patron Form (at site root /ill) ---
-Route::get('ill', IllForm::class)
-    ->middleware($middleware)
-    ->name('request.ill.form');
 
 Route::group([
     'prefix'     => $prefix,
     'middleware' => $middleware,
 ], function () use ($staffMiddleware) {
 
-    // --- Public: SFP Patron Form ---
-    Route::get('/', SfpForm::class)->name('request.form');
+    // --- Public: Patron Request Forms ---
+    Route::get('/sfp', RequestForm::class)->name('request.form');
+    Route::get('/ill', IllForm::class)->name('request.ill.form');
 
     // --- Public: My Requests (Polaris PIN authentication) ---
     Route::get('/my-requests', PatronRequests::class)->name('request.patron.requests');
+
+    // --- Login redirect (keeps everything under /{prefix}) ---
+    Route::get('/login', fn () => redirect()->route('login'))->name('request.login');
 
     // --- Staff: Protected ---
     Route::prefix('staff')
@@ -54,14 +51,14 @@ Route::group([
             Route::get('/help/{page?}', [HelpController::class, 'show'])->name('help');
 
             Route::get('/requests',                                       [RequestController::class, 'index'])->name('requests.index');
-            Route::get('/requests/{sfpRequest}',                        [RequestController::class, 'show'])->name('requests.show');
-            Route::get('/requests/{sfpRequest}/preview-email',          [RequestController::class, 'previewStatusEmail'])->name('requests.preview-email');
-            Route::patch('/requests/{sfpRequest}/status',               [RequestController::class, 'updateStatus'])->name('requests.status');
-            Route::post('/requests/{sfpRequest}/catalog-recheck', [RequestController::class, 'recheckCatalog'])->name('requests.catalog-recheck');
-            Route::post('/requests/{sfpRequest}/convert-kind',  [RequestController::class, 'convertKind'])->name('requests.convert-kind');
-            Route::post('/requests/{sfpRequest}/claim',         [RequestController::class, 'claim'])->name('requests.claim');
-            Route::post('/requests/{sfpRequest}/assign',        [RequestController::class, 'assign'])->name('requests.assign');
-            Route::delete('/requests/{sfpRequest}',            [RequestController::class, 'destroy'])->name('requests.destroy');
+            Route::get('/requests/{patronRequest}',                        [RequestController::class, 'show'])->name('requests.show');
+            Route::get('/requests/{patronRequest}/preview-email',          [RequestController::class, 'previewStatusEmail'])->name('requests.preview-email');
+            Route::patch('/requests/{patronRequest}/status',               [RequestController::class, 'updateStatus'])->name('requests.status');
+            Route::post('/requests/{patronRequest}/catalog-recheck', [RequestController::class, 'recheckCatalog'])->name('requests.catalog-recheck');
+            Route::post('/requests/{patronRequest}/convert-kind',  [RequestController::class, 'convertKind'])->name('requests.convert-kind');
+            Route::post('/requests/{patronRequest}/claim',         [RequestController::class, 'claim'])->name('requests.claim');
+            Route::post('/requests/{patronRequest}/assign',        [RequestController::class, 'assign'])->name('requests.assign');
+            Route::delete('/requests/{patronRequest}',            [RequestController::class, 'destroy'])->name('requests.destroy');
 
             Route::resource('patrons', PatronController::class)
                 ->names([
@@ -129,32 +126,6 @@ Route::group([
             Route::patch('/catalog',  [CatalogController::class, 'update'])->name('catalog.update');
             Route::post('/catalog/format-labels',                          [CatalogController::class, 'storeFormatLabel'])->name('catalog.format-labels.store');
             Route::delete('/catalog/format-labels/{catalogFormatLabel}',   [CatalogController::class, 'destroyFormatLabel'])->name('catalog.format-labels.destroy');
-
-            Route::get('material-types/{materialType}/delete', [MaterialTypeController::class, 'confirmDelete'])
-                ->name('material-types.delete');
-            Route::resource('material-types', MaterialTypeController::class)
-                ->names([
-                    'index'   => 'material-types.index',
-                    'create'  => 'material-types.create',
-                    'store'   => 'material-types.store',
-                    'edit'    => 'material-types.edit',
-                    'update'  => 'material-types.update',
-                    'destroy' => 'material-types.destroy',
-                ])
-                ->except(['show']);
-
-            Route::get('audiences/{audience}/delete', [AudienceController::class, 'confirmDelete'])
-                ->name('audiences.delete');
-            Route::resource('audiences', AudienceController::class)
-                ->names([
-                    'index'   => 'audiences.index',
-                    'create'  => 'audiences.create',
-                    'store'   => 'audiences.store',
-                    'edit'    => 'audiences.edit',
-                    'update'  => 'audiences.update',
-                    'destroy' => 'audiences.destroy',
-                ])
-                ->except(['show']);
 
             Route::get('patron-status-templates/{patron_status_template}/delete', [PatronStatusTemplateController::class, 'confirmDelete'])
                 ->name('patron-status-templates.delete');

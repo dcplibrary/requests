@@ -3,11 +3,11 @@
 @php
     $isIll = $kind === 'ill';
     $prefix = $isIll ? 'ill_limit_' : 'sfp_limit_';
-    $type   = \Dcplibrary\Sfp\Models\Setting::get($prefix . 'window_type', 'rolling');
+    $type   = \Dcplibrary\Requests\Models\Setting::get($prefix . 'window_type', 'rolling');
     $period = match ($type) {
         'calendar_month' => 'per calendar month',
         'calendar_week'  => 'per week',
-        default          => 'every ' . (int) \Dcplibrary\Sfp\Models\Setting::get($prefix . 'window_days', 30) . ' days',
+        default          => 'every ' . (int) \Dcplibrary\Requests\Models\Setting::get($prefix . 'window_days', 30) . ' days',
     };
 
     $messageKey = $isIll ? 'ill_limit_reached_message' : 'limit_reached_message';
@@ -18,14 +18,14 @@
     $line1 = str_replace(
         ['{limit}', '{period}'],
         [$count,    $period],
-        \Dcplibrary\Sfp\Models\Setting::get($messageKey, $defaultMsg)
+        \Dcplibrary\Requests\Models\Setting::get($messageKey, $defaultMsg)
     );
 
     $line2 = $until
         ? str_replace(
             '{until}',
             '<strong>' . $until->format('F j, Y') . '</strong>',
-            \Dcplibrary\Sfp\Models\Setting::get($untilKey, $defaultUntil)
+            \Dcplibrary\Requests\Models\Setting::get($untilKey, $defaultUntil)
           )
         : null;
 @endphp

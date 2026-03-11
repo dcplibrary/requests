@@ -1,8 +1,8 @@
 <?php
 
-namespace Dcplibrary\Sfp\Tests\Unit;
+namespace Dcplibrary\Requests\Tests\Unit;
 
-use Dcplibrary\Sfp\Models\User as SfpUser;
+use Dcplibrary\Requests\Models\User as StaffUser;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Mockery;
@@ -43,24 +43,24 @@ class MaterialScopeVisibleToTest extends TestCase
                     return $query->whereRaw('1 = 0');
                 }
 
-                if ($user instanceof SfpUser) {
-                    $sfpUser = $user;
+                if ($user instanceof StaffUser) {
+                    $staffUser = $user;
                 } else {
-                    // In real code: SfpUser::where('email', ...) — mocked in integration tests
-                    $sfpUser = null;
+                    // In real code: StaffUser::where('email', ...) — mocked in integration tests
+                    $staffUser = null;
                 }
 
-                if ($sfpUser === null) {
+                if ($staffUser === null) {
                     return $query->whereRaw('1 = 0');
                 }
 
-                if ($sfpUser->isAdmin()) {
+                if ($staffUser->isAdmin()) {
                     return $query;
                 }
 
-                $materialTypeIds = $sfpUser->accessibleMaterialTypeIds();
+                $materialTypeIds = $staffUser->accessibleFieldOptionIds('material_type');
 
-                return $query->whereIn('material_type_id', $materialTypeIds);
+                return $query->whereIn('material_type_option_id', $materialTypeIds);
             }
         };
     }
@@ -72,9 +72,9 @@ class MaterialScopeVisibleToTest extends TestCase
 
     private function sfpUser(string $role, array $materialTypeIds = []): MockInterface
     {
-        $user = Mockery::mock(SfpUser::class);
+        $user = Mockery::mock(StaffUser::class);
         $user->shouldReceive('isAdmin')->andReturn($role === 'admin');
-        $user->shouldReceive('accessibleMaterialTypeIds')->andReturn($materialTypeIds)->byDefault();
+        $user->shouldReceive('accessibleFieldOptionIds')->andReturn($materialTypeIds)->byDefault();
         return $user;
     }
 
@@ -94,7 +94,7 @@ class MaterialScopeVisibleToTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Admin SfpUser → no filter
+    // Admin StaffUser → no filter
     // -------------------------------------------------------------------------
 
     #[Test]
@@ -112,7 +112,7 @@ class MaterialScopeVisibleToTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Selector → whereIn('material_type_id', [...])
+    // Selector → whereIn('material_type_option_id', [...])
     // -------------------------------------------------------------------------
 
     #[Test]
@@ -122,7 +122,7 @@ class MaterialScopeVisibleToTest extends TestCase
         $builder = $this->mockBuilder();
 
         $builder->shouldReceive('whereIn')
-            ->with('material_type_id', [1, 3])
+            ->with('material_type_option_id', [1, 3])
             ->once()
             ->andReturnSelf();
 
@@ -138,7 +138,7 @@ class MaterialScopeVisibleToTest extends TestCase
         $builder = $this->mockBuilder();
 
         $builder->shouldReceive('whereIn')
-            ->with('material_type_id', [])
+            ->with('material_type_option_id', [])
             ->once()
             ->andReturnSelf();
 
@@ -155,7 +155,7 @@ class MaterialScopeVisibleToTest extends TestCase
         $builder = $this->mockBuilder();
 
         $builder->shouldReceive('whereIn')
-            ->with('material_type_id', Mockery::any())
+            ->with('material_type_option_id', Mockery::any())
             ->once()
             ->andReturnSelf();
 
@@ -170,7 +170,7 @@ class MaterialScopeVisibleToTest extends TestCase
     #[Test]
     public function it_returns_no_rows_when_sfp_user_cannot_be_resolved(): void
     {
-        // Simulates the "no sfp_users record" path (non-local env):
+        // Simulates the "no staff_users record" path (non-local env):
         // passing null is equivalent once email lookup returns null.
         $builder = $this->mockBuilder();
         $builder->shouldReceive('whereRaw')->with('1 = 0')->once()->andReturnSelf();

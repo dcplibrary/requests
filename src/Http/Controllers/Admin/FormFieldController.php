@@ -1,79 +1,108 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
-use Dcplibrary\Sfp\Livewire\Admin\FormFormFieldOptionsManager;
-use Dcplibrary\Sfp\Models\Form;
-use Dcplibrary\Sfp\Models\FormField;
-use Dcplibrary\Sfp\Models\FormFormField;
+use Dcplibrary\Requests\Http\Controllers\Controller;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\Form;
+use Dcplibrary\Requests\Models\FormFieldConfig;
 
+/**
+ * Manages field configurations within forms (SFP / ILL).
+ */
 class FormFieldController extends Controller
 {
+    /**
+     * List all form fields.
+     *
+     * @return \Illuminate\View\View
+     */
     public function index()
     {
-        return view('sfp::staff.form-fields.index');
+        return view('requests::staff.form-fields.index');
     }
 
     /**
      * Edit this field's configuration for one form only (SFP or ILL).
-     * Edits the pivot (required, visible, conditional_logic); base field is unchanged.
-     * Creates the pivot row if missing (e.g. seeder not run or new field).
+     *
+     * Edits the per-form config (required, visible, conditional_logic); the base
+     * field definition is unchanged. Creates the config row if missing.
+     *
+     * @param  Field   $field
+     * @param  string  $form  sfp|ill
+     * @return \Illuminate\View\View
      */
-    public function editForForm(FormField $field, string $form)
+    public function editForForm(Field $field, string $form)
     {
         $formModel = Form::bySlug($form);
         if (! $formModel) {
             abort(404);
         }
-        $maxOrder = FormFormField::where('form_id', $formModel->id)->max('sort_order') ?? 0;
-        $pivot = FormFormField::firstOrCreate(
+
+        $maxOrder = FormFieldConfig::where('form_id', $formModel->id)->max('sort_order') ?? 0;
+        $pivot = FormFieldConfig::firstOrCreate(
             [
-                'form_id'      => $formModel->id,
-                'form_field_id'=> $field->id,
+                'form_id'  => $formModel->id,
+                'field_id' => $field->id,
             ],
             [
-                'sort_order'         => $maxOrder + 1,
-                'conditional_logic'  => $field->condition,
-                'required'           => $field->required,
-                'visible'            => true,
+                'sort_order'        => $maxOrder + 1,
+                'conditional_logic' => $field->condition,
+                'required'          => $field->required,
+                'visible'           => true,
             ]
         );
+
         $formLabel = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
 
-        return view('sfp::staff.form-fields.edit-for-form', [
-            'field'      => $field,
-            'pivot'      => $pivot,
-            'formSlug'   => $form,
-            'formLabel'  => $formLabel,
+        return view('requests::staff.form-fields.edit-for-form', [
+            'field'     => $field,
+            'pivot'     => $pivot,
+            'formSlug'  => $form,
+            'formLabel' => $formLabel,
         ]);
     }
 
     /**
      * Edit a single option's per-form configuration.
-     * Only valid for option-type fields (material_type, audience, genre, console).
+     *
+     * Only valid for select/radio fields (material_type, audience, genre, etc.).
+     *
+     * @param  Field   $field
+     * @param  string  $form  sfp|ill
+     * @param  string  $slug  FieldOption slug
+     * @return \Illuminate\View\View
      */
-    public function editForFormOption(FormField $field, string $form, string $slug)
+    public function editForFormOption(Field $field, string $form, string $slug)
     {
         abort_unless(in_array($form, ['sfp', 'ill'], true), 404);
+        abort_unless(in_array($field->type, ['select', 'radio']), 404, 'This field does not have per-form option overrides.');
 
-        $modelClass = FormFormFieldOptionsManager::modelClassForKey($field->key);
-        abort_unless($modelClass !== null, 404, 'This field does not have per-form option overrides.');
-
-        $option = $modelClass::where('slug', $slug)->first();
+        $option = FieldOption::where('field_id', $field->id)->where('slug', $slug)->first();
         abort_unless($option !== null, 404);
 
         $formLabel  = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
         $optionName = $option->name;
 
-        return view('sfp::staff.form-fields.edit-option-for-form', compact(
-            'field', 'form', 'formLabel', 'optionName', 'formLabel'
-        ) + ['formSlug' => $form, 'optionSlug' => $slug]);
+        return view('requests::staff.form-fields.edit-option-for-form', [
+            'field'      => $field,
+            'form'       => $form,
+            'formSlug'   => $form,
+            'formLabel'  => $formLabel,
+            'optionName' => $optionName,
+            'optionSlug' => $slug,
+        ]);
     }
 
-    /** Edit the base field (label, key, active, token) — shared across forms. */
-    public function edit(FormField $field)
+    /**
+     * Edit the base field (label, key, active, token) — shared across forms.
+     *
+     * @param  Field  $field
+     * @return \Illuminate\View\View
+     */
+    public function edit(Field $field)
     {
-        return view('sfp::staff.form-fields.edit', compact('field'));
+        return view('requests::staff.form-fields.edit', compact('field'));
     }
 }

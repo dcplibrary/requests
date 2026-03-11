@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', $template->exists ? 'Edit Template' : 'New Template')
 @section('settings-content')
 <div class="mb-6 flex items-center gap-3">
@@ -114,7 +114,7 @@
                 <div class="flex-1 min-w-0">
                     <select id="material-type-ids-select" name="material_type_ids[]" multiple class="w-full border border-gray-300 rounded px-3 py-2 text-sm" size="{{ min(8, ($materialTypes->count() ?: 1) + 1) }}">
                         @foreach($materialTypes as $mt)
-                        <option value="{{ $mt->id }}" {{ in_array($mt->id, old('material_type_ids', $template->materialTypes->pluck('id')->all())) ? 'selected' : '' }}>{{ $mt->name }}</option>
+                        <option value="{{ $mt->id }}" {{ in_array($mt->id, old('material_type_ids', $template->fieldOptions->pluck('id')->all())) ? 'selected' : '' }}>{{ $mt->name }}</option>
                         @endforeach
                     </select>
                     <button type="button" onclick="Array.from(document.getElementById('material-type-ids-select').options).forEach(o => o.selected = false)"

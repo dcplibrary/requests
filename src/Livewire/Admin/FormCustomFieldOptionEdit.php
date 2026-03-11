@@ -1,10 +1,10 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\CustomFieldOption;
-use Dcplibrary\Sfp\Models\Form;
-use Dcplibrary\Sfp\Models\FormCustomFieldOption;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\Form;
+use Dcplibrary\Requests\Models\FormFieldOptionOverride;
 use Livewire\Component;
 
 /**
@@ -29,13 +29,14 @@ class FormCustomFieldOptionEdit extends Component
         $this->optionId   = $optionId;
         $this->formSlug   = $formSlug;
 
-        $option = CustomFieldOption::findOrFail($optionId);
+        $option = FieldOption::findOrFail($optionId);
         $this->optionName = $option->name;
 
         $formModel = Form::bySlug($formSlug);
         if ($formModel) {
-            $override = FormCustomFieldOption::where('form_id', $formModel->id)
-                ->where('custom_field_option_id', $optionId)
+            $override = FormFieldOptionOverride::where('form_id', $formModel->id)
+                ->where('field_id', $fieldId)
+                ->where('option_slug', $option->slug)
                 ->first();
 
             if ($override) {
@@ -56,12 +57,18 @@ class FormCustomFieldOptionEdit extends Component
             return;
         }
 
+        $option = FieldOption::find($this->optionId);
+        if (! $option) {
+            return;
+        }
+
         $labelOverride = trim($this->labelOverride);
 
-        FormCustomFieldOption::updateOrInsert(
+        FormFieldOptionOverride::updateOrInsert(
             [
-                'form_id'               => $formModel->id,
-                'custom_field_option_id'=> $this->optionId,
+                'form_id'     => $formModel->id,
+                'field_id'    => $this->fieldId,
+                'option_slug' => $option->slug,
             ],
             [
                 'label_override' => $labelOverride !== '' ? $labelOverride : null,
@@ -78,6 +85,6 @@ class FormCustomFieldOptionEdit extends Component
 
     public function render()
     {
-        return view('sfp::livewire.admin.form-custom-field-option-edit');
+        return view('requests::livewire.admin.form-custom-field-option-edit');
     }
 }

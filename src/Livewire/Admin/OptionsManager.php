@@ -1,8 +1,7 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire\Admin;
+namespace Dcplibrary\Requests\Livewire\Admin;
 
-use Dcplibrary\Sfp\Models\FormField;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -111,13 +110,13 @@ class OptionsManager extends Component
 
         $map = [];
 
-        FormField::whereNotNull('condition')->get()->each(function (FormField $ff) use (&$map) {
-            foreach ($ff->condition['rules'] ?? [] as $rule) {
+        \Dcplibrary\Requests\Models\Field::whereNotNull('condition')->get()->each(function ($f) use (&$map) {
+            foreach ($f->condition['rules'] ?? [] as $rule) {
                 if (($rule['field'] ?? '') !== $this->conditionField) {
                     continue;
                 }
                 foreach ($rule['values'] ?? [] as $slug) {
-                    $map[$slug][] = ['label' => $ff->label, 'key' => $ff->key];
+                    $map[$slug][] = ['label' => $f->label, 'key' => $f->key];
                 }
             }
         });
@@ -308,6 +307,6 @@ class OptionsManager extends Component
 
     public function render()
     {
-        return view('sfp::livewire.admin.options-manager');
+        return view('requests::livewire.admin.options-manager');
     }
 }

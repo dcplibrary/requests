@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('request_id')->constrained()->cascadeOnDelete();
             $table->foreignId('request_status_id')->constrained()->restrictOnDelete();
-            $table->foreignId('user_id')->nullable()->constrained('sfp_users')->nullOnDelete(); // null = system
+            $table->foreignId('user_id')->nullable()->constrained('staff_users')->nullOnDelete(); // null = system
             $table->text('note')->nullable();
             $table->timestamps();
 

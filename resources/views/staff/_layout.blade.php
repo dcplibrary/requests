@@ -22,7 +22,7 @@
 <nav class="bg-white border-b border-gray-200 px-6 flex items-stretch gap-6 h-14">
 
     {{-- Brand --}}
-    <div class="flex items-center"><x-sfp::logo :href="route('request.staff.requests.index', ['kind' => 'sfp'])" /></div>
+    <div class="flex items-center"><x-requests::logo :href="route('request.staff.requests.index', ['kind' => 'sfp'])" /></div>
 
     {{-- Primary nav — tabs aligned to bottom of header --}}
     <div class="flex items-end gap-1">
@@ -36,15 +36,15 @@
         @php
             $authUser = auth()->user();
             $isAdmin = method_exists($authUser, 'isAdmin') ? $authUser->isAdmin() : (($authUser->role ?? null) === 'admin');
-            $openAccess = (bool) \Dcplibrary\Sfp\Models\Setting::get('requests_visibility_open_access', false);
+            $openAccess = (bool) \Dcplibrary\Requests\Models\Setting::get('requests_visibility_open_access', false);
 
-            $sfpUser = $authUser instanceof \Dcplibrary\Sfp\Models\User
+            $staffUser = $authUser instanceof \Dcplibrary\Requests\Models\User
                 ? $authUser
-                : \Dcplibrary\Sfp\Models\User::where('email', $authUser->email ?? '')->first();
+                : \Dcplibrary\Requests\Models\User::where('email', $authUser->email ?? '')->first();
 
-            $illGroupId = (int) \Dcplibrary\Sfp\Models\Setting::get('ill_selector_group_id', 0);
-            $inIllGroup = $sfpUser && $illGroupId
-                ? $sfpUser->selectorGroups()->whereKey($illGroupId)->exists()
+            $illGroupId = (int) \Dcplibrary\Requests\Models\Setting::get('ill_selector_group_id', 0);
+            $inIllGroup = $staffUser && $illGroupId
+                ? $staffUser->selectorGroups()->whereKey($illGroupId)->exists()
                 : false;
 
             $showIllTab = $isAdmin || $openAccess || $inIllGroup;
@@ -77,7 +77,7 @@
     {{-- User avatar + dropdown pushed right --}}
     <div class="ml-auto flex items-center gap-3">
         @auth
-        <a href="{{ asset('sfp-selector-help.html') }}"
+        <a href="{{ asset('requests-selector-help.html') }}"
            target="_blank"
            rel="noopener noreferrer"
            class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"

@@ -12,7 +12,7 @@
 
     {{-- Logo --}}
     <div class="flex justify-center mb-8">
-        <x-sfp::logo />
+        <x-requests::logo />
     </div>
 
     {{-- Card --}}

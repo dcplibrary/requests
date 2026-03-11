@@ -1,13 +1,13 @@
 {
-  "name": "dcplibrary-sfp",
+  "name": "dcplibrary-requests",
   "version": "1.0.0",
   "private": true,
-  "description": "Release tooling for dcplibrary/sfp Laravel package",
+  "description": "Release tooling for dcplibrary/requests Laravel package",
   "scripts": {
     "release": "semantic-release",
-    "build:css": "tailwindcss -i resources/css/sfp.css -o resources/dist/sfp.css --minify",
+    "build:css": "tailwindcss -i resources/css/requests.css -o resources/dist/requests.css --minify",
     "build": "npm run build:css",
-    "watch:css": "tailwindcss -i resources/css/sfp.css -o resources/dist/sfp.css --watch"
+    "watch:css": "tailwindcss -i resources/css/requests.css -o resources/dist/requests.css --watch"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.0",

@@ -1,27 +1,25 @@
 <?php
 
-namespace Dcplibrary\Sfp\Console\Commands;
+namespace Dcplibrary\Requests\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 class UsersRestoreCommand extends Command
 {
-    protected $signature = 'request:users-restore
-        {file? : Path to the backup JSON file. Defaults to the most recent backup in storage/app/sfp-backups}
+    protected $signature = 'requests:users-restore
+        {file? : Path to the backup JSON file. Defaults to the most recent backup in storage/app/requests-backups}
         {--force : Skip the confirmation prompt}
-        {--path= : Directory to search for the most recent backup (default: storage/app/sfp-backups)}';
+        {--path= : Directory to search for the most recent backup (default: storage/app/requests-backups)}';
 
-    protected $description = 'Restore sfp_users, selector_groups, and their pivot tables from a JSON backup file.';
+    protected $description = 'Restore staff_users, selector_groups, and their pivot tables from a JSON backup file.';
 
     /** Restore order: pivots first (truncate), then parents; insert in reverse. */
     private const TRUNCATE_ORDER = [
-        'selector_group_genre',
-        'selector_group_audience',
-        'selector_group_material_type',
+        'selector_group_field_option',
         'selector_group_user',
         'selector_groups',
-        'sfp_users',
+        'staff_users',
     ];
 
     public function handle(): int
@@ -29,7 +27,7 @@ class UsersRestoreCommand extends Command
         $file = $this->argument('file');
 
         if (! $file) {
-            $dir   = rtrim($this->option('path') ?: storage_path('app/sfp-backups'), '/');
+            $dir   = rtrim($this->option('path') ?: storage_path('app/requests-backups'), '/');
             $files = glob($dir . '/users-backup-*.json') ?: [];
 
             if (empty($files)) {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Dcplibrary\Sfp\Models;
+namespace Dcplibrary\Requests\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * BiblioCommons returns abbreviated format codes in search results (e.g. `BK`,
  * `EAUDIOBOOK`, `LPRINT`). This table maps those codes to display labels shown
- * to patrons on the catalog results step of the SFP form. Labels are editable
+ * to patrons on the catalog results step of the request form. Labels are editable
  * by admins via Settings → Catalog.
  *
  * @property int    $id

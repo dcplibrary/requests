@@ -1,0 +1,1124 @@
+<?php
+
+namespace Dcplibrary\Requests\Livewire;
+
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\CatalogFormatLabel;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\Form;
+use Dcplibrary\Requests\Models\Material;
+use Dcplibrary\Requests\Models\Patron;
+use Dcplibrary\Requests\Models\RequestFieldValue;
+use Dcplibrary\Requests\Models\RequestStatus;
+use Dcplibrary\Requests\Models\Setting;
+use Dcplibrary\Requests\Models\PatronRequest;
+use Dcplibrary\Requests\Services\BibliocommonsService;
+use Dcplibrary\Requests\Services\CoverService;
+use Dcplibrary\Requests\Services\IsbnDbService;
+use Dcplibrary\Requests\Services\PatronService;
+use Dcplibrary\Requests\Services\NotificationService;
+use Dcplibrary\Requests\Services\PolarisService;
+use Illuminate\Support\Carbon;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Validate;
+use Livewire\Component;
+
+#[Layout('requests::layouts.requests')]
+class RequestForm extends Component
+{
+    // --- Steps ---
+    public int $step = 1; // 1=patron, 2=material, 3=resolution, 4=confirmation
+
+    // --- Step 1: Patron ---
+    #[Validate('required|min:5|max:20')]
+    public string $barcode = '';
+
+    #[Validate('required|min:1|max:100')]
+    public string $name_first = '';
+
+    #[Validate('required|min:1|max:100')]
+    public string $name_last = '';
+
+    #[Validate('required|min:7|max:20')]
+    public string $phone = '';
+
+    #[Validate('nullable|email|max:255')]
+    public string $email = '';
+
+    // --- Step 2: Material ---
+    // Note: validation rules for these fields are built dynamically in buildStepTwoRules()
+    // based on each field's 'active', 'required', and 'condition' config in sfp_form_fields.
+    public ?int $material_type_id = null;
+
+    public string $other_material_text = '';
+
+    public string $genre = '';
+
+    public string $console = '';
+
+    public ?int $audience_id = null;
+
+    public string $title = '';
+
+    public string $author = '';
+
+    public string $isbn = '';
+
+    public string $publish_date = '';
+
+    /** @var array<string, mixed> SFP custom field values (e.g. where_heard, console, ill_requested) */
+    public array $custom = [];
+
+    // --- ILL age warning ---
+    public bool $showIllWarning = false;
+
+    // --- Patron limit ---
+    public bool    $limitReached = false;
+    public ?string $limitUntil   = null; // formatted date string, e.g. "June 15, 2025"
+
+    // --- Barcode not found in Polaris ---
+    public bool $barcodeNotFound = false;
+    public string $barcodeNotFoundMessage = '';
+
+    // --- Step 3: Resolution state ---
+    public ?int $resolvedMaterialId = null; // set if local material match found
+    public bool $isDuplicate = false;
+    public string $duplicateMessage = '';
+
+    // Catalog results passed to view
+    public array $catalogResults = [];
+    public bool $catalogSearched = false;
+    public ?string $catalogMatchBibId = null;
+    public ?string $catalogFoundUrl = null;
+
+    // ISBNdb results
+    public array $isbndbResults = [];
+    public bool $isbndbSearched = false;
+
+    // Whether patron accepted or skipped a match
+    public ?bool $catalogMatchAccepted = null;
+    public ?bool $isbndbMatchAccepted = null;
+    public ?int $selectedIsbndbIndex = null;
+
+    // Processing state
+    public bool $processing = false;
+    public string $processingStep = '';
+
+    // Final request ID
+    public ?int $createdRequestId = null;
+
+    // Auto-order exclusion handling (popular authors)
+    public bool $autoOrderExcluded = false;
+    public string $autoOrderExcludedMessage = '';
+
+    public function mount(): void
+    {
+        // If the patron previously submitted a request and chose "Submit Another Request",
+        // we keep their patron info in the session for convenience.
+        $remembered = session('request.patron');
+        if (is_array($remembered)) {
+            $this->barcode     = (string) ($remembered['barcode'] ?? $this->barcode);
+            $this->name_first  = (string) ($remembered['name_first'] ?? $this->name_first);
+            $this->name_last   = (string) ($remembered['name_last'] ?? $this->name_last);
+            $this->phone       = (string) ($remembered['phone'] ?? $this->phone);
+            $this->email       = (string) ($remembered['email'] ?? $this->email);
+        }
+
+        // Pre-select "Book" as default material type
+        $mtField = Field::where('key', 'material_type')->first();
+        if ($mtField) {
+            $book = FieldOption::where('field_id', $mtField->id)->where('slug', 'book')->where('active', true)->first();
+            if ($book) {
+                $this->material_type_id = $book->id;
+            }
+        }
+
+        // Pre-select "Adult" as default audience
+        $audField = Field::where('key', 'audience')->first();
+        if ($audField) {
+            $adult = FieldOption::where('field_id', $audField->id)->where('slug', 'adult')->where('active', true)->first();
+            if ($adult) {
+                $this->audience_id = $adult->id;
+            }
+        }
+    }
+
+    // --- Step navigation ---
+
+    public function nextStep(): void
+    {
+        if ($this->step === 1) {
+            // Reset barcode-not-found state on each attempt
+            $this->barcodeNotFound = false;
+            $this->barcodeNotFoundMessage = '';
+
+            $this->validate([
+                'barcode'    => 'required|min:5|max:20',
+                'name_first' => 'required|min:1|max:100',
+                'name_last'  => 'required|min:1|max:100',
+                'phone'      => 'required|min:7|max:20',
+                'email'      => 'nullable|email|max:255',
+            ]);
+
+            $this->checkPatronLimit();
+
+            // Only check Polaris if the feature is enabled and the barcode is new.
+            // Returning patrons (already in the local DB) bypass the API call.
+            if (
+                Setting::get('polaris_barcode_check_enabled', true)
+                && ! Patron::where('barcode', $this->barcode)->exists()
+            ) {
+                $exists = app(PolarisService::class)->barcodeExists($this->barcode);
+
+                if ($exists === false) {
+                    // Barcode explicitly not found in Polaris — stop here.
+                    $this->barcodeNotFound = true;
+                    $this->barcodeNotFoundMessage = (string) Setting::get(
+                        'barcode_not_found_message',
+                        '<p>The card number you entered was not found. Please apply for a library card online or visit the library to register.</p>'
+                    );
+                    return;
+                }
+                // $exists === null means Polaris is unavailable or not configured — let through.
+            }
+        }
+
+        if ($this->step === 2) {
+            $this->validate($this->buildStepTwoRules());
+        }
+
+        $this->step++;
+    }
+
+    public function prevStep(): void
+    {
+        $this->step = max(1, $this->step - 1);
+    }
+
+    /**
+     * Keep patron info and start a new request on Step 2.
+     */
+    public function submitAnotherRequest(): void
+    {
+        session()->put('request.patron', [
+            'barcode'    => $this->barcode,
+            'name_first' => $this->name_first,
+            'name_last'  => $this->name_last,
+            'phone'      => $this->phone,
+            'email'      => $this->email,
+        ]);
+
+        // Reset item + resolution state only (keep patron fields)
+        $this->reset([
+            'title',
+            'author',
+            'publish_date',
+            'custom',
+            'showIllWarning',
+            'other_material_text',
+            'genre',
+            'resolvedMaterialId',
+            'isDuplicate',
+            'duplicateMessage',
+            'catalogResults',
+            'catalogSearched',
+            'catalogMatchBibId',
+            'catalogFoundUrl',
+            'isbndbResults',
+            'isbndbSearched',
+            'catalogMatchAccepted',
+            'isbndbMatchAccepted',
+            'selectedIsbndbIndex',
+            'processing',
+            'processingStep',
+            'createdRequestId',
+        ]);
+
+        $this->resetValidation();
+        $this->step = 2;
+    }
+
+    // --- Clear hidden fields when material type or audience changes ---
+
+    public function updatedMaterialTypeId(): void
+    {
+        $this->clearHiddenFields();
+    }
+
+    public function updatedAudienceId(): void
+    {
+        $this->clearHiddenFields();
+    }
+
+    private function clearHiddenFields(): void
+    {
+        foreach ($this->formFields as $field) {
+            // Never clear the controlling selectors here.
+            if (in_array($field->key, ['material_type', 'audience'], true)) {
+                continue;
+            }
+
+            if (! $this->fieldVisible($field->key)) {
+                $this->clearFieldValue($field->key);
+            }
+        }
+
+        foreach ($this->stepTwoCustomFields as $field) {
+            if (! $this->customFieldVisible($field->key)) {
+                unset($this->custom[$field->key]);
+            }
+        }
+
+        // Clear "other" text when it isn't currently shown.
+        if (! $this->showOtherText) {
+            $this->other_material_text = '';
+        }
+    }
+
+    private function clearFieldValue(string $key): void
+    {
+        if ($this->stepTwoCustomFields->contains('key', $key)) {
+            unset($this->custom[$key]);
+            return;
+        }
+
+        match ($key) {
+            'genre'        => $this->genre = '',
+            'title'        => $this->title = '',
+            'author'       => $this->author = '',
+            'isbn'         => $this->isbn = '',
+            'publish_date' => $this->publish_date = '',
+            default        => null,
+        };
+    }
+
+    // --- ILL age warning (triggered by publish_date change) ---
+
+    public function updatedPublishDate(string $value): void
+    {
+        $this->showIllWarning = Material::yearExceedsIllThreshold($value);
+    }
+
+    // --- Material type "Other" toggle (inline text within material type radio row) ---
+
+    public function getShowOtherTextProperty(): bool
+    {
+        if (! $this->material_type_id) {
+            return false;
+        }
+        $option = FieldOption::find($this->material_type_id);
+        return $option?->meta('has_other_text', false) ?? false;
+    }
+
+    // --- Form field config (cached) ---
+
+    /** @var string[] Core field keys rendered with dedicated Blade blocks. */
+    private const CORE_KEYS = ['material_type', 'audience', 'genre', 'title', 'author', 'isbn', 'publish_date', 'console'];
+
+    /**
+     * Return the core SFP form fields, ordered and filtered by per-form config.
+     *
+     * When a form_field_config row exists for the SFP form, sort_order, required,
+     * label_override, and conditional_logic are overlaid onto the Field model so
+     * that isVisibleFor() / isRequiredFor() respect per-form settings.
+     *
+     * @return \Illuminate\Support\Collection<int, \Dcplibrary\Requests\Models\Field>
+     */
+    public function getFormFieldsProperty()
+    {
+        $form = Form::bySlug('sfp');
+
+        if ($form) {
+            $configs = $form->fieldConfigs()
+                ->with('field')
+                ->where('visible', true)
+                ->orderBy('sort_order')
+                ->get();
+
+            $fields = collect();
+            foreach ($configs as $cfg) {
+                $f = $cfg->field;
+                if (! $f || ! $f->active || ! in_array($f->key, self::CORE_KEYS, true)) {
+                    continue;
+                }
+                $this->overlayConfig($f, $cfg);
+                $fields->push($f);
+            }
+
+            if ($fields->isNotEmpty()) {
+                return $fields->values();
+            }
+        }
+
+        // Fallback: no SFP form config — use base fields directly
+        return Field::forKind('sfp')
+            ->whereIn('key', self::CORE_KEYS)
+            ->active()
+            ->ordered()
+            ->get();
+    }
+
+    /**
+     * Current form state used to evaluate conditional logic.
+     * Maps the condition rule 'field' names to the currently selected slug.
+     */
+    private function formState(): array
+    {
+        $materialSlug = $this->material_type_id
+            ? (FieldOption::find($this->material_type_id)?->slug ?? '')
+            : '';
+
+        $audienceSlug = $this->audience_id
+            ? (FieldOption::find($this->audience_id)?->slug ?? '')
+            : '';
+
+        return [
+            'material_type' => $materialSlug,
+            'audience'      => $audienceSlug,
+        ];
+    }
+
+    /**
+     * Return the set of field keys that are visible given the current form state.
+     *
+     * @return array<string, bool>  ['genre' => true, 'console' => false, ...]
+     */
+    public function getVisibleFieldsProperty(): array
+    {
+        $state = $this->formState();
+
+        return $this->formFields
+            ->mapWithKeys(fn (Field $f) => [$f->key => $f->isVisibleFor($state)])
+            ->all();
+    }
+
+    /**
+     * True when the given field key is both active and passes its condition.
+     */
+    public function fieldVisible(string $key): bool
+    {
+        return $this->visibleFields[$key] ?? false;
+    }
+
+    /**
+     * Additional SFP fields for step 2 (e.g. where_heard, ill_requested).
+     * These are fields NOT in the core formFields set, with per-form config applied.
+     *
+     * @return \Illuminate\Support\Collection<int, Field>
+     */
+    public function getStepTwoCustomFieldsProperty()
+    {
+        $form = Form::bySlug('sfp');
+
+        if ($form) {
+            $configs = $form->fieldConfigs()
+                ->with('field')
+                ->where('visible', true)
+                ->orderBy('sort_order')
+                ->get();
+
+            $fields = collect();
+            foreach ($configs as $cfg) {
+                $f = $cfg->field;
+                if (! $f || ! $f->active || in_array($f->key, self::CORE_KEYS, true)) {
+                    continue;
+                }
+                $this->overlayConfig($f, $cfg);
+                $fields->push($f);
+            }
+
+            if ($fields->isNotEmpty()) {
+                return $fields->values();
+            }
+        }
+
+        // Fallback: no SFP form config — use base fields directly
+        return Field::forKind('sfp')
+            ->where('step', 2)
+            ->whereNotIn('key', self::CORE_KEYS)
+            ->active()
+            ->ordered()
+            ->get();
+    }
+
+    /**
+     * Overlay per-form config (sort_order, required, label, condition) onto a Field.
+     *
+     * @param  Field                                              $field
+     * @param  \Dcplibrary\Requests\Models\FormFieldConfig  $cfg
+     * @return void
+     */
+    private function overlayConfig(Field $field, \Dcplibrary\Requests\Models\FormFieldConfig $cfg): void
+    {
+        $field->sort_order = $cfg->sort_order;
+        $field->required   = (bool) $cfg->required;
+
+        if ($cfg->label_override !== null && $cfg->label_override !== '') {
+            $field->label = $cfg->label_override;
+        }
+        if ($cfg->conditional_logic) {
+            $field->condition = $cfg->conditional_logic;
+        }
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public function getVisibleCustomFieldsProperty(): array
+    {
+        $state = $this->formState();
+
+        return $this->stepTwoCustomFields
+            ->mapWithKeys(fn (Field $f) => [$f->key => $f->isVisibleFor($state)])
+            ->all();
+    }
+
+    public function customFieldVisible(string $key): bool
+    {
+        return $this->visibleCustomFields[$key] ?? false;
+    }
+
+    private function customFieldSelectRule(Field $field, bool $required): string
+    {
+        $slugs = FieldOption::query()
+            ->where('field_id', $field->id)
+            ->active()
+            ->ordered()
+            ->pluck('slug')
+            ->implode(',');
+        $base = $required ? 'required' : 'nullable';
+
+        return $slugs !== '' ? "{$base}|in:{$slugs}" : $base;
+    }
+
+    /**
+     * Build the step-2 validation rules based on field config.
+     * Required fields that are currently hidden are treated as nullable.
+     *
+     * @return array<string, string>
+     */
+    private function buildStepTwoRules(): array
+    {
+        // Fixed base rules that are always present regardless of field config
+        $rules = [
+            'material_type_id' => 'required|exists:field_options,id',
+            'audience_id'      => 'required|exists:field_options,id',
+        ];
+
+        $genreField = Field::where('key', 'genre')->first();
+        $fieldRuleMap = [
+            'genre'        => function (bool $req) use ($genreField) {
+                $slugs = $genreField ? FieldOption::where('field_id', $genreField->id)->active()->pluck('slug')->implode(',') : '';
+                return $req && $slugs !== '' ? "required|in:$slugs" : ($slugs !== '' ? "nullable|in:$slugs" : 'nullable');
+            },
+            'title'        => fn (bool $req) => $req ? 'required|min:1|max:500' : 'nullable|min:1|max:500',
+            'author'       => fn (bool $req) => $req ? 'required|min:1|max:300' : 'nullable|min:1|max:300',
+            'isbn'         => fn (bool $req) => $req ? 'required|string|max:20' : 'nullable|string|max:20',
+            'publish_date' => fn ()           => 'nullable|string|max:50',
+        ];
+
+        $state = $this->formState();
+
+        foreach ($this->formFields as $field) {
+            if (! isset($fieldRuleMap[$field->key])) {
+                continue;
+            }
+
+            $required = $field->isRequiredFor($state);
+
+            // Map field key → Livewire property name (console has its own property now)
+            $prop = $field->key;
+
+            $rules[$prop] = $fieldRuleMap[$field->key]($required);
+        }
+
+        foreach ($this->stepTwoCustomFields as $field) {
+            $visible  = $field->isVisibleFor($state);
+            $required = $visible && $field->required;
+            $path = "custom.{$field->key}";
+            $rules[$path] = match ($field->type) {
+                'textarea' => $required ? 'required|string|max:5000' : 'nullable|string|max:5000',
+                'text'     => $required ? 'required|string|max:500' : 'nullable|string|max:500',
+                'select', 'radio' => $this->customFieldSelectRule($field, $required),
+                'checkbox' => 'nullable|boolean',
+                default    => $required ? 'required' : 'nullable',
+            };
+        }
+
+        return $rules;
+    }
+
+    // --- Main submission ---
+
+    public function submit(): void
+    {
+        $this->validate($this->buildStepTwoRules());
+
+        $this->processing = true;
+        $this->processingStep = 'Saving your information...';
+
+        // 1. Find or create patron
+        $patronService = app(PatronService::class);
+        ['patron' => $patron] = $patronService->findOrCreate([
+            'barcode'    => $this->barcode,
+            'name_first' => $this->name_first,
+            'name_last'  => $this->name_last,
+            'phone'      => $this->phone,
+            'email'      => $this->email ?: null,
+        ]);
+
+        // 2. Rate limit check
+        if ($patron->hasReachedLimit()) {
+            $this->limitReached = true;
+            $this->limitUntil   = $patron->nextAvailableDate()?->format('F j, Y');
+            $this->processing   = false;
+            return;
+        }
+
+        // 2.5 Auto-order exclusion: only if we can confidently determine the
+        // item is not yet released (future date).
+        if ($this->shouldAutoOrderExclude($this->author, $this->publish_date)) {
+            $this->autoOrderExcluded = true;
+            $this->autoOrderExcludedMessage = (string) Setting::get(
+                'auto_order_author_exclusion_message',
+                '<p><strong>Good news:</strong> the library automatically orders new releases from this author. Please check the catalog closer to the release date to place a hold.</p>'
+            );
+            $this->processing = false;
+            $this->step = 4;
+            return;
+        }
+
+        // 3. Check local materials table for a match
+        $this->processingStep = 'Checking our records...';
+        $existingMaterial = Material::findMatch($this->title, $this->author);
+
+        if ($existingMaterial) {
+            // Check if any existing requests reference this material
+            $priorRequest = PatronRequest::where('material_id', $existingMaterial->id)->first();
+            if ($priorRequest) {
+                $this->isDuplicate = true;
+
+                // Use a different message if it's the same patron re-requesting
+                if ($priorRequest->patron_id === $patron->id) {
+                    $this->duplicateMessage = Setting::get(
+                        'duplicate_self_request_message',
+                        "You've already requested this item. We'll let you know when it's available."
+                    );
+                } else {
+                    $this->duplicateMessage = Setting::get(
+                        'duplicate_request_message',
+                        'This item has already been requested. Please check the catalog regularly.'
+                    );
+                }
+                $this->resolvedMaterialId = $existingMaterial->id;
+
+                // Surface the duplicate notice before doing any further work.
+                // Advance to step 3 so the patron sees the message. If they
+                // choose to submit anyway, saveRequest() will still record the
+                // request with is_duplicate=true.
+                $this->processing = false;
+                $this->step = 3;
+                return;
+            }
+        }
+
+        // 4. Catalog search
+        if (! $this->isDuplicate && Setting::get('catalog_search_enabled', true)) {
+            $this->processingStep = 'Searching our catalog...';
+            $audienceOption = FieldOption::find($this->audience_id);
+            $service = app(BibliocommonsService::class);
+            $result = $service->search(
+                $this->title,
+                $this->author,
+                $audienceOption?->meta('bibliocommons_value', 'adult') ?? 'adult',
+                $this->publish_date ?: null
+            );
+            $this->catalogSearched = true;
+            $this->catalogResults = $this->withCovers($result['results'], 'catalog');
+
+            if (count($this->catalogResults) > 0) {
+                // Show results to patron — pause here, patron interacts
+                $this->processing = false;
+                $this->step = 3;
+                return;
+            }
+        }
+
+        // 5. ISBNdb search (no catalog hits)
+        if (! $this->isDuplicate && Setting::get('isbndb_search_enabled', true)) {
+            $this->processingStep = 'Searching book database...';
+            $service = app(IsbnDbService::class);
+            $result = $service->search($this->title, $this->author);
+            $this->isbndbSearched = true;
+            $this->isbndbResults = $this->withCovers($result['results'], 'isbndb');
+
+            if (count($this->isbndbResults) > 0) {
+                $this->processing = false;
+                $this->step = 3;
+                return;
+            }
+        }
+
+        // 6. Save request (no match found, or duplicate case)
+        $this->saveRequest($patron);
+    }
+
+    public function acceptCatalogMatch(string $bibId): void
+    {
+        $this->catalogMatchAccepted = true;
+        $this->catalogMatchBibId = $bibId;
+
+        // If the patron confirms the item is already in our catalog, we do NOT
+        // create an SFP request. Direct them to place a hold instead.
+        $match = collect($this->catalogResults)->firstWhere('bib_id', $bibId);
+        $this->catalogFoundUrl = is_array($match) ? ($match['catalog_url'] ?? null) : null;
+
+        $this->processing = false;
+        $this->step = 4;
+    }
+
+    public function skipCatalogMatch(): void
+    {
+        $this->catalogMatchAccepted = false;
+
+        // Move on to ISBNdb if not yet searched
+        if (! $this->isbndbSearched && Setting::get('isbndb_search_enabled', true)) {
+            $service = app(IsbnDbService::class);
+            $result = $service->search($this->title, $this->author);
+            $this->isbndbSearched = true;
+            $this->isbndbResults = $this->withCovers($result['results'], 'isbndb');
+
+            if (count($this->isbndbResults) > 0) {
+                return; // Stay on step 3, show ISBNdb results
+            }
+        }
+
+        $patron = app(PatronService::class)->findOrCreate([
+            'barcode'    => $this->barcode,
+            'name_first' => $this->name_first,
+            'name_last'  => $this->name_last,
+            'phone'      => $this->phone,
+            'email'      => $this->email ?: null,
+        ])['patron'];
+
+        $this->saveRequest($patron);
+    }
+
+    public function acceptIsbndbMatch(int $index): void
+    {
+        $this->isbndbMatchAccepted = true;
+        $this->selectedIsbndbIndex = $index;
+
+        $isbndbData = $this->isbndbResults[$index] ?? null;
+
+        // If ISBNdb can provide an unambiguous future publish date, honor the
+        // auto-order exclusion list before creating a request.
+        if (is_array($isbndbData) && $this->shouldAutoOrderExclude($this->author, (string) ($isbndbData['publish_date'] ?? ''))) {
+            $this->autoOrderExcluded = true;
+            $this->autoOrderExcludedMessage = (string) Setting::get(
+                'auto_order_author_exclusion_message',
+                '<p><strong>Good news:</strong> the library automatically orders new releases from this author. Please check the catalog closer to the release date to place a hold.</p>'
+            );
+            $this->processing = false;
+            $this->step = 4;
+            return;
+        }
+
+        $patron = app(PatronService::class)->findOrCreate([
+            'barcode'    => $this->barcode,
+            'name_first' => $this->name_first,
+            'name_last'  => $this->name_last,
+            'phone'      => $this->phone,
+            'email'      => $this->email ?: null,
+        ])['patron'];
+
+        $this->saveRequest($patron, $isbndbData);
+    }
+
+    public function skipIsbndbMatch(): void
+    {
+        $this->isbndbMatchAccepted = false;
+
+        $patron = app(PatronService::class)->findOrCreate([
+            'barcode'    => $this->barcode,
+            'name_first' => $this->name_first,
+            'name_last'  => $this->name_last,
+            'phone'      => $this->phone,
+            'email'      => $this->email ?: null,
+        ])['patron'];
+
+        $this->saveRequest($patron);
+    }
+
+    private function checkPatronLimit(): void
+    {
+        $existing = Patron::where('barcode', $this->barcode)->first();
+        if ($existing && $existing->hasReachedLimit()) {
+            $this->limitReached = true;
+            $this->limitUntil   = $existing->nextAvailableDate()?->format('F j, Y');
+        }
+    }
+
+    private function finishAfterResolution(): void
+    {
+        $patron = app(PatronService::class)->findOrCreate([
+            'barcode'    => $this->barcode,
+            'name_first' => $this->name_first,
+            'name_last'  => $this->name_last,
+            'phone'      => $this->phone,
+            'email'      => $this->email ?: null,
+        ])['patron'];
+
+        $this->saveRequest($patron);
+    }
+
+    private function saveRequest(Patron $patron, ?array $isbndbData = null): void
+    {
+        $this->processing = true;
+        $this->processingStep = 'Saving your request...';
+
+        // Resolve or create material
+        $material = Material::findMatch($this->title, $this->author);
+
+        if (! $material) {
+            $materialData = [
+                'title'                  => $this->title,
+                'author'                 => $this->author,
+                'publish_date'           => $this->publish_date ?: null,
+                'material_type_option_id'=> $this->material_type_id,
+                'source'                 => 'submitted',
+            ];
+
+            if ($isbndbData) {
+                $materialData = array_merge($materialData, [
+                    'isbn'             => $isbndbData['isbn'] ?? null,
+                    'isbn13'           => $isbndbData['isbn13'] ?? null,
+                    'publisher'        => $isbndbData['publisher'] ?? null,
+                    'exact_publish_date' => isset($isbndbData['publish_date']) ? date('Y-m-d', strtotime($isbndbData['publish_date'])) : null,
+                    'edition'          => $isbndbData['edition'] ?? null,
+                    'overview'         => $isbndbData['overview'] ?? null,
+                    'source'           => 'isbndb',
+                ]);
+            }
+
+            $material = Material::create($materialData);
+        }
+
+        // Determine if duplicate — any prior request for this material counts,
+        // including re-submissions from the same patron.
+        $priorRequest = PatronRequest::where('material_id', $material->id)->first();
+
+        $pendingStatus = RequestStatus::where('slug', 'pending')->first()
+            ?? RequestStatus::orderBy('sort_order')->firstOrFail();
+
+        $patronRequest = PatronRequest::create([
+            'patron_id'              => $patron->id,
+            'material_id'            => $material->id,
+            'request_status_id'      => $pendingStatus->id,
+            'submitted_title'        => $this->title,
+            'submitted_author'       => $this->author,
+            'submitted_publish_date' => $this->publish_date ?: null,
+            'other_material_text'    => $this->getShowOtherTextProperty() ? $this->other_material_text : null,
+            'ill_requested'          => (bool) ($this->custom['ill_requested'] ?? false),
+            'catalog_searched'       => $this->catalogSearched,
+            'catalog_result_count'   => count($this->catalogResults),
+            'catalog_match_accepted' => $this->catalogMatchAccepted,
+            'catalog_match_bib_id'   => $this->catalogMatchBibId,
+            'isbndb_searched'        => $this->isbndbSearched,
+            'isbndb_result_count'    => count($this->isbndbResults),
+            'isbndb_match_accepted'  => $this->isbndbMatchAccepted,
+            'is_duplicate'           => (bool) $priorRequest,
+            'duplicate_of_request_id'=> $priorRequest?->id,
+        ]);
+
+        // Store material_type, audience, genre as EAV field values
+        $coreFieldValues = [
+            'material_type' => $this->material_type_id ? (FieldOption::find($this->material_type_id)?->slug) : null,
+            'audience'      => $this->audience_id ? (FieldOption::find($this->audience_id)?->slug) : null,
+            'genre'         => $this->genre ?: null,
+        ];
+        foreach ($coreFieldValues as $key => $val) {
+            if ($val === null || $val === '') {
+                continue;
+            }
+            $fieldId = Field::where('key', $key)->value('id');
+            if ($fieldId) {
+                RequestFieldValue::create([
+                    'request_id' => $patronRequest->id,
+                    'field_id'   => $fieldId,
+                    'value'      => (string) $val,
+                ]);
+            }
+        }
+
+        // Store additional custom field values
+        $rows = [];
+        foreach ($this->stepTwoCustomFields as $field) {
+            $val = $this->custom[$field->key] ?? null;
+            if ($val === null || $val === '') {
+                continue;
+            }
+            $rows[] = [
+                'request_id'  => $patronRequest->id,
+                'field_id'    => $field->id,
+                'value'       => is_bool($val) ? ($val ? '1' : '0') : (string) $val,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ];
+        }
+        if (! empty($rows)) {
+            RequestFieldValue::insert($rows);
+        }
+
+        // Log initial status history
+        $patronRequest->statusHistory()->create([
+            'request_status_id' => $pendingStatus->id,
+            'user_id' => null,
+            'note' => 'Request submitted by patron.',
+        ]);
+
+        // Send staff routing notification
+        app(NotificationService::class)->notifyStaffNewRequest($patronRequest);
+
+        $this->createdRequestId = $patronRequest->id;
+        $this->processing = false;
+        $this->step = 4; // Confirmation
+    }
+
+    /**
+     * Decorate search results with a cover_url from CoverService.
+     * Source 'catalog' uses isbns[0] + jacket fallback.
+     * Source 'isbndb' uses isbn13/isbn + image fallback.
+     */
+    private function withCovers(array $results, string $source): array
+    {
+        $covers = app(CoverService::class);
+
+        return array_map(function (array $result) use ($covers, $source) {
+            if ($source === 'catalog') {
+                $isbn     = $result['isbns'][0] ?? null;
+                $fallback = $result['jacket'] ?? null;
+            } else {
+                $isbn     = $result['isbn13'] ?? $result['isbn'] ?? null;
+                $fallback = $result['image'] ?? null;
+            }
+
+            $result['cover_url'] = $covers->url($isbn, $fallback);
+            return $result;
+        }, $results);
+    }
+
+    public function render()
+    {
+        $visible = $this->visibleFields;
+
+        $customFieldIds = $this->stepTwoCustomFields->pluck('id')->all();
+        $customFieldOptions = FieldOption::query()
+            ->whereIn('field_id', $customFieldIds)
+            ->active()
+            ->ordered()
+            ->get()
+            ->groupBy('field_id')
+            ->map(fn ($g) => $g->pluck('name', 'slug')->all())
+            ->all();
+
+        $mtField = Field::where('key', 'material_type')->first();
+        $audField = Field::where('key', 'audience')->first();
+        $genreField = Field::where('key', 'genre')->first();
+
+        return view('requests::livewire.request-form', [
+            'materialTypes'         => $mtField ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->get() : collect(),
+            'audiences'             => $audField ? FieldOption::where('field_id', $audField->id)->active()->ordered()->get() : collect(),
+            'genres'                => $genreField ? FieldOption::where('field_id', $genreField->id)->active()->ordered()->get() : collect(),
+            'orderedFields'         => $this->formFields,
+            'stepTwoCustomFields'   => $this->stepTwoCustomFields,
+            'customFieldOptionsByFieldId' => $customFieldOptions,
+            'visibleFields'     => $visible,             // ['genre' => true/false, ...]
+            'illWarningMessage' => Setting::get('ill_warning_message', ''),
+            'successMessage'    => Setting::get('submission_success_message', 'Thank you for your suggestion!'),
+            'catalogOwnedMessage' => Setting::get(
+                'catalog_owned_message',
+                '<p><strong>Good news:</strong> this item is already in our catalog. Please place a hold in the catalog to get it as soon as it\'s available.</p>'
+            ),
+            'autoOrderExcludedMessage' => $this->autoOrderExcludedMessage,
+            'duplicateMessage'  => $this->duplicateMessage,
+            'formatLabels'      => CatalogFormatLabel::map(),
+        ]);
+    }
+
+    /**
+     * Return true when a submission should be excluded because the library
+     * auto-orders new releases from the author AND the item is not yet released.
+     */
+    private function shouldAutoOrderExclude(string $author, ?string $releaseDate): bool
+    {
+        if (! $this->isConfidentFutureDate($releaseDate)) {
+            return false;
+        }
+
+        $raw = (string) Setting::get('auto_order_author_exclusions', '');
+        $list = preg_split('/\r\n|\r|\n/', $raw) ?: [];
+
+        $submitted = $this->parseAuthorName($author);
+        if (! $submitted) {
+            return false;
+        }
+
+        foreach ($list as $entry) {
+            $excluded = $this->parseAuthorName((string) $entry);
+            if (! $excluded) {
+                continue;
+            }
+
+            // Match by last name + first initial (covers "Patterson, James" vs "James Patterson").
+            if (
+                $submitted['last'] !== ''
+                && $excluded['last'] !== ''
+                && $submitted['last'] === $excluded['last']
+                && $submitted['first_initial'] !== ''
+                && $excluded['first_initial'] !== ''
+                && $submitted['first_initial'] === $excluded['first_initial']
+            ) {
+                return true;
+            }
+
+            // Fallback: exact normalized full-name match in either order.
+            if (
+                $submitted['normalized_full'] !== ''
+                && $excluded['normalized_full'] !== ''
+                && (
+                    $submitted['normalized_full'] === $excluded['normalized_full']
+                    || $submitted['normalized_full'] === $excluded['normalized_swapped']
+                    || $submitted['normalized_swapped'] === $excluded['normalized_full']
+                )
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Only return true when we can confidently say the date is in the future.
+     * Accepts unambiguous formats: YYYY-MM-DD, YYYY-MM, YYYY.
+     */
+    private function isConfidentFutureDate(?string $value): bool
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return false;
+        }
+
+        $now = now();
+
+        // ISO datetime strings: 2026-04-15T00:00:00Z → treat as YYYY-MM-DD
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T/', $value) === 1) {
+            $value = substr($value, 0, 10);
+        }
+
+        // Full date (most reliable): 2026-04-15
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
+            try {
+                return Carbon::createFromFormat('Y-m-d', $value)->isAfter($now);
+            } catch (\Throwable) {
+                return false;
+            }
+        }
+
+        // Year-month: 2026-04 (confidently future if after current month)
+        if (preg_match('/^\d{4}-\d{2}$/', $value) === 1) {
+            try {
+                $dt = Carbon::createFromFormat('Y-m', $value)->startOfMonth();
+                return $dt->isAfter($now->copy()->startOfMonth());
+            } catch (\Throwable) {
+                return false;
+            }
+        }
+
+        // Year: 2027 (confidently future only if strictly greater than current year)
+        if (preg_match('/^\d{4}$/', $value) === 1) {
+            return (int) $value > (int) $now->year;
+        }
+
+        // Common human formats the form suggests: "January 2027", "Jan 2027", "January 5 2027"
+        // Only treat as confident if it contains a 4-digit year.
+        if (preg_match('/\b\d{4}\b/', $value) === 1) {
+            try {
+                return Carbon::parse($value)->isAfter($now);
+            } catch (\Throwable) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Parse an author string into normalized name parts for matching.
+     *
+     * Returns null if it can't determine a usable name.
+     *
+     * @return array{first:string,last:string,first_initial:string,normalized_full:string,normalized_swapped:string}|null
+     */
+    private function parseAuthorName(string $author): ?array
+    {
+        $author = strtolower(trim($author));
+        if ($author === '') {
+            return null;
+        }
+
+        // If multiple authors are present, only consider the first.
+        $author = preg_split('/\s+(and|&)\s+|;/', $author)[0] ?? $author;
+        $author = trim($author);
+
+        // Keep letters/numbers/spaces/commas; drop punctuation.
+        $author = preg_replace('/[^a-z0-9\s,]/', ' ', $author) ?? $author;
+        $author = preg_replace('/\s+/', ' ', $author) ?? $author;
+        $author = trim($author);
+
+        if ($author === '') {
+            return null;
+        }
+
+        $first = '';
+        $last = '';
+
+        if (str_contains($author, ',')) {
+            // "Last, First Middle"
+            [$lastPart, $firstPart] = array_pad(explode(',', $author, 2), 2, '');
+            $last = trim($lastPart);
+            $first = trim($firstPart);
+        } else {
+            // "First Middle Last"
+            $parts = preg_split('/\s+/', $author) ?: [];
+            if (count($parts) >= 2) {
+                $first = (string) ($parts[0] ?? '');
+                $last = (string) end($parts);
+            } else {
+                // Single token is too ambiguous to match safely.
+                return null;
+            }
+        }
+
+        $first = trim($first);
+        $last = trim($last);
+
+        if ($first === '' || $last === '') {
+            return null;
+        }
+
+        $firstInitial = $first[0] ?? '';
+
+        $normalizedFull = trim(preg_replace('/\s+/', ' ', "{$first} {$last}") ?? "{$first} {$last}");
+        $normalizedSwapped = trim(preg_replace('/\s+/', ' ', "{$last} {$first}") ?? "{$last} {$first}");
+
+        return [
+            'first' => $first,
+            'last' => $last,
+            'first_initial' => $firstInitial,
+            'normalized_full' => $normalizedFull,
+            'normalized_swapped' => $normalizedSwapped,
+        ];
+    }
+}

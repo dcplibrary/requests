@@ -81,18 +81,18 @@
             <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Message</label>
                 <div class="rounded border overflow-hidden"
-                     :class="emailPreview.editingEnabled ? 'sfp-ep-editing' : 'sfp-ep-readonly'"
+                     :class="emailPreview.editingEnabled ? 'requests-ep-editing' : 'requests-ep-readonly'"
                      :style="emailPreview.editingEnabled ? 'border-color:#60a5fa;' : 'border-color:#e5e7eb;'">
-                    <input type="hidden" id="sfp-email-preview-body">
+                    <input type="hidden" id="requests-email-preview-body">
                     <trix-editor
-                        input="sfp-email-preview-body"
+                        input="requests-email-preview-body"
                         :contenteditable="emailPreview.editingEnabled ? 'true' : 'false'"
                         class="trix-content bg-white text-sm"
                         style="min-height:220px; max-height:360px; overflow-y:auto;"></trix-editor>
                 </div>
                 <style>
-                    .sfp-ep-readonly trix-toolbar { display: none !important; }
-                    .sfp-ep-readonly trix-editor  { cursor: default; }
+                    .requests-ep-readonly trix-toolbar { display: none !important; }
+                    .requests-ep-readonly trix-editor  { cursor: default; }
                 </style>
             </div>
 

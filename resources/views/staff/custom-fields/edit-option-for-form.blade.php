@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', 'Edit option for ' . $formLabel . ': ' . $field->label)
 @section('settings-content')
 
@@ -10,7 +10,7 @@
     <h1 class="text-xl font-bold text-gray-900">{{ $optionName }}</h1>
 </div>
 
-@livewire('sfp-admin-form-custom-field-option-edit', [
+@livewire('requests-admin-form-custom-field-option-edit', [
     'fieldId'   => $field->id,
     'optionId'  => $optionId,
     'formSlug'  => $formSlug,

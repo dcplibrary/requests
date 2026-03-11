@@ -1,30 +1,28 @@
 <?php
 
-namespace Dcplibrary\Sfp\Console\Commands;
+namespace Dcplibrary\Requests\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 class UsersBackupCommand extends Command
 {
-    protected $signature = 'request:users-backup
-        {--path= : Directory to write the backup file (default: storage/app/sfp-backups)}';
+    protected $signature = 'requests:users-backup
+        {--path= : Directory to write the backup file (default: storage/app/requests-backups)}';
 
-    protected $description = 'Backup sfp_users, selector_groups, and their pivot tables to a JSON file.';
+    protected $description = 'Backup staff_users, selector_groups, and their pivot tables to a JSON file.';
 
     /** Tables to back up, in dependency order (parents before children). */
     private const TABLES = [
-        'sfp_users',
+        'staff_users',
         'selector_groups',
         'selector_group_user',
-        'selector_group_material_type',
-        'selector_group_audience',
-        'selector_group_genre',
+        'selector_group_field_option',
     ];
 
     public function handle(): int
     {
-        $outputDir = rtrim($this->option('path') ?: storage_path('app/sfp-backups'), '/');
+        $outputDir = rtrim($this->option('path') ?: storage_path('app/requests-backups'), '/');
 
         if (! is_dir($outputDir) && ! mkdir($outputDir, 0755, true)) {
             $this->error("Cannot create output directory: {$outputDir}");
@@ -34,7 +32,7 @@ class UsersBackupCommand extends Command
         $payload = [
             'version'     => 1,
             'exported_at' => now()->toIso8601String(),
-            'app'         => 'dcplibrary/sfp',
+            'app'         => 'dcplibrary/requests',
             'tables'      => [],
         ];
 

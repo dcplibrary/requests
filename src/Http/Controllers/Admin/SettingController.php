@@ -1,16 +1,15 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
-use Dcplibrary\Sfp\Mail\SfpMail;
-use Dcplibrary\Sfp\Models\CustomField;
-use Dcplibrary\Sfp\Models\FormField;
-use Dcplibrary\Sfp\Models\MaterialType;
-use Dcplibrary\Sfp\Models\PatronStatusTemplate;
-use Dcplibrary\Sfp\Models\RequestStatus;
-use Dcplibrary\Sfp\Models\Setting;
-use Dcplibrary\Sfp\Services\NotificationService;
+use Dcplibrary\Requests\Http\Controllers\Controller;
+use Dcplibrary\Requests\Mail\RequestMail;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\PatronStatusTemplate;
+use Dcplibrary\Requests\Models\RequestStatus;
+use Dcplibrary\Requests\Models\Setting;
+use Dcplibrary\Requests\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -18,7 +17,7 @@ class SettingController extends Controller
 {
     public function index()
     {
-        return view('sfp::staff.settings.index', [
+        return view('requests::staff.settings.index', [
             // Catalog/ISBNdb/Syndetics settings live on the dedicated Catalog tab.
             // Notification settings live on the dedicated Notifications tab.
             'settings' => Setting::allGrouped()->except(['catalog', 'isbndb', 'syndetics', 'notifications', 'backup'])
@@ -34,28 +33,17 @@ class SettingController extends Controller
             '{status}', '{submitted_date}', '{request_url}',
         ];
 
-        // Form field keys — title, author, material_type, audience, genre, etc.
-        $formFieldTokens = [];
+        // Field-based tokens (title, author, material_type, audience, genre, etc.).
+        $fieldTokens = [];
         try {
-            $formFieldTokens = FormField::ordered()
+            $fieldTokens = Field::active()
+                ->where('include_as_token', true)
+                ->ordered()
                 ->pluck('key')
                 ->map(fn (string $k) => "{{$k}}")
                 ->all();
         } catch (\Throwable $e) {
-            // Table may not exist or be empty during install
-        }
-
-        // Active custom field keys.
-        $customFieldTokens = [];
-        try {
-            $customFieldTokens = CustomField::query()
-                ->where('active', true)
-                ->orderBy('sort_order')
-                ->pluck('key')
-                ->map(fn (string $k) => "{{$k}}")
-                ->all();
-        } catch (\Throwable $e) {
-            // Table may not exist
+            // Table may not exist during install
         }
 
         // Core request tokens (always include these so they're always listed).
@@ -63,8 +51,7 @@ class SettingController extends Controller
         $availableTokens = array_values(array_unique(array_merge(
             $coreRequestTokens,
             $systemTokens,
-            $formFieldTokens,
-            $customFieldTokens
+            $fieldTokens
         )));
 
         $notifications = Setting::where('group', 'notifications')->orderBy('label')->get();
@@ -107,10 +94,13 @@ class SettingController extends Controller
             '{where_heard}', '{date_needed_by}', '{console}', '{patron_email}', '{patron_phone}', '{audience}',
         ];
 
-        $materialTypes = MaterialType::ordered()->get();
-        $patronStatusTemplates = PatronStatusTemplate::with(['requestStatuses', 'materialTypes'])->ordered()->get();
+        $mtField = Field::where('key', 'material_type')->first();
+        $materialTypes = $mtField
+            ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->get()
+            : collect();
+        $patronStatusTemplates = PatronStatusTemplate::with(['requestStatuses', 'fieldOptions'])->ordered()->get();
 
-        return view('sfp::staff.settings.notifications', [
+        return view('requests::staff.settings.notifications', [
             'settingsByTab'         => $settingsByTab,
             'notificationSettings'  => $notificationSettings,
             'keyToTab'              => $keyToTab,
@@ -140,18 +130,13 @@ class SettingController extends Controller
         $staffStatusIdsSetting = $notifications->get('staff_routing_status_ids');
 
         $systemTokens = ['{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}', '{status}', '{submitted_date}', '{request_url}'];
-        $formFieldTokens = [];
+        $fieldTokens = [];
         try {
-            $formFieldTokens = FormField::ordered()->pluck('key')->map(fn ($k) => "{{$k}}")->all();
-        } catch (\Throwable $e) {
-        }
-        $customFieldTokens = [];
-        try {
-            $customFieldTokens = CustomField::query()->where('active', true)->where('include_as_token', true)->ordered()->pluck('key')->map(fn ($k) => "{{$k}}")->all();
+            $fieldTokens = Field::active()->where('include_as_token', true)->ordered()->pluck('key')->map(fn ($k) => "{{$k}}")->all();
         } catch (\Throwable $e) {
         }
         $core = ['{title}', '{author}', '{material_type}', '{audience}'];
-        $availableTokens = array_values(array_unique(array_merge($core, $systemTokens, $formFieldTokens, $customFieldTokens)));
+        $availableTokens = array_values(array_unique(array_merge($core, $systemTokens, $fieldTokens)));
         $subjectExcludedTokens = [
             '{will_pay_up_to}', '{ill_requested}', '{prefer_email}', '{prefer_mail}', '{other_specify}',
             '{publisher}', '{periodical_title}', '{article_author}', '{article_title}', '{volume_number}', '{page_number}',
@@ -159,13 +144,16 @@ class SettingController extends Controller
             '{where_heard}', '{date_needed_by}', '{console}', '{patron_email}', '{patron_phone}', '{audience}',
         ];
 
-        $materialTypes = MaterialType::ordered()->get();
+        $mtField = Field::where('key', 'material_type')->first();
+        $materialTypes = $mtField
+            ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->get()
+            : collect();
         $requestStatuses = RequestStatus::orderBy('sort_order')->get();
         $titleValue = optional($staffTitleSetting)->value ?? 'Staff routing';
         $materialIds = (array) json_decode(optional($staffMaterialTypeIdsSetting)->value ?? '[]', true);
         $statusIds = (array) json_decode(optional($staffStatusIdsSetting)->value ?? '[]', true);
 
-        return view('sfp::staff.settings.notifications-staff-email', [
+        return view('requests::staff.settings.notifications-staff-email', [
             'staffEnabled'           => (bool) (optional($staffEnabled)->value ?? false),
             'staffSubjectValue'      => optional($staffSubject)->value ?? '',
             'staffTemplateValue'     => optional($staffTemplate)->value ?? '',
@@ -190,18 +178,13 @@ class SettingController extends Controller
         $patronTemplate = $notifications->get('patron_status_template');
 
         $systemTokens = ['{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}', '{status}', '{status_description}', '{submitted_date}', '{request_url}'];
-        $formFieldTokens = [];
+        $fieldTokens = [];
         try {
-            $formFieldTokens = FormField::ordered()->pluck('key')->map(fn ($k) => "{{$k}}")->all();
-        } catch (\Throwable $e) {
-        }
-        $customFieldTokens = [];
-        try {
-            $customFieldTokens = CustomField::query()->where('active', true)->where('include_as_token', true)->ordered()->pluck('key')->map(fn ($k) => "{{$k}}")->all();
+            $fieldTokens = Field::active()->where('include_as_token', true)->ordered()->pluck('key')->map(fn ($k) => "{{$k}}")->all();
         } catch (\Throwable $e) {
         }
         $core = ['{title}', '{author}', '{material_type}', '{audience}'];
-        $availableTokens = array_values(array_unique(array_merge($core, $systemTokens, $formFieldTokens, $customFieldTokens)));
+        $availableTokens = array_values(array_unique(array_merge($core, $systemTokens, $fieldTokens)));
         $subjectExcludedTokens = [
             '{will_pay_up_to}', '{ill_requested}', '{prefer_email}', '{prefer_mail}', '{other_specify}',
             '{publisher}', '{periodical_title}', '{article_author}', '{article_title}', '{volume_number}', '{page_number}',
@@ -209,7 +192,7 @@ class SettingController extends Controller
             '{where_heard}', '{date_needed_by}', '{console}', '{patron_email}', '{patron_phone}', '{audience}', '{status_description}',
         ];
 
-        return view('sfp::staff.settings.notifications-default-patron-email', [
+        return view('requests::staff.settings.notifications-default-patron-email', [
             'patronEnabled'          => (bool) (optional($patronEnabled)->value ?? false),
             'patronSubjectValue'     => optional($patronSubject)->value ?? '',
             'patronTemplateValue'    => optional($patronTemplate)->value ?? '',
@@ -245,7 +228,7 @@ class SettingController extends Controller
             $template
         );
 
-        return view('sfp::mail.sfp', ['body' => $body]);
+        return view('requests::mail.notification', ['body' => $body]);
     }
 
     /**
@@ -287,7 +270,7 @@ class SettingController extends Controller
         );
 
         try {
-            Mail::to($data['email'])->send(new SfpMail('[Test] ' . $subject, $body));
+            Mail::to($data['email'])->send(new RequestMail('[Test] ' . $subject, $body));
             return back()->with('test_success', "Test email sent to {$data['email']}.");
         } catch (\Throwable $e) {
             return back()->with('test_error', 'Failed to send: ' . $e->getMessage());
@@ -309,7 +292,7 @@ class SettingController extends Controller
             '{status}'            => 'On Order',
             '{status_description}' => 'Your request has been ordered and is on its way.',
             '{submitted_date}'    => now()->format('F j, Y'),
-            '{request_url}'       => url('/sfp/staff/requests/1'),
+            '{request_url}'       => url('/request/staff/requests/1'),
             '{genre}'             => 'Fiction',
             '{console}'           => 'PlayStation 5',
             '{isbn}'              => '978-0-7432-7356-5',

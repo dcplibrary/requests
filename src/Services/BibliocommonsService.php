@@ -1,8 +1,8 @@
 <?php
 
-namespace Dcplibrary\Sfp\Services;
+namespace Dcplibrary\Requests\Services;
 
-use Dcplibrary\Sfp\Models\Setting;
+use Dcplibrary\Requests\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -47,7 +47,7 @@ class BibliocommonsService
         try {
             $response = Http::timeout(10)
                 ->withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (compatible; SfpBot/1.0)',
+                    'User-Agent' => 'Mozilla/5.0 (compatible; RequestsBot/1.0)',
                     'Accept'     => 'application/json',
                 ])
                 ->get($apiUrl, [

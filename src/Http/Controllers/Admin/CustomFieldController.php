@@ -1,31 +1,49 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
-use Dcplibrary\Sfp\Models\CustomField;
-use Dcplibrary\Sfp\Models\CustomFieldOption;
-use Dcplibrary\Sfp\Models\Form;
-use Dcplibrary\Sfp\Models\FormCustomField;
+use Dcplibrary\Requests\Http\Controllers\Controller;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\Form;
+use Dcplibrary\Requests\Models\FormFieldConfig;
 
+/**
+ * Legacy custom-field routes — redirects to the unified form-fields UI.
+ */
 class CustomFieldController extends Controller
 {
+    /**
+     * Redirect to the unified form-fields index.
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function index()
     {
         return redirect()->route('request.staff.settings.form-fields');
     }
 
-    public function edit(CustomField $field)
+    /**
+     * Edit a field (base definition).
+     *
+     * @param  Field  $field
+     * @return \Illuminate\View\View
+     */
+    public function edit(Field $field)
     {
-        return view('sfp::staff.custom-fields.edit', compact('field'));
+        return view('requests::staff.custom-fields.edit', compact('field'));
     }
 
     /**
-     * Edit this custom field's configuration for one form only (SFP or ILL).
-     * Edits the pivot (label override, required, visible, conditional_logic).
-     * Creates the pivot row if missing.
+     * Edit this field's per-form configuration (SFP or ILL).
+     *
+     * Creates the FormFieldConfig row if missing.
+     *
+     * @param  Field   $field
+     * @param  string  $form  sfp|ill
+     * @return \Illuminate\View\View
      */
-    public function editForForm(CustomField $field, string $form)
+    public function editForForm(Field $field, string $form)
     {
         abort_unless(in_array($form, ['sfp', 'ill'], true), 404);
 
@@ -34,11 +52,11 @@ class CustomFieldController extends Controller
             abort(404);
         }
 
-        $maxOrder = FormCustomField::where('form_id', $formModel->id)->max('sort_order') ?? 0;
-        $pivot = FormCustomField::firstOrCreate(
+        $maxOrder = FormFieldConfig::where('form_id', $formModel->id)->max('sort_order') ?? 0;
+        $pivot = FormFieldConfig::firstOrCreate(
             [
-                'form_id'         => $formModel->id,
-                'custom_field_id' => $field->id,
+                'form_id'  => $formModel->id,
+                'field_id' => $field->id,
             ],
             [
                 'sort_order'        => $maxOrder + 1,
@@ -50,7 +68,7 @@ class CustomFieldController extends Controller
 
         $formLabel = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
 
-        return view('sfp::staff.custom-fields.edit-for-form', [
+        return view('requests::staff.custom-fields.edit-for-form', [
             'field'     => $field,
             'pivot'     => $pivot,
             'formSlug'  => $form,
@@ -60,23 +78,33 @@ class CustomFieldController extends Controller
 
     /**
      * Edit a single option's per-form configuration.
-     * Only valid for select/radio custom fields.
+     *
+     * Only valid for select/radio fields.
+     *
+     * @param  Field   $field
+     * @param  string  $form      sfp|ill
+     * @param  int     $optionId  FieldOption ID
+     * @return \Illuminate\View\View
      */
-    public function editForFormOption(CustomField $field, string $form, int $optionId)
+    public function editForFormOption(Field $field, string $form, int $optionId)
     {
         abort_unless(in_array($form, ['sfp', 'ill'], true), 404);
         abort_unless(in_array($field->type, ['select', 'radio'], true), 404, 'This field does not have per-form option overrides.');
 
-        $option = CustomFieldOption::where('id', $optionId)
-            ->where('custom_field_id', $field->id)
+        $option = FieldOption::where('id', $optionId)
+            ->where('field_id', $field->id)
             ->first();
         abort_unless($option !== null, 404);
 
         $formLabel  = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
         $optionName = $option->name;
 
-        return view('sfp::staff.custom-fields.edit-option-for-form', compact(
-            'field', 'formLabel', 'optionName'
-        ) + ['formSlug' => $form, 'optionId' => $optionId]);
+        return view('requests::staff.custom-fields.edit-option-for-form', [
+            'field'      => $field,
+            'formSlug'   => $form,
+            'formLabel'  => $formLabel,
+            'optionName' => $optionName,
+            'optionId'   => $optionId,
+        ]);
     }
 }

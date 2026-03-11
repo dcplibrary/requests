@@ -1,35 +1,29 @@
 <?php
 
-namespace Dcplibrary\Sfp\Livewire;
+namespace Dcplibrary\Requests\Livewire;
 
-use Dcplibrary\Sfp\Models\CustomField;
-use Dcplibrary\Sfp\Models\CustomFieldOption;
-use Dcplibrary\Sfp\Models\Audience;
-use Dcplibrary\Sfp\Models\Form;
-use Dcplibrary\Sfp\Models\FormCustomField;
-use Dcplibrary\Sfp\Models\FormCustomFieldOption;
-use Dcplibrary\Sfp\Models\FormField;
-use Dcplibrary\Sfp\Models\FormFormField;
-use Dcplibrary\Sfp\Models\FormFormFieldOption;
-use Dcplibrary\Sfp\Models\Genre;
-use Dcplibrary\Sfp\Models\MaterialType;
-use Dcplibrary\Sfp\Models\Patron;
-use Dcplibrary\Sfp\Models\RequestCustomFieldValue;
-use Dcplibrary\Sfp\Models\RequestStatus;
-use Dcplibrary\Sfp\Models\Setting;
-use Dcplibrary\Sfp\Models\SfpRequest;
-use Dcplibrary\Sfp\Models\Material;
-use Dcplibrary\Sfp\Services\BibliocommonsService;
-use Dcplibrary\Sfp\Services\CoverService;
-use Dcplibrary\Sfp\Services\IsbnDbService;
-use Dcplibrary\Sfp\Services\NotificationService;
-use Dcplibrary\Sfp\Services\PatronService;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\Form;
+use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Models\FormFieldOptionOverride;
+use Dcplibrary\Requests\Models\Patron;
+use Dcplibrary\Requests\Models\RequestFieldValue;
+use Dcplibrary\Requests\Models\RequestStatus;
+use Dcplibrary\Requests\Models\Setting;
+use Dcplibrary\Requests\Models\PatronRequest;
+use Dcplibrary\Requests\Models\Material;
+use Dcplibrary\Requests\Services\BibliocommonsService;
+use Dcplibrary\Requests\Services\CoverService;
+use Dcplibrary\Requests\Services\IsbnDbService;
+use Dcplibrary\Requests\Services\NotificationService;
+use Dcplibrary\Requests\Services\PatronService;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
-#[Layout('sfp::layouts.sfp')]
+#[Layout('requests::layouts.requests')]
 class IllForm extends Component
 {
     public int $step = 1;
@@ -50,7 +44,7 @@ class IllForm extends Component
     #[Validate('nullable|email|max:255')]
     public string $email = '';
 
-    // Step 2: material type (from material_types table) + dynamic custom field answers
+    // Step 2: material type (FieldOption ID) + dynamic field answers
     public ?int $material_type_id = null;
 
     /** @var array<string, mixed> */
@@ -101,9 +95,12 @@ class IllForm extends Component
         if (! empty($allowed)) {
             $this->material_type_id = in_array($this->material_type_id, $allowed, true) ? $this->material_type_id : $allowed[0];
         } else {
-            $book = MaterialType::where('slug', 'book')->where('active', true)->first();
-            if ($book) {
-                $this->material_type_id = $book->id;
+            $mtField = Field::where('key', 'material_type')->first();
+            if ($mtField) {
+                $book = FieldOption::where('field_id', $mtField->id)->where('slug', 'book')->where('active', true)->first();
+                if ($book) {
+                    $this->material_type_id = $book->id;
+                }
             }
         }
     }
@@ -113,7 +110,7 @@ class IllForm extends Component
         if ($this->material_type_id === null) {
             return null;
         }
-        return MaterialType::find($this->material_type_id)?->slug ?? null;
+        return FieldOption::find($this->material_type_id)?->slug ?? null;
     }
 
     public function nextStep(): void
@@ -145,75 +142,46 @@ class IllForm extends Component
     // --- Custom field config (from ILL form settings: FormCustomField visible, required, conditional_logic) ---
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, \Dcplibrary\Sfp\Models\CustomField>
+     * @return \Illuminate\Database\Eloquent\Collection<int, \Dcplibrary\Requests\Models\Field>
      */
     public function getCustomFieldsProperty()
     {
-        return CustomField::forKind('ill')->ordered()->get();
+        return Field::forKind('ill')->ordered()->get();
     }
 
     /**
-     * Step 2 fields for the ILL form: form fields (FormFormField) + custom fields (FormCustomField)
-     * from the ILL form settings, merged and ordered by sort_order.
+     * Step 2 fields for the ILL form from form_field_config, merged and ordered by sort_order.
      *
-     * @return \Illuminate\Support\Collection<int, object{key: string, id: int, type: string, label: string, required: bool, condition: array, sort_order: int, source: string, customField?: CustomField, formField?: FormField}>
+     * @return \Illuminate\Support\Collection<int, object{key: string, id: int, type: string, label: string, required: bool, condition: array, sort_order: int, field: Field}>
      */
     public function getStepTwoFieldsProperty()
     {
         $form = Form::bySlug('ill');
-        $rows = collect();
 
         if ($form) {
-            // Form fields (Title, Author, ISBN, Audience, Genre, etc.) — skip material_type (rendered at top).
-            $formPivots = $form->formFormFields()
-                ->with('formField')
+            $configs = $form->fieldConfigs()
+                ->with('field')
                 ->where('visible', true)
                 ->orderBy('sort_order')
                 ->get();
 
-            foreach ($formPivots as $pivot) {
-                $f = $pivot->formField;
+            $rows = collect();
+            foreach ($configs as $cfg) {
+                $f = $cfg->field;
                 if (! $f || ! $f->active || $f->key === 'material_type') {
                     continue;
                 }
-                $hasOverride = $pivot->label_override !== null && $pivot->label_override !== '';
+                $hasOverride = $cfg->label_override !== null && $cfg->label_override !== '';
                 $rows->push((object) [
                     'key'               => $f->key,
                     'id'                => $f->id,
                     'type'              => $f->type ?? 'text',
-                    'label'             => $hasOverride ? $pivot->label_override : $f->label,
+                    'label'             => $hasOverride ? $cfg->label_override : $f->label,
                     'has_label_override' => $hasOverride,
-                    'required'          => (bool) $pivot->required,
-                    'condition'         => $pivot->conditional_logic ?? $f->condition ?? ['match' => 'all', 'rules' => []],
-                    'sort_order'        => $pivot->sort_order,
-                    'source'            => 'form',
-                    'formField'         => $f,
-                ]);
-            }
-
-            // Custom fields (Date needed by, Will pay, etc.)
-            $customPivots = $form->formCustomFields()
-                ->with('customField')
-                ->where('step', 2)
-                ->where('visible', true)
-                ->orderBy('sort_order')
-                ->get();
-
-            foreach ($customPivots as $pivot) {
-                $cf = $pivot->customField;
-                if (! $cf || ! $cf->active) {
-                    continue;
-                }
-                $rows->push((object) [
-                    'key'         => $cf->key,
-                    'id'          => $cf->id,
-                    'type'        => $cf->type,
-                    'label'       => $pivot->label_override !== null && $pivot->label_override !== '' ? $pivot->label_override : $cf->label,
-                    'required'    => (bool) $pivot->required,
-                    'condition'   => $pivot->conditional_logic ?? $cf->condition ?? ['match' => 'all', 'rules' => []],
-                    'sort_order'  => $pivot->sort_order,
-                    'source'      => 'custom',
-                    'customField' => $cf,
+                    'required'          => (bool) $cfg->required,
+                    'condition'         => $cfg->conditional_logic ?? $f->condition ?? ['match' => 'all', 'rules' => []],
+                    'sort_order'        => $cfg->sort_order,
+                    'field'             => $f,
                 ]);
             }
 
@@ -222,18 +190,17 @@ class IllForm extends Component
             }
         }
 
-        // Fallback: no ILL form config, use base custom fields only
-        return CustomField::forKind('ill')->where('step', 2)->active()->ordered()->get()->map(function (CustomField $cf, int $i) {
+        // Fallback: no ILL form config, use base fields only
+        return Field::forKind('ill')->where('step', 2)->active()->ordered()->get()->map(function (Field $f, int $i) {
             return (object) [
-                'key'         => $cf->key,
-                'id'          => $cf->id,
-                'type'        => $cf->type,
-                'label'       => $cf->label,
-                'required'    => (bool) $cf->required,
-                'condition'   => $cf->condition ?? ['match' => 'all', 'rules' => []],
+                'key'         => $f->key,
+                'id'          => $f->id,
+                'type'        => $f->type,
+                'label'       => $f->label,
+                'required'    => (bool) $f->required,
+                'condition'   => $f->condition ?? ['match' => 'all', 'rules' => []],
                 'sort_order'  => $i,
-                'source'      => 'custom',
-                'customField' => $cf,
+                'field'       => $f,
             ];
         });
     }
@@ -275,7 +242,7 @@ class IllForm extends Component
         $state = $this->customState();
 
         return $this->stepTwoFields
-            ->mapWithKeys(fn ($f) => [$f->key => CustomField::evaluateCondition($f->condition, $state)])
+            ->mapWithKeys(fn ($f) => [$f->key => Field::evaluateCondition($f->condition, $state)])
             ->all();
     }
 
@@ -294,6 +261,8 @@ class IllForm extends Component
     }
 
     /**
+     * Build validation rules for all visible step-two fields.
+     *
      * @return array<string, string>
      */
     private function buildStepTwoRules(): array
@@ -302,7 +271,7 @@ class IllForm extends Component
         $state = $this->customState();
 
         foreach ($this->stepTwoFields as $field) {
-            $visible  = CustomField::evaluateCondition($field->condition, $state);
+            $visible  = Field::evaluateCondition($field->condition, $state);
             $required = $visible && $field->required;
             // When "Other" material type is selected, title can come from other_specify; don't require title.
             if ($field->key === 'title' && ($state['material_type'] ?? '') === 'other') {
@@ -311,54 +280,34 @@ class IllForm extends Component
 
             $path = "custom.{$field->key}";
 
-            // Form fields (Title, Author, Audience, Genre, etc.) — no customField
-            if (isset($field->source) && $field->source === 'form') {
-                $rules[$path] = match ($field->type) {
-                    'text'  => $required ? 'required|string|max:500' : 'nullable|string|max:500',
-                    'date'  => $required ? 'required|date' : 'nullable|date',
-                    'radio' => $this->formFieldRadioRule($field->key, $required),
-                    default => $required ? 'required|string|max:500' : 'nullable|string|max:500',
-                };
-                continue;
-            }
-
             $rules[$path] = match ($field->type) {
-                'radio', 'select' => $this->customFieldSelectRule($field->customField, $required),
-                'text'           => $required ? 'required|string|max:500' : 'nullable|string|max:500',
-                'textarea'       => $required ? 'required|string|max:5000' : 'nullable|string|max:5000',
-                'date'           => $required ? 'required|date' : 'nullable|date',
-                'number'         => $required ? 'required|numeric' : 'nullable|numeric',
-                'checkbox'       => 'nullable|boolean',
-                default          => $required ? 'required' : 'nullable',
+                'radio', 'select' => $this->selectOrRadioRule($field->field, $required),
+                'text'            => $required ? 'required|string|max:500' : 'nullable|string|max:500',
+                'textarea'        => $required ? 'required|string|max:5000' : 'nullable|string|max:5000',
+                'date'            => $required ? 'required|date' : 'nullable|date',
+                'number'          => $required ? 'required|numeric' : 'nullable|numeric',
+                'checkbox'        => 'nullable|boolean',
+                default           => $required ? 'required' : 'nullable',
             };
         }
 
         return $rules;
     }
 
-    /** Custom field select/radio rule using ILL form option visibility when applicable. */
-    private function customFieldSelectRule(CustomField $field, bool $required): string
+    /**
+     * Build a select/radio validation rule using ILL form option overrides.
+     *
+     * @param  Field  $field
+     * @param  bool   $required
+     * @return string
+     */
+    private function selectOrRadioRule(Field $field, bool $required): string
     {
-        $options = $this->getIllCustomFieldOptions([$field->id])[$field->id] ?? null;
-        $slugs   = $options !== null ? array_keys($options) : CustomFieldOption::query()
-            ->where('custom_field_id', $field->id)
-            ->active()
-            ->ordered()
-            ->pluck('slug')
-            ->all();
-        $base = $required ? 'required' : 'nullable';
-        return $slugs !== [] ? $base . '|in:' . implode(',', $slugs) : $base;
-    }
+        $form  = Form::bySlug('ill');
+        $slugs = array_keys($this->getOptionsForField($field->id, $form?->id));
+        $base  = $required ? 'required' : 'nullable';
 
-    private function formFieldRadioRule(string $key, bool $required): string
-    {
-        $slugs = match ($key) {
-            'audience' => implode(',', array_keys($this->getIllAudienceOptions())),
-            'genre'    => implode(',', array_keys($this->getIllGenreOptions())),
-            default    => '',
-        };
-        $base = $required ? 'required' : 'nullable';
-        return $slugs !== '' ? "{$base}|in:{$slugs}" : $base;
+        return $slugs !== [] ? $base . '|in:' . implode(',', $slugs) : $base;
     }
 
     // --- Submission ---
@@ -409,8 +358,8 @@ class IllForm extends Component
         }
 
         // No catalog hits: optionally search ISBNdb for enrichment (when this material type is searchable)
-        $materialType = MaterialType::find($this->material_type_id);
-        if ($materialType?->isbndb_searchable && $title !== '' && Setting::get('ill_isbndb_enabled', false)) {
+        $materialTypeOpt = FieldOption::find($this->material_type_id);
+        if ($materialTypeOpt?->meta('isbndb_searchable', false) && $title !== '' && Setting::get('ill_isbndb_enabled', false)) {
             $this->processingStep = 'Verifying book details...';
             $service = app(IsbnDbService::class);
             $searchResult = $service->search($title, $author);
@@ -444,11 +393,11 @@ class IllForm extends Component
         $patron = Patron::where('barcode', $this->barcode)->firstOrFail();
 
         // Optionally show ISBNdb results for enrichment (when this material type is searchable)
-        $materialType = MaterialType::find($this->material_type_id);
+        $materialTypeOpt = FieldOption::find($this->material_type_id);
         $title = (string) ($this->custom['title'] ?? '');
         $author = (string) ($this->custom['author'] ?? '');
 
-        if (! $this->isbndbSearched && $materialType?->isbndb_searchable && $title !== '' && Setting::get('ill_isbndb_enabled', false)) {
+        if ($materialTypeOpt?->meta('isbndb_searchable', false) && ! $this->isbndbSearched && $title !== '' && Setting::get('ill_isbndb_enabled', false)) {
             $this->processingStep = 'Verifying book details...';
             $service = app(IsbnDbService::class);
             $searchResult = $service->search($title, $author);
@@ -481,6 +430,13 @@ class IllForm extends Component
         $this->saveRequest($patron);
     }
 
+    /**
+     * Persist the ILL request, material (when ISBNdb matched), and all field values as EAV.
+     *
+     * @param  Patron      $patron
+     * @param  array|null  $isbndbData  Enrichment data from ISBNdb when a match was accepted.
+     * @return void
+     */
     private function saveRequest(Patron $patron, ?array $isbndbData = null): void
     {
         if ($patron->hasReachedLimit('ill')) {
@@ -504,12 +460,6 @@ class IllForm extends Component
         $submittedPublishDate = trim((string) ($this->custom['publish_date'] ?? '')) ?: null;
         $otherSpecify    = trim((string) ($this->custom['other_specify'] ?? ''));
 
-        $audienceId = null;
-        if (! empty($this->custom['audience'])) {
-            $audienceId = Audience::where('slug', (string) $this->custom['audience'])->value('id');
-        }
-        $genreSlug = ! empty($this->custom['genre']) ? trim((string) $this->custom['genre']) : null;
-
         if ($materialSlug === 'other' && $otherSpecify !== '') {
             $submittedTitle = 'Other: ' . $otherSpecify;
         }
@@ -519,9 +469,9 @@ class IllForm extends Component
 
         $materialId = null;
         if ($isbndbData !== null) {
-            $titleForMatch = $isbndbData['title'] ?? $submittedTitle;
+            $titleForMatch  = $isbndbData['title'] ?? $submittedTitle;
             $authorForMatch = $isbndbData['author_string'] ?? $submittedAuthor;
-            $material = Material::findMatch($titleForMatch, $authorForMatch);
+            $material       = Material::findMatch($titleForMatch, $authorForMatch);
 
             if ($material) {
                 $material->update([
@@ -535,75 +485,83 @@ class IllForm extends Component
                 ]);
             } else {
                 $material = Material::create([
-                    'title'              => $titleForMatch,
-                    'author'             => $authorForMatch,
-                    'publish_date'       => $submittedPublishDate,
-                    'material_type_id'   => $this->material_type_id,
-                    'isbn'               => $isbndbData['isbn'] ?? null,
-                    'isbn13'             => $isbndbData['isbn13'] ?? null,
-                    'publisher'          => $isbndbData['publisher'] ?? null,
-                    'exact_publish_date' => isset($isbndbData['publish_date']) ? date('Y-m-d', strtotime($isbndbData['publish_date'])) : null,
-                    'edition'            => $isbndbData['edition'] ?? null,
-                    'overview'           => $isbndbData['overview'] ?? null,
-                    'source'             => 'isbndb',
+                    'title'                   => $titleForMatch,
+                    'author'                  => $authorForMatch,
+                    'publish_date'            => $submittedPublishDate,
+                    'material_type_option_id' => $this->material_type_id,
+                    'isbn'                    => $isbndbData['isbn'] ?? null,
+                    'isbn13'                  => $isbndbData['isbn13'] ?? null,
+                    'publisher'               => $isbndbData['publisher'] ?? null,
+                    'exact_publish_date'      => isset($isbndbData['publish_date']) ? date('Y-m-d', strtotime($isbndbData['publish_date'])) : null,
+                    'edition'                 => $isbndbData['edition'] ?? null,
+                    'overview'                => $isbndbData['overview'] ?? null,
+                    'source'                  => 'isbndb',
                 ]);
             }
             $materialId = $material->id;
         }
 
-        $req = SfpRequest::create([
-            'patron_id'              => $patron->id,
-            'material_id'            => $materialId,
-            'audience_id'            => $audienceId,
-            'material_type_id'       => $this->material_type_id,
-            'request_status_id'      => $pendingStatus->id,
-            'request_kind'           => 'ill',
-            'submitted_title'        => $submittedTitle,
-            'submitted_author'       => $submittedAuthor ?: '—',
-            'submitted_publish_date' => $submittedPublishDate,
-            'other_material_text'    => $materialSlug === 'other' ? $otherSpecify : null,
-            'genre'                  => $genreSlug,
-            'where_heard'            => isset($this->custom['where_heard']) ? (string) $this->custom['where_heard'] : null,
-            'ill_requested'          => true,
-            'catalog_searched'       => $this->catalogSearched,
-            'catalog_result_count'   => is_array($this->catalogResults) ? count($this->catalogResults) : null,
-            'catalog_match_accepted' => $this->catalogMatchBibId ? true : null,
-            'catalog_match_bib_id'   => $this->catalogMatchBibId,
-            'isbndb_searched'        => $this->isbndbSearched,
-            'isbndb_result_count'    => count($this->isbndbResults),
-            'isbndb_match_accepted'  => $isbndbData !== null,
-            'is_duplicate'           => false,
-            'duplicate_of_request_id'=> null,
+        $req = PatronRequest::create([
+            'patron_id'               => $patron->id,
+            'material_id'             => $materialId,
+            'request_status_id'       => $pendingStatus->id,
+            'request_kind'            => 'ill',
+            'submitted_title'         => $submittedTitle,
+            'submitted_author'        => $submittedAuthor ?: '—',
+            'submitted_publish_date'  => $submittedPublishDate,
+            'other_material_text'     => $materialSlug === 'other' ? $otherSpecify : null,
+            'ill_requested'           => true,
+            'catalog_searched'        => $this->catalogSearched,
+            'catalog_result_count'    => is_array($this->catalogResults) ? count($this->catalogResults) : null,
+            'catalog_match_accepted'  => $this->catalogMatchBibId ? true : null,
+            'catalog_match_bib_id'    => $this->catalogMatchBibId,
+            'isbndb_searched'         => $this->isbndbSearched,
+            'isbndb_result_count'     => count($this->isbndbResults),
+            'isbndb_match_accepted'   => $isbndbData !== null,
+            'is_duplicate'            => false,
+            'duplicate_of_request_id' => null,
         ]);
 
-        // Persist custom field values only (form fields like title/author are on the request).
+        // Persist all field values (material type + step-two fields) via EAV.
         $rows = [];
-        foreach ($this->stepTwoFields as $field) {
-            if (! isset($field->customField)) {
-                continue;
+
+        $mtField = Field::where('key', 'material_type')->first();
+        if ($mtField && $this->material_type_id) {
+            $mtOption = FieldOption::find($this->material_type_id);
+            if ($mtOption) {
+                $rows[] = [
+                    'request_id' => $req->id,
+                    'field_id'   => $mtField->id,
+                    'value'      => $mtOption->slug,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
             }
+        }
+
+        foreach ($this->stepTwoFields as $field) {
             $val = $this->custom[$field->key] ?? null;
             if ($val === null || $val === '') {
                 continue;
             }
 
             $rows[] = [
-                'request_id'       => $req->id,
-                'custom_field_id'  => $field->id,
-                'value_slug'       => in_array($field->type, ['select', 'radio'], true) ? (string) $val : null,
-                'value_text'       => in_array($field->type, ['select', 'radio'], true) ? null : (is_bool($val) ? ($val ? '1' : '0') : (string) $val),
-                'created_at'       => now(),
-                'updated_at'       => now(),
+                'request_id' => $req->id,
+                'field_id'   => $field->id,
+                'value'      => is_bool($val) ? ($val ? '1' : '0') : (string) $val,
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
         }
+
         if (! empty($rows)) {
-            RequestCustomFieldValue::insert($rows);
+            RequestFieldValue::insert($rows);
         }
 
         $req->statusHistory()->create([
             'request_status_id' => $pendingStatus->id,
-            'user_id' => null,
-            'note' => 'ILL request submitted by patron.',
+            'user_id'           => null,
+            'note'              => 'ILL request submitted by patron.',
         ]);
 
         session()->put('request.patron', [
@@ -622,7 +580,7 @@ class IllForm extends Component
     }
 
     /**
-     * Decorate ISBNdb results with cover_url (same pattern as SfpForm).
+     * Decorate ISBNdb results with cover_url (same pattern as RequestForm).
      */
     private function withCovers(array $results, string $source): array
     {
@@ -714,37 +672,77 @@ class IllForm extends Component
     }
 
     /**
-     * Material types for "I want to borrow" from ILL form options (FormFormFieldOption).
-     * Respects per-form visible, sort_order, and label_override. Fallback: all active material types.
+     * Resolve field options for a given field, applying per-form visibility, sort order,
+     * and label overrides from form_field_option_overrides.
      *
-     * @return \Illuminate\Support\Collection<int, object{id: int, name: string}>
+     * @param  int       $fieldId
+     * @param  int|null  $formId
+     * @return \Illuminate\Support\Collection<int, object{id: int, slug: string, name: string, visible: bool, sort_order: int}>
      */
-    private function getIllMaterialTypesOptions(): \Illuminate\Support\Collection
+    private function getFieldOptionsWithOverrides(int $fieldId, ?int $formId = null): \Illuminate\Support\Collection
     {
-        $form = Form::bySlug('ill');
-        $field = FormField::where('key', 'material_type')->first();
-        if (! $form || ! $field) {
-            return MaterialType::where('active', true)->ordered()->get()->map(fn ($mt) => (object) ['id' => $mt->id, 'name' => $mt->name]);
+        $base = FieldOption::where('field_id', $fieldId)->active()->ordered()->get();
+
+        if (! $formId) {
+            return $base->values()->map(fn (FieldOption $opt, int $i) => (object) [
+                'id'         => $opt->id,
+                'slug'       => $opt->slug,
+                'name'       => $opt->name,
+                'visible'    => true,
+                'sort_order' => $opt->sort_order ?? ($i + 1) * 10000,
+            ]);
         }
 
-        $overrides = FormFormFieldOption::where('form_id', $form->id)
-            ->where('form_field_id', $field->id)
+        $overrides = FormFieldOptionOverride::where('form_id', $formId)
+            ->where('field_id', $fieldId)
             ->get()
             ->keyBy('option_slug');
 
-        $base = MaterialType::where('active', true)->ordered()->get();
-        $merged = $base->map(function ($mt, int $i) use ($overrides) {
-            $ov = $overrides->get($mt->slug);
+        return $base->map(function (FieldOption $opt, int $i) use ($overrides) {
+            $ov = $overrides->get($opt->slug);
+
             return (object) [
-                'id'         => $mt->id,
-                'slug'       => $mt->slug,
-                'name'       => $ov && $ov->label_override !== null && $ov->label_override !== '' ? $ov->label_override : $mt->name,
+                'id'         => $opt->id,
+                'slug'       => $opt->slug,
+                'name'       => ($ov && $ov->label_override !== null && $ov->label_override !== '')
+                    ? $ov->label_override
+                    : $opt->name,
                 'visible'    => $ov ? (bool) $ov->visible : true,
                 'sort_order' => $ov ? $ov->sort_order : ($i + 1) * 10000,
             ];
-        });
+        })->filter(fn ($o) => $o->visible)->sortBy('sort_order')->values();
+    }
 
-        return $merged->filter(fn ($o) => $o->visible)->sortBy('sort_order')->values()->map(fn ($o) => (object) ['id' => $o->id, 'name' => $o->name, 'slug' => $o->slug]);
+    /**
+     * Get options as [slug => name] for a field, with per-form overrides applied.
+     *
+     * @param  int       $fieldId
+     * @param  int|null  $formId
+     * @return array<string, string>
+     */
+    private function getOptionsForField(int $fieldId, ?int $formId = null): array
+    {
+        return $this->getFieldOptionsWithOverrides($fieldId, $formId)
+            ->pluck('name', 'slug')
+            ->all();
+    }
+
+    /**
+     * Material type options for the ILL form (objects with id, name, slug).
+     *
+     * @return \Illuminate\Support\Collection<int, object{id: int, name: string, slug: string}>
+     */
+    private function getIllMaterialTypesOptions(): \Illuminate\Support\Collection
+    {
+        $mtField = Field::where('key', 'material_type')->first();
+        if (! $mtField) {
+            return collect();
+        }
+
+        $form = Form::bySlug('ill');
+
+        return $this->getFieldOptionsWithOverrides($mtField->id, $form?->id)
+            ->map(fn ($o) => (object) ['id' => $o->id, 'name' => $o->name, 'slug' => $o->slug]);
     }
 
     /**
@@ -757,149 +755,54 @@ class IllForm extends Component
         return $this->getIllMaterialTypesOptions()->pluck('id')->all();
     }
 
+    /**
+     * Validation rule for material_type_id (FieldOption ID).
+     *
+     * @return string
+     */
     private function materialTypeIdValidationRule(): string
     {
         $allowed = $this->getAllowedMaterialTypeIds();
-        return empty($allowed) ? 'required|exists:material_types,id' : 'required|in:' . implode(',', $allowed);
+
+        return empty($allowed) ? 'required|exists:field_options,id' : 'required|in:' . implode(',', $allowed);
     }
 
     /**
-     * Audience options (slug => name) from ILL form FormFormFieldOption. Fallback: all active.
-     *
-     * @return array<string, string>
+     * @return \Illuminate\Contracts\View\View
      */
-    private function getIllAudienceOptions(): array
-    {
-        $form = Form::bySlug('ill');
-        $field = FormField::where('key', 'audience')->first();
-        if (! $form || ! $field) {
-            return Audience::orderBy('sort_order')->pluck('name', 'slug')->all();
-        }
-
-        $overrides = FormFormFieldOption::where('form_id', $form->id)
-            ->where('form_field_id', $field->id)
-            ->get()
-            ->keyBy('option_slug');
-
-        $base = Audience::orderBy('sort_order')->get();
-        $merged = $base->map(function ($a, int $i) use ($overrides) {
-            $ov = $overrides->get($a->slug);
-            return (object) [
-                'slug'       => $a->slug,
-                'name'       => $ov && $ov->label_override !== null && $ov->label_override !== '' ? $ov->label_override : $a->name,
-                'visible'    => $ov ? (bool) $ov->visible : true,
-                'sort_order' => $ov ? $ov->sort_order : ($i + 1) * 10000,
-            ];
-        });
-
-        return $merged->filter(fn ($o) => $o->visible)->sortBy('sort_order')->pluck('name', 'slug')->all();
-    }
-
-    /**
-     * Genre options (slug => name) from ILL form FormFormFieldOption. Fallback: all active.
-     *
-     * @return array<string, string>
-     */
-    private function getIllGenreOptions(): array
-    {
-        $form = Form::bySlug('ill');
-        $field = FormField::where('key', 'genre')->first();
-        if (! $form || ! $field) {
-            return Genre::active()->ordered()->pluck('name', 'slug')->all();
-        }
-
-        $overrides = FormFormFieldOption::where('form_id', $form->id)
-            ->where('form_field_id', $field->id)
-            ->get()
-            ->keyBy('option_slug');
-
-        $base = Genre::active()->ordered()->get();
-        $merged = $base->map(function ($g, int $i) use ($overrides) {
-            $ov = $overrides->get($g->slug);
-            return (object) [
-                'slug'       => $g->slug,
-                'name'       => $ov && $ov->label_override !== null && $ov->label_override !== '' ? $ov->label_override : $g->name,
-                'visible'    => $ov ? (bool) $ov->visible : true,
-                'sort_order' => $ov ? $ov->sort_order : ($i + 1) * 10000,
-            ];
-        });
-
-        return $merged->filter(fn ($o) => $o->visible)->sortBy('sort_order')->pluck('name', 'slug')->all();
-    }
-
-    /**
-     * Custom field options for the ILL form with per-form visibility, order, and label overrides.
-     *
-     * @return array<int, array<string, string>> custom_field_id => [ slug => name ]
-     */
-    private function getIllCustomFieldOptions(array $customFieldIds): array
-    {
-        if (empty($customFieldIds)) {
-            return [];
-        }
-
-        $form = Form::bySlug('ill');
-        if (! $form) {
-            $base = CustomFieldOption::query()
-                ->whereIn('custom_field_id', $customFieldIds)
-                ->active()
-                ->ordered()
-                ->get()
-                ->groupBy('custom_field_id');
-            return $base->map(fn ($g) => $g->pluck('name', 'slug')->all())->all();
-        }
-
-        $overrides = FormCustomFieldOption::where('form_id', $form->id)
-            ->whereIn('custom_field_option_id', CustomFieldOption::whereIn('custom_field_id', $customFieldIds)->pluck('id'))
-            ->get()
-            ->keyBy('custom_field_option_id');
-
-        $baseOptions = CustomFieldOption::query()
-            ->whereIn('custom_field_id', $customFieldIds)
-            ->active()
-            ->ordered()
-            ->get();
-
-        $result = [];
-        foreach ($baseOptions->groupBy('custom_field_id') as $customFieldId => $opts) {
-            $merged = $opts->map(function (CustomFieldOption $opt, int $i) use ($overrides) {
-                $ov = $overrides->get($opt->id);
-                return (object) [
-                    'slug'       => $opt->slug,
-                    'name'       => $ov && $ov->label_override !== null && $ov->label_override !== '' ? $ov->label_override : $opt->name,
-                    'visible'    => $ov ? (bool) $ov->visible : true,
-                    'sort_order' => $ov ? $ov->sort_order : ($i + 1) * 10000,
-                ];
-            });
-            $result[$customFieldId] = $merged->filter(fn ($o) => $o->visible)->sortBy('sort_order')->pluck('name', 'slug')->all();
-        }
-
-        return $result;
-    }
-
     public function render()
     {
         $fields = $this->stepTwoFields;
+        $form   = Form::bySlug('ill');
 
-        $customFieldIds = $fields->filter(fn ($f) => isset($f->customField))->pluck('id')->all();
-        $options = $this->getIllCustomFieldOptions($customFieldIds);
+        // Build options for all select/radio fields from the unified field_options table.
+        $options = [];
+        foreach ($fields as $f) {
+            if (in_array($f->type, ['select', 'radio'], true)) {
+                $options[$f->id] = $this->getOptionsForField($f->id, $form?->id);
+            }
+        }
 
         $fieldSectionKeys = $fields->mapWithKeys(fn ($f) => [$f->key => $this->getFieldSectionKey($f)])->all();
-        $displayLabels = $fields->mapWithKeys(fn ($f) => [$f->key => $this->getDisplayLabelForField($f)])->all();
+        $displayLabels    = $fields->mapWithKeys(fn ($f) => [$f->key => $this->getDisplayLabelForField($f)])->all();
 
-        // Build section labels using the material type names from the ILL form
-        // (respects admin label_overrides set on form options).
-        $mtBySlug = $this->getIllMaterialTypesOptions()->keyBy('slug');
+        // Material type objects (for the "I want to borrow" selector).
+        $illMaterialTypes = $this->getIllMaterialTypesOptions();
+        $mtBySlug         = $illMaterialTypes->keyBy('slug');
 
-        return view('sfp::livewire.ill-form', [
-            'orderedFields' => $fields,
-            'visibleFields' => $this->visibleCustomFields,
-            'optionsByFieldId' => $options,
-            'audienceOptions' => $this->getIllAudienceOptions(),
-            'genreOptions' => $this->getIllGenreOptions(),
-            'illMaterialTypes' => $this->getIllMaterialTypesOptions(),
-            'fieldSectionKeys' => $fieldSectionKeys,
-            'sectionLabels' => [
+        // Audience / genre options extracted from the unified map for backward-compat with Blade templates.
+        $audienceId = $fields->firstWhere('key', 'audience')?->id;
+        $genreId    = $fields->firstWhere('key', 'genre')?->id;
+
+        return view('requests::livewire.ill-form', [
+            'orderedFields'       => $fields,
+            'visibleFields'       => $this->visibleCustomFields,
+            'optionsByFieldId'    => $options,
+            'audienceOptions'     => $audienceId ? ($options[$audienceId] ?? []) : [],
+            'genreOptions'        => $genreId ? ($options[$genreId] ?? []) : [],
+            'illMaterialTypes'    => $illMaterialTypes,
+            'fieldSectionKeys'    => $fieldSectionKeys,
+            'sectionLabels'       => [
                 'books'          => 'Books',
                 'photocopy'      => 'Photocopy/Microfilm',
                 'dvd'            => $mtBySlug->get('dvd')?->name ?? 'DVD/VHS',
@@ -907,7 +810,7 @@ class IllForm extends Component
                 'newspaper'      => $mtBySlug->get('newspaper-microfilm')?->name ?? 'Newspaper/Microfilm',
                 'other-material' => $mtBySlug->get('other')?->name ?? 'Other',
             ],
-            'displayLabels' => $displayLabels,
+            'displayLabels'       => $displayLabels,
             'catalogOwnedMessage' => Setting::get(
                 'catalog_owned_message',
                 '<p><strong>Good news:</strong> this item is already in our catalog. Please place a hold in the catalog to get it as soon as it\'s available.</p>'

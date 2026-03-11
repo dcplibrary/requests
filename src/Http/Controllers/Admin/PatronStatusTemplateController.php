@@ -1,35 +1,55 @@
 <?php
 
-namespace Dcplibrary\Sfp\Http\Controllers\Admin;
+namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
-use Dcplibrary\Sfp\Http\Controllers\Controller;
-use Dcplibrary\Sfp\Models\CustomField;
-use Dcplibrary\Sfp\Models\FormField;
-use Dcplibrary\Sfp\Models\MaterialType;
-use Dcplibrary\Sfp\Models\PatronStatusTemplate;
-use Dcplibrary\Sfp\Models\RequestStatus;
+use Dcplibrary\Requests\Http\Controllers\Controller;
+use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\PatronStatusTemplate;
+use Dcplibrary\Requests\Models\RequestStatus;
 use Illuminate\Http\Request;
 
+/**
+ * Manages patron status email templates.
+ */
 class PatronStatusTemplateController extends Controller
 {
+    /**
+     * List all patron status templates.
+     *
+     * @return \Illuminate\View\View
+     */
     public function index()
     {
-        return view('sfp::staff.patron-status-templates.index', [
-            'templates' => PatronStatusTemplate::with(['requestStatuses', 'materialTypes'])->ordered()->get(),
+        return view('requests::staff.patron-status-templates.index', [
+            'templates' => PatronStatusTemplate::with(['requestStatuses', 'fieldOptions.field'])->ordered()->get(),
         ]);
     }
 
+    /**
+     * Show the create form for a new template.
+     *
+     * @return \Illuminate\View\View
+     */
     public function create()
     {
-        return view('sfp::staff.patron-status-templates.form', [
-            'template' => new PatronStatusTemplate(['enabled' => true, 'subject' => 'Update on your suggestion: {title}']),
+        $mtField = Field::where('key', 'material_type')->first();
+
+        return view('requests::staff.patron-status-templates.form', [
+            'template'        => new PatronStatusTemplate(['enabled' => true, 'subject' => 'Update on your suggestion: {title}']),
             'requestStatuses' => RequestStatus::active()->orderBy('sort_order')->get(),
-            'materialTypes' => MaterialType::ordered()->get(),
-            'availableTokens' => $this->availableTokens(),
+            'materialTypes'   => $mtField ? FieldOption::where('field_id', $mtField->id)->ordered()->get() : collect(),
+            'availableTokens'       => $this->availableTokens(),
             'subjectExcludedTokens' => $this->subjectExcludedTokens(),
         ]);
     }
 
+    /**
+     * Store a newly created template.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function store(Request $request)
     {
         $data = $this->validateTemplate($request);
@@ -37,30 +57,46 @@ class PatronStatusTemplateController extends Controller
             PatronStatusTemplate::query()->update(['is_default' => false]);
         }
         $template = PatronStatusTemplate::create([
-            'name' => $data['name'],
-            'enabled' => $request->boolean('enabled'),
-            'subject' => $data['subject'],
-            'body' => $data['body'],
+            'name'       => $data['name'],
+            'enabled'    => $request->boolean('enabled'),
+            'subject'    => $data['subject'],
+            'body'       => $data['body'],
             'is_default' => $request->boolean('is_default'),
             'sort_order' => PatronStatusTemplate::max('sort_order') + 1,
         ]);
         $template->requestStatuses()->sync($data['status_ids'] ?? []);
-        $template->materialTypes()->sync($data['material_type_ids'] ?? []);
+        $template->fieldOptions()->sync($data['material_type_ids'] ?? []);
+
         return redirect()->route('request.staff.settings.notifications', ['tab' => 'emails'])->with('success', 'Template created.');
     }
 
+    /**
+     * Show the edit form for a template.
+     *
+     * @param  PatronStatusTemplate  $patronStatusTemplate
+     * @return \Illuminate\View\View
+     */
     public function edit(PatronStatusTemplate $patronStatusTemplate)
     {
-        $patronStatusTemplate->load(['requestStatuses', 'materialTypes']);
-        return view('sfp::staff.patron-status-templates.form', [
-            'template' => $patronStatusTemplate,
+        $patronStatusTemplate->load(['requestStatuses', 'fieldOptions']);
+        $mtField = Field::where('key', 'material_type')->first();
+
+        return view('requests::staff.patron-status-templates.form', [
+            'template'        => $patronStatusTemplate,
             'requestStatuses' => RequestStatus::active()->orderBy('sort_order')->get(),
-            'materialTypes' => MaterialType::ordered()->get(),
-            'availableTokens' => $this->availableTokens(),
+            'materialTypes'   => $mtField ? FieldOption::where('field_id', $mtField->id)->ordered()->get() : collect(),
+            'availableTokens'       => $this->availableTokens(),
             'subjectExcludedTokens' => $this->subjectExcludedTokens(),
         ]);
     }
 
+    /**
+     * Update the specified template.
+     *
+     * @param  Request               $request
+     * @param  PatronStatusTemplate   $patronStatusTemplate
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, PatronStatusTemplate $patronStatusTemplate)
     {
         $data = $this->validateTemplate($request);
@@ -68,64 +104,95 @@ class PatronStatusTemplateController extends Controller
             PatronStatusTemplate::whereKeyNot($patronStatusTemplate->id)->update(['is_default' => false]);
         }
         $patronStatusTemplate->update([
-            'name' => $data['name'],
-            'enabled' => $request->boolean('enabled'),
-            'subject' => $data['subject'],
-            'body' => $data['body'],
+            'name'       => $data['name'],
+            'enabled'    => $request->boolean('enabled'),
+            'subject'    => $data['subject'],
+            'body'       => $data['body'],
             'is_default' => $request->boolean('is_default'),
         ]);
         $patronStatusTemplate->requestStatuses()->sync($data['status_ids'] ?? []);
-        $patronStatusTemplate->materialTypes()->sync($data['material_type_ids'] ?? []);
+        $patronStatusTemplate->fieldOptions()->sync($data['material_type_ids'] ?? []);
+
         return redirect()->route('request.staff.settings.notifications', ['tab' => 'emails'])->with('success', 'Template updated.');
     }
 
+    /**
+     * Show delete confirmation for a template.
+     *
+     * @param  PatronStatusTemplate  $patronStatusTemplate
+     * @return \Illuminate\View\View
+     */
     public function confirmDelete(PatronStatusTemplate $patronStatusTemplate)
     {
-        return view('sfp::staff.patron-status-templates.delete', [
+        return view('requests::staff.patron-status-templates.delete', [
             'template' => $patronStatusTemplate,
         ]);
     }
 
+    /**
+     * Delete the specified template.
+     *
+     * @param  PatronStatusTemplate  $patronStatusTemplate
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function destroy(PatronStatusTemplate $patronStatusTemplate)
     {
         $patronStatusTemplate->delete();
+
         return redirect()->route('request.staff.settings.notifications', ['tab' => 'emails'])->with('success', 'Template deleted.');
     }
 
+    /**
+     * Shared validation rules for store and update.
+     *
+     * @param  Request  $request
+     * @return array<string, mixed>
+     */
     private function validateTemplate(Request $request): array
     {
         return $request->validate([
-            'name' => 'required|string|max:255',
-            'enabled' => 'nullable|boolean',
-            'is_default' => 'nullable|boolean',
-            'subject' => 'required|string|max:500',
-            'body' => 'nullable|string|max:65535',
-            'status_ids' => 'nullable|array',
-            'status_ids.*' => 'integer|exists:request_statuses,id',
-            'material_type_ids' => 'nullable|array',
-            'material_type_ids.*' => 'integer|exists:material_types,id',
+            'name'                 => 'required|string|max:255',
+            'enabled'              => 'nullable|boolean',
+            'is_default'           => 'nullable|boolean',
+            'subject'              => 'required|string|max:500',
+            'body'                 => 'nullable|string|max:65535',
+            'status_ids'           => 'nullable|array',
+            'status_ids.*'         => 'integer|exists:request_statuses,id',
+            'material_type_ids'    => 'nullable|array',
+            'material_type_ids.*'  => 'integer|exists:field_options,id',
         ]);
     }
 
+    /**
+     * Build the list of available email body tokens.
+     *
+     * @return list<string>
+     */
     private function availableTokens(): array
     {
         $system = ['{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}', '{status}', '{status_description}', '{submitted_date}', '{request_url}'];
-        $core = ['{title}', '{author}', '{material_type}', '{audience}'];
-        $form = [];
+        $core   = ['{title}', '{author}', '{material_type}', '{audience}'];
+
+        $fieldTokens = [];
         try {
-            $form = FormField::ordered()->pluck('key')->map(fn ($k) => "{{$k}}")->all();
+            $fieldTokens = Field::active()
+                ->where('include_as_token', true)
+                ->ordered()
+                ->pluck('key')
+                ->map(fn (string $k) => "{{$k}}")
+                ->all();
         } catch (\Throwable $e) {
+            // Table may not exist during initial install
         }
-        $custom = [];
-        try {
-            $custom = CustomField::query()
-                ->where('active', true)->where('include_as_token', true)
-                ->ordered()->pluck('key')->map(fn ($k) => "{{$k}}")->all();
-        } catch (\Throwable $e) {
-        }
-        return array_values(array_unique(array_merge($core, $system, $form, $custom)));
+
+        return array_values(array_unique(array_merge($core, $system, $fieldTokens)));
     }
 
+    /**
+     * Tokens excluded from subject lines (body-only).
+     *
+     * @return list<string>
+     */
     private function subjectExcludedTokens(): array
     {
         return [

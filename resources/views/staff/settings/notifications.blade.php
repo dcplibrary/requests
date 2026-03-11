@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', 'Notification Settings')
 @section('settings-content')
 
@@ -242,7 +242,7 @@
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2">{{ $staffEnabled ? 'Yes' : 'No' }}</td>
                                 <td class="px-4 py-2 text-right">
-                                    <x-sfp::icon-btn :href="route('request.staff.settings.notifications.staff-email')" variant="edit" label="Edit" />
+                                    <x-requests::icon-btn :href="route('request.staff.settings.notifications.staff-email')" variant="edit" label="Edit" />
                                 </td>
                             </tr>
                             <tr>
@@ -254,7 +254,7 @@
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2">{{ $patronEnabled ? 'Yes' : 'No' }}</td>
                                 <td class="px-4 py-2 text-right">
-                                    <x-sfp::icon-btn :href="route('request.staff.settings.notifications.default-patron-email')" variant="edit" label="Edit" />
+                                    <x-requests::icon-btn :href="route('request.staff.settings.notifications.default-patron-email')" variant="edit" label="Edit" />
                                 </td>
                             </tr>
                             @foreach($patronStatusTemplates ?? [] as $tpl)
@@ -263,12 +263,12 @@
                                 <td class="px-4 py-2 text-gray-600">Patron status</td>
                                 <td class="px-4 py-2 text-gray-600">{{ Str::limit($tpl->subject, 40) }}</td>
                                 <td class="px-4 py-2 text-gray-600">{{ $tpl->requestStatuses->pluck('name')->join(', ') ?: '—' }}</td>
-                                <td class="px-4 py-2 text-gray-600">{{ $tpl->materialTypes->isNotEmpty() ? $tpl->materialTypes->pluck('name')->join(', ') : 'All' }}</td>
+                                <td class="px-4 py-2 text-gray-600">{{ $tpl->fieldOptions->isNotEmpty() ? $tpl->fieldOptions->pluck('name')->join(', ') : 'All' }}</td>
                                 <td class="px-4 py-2">{{ $tpl->is_default ? 'Yes' : '—' }}</td>
                                 <td class="px-4 py-2">{{ $tpl->enabled ? 'Yes' : 'No' }}</td>
                                 <td class="px-4 py-2 text-right flex items-center justify-end gap-1">
-                                    <x-sfp::icon-btn :href="route('request.staff.patron-status-templates.edit', $tpl)" variant="edit" label="Edit" />
-                                    <x-sfp::icon-btn :href="route('request.staff.patron-status-templates.delete', $tpl)" variant="delete" label="Delete" />
+                                    <x-requests::icon-btn :href="route('request.staff.patron-status-templates.edit', $tpl)" variant="edit" label="Edit" />
+                                    <x-requests::icon-btn :href="route('request.staff.patron-status-templates.delete', $tpl)" variant="delete" label="Delete" />
                                 </td>
                             </tr>
                             @endforeach

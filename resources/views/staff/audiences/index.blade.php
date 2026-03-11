@@ -1,4 +1,4 @@
-@extends('sfp::staff.settings._layout')
+@extends('requests::staff.settings._layout')
 @section('title', 'Audiences')
 @section('settings-content')
 <div class="flex items-center justify-between mb-6">
@@ -30,8 +30,8 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-sfp::icon-btn :href="route('request.staff.audiences.edit', $audience)" variant="edit" label="Edit" />
-                    <x-sfp::icon-btn :href="route('request.staff.audiences.delete', $audience)" variant="delete" label="Delete" />
+                    <x-requests::icon-btn :href="route('request.staff.audiences.edit', $audience)" variant="edit" label="Edit" />
+                    <x-requests::icon-btn :href="route('request.staff.audiences.delete', $audience)" variant="delete" label="Delete" />
                 </td>
             </tr>
             @empty
