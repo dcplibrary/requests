@@ -1,6 +1,6 @@
 # dcplibrary/requests
 
-A Laravel package for managing patron purchase requests and interlibrary loan requests at the Daviess County Public Library. Provides a multi-step Livewire patron form, a role-based staff admin interface, Polaris ILS integration, Bibliocommons catalog scraping, and ISBNdb enrichment.
+A Laravel package for managing patron purchase requests (SFP) and interlibrary loan (ILL) requests at the Daviess County Public Library. Provides multi-step Livewire patron forms, a role-based staff admin interface, configurable form fields, Polaris ILS integration, Bibliocommons catalog scraping, and ISBNdb enrichment.
 
 ---
 
@@ -8,9 +8,10 @@ A Laravel package for managing patron purchase requests and interlibrary loan re
 
 - PHP 8.3+
 - Laravel 12
-- Livewire 3
+- Livewire 3+
 - Redis (queue driver for Polaris patron lookups)
 - `blashbrook/papiclient` (Polaris PAPI)
+- `dcplibrary/entra-sso` ^1.6 (Microsoft Entra SSO for staff)
 
 ---
 
@@ -64,6 +65,8 @@ php artisan vendor:publish --tag=requests-seeders     # database/seeders/
 php artisan vendor:publish --tag=requests-views       # resources/views/vendor/requests/ (only if customizing)
 ```
 
+CSS is served directly from inside the package via `/{prefix}/assets/css` — no `vendor:publish` needed for stylesheets.
+
 ---
 
 ## Configuration
@@ -71,16 +74,23 @@ php artisan vendor:publish --tag=requests-views       # resources/views/vendor/r
 After publishing, edit `config/requests.php`:
 
 ```php
-'route_prefix' => 'request',   // Patron form at /request, staff at /request/staff (SFP and ILL under request umbrella)
+'route_prefix' => 'request',       // Patron forms at /request/sfp and /request/ill, staff at /request/staff
+'middleware' => ['web'],            // Public patron routes
+'staff_middleware' => ['web', 'auth'],  // Staff admin routes
+'guard' => null,                    // Optional dedicated auth guard
 'isbndb' => [
     'key' => env('ISBNDB_API_KEY'),
+],
+'queue' => [
+    'connection' => env('REQUESTS_QUEUE_CONNECTION', 'redis'),
+    'name'       => env('REQUESTS_QUEUE_NAME', 'default'),
 ],
 ```
 
 Add to `.env`:
 
 ```env
-SFP_ROUTE_PREFIX=sfp
+REQUESTS_ROUTE_PREFIX=request
 
 # ISBNdb (optional — disables ISBNdb enrichment if not set)
 ISBNDB_API_KEY=
@@ -102,7 +112,7 @@ PAPI_DOMAIN=
 PAPI_STAFF=
 PAPI_PASSWORD=
 
-# Microsoft Entra SSO (see Entra SSO section below)
+# Microsoft Entra SSO
 ENTRA_CLIENT_ID=
 ENTRA_CLIENT_SECRET=
 ENTRA_TENANT_ID=
@@ -118,11 +128,7 @@ php artisan migrate
 php artisan db:seed --class="Dcplibrary\Requests\Database\Seeders\RequestsDatabaseSeeder"
 ```
 
-The seeder inserts:
-- Default settings (rate limits, ILL thresholds, messages, catalog/ISBNdb toggles)
-- Material types: Book, Large Print, Graphic Novel, DVD, Blu-Ray, eAudiobook, eBook, Video Game, Other
-- Audiences: Adult, Children, Young Adult
-- Request statuses: Pending, Under Review, On Order, Purchased, Denied, ILL Referred
+The seeder inserts default settings (rate limits, ILL thresholds, messages, catalog/ISBNdb toggles), request statuses, and an ILL selector group.
 
 ---
 
@@ -138,17 +144,30 @@ php artisan queue:work --queue=default
 
 ## Routes
 
-After install, the package registers these routes under your configured prefix (default: `sfp`):
+All routes are registered under your configured prefix (default: `request`).
 
-| URL | Name | Description |
-|-----|------|-------------|
-| `GET /{prefix}/` | `request.form` | Patron-facing SFP form (Livewire) |
-| `GET /ill` | `request.ill.form` | Patron-facing ILL form (Livewire) |
-| `GET /{prefix}/staff/requests` | `request.staff.requests.index` | Staff request list |
-| `GET /{prefix}/staff/requests/{id}` | `request.staff.requests.show` | Request detail |
-| `PATCH /{prefix}/staff/requests/{id}/status` | `request.staff.requests.status` | Update status |
-| `GET /{prefix}/staff/settings` | `request.staff.settings.index` | Admin settings |
-| (and CRUD routes for material-types, audiences, statuses, users, groups) | | Admin only |
+### Public (Patron)
+
+- `GET /{prefix}/sfp` — Patron SFP form (Livewire)
+- `GET /{prefix}/ill` — Patron ILL form (Livewire)
+- `GET /{prefix}/my-requests` — Patron request history (PIN authentication)
+
+### Staff Admin (`/{prefix}/staff/*`)
+
+- `GET /requests` — Request list
+- `GET /requests/{id}` — Request detail
+- `PATCH /requests/{id}/status` — Update request status
+- `POST /requests/{id}/catalog-recheck` — Re-check catalog for a request
+- `POST /requests/{id}/convert-kind` — Convert between SFP/ILL
+- `POST /requests/{id}/claim` / `POST /requests/{id}/assign` — Claim/assign to selector
+- `DELETE /requests/{id}` — Delete request
+- CRUD: `patrons`, `titles`, `statuses`, `users`, `groups`, `patron-status-templates`
+- `GET /settings` — Admin settings
+- `GET /settings/form-fields` — Form field configuration
+- `GET /settings/custom-fields` — Custom field configuration
+- `GET /settings/notifications` — Email notification settings
+- `GET /catalog` — Catalog search settings + format label management
+- `GET /backups` — Database/config backup and restore
 
 ---
 
@@ -156,54 +175,72 @@ After install, the package registers these routes under your configured prefix (
 
 The package does **not** ship login/logout routes. Protect staff routes using the host application's authentication by configuring `requests.staff_middleware` in `config/requests.php` (default: `['web', 'auth']`).
 
-When the authenticated user is **not** the package `Dcplibrary\Requests\Models\User`, the package maps the staff user to `sfp_users` by **email** for authorization scoping and audit logging.
+When the authenticated user is **not** the package `Dcplibrary\Requests\Models\User`, the package maps the staff user to `staff_users` by **email** for authorization scoping and audit logging.
 
 ---
 
 ## Architecture
 
-### Patron Form
-`Dcplibrary\Requests\Livewire\RequestForm` — 4-step Livewire component:
-1. Patron information (barcode, name, phone, email)
-2. Material details (type, audience, title, author, date, ILL flag)
-3. Catalog + ISBNdb match resolution (interactive)
-4. Confirmation
+### Patron Forms
+- `Dcplibrary\Requests\Livewire\RequestForm` — Multi-step SFP form (patron info → material details → catalog/ISBNdb match resolution → confirmation)
+- `Dcplibrary\Requests\Livewire\IllForm` — Multi-step ILL form
+- `Dcplibrary\Requests\Livewire\PatronRequests` — Patron request history (PIN-authenticated)
 
 ### Staff Interface (`/{prefix}/staff/*`)
-Role-based access via the `request` auth guard:
+Role-based access via the `request.role` middleware:
 - **Admin**: full access + settings + CRUD for all lookup tables
-- **Selector**: scoped to requests matching their selector group (material types + audiences)
+- **Selector**: scoped to requests matching their selector group
 
 ### Key Models
-| Model | Table | Notes |
-|-------|-------|-------|
-| `Patron` | `patrons` | Barcode-unique; Polaris verification fields |
-| `Material` | `materials` | Deduplicated by title+author; enriched by ISBNdb |
-|| `PatronRequest` | `requests` | Core transaction; tracks search attempts |
-| `RequestStatus` | `request_statuses` | Seeded; admin-manageable |
-| `RequestStatusHistory` | `request_status_history` | Full audit trail |
-| `Setting` | `settings` | All business rules; 1-hour cached; admin UI |
-| `User` | `sfp_users` | Staff only; Entra SSO; role + selector group |
-| `SelectorGroup` | `selector_groups` | Scopes selector access to material types + audiences |
+
+- `Patron` (`patrons`) — Barcode-unique; Polaris verification fields
+- `Material` (`materials`) — Deduplicated by title+author; ISBNdb enrichment
+- `PatronRequest` (`requests`) — Core transaction; tracks search attempts and status
+- `RequestStatus` (`request_statuses`) — Seeded; admin-manageable
+- `RequestStatusHistory` (`request_status_history`) — Full audit trail
+- `Setting` (`settings`) — All business rules; cached; admin UI
+- `User` (`staff_users`) — Staff only; Entra SSO; role + selector group
+- `SelectorGroup` (`selector_groups`) — Scopes selector access
+- `Form` (`forms`) — SFP and ILL form definitions
+- `Field` (`fields`) — Configurable form fields
+- `FieldOption` (`field_options`) — Options for select/radio fields
+- `FormFieldConfig` (`form_field_config`) — Per-form field visibility/order/labels
+- `FormFieldOptionOverride` (`form_field_option_overrides`) — Per-form option overrides
+- `RequestFieldValue` (`request_field_values`) — Submitted field values per request
+- `CatalogFormatLabel` (`catalog_format_labels`) — Bibliocommons format label mappings
+- `PatronStatusTemplate` (`patron_status_templates`) — Reusable patron email templates
 
 ### Configurable Settings (admin UI at `/{prefix}/staff/settings`)
-| Key | Default | Description |
-|-----|---------|-------------|
-| `sfp_limit_count` | 5 | Requests per window |
-| `sfp_limit_window` | day | day / week / month |
-| `ill_age_threshold_years` | 2 | Years before ILL soft warning |
-| `catalog_search_enabled` | true | Toggle Bibliocommons search |
-| `catalog_search_url_template` | (Bibliocommons URL) | Editable search URL with tokens |
-| `isbndb_search_enabled` | true | Toggle ISBNdb enrichment |
-| `duplicate_request_message` | (text) | Shown when item already requested |
-| `submission_success_message` | (text) | Shown on confirmation step |
-| `post_submit_mode` | wait | wait or email |
+
+**Request Limits:**
+- `sfp_limit_count` (default: 5) — Max SFP requests per window
+- `sfp_limit_window_type` (default: rolling) — rolling / calendar_month / calendar_week
+- `sfp_limit_window_days` (default: 30) — Rolling window length in days
+- `sfp_limit_calendar_reset_day` (default: 1) — Monthly reset day (1–28)
+- `ill_limit_count` (default: unlimited) — Max ILL requests per window
+- `ill_limit_window_type` / `ill_limit_window_days` / `ill_limit_calendar_reset_day` — ILL equivalents
+
+**ILL:**
+- `ill_age_threshold_days` (default: 730) — Days before ILL soft warning
+- `ill_warning_message` — HTML shown when item exceeds age threshold
+- `ill_isbndb_enabled` (default: true) — ISBNdb enrichment for ILL
+
+**Messaging:**
+- `duplicate_request_message` — Shown when item already requested
+- `duplicate_self_request_message` — Shown when patron re-requests their own item
+- `submission_success_message` — Shown on confirmation step
+- `catalog_owned_message` — Shown when item is already in the catalog
+
+**Catalog:**
+- `catalog_search_enabled` (default: true) — Toggle Bibliocommons search
+- `catalog_library_slug` (default: dcpl) — Bibliocommons library identifier
+- `syndetics_client` (default: davia) — Syndetics client ID for book covers
 
 ---
 
 ## Bibliocommons Scraping
 
-`BibliocommonsService` scrapes Bibliocommons HTML using `DOMXPath` (no public API). The URL template is stored in settings and is editable by admins without a code deploy.
+`BibliocommonsService` scrapes Bibliocommons HTML using `DOMXPath` (no public API). The library slug is stored in settings and is editable by admins without a code deploy.
 
 ---
 

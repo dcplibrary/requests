@@ -7,6 +7,9 @@ use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldConfig;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * Manages field configurations within forms (SFP / ILL).
@@ -21,6 +24,94 @@ class FormFieldController extends Controller
     public function index()
     {
         return view('requests::staff.form-fields.index');
+    }
+
+    /**
+     * Show the form to create a new field.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\View\View
+     */
+    public function create(Request $request)
+    {
+        $formSlug = in_array($request->query('form'), ['sfp', 'ill'], true)
+            ? $request->query('form')
+            : 'sfp';
+
+        return view('requests::staff.form-fields.form', [
+            'field'    => new Field(),
+            'formSlug' => $formSlug,
+        ]);
+    }
+
+    /**
+     * Store a newly created field.
+     *
+     * Creates the Field row and the appropriate FormFieldConfig row(s)
+     * based on the selected scope (sfp, ill, or both).
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'label'    => 'required|string|max:100',
+            'key'      => 'nullable|string|max:100|regex:/^[a-z][a-z0-9_]*$/|unique:fields,key',
+            'type'     => ['required', Rule::in(['text', 'textarea', 'html', 'date', 'number', 'checkbox', 'select', 'radio'])],
+            'scope'    => ['required', Rule::in(['sfp', 'ill', 'both'])],
+            'required' => 'boolean',
+            'active'   => 'boolean',
+        ]);
+
+        // Auto-generate key from label if not provided
+        $key = trim($data['key'] ?? '');
+        if ($key === '') {
+            $key = Str::snake(Str::ascii($data['label']));
+            // Ensure uniqueness by appending a suffix if needed
+            $baseKey = $key;
+            $suffix  = 1;
+            while (Field::withTrashed()->where('key', $key)->exists()) {
+                $key = $baseKey . '_' . $suffix++;
+            }
+        }
+
+        $field = Field::create([
+            'key'              => $key,
+            'label'            => $data['label'],
+            'type'             => $data['type'],
+            'scope'            => $data['scope'],
+            'required'         => $data['required'] ?? false,
+            'active'           => $data['active'] ?? true,
+            'sort_order'       => Field::max('sort_order') + 1,
+            'include_as_token' => false,
+        ]);
+
+        // Determine which forms to attach to based on scope
+        $formSlugs = $data['scope'] === 'both' ? ['sfp', 'ill'] : [$data['scope']];
+
+        foreach ($formSlugs as $slug) {
+            $formModel = Form::bySlug($slug);
+            if (! $formModel) {
+                continue;
+            }
+
+            $maxOrder = FormFieldConfig::where('form_id', $formModel->id)->max('sort_order') ?? 0;
+
+            FormFieldConfig::create([
+                'form_id'    => $formModel->id,
+                'field_id'   => $field->id,
+                'sort_order' => $maxOrder + 1,
+                'required'   => $data['required'] ?? false,
+                'visible'    => true,
+            ]);
+        }
+
+        $tab = $data['scope'] === 'both' ? 'sfp' : $data['scope'];
+
+        return redirect()
+            ->route('request.staff.settings.form-fields', ['tab' => $tab])
+            ->with('success', "Field '{$field->label}' created.");
     }
 
     /**

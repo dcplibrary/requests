@@ -17,6 +17,23 @@
         </div>
     </div>
 
+    {{-- Scope --}}
+    <div class="max-w-lg bg-white rounded-lg border border-gray-200 p-6">
+        <fieldset>
+            <legend class="block text-sm font-semibold text-gray-700 mb-3">Scope</legend>
+            <div class="flex flex-col gap-2">
+                @foreach(['sfp' => 'Suggest for Purchase only', 'ill' => 'Interlibrary Loan only', 'both' => 'Both forms'] as $val => $lbl)
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="radio" wire:model="scope" value="{{ $val }}"
+                               class="text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm text-gray-800">{{ $lbl }}</span>
+                    </label>
+                @endforeach
+            </div>
+            <p class="mt-2 text-xs text-gray-400">Changing scope will add or remove this field from the other form.</p>
+        </fieldset>
+    </div>
+
     {{-- Required & Visible --}}
     <div class="max-w-lg bg-white rounded-lg border border-gray-200 p-6">
         <div class="space-y-4">

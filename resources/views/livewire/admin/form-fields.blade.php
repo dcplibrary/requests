@@ -22,6 +22,10 @@
     {{-- Suggest for Purchase panel --}}
     @if($activeFormTab === 'sfp')
     <div class="mb-6">
+        <div class="flex items-center justify-end mb-3">
+            <a href="{{ route('request.staff.settings.form-fields.create', ['form' => 'sfp']) }}"
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New Field</a>
+        </div>
         <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50">
@@ -84,6 +88,10 @@
     {{-- Interlibrary Loan panel --}}
     @if($activeFormTab === 'ill')
     <div class="mb-6">
+        <div class="flex items-center justify-end mb-3">
+            <a href="{{ route('request.staff.settings.form-fields.create', ['form' => 'ill']) }}"
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New Field</a>
+        </div>
         <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50">

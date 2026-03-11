@@ -24,6 +24,7 @@ class FormFormFieldEdit extends Component
     public string $labelOverride = '';
     public bool $required = false;
     public bool $visible = true;
+    public string $scope = 'both';
 
     /** @var array{match: string, rules: array<int, array<string, mixed>>} */
     public array $condition = ['match' => 'all', 'rules' => []];
@@ -41,6 +42,7 @@ class FormFormFieldEdit extends Component
         $this->visible       = (bool) $pivot->visible;
 
         $field = Field::find($fieldId);
+        $this->scope = $field->scope ?? 'both';
 
         // Load per-form conditional logic; fall back to the base field's condition so the
         // admin sees the effective condition rather than a blank state when none has been
@@ -57,6 +59,15 @@ class FormFormFieldEdit extends Component
         $this->formId = $formModel?->id ?? 0;
     }
 
+    /**
+     * Persist per-form config and update scope on the base field.
+     *
+     * When scope expands (e.g. sfp→both), a FormFieldConfig row is created
+     * for the other form. When scope narrows (e.g. both→sfp), the config
+     * row for the dropped form is removed.
+     *
+     * @return void
+     */
     public function save(): void
     {
         $conditionalLogic = ($this->hasCondition && ! empty($this->condition['rules']))
@@ -70,6 +81,46 @@ class FormFormFieldEdit extends Component
             'visible'           => $this->visible,
             'conditional_logic' => $conditionalLogic,
         ]);
+
+        // Update scope on the base field and sync FormFieldConfig rows
+        $field = Field::find($this->fieldId);
+        if ($field && $field->scope !== $this->scope) {
+            $field->update(['scope' => $this->scope]);
+
+            $targetSlugs = $this->scope === 'both' ? ['sfp', 'ill'] : [$this->scope];
+
+            // Create missing FormFieldConfig rows for newly added forms
+            foreach ($targetSlugs as $slug) {
+                $formModel = Form::bySlug($slug);
+                if (! $formModel) {
+                    continue;
+                }
+                $exists = FormFieldConfig::where('form_id', $formModel->id)
+                    ->where('field_id', $field->id)
+                    ->exists();
+                if (! $exists) {
+                    $maxOrder = FormFieldConfig::where('form_id', $formModel->id)->max('sort_order') ?? 0;
+                    FormFieldConfig::create([
+                        'form_id'    => $formModel->id,
+                        'field_id'   => $field->id,
+                        'sort_order' => $maxOrder + 1,
+                        'required'   => $this->required,
+                        'visible'    => true,
+                    ]);
+                }
+            }
+
+            // Remove FormFieldConfig rows for forms no longer in scope
+            if ($this->scope !== 'both') {
+                $droppedSlug = $this->scope === 'sfp' ? 'ill' : 'sfp';
+                $droppedForm = Form::bySlug($droppedSlug);
+                if ($droppedForm) {
+                    FormFieldConfig::where('form_id', $droppedForm->id)
+                        ->where('field_id', $field->id)
+                        ->delete();
+                }
+            }
+        }
 
         session()->flash('success', 'Settings for this form updated.');
         $this->redirect(route('request.staff.settings.form-fields', ['tab' => $this->formSlug]));

@@ -100,6 +100,8 @@ Route::group([
             Route::get('/settings/notifications/preview/{type}',    [SettingController::class, 'previewEmail'])->name('settings.notifications.preview');
             Route::post('/settings/notifications/test',             [SettingController::class, 'sendTestEmail'])->name('settings.notifications.test');
             Route::get('/settings/form-fields',              [FormFieldController::class, 'index'])->name('settings.form-fields');
+            Route::get('/settings/form-fields/create',        [FormFieldController::class, 'create'])->name('settings.form-fields.create');
+            Route::post('/settings/form-fields',              [FormFieldController::class, 'store'])->name('settings.form-fields.store');
             Route::get('/settings/form-fields/{field}/form/{form}/edit', [FormFieldController::class, 'editForForm'])->name('settings.form-fields.edit-for-form')->where('form', 'sfp|ill');
             Route::get('/settings/form-fields/{field}/form/{form}/options/{slug}/edit', [FormFieldController::class, 'editForFormOption'])->name('settings.form-fields.edit-for-form-option')->where('form', 'sfp|ill');
             Route::get('/settings/form-fields/{field}/edit', [FormFieldController::class, 'edit'])->name('settings.form-fields.edit');

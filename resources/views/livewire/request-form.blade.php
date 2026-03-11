@@ -410,6 +410,23 @@
                             <option value="{{ $slug }}">{{ $name }}</option>
                         @endforeach
                     </select>
+                @elseif($field->type === 'html')
+                    @once
+                        @push('head')
+                            <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css">
+                            <script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js"></script>
+                        @endpush
+                    @endonce
+                    <input type="hidden"
+                           id="custom_{{ $field->key }}_input"
+                           value="{{ $this->custom[$field->key] ?? '' }}">
+                    <trix-editor
+                        input="custom_{{ $field->key }}_input"
+                        class="trix-content border border-gray-300 rounded bg-white text-sm"
+                        style="min-height: 8rem"
+                        x-data
+                        x-on:trix-change="$wire.set('custom.{{ $field->key }}', $event.target.value)"
+                    ></trix-editor>
                 @elseif($field->type === 'checkbox')
                     <label class="inline-flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" wire:model="custom.{{ $field->key }}" value="1"
