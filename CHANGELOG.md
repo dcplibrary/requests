@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.1.0](https://github.com/dcplibrary/requests/compare/v3.0.2...v3.1.0) (2026-03-11)
+
+
+### Features
+
+* add ability to create new form fields ([b8ba13c](https://github.com/dcplibrary/requests/commit/b8ba13cf739dd79ffd95760b49e3c4a6b4e094e5))
+
 ## [3.0.2](https://github.com/dcplibrary/requests/compare/v3.0.1...v3.0.2) (2026-03-11)
 
 
