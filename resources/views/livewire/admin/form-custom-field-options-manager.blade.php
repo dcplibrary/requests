@@ -15,28 +15,7 @@
 
                 {{-- Sort buttons --}}
                 <td class="px-3 py-2">
-                    <div class="flex flex-col gap-0.5">
-                        <button
-                            type="button"
-                            wire:click="moveUp({{ $index }})"
-                            wire:loading.attr="disabled"
-                            @disabled($index === 0)
-                            class="p-0.5 rounded text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none"
-                            title="Move up"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
-                        </button>
-                        <button
-                            type="button"
-                            wire:click="moveDown({{ $index }})"
-                            wire:loading.attr="disabled"
-                            @disabled($index === count($items) - 1)
-                            class="p-0.5 rounded text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none"
-                            title="Move down"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                    </div>
+                    <x-sfp::sort-btns :value="$index" :first="$index === 0" :last="$index === count($items) - 1" size="md" />
                 </td>
 
                 {{-- Option name --}}

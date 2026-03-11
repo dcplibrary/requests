@@ -95,75 +95,71 @@
                 @enderror
             </fieldset>
 
-            @php $lastSection = null; @endphp
             @foreach($orderedFields as $field)
                 @php
                     $isVisible = $visibleFields[$field->key] ?? false;
-                    $sectionKey = $fieldSectionKeys[$field->key] ?? null;
                     $displayLabel = $displayLabels[$field->key] ?? $field->label;
                 @endphp
-                @if(! $isVisible) @continue @endif
-
-                @if($sectionKey && $sectionKey !== $lastSection)
-                    <h3 class="text-lg font-semibold text-gray-900 pt-2 first:pt-0">{{ $sectionLabels[$sectionKey] ?? $sectionKey }}</h3>
-                    @php $lastSection = $sectionKey; @endphp
-                @endif
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ $displayLabel }}
-                        @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
-                    </label>
-
-                    @if(in_array($field->type, ['radio'], true))
-                        @php
-                            $radioOptions = match ($field->key ?? '') {
-                                'audience' => $audienceOptions ?? [],
-                                'genre' => $genreOptions ?? [],
-                                default => $optionsByFieldId[$field->id] ?? [],
-                            };
-                        @endphp
-                        <div class="space-y-1" role="radiogroup">
-                            @foreach($radioOptions as $slug => $name)
-                                <label class="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-50 {{ ($custom[$field->key] ?? '') === $slug ? 'bg-blue-50 ring-1 ring-blue-200' : '' }}">
-                                    <input type="radio" wire:model.live="custom.{{ $field->key }}" value="{{ $slug }}"
-                                           class="text-blue-600 focus:ring-blue-500" />
-                                    <span class="text-sm text-gray-800">{{ $name }}</span>
-                                </label>
-                            @endforeach
-                        </div>
-                    @elseif(in_array($field->type, ['select'], true))
-                        <select wire:model.live="custom.{{ $field->key }}"
-                                class="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm">
-                            <option value="">Select…</option>
-                            @foreach(($optionsByFieldId[$field->id] ?? []) as $slug => $name)
-                                <option value="{{ $slug }}">{{ $name }}</option>
-                            @endforeach
-                        </select>
-                    @elseif($field->type === 'textarea')
-                        <textarea wire:model="custom.{{ $field->key }}" rows="4"
-                                  class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
-                                  placeholder="{{ $field->key === 'other_specify' ? 'Please describe what you need...' : '' }}"></textarea>
-                    @elseif($field->type === 'date')
-                        <input type="date" wire:model="custom.{{ $field->key }}"
-                               class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
-                    @elseif($field->type === 'number')
-                        <input type="number" step="0.01" wire:model="custom.{{ $field->key }}"
-                               class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
-                    @elseif($field->type === 'checkbox')
-                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="checkbox" wire:model="custom.{{ $field->key }}"
-                                   class="rounded text-blue-600 focus:ring-blue-500" />
-                            Yes
+                {{-- wire:key keeps morphdom stable; hidden suppresses invisible fields without removing them from DOM --}}
+                <div wire:key="field-{{ $field->key }}" @if(! $isVisible) hidden @endif>
+                @if($isVisible)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ $displayLabel }}
+                            @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
                         </label>
-                    @else
-                        <input type="text" wire:model="custom.{{ $field->key }}"
-                               class="w-full max-w-xl rounded-md border border-gray-300 px-3 py-2 text-sm" />
-                    @endif
 
-                    @error('custom.' . $field->key)
-                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
-                    @enderror
+                        @if(in_array($field->type, ['radio'], true))
+                            @php
+                                $radioOptions = match ($field->key ?? '') {
+                                    'audience' => $audienceOptions ?? [],
+                                    'genre' => $genreOptions ?? [],
+                                    default => $optionsByFieldId[$field->id] ?? [],
+                                };
+                            @endphp
+                            <div class="space-y-1" role="radiogroup">
+                                @foreach($radioOptions as $slug => $name)
+                                    <label class="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-50 {{ ($custom[$field->key] ?? '') === $slug ? 'bg-blue-50 ring-1 ring-blue-200' : '' }}">
+                                        <input type="radio" wire:model.live="custom.{{ $field->key }}" value="{{ $slug }}"
+                                               class="text-blue-600 focus:ring-blue-500" />
+                                        <span class="text-sm text-gray-800">{{ $name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        @elseif(in_array($field->type, ['select'], true))
+                            <select wire:model.live="custom.{{ $field->key }}"
+                                    class="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm">
+                                <option value="">Select…</option>
+                                @foreach(($optionsByFieldId[$field->id] ?? []) as $slug => $name)
+                                    <option value="{{ $slug }}">{{ $name }}</option>
+                                @endforeach
+                            </select>
+                        @elseif($field->type === 'textarea')
+                            <textarea wire:model="custom.{{ $field->key }}" rows="4"
+                                      class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                                      placeholder="{{ $field->key === 'other_specify' ? 'Please describe what you need...' : '' }}"></textarea>
+                        @elseif($field->type === 'date')
+                            <input type="date" wire:model="custom.{{ $field->key }}"
+                                   class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                        @elseif($field->type === 'number')
+                            <input type="number" step="0.01" wire:model="custom.{{ $field->key }}"
+                                   class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                        @elseif($field->type === 'checkbox')
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" wire:model="custom.{{ $field->key }}"
+                                       class="rounded text-blue-600 focus:ring-blue-500" />
+                                Yes
+                            </label>
+                        @else
+                            <input type="text" wire:model="custom.{{ $field->key }}"
+                                   class="w-full max-w-xl rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                        @endif
+
+                        @error('custom.' . $field->key)
+                            <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @endif
                 </div>
             @endforeach
         </div>

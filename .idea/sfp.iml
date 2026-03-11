@@ -8,6 +8,10 @@
       <sourceFolder url="file://$MODULE_DIR$/.claude/worktrees/crazy-mcclintock/tests" isTestSource="true" packagePrefix="Dcplibrary\Sfp\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/database/seeders" isTestSource="false" packagePrefix="Dcplibrary\Sfp\Database\Seeders\" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" packagePrefix="Dcplibrary\Sfp\" />
+      <sourceFolder url="file://$MODULE_DIR$/.claude/worktrees/intelligent-jones/database/seeders" isTestSource="false" packagePrefix="Dcplibrary\Sfp\Database\Seeders\" />
+      <sourceFolder url="file://$MODULE_DIR$/.claude/worktrees/intelligent-jones/src" isTestSource="false" packagePrefix="Dcplibrary\Sfp\" />
+      <sourceFolder url="file://$MODULE_DIR$/.claude/worktrees/intelligent-jones/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/.claude/worktrees/intelligent-jones/tests" isTestSource="true" packagePrefix="Dcplibrary\Sfp\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" packagePrefix="Dcplibrary\Sfp\Tests\" />
       <excludeFolder url="file://$MODULE_DIR$/.claude/worktrees/crazy-mcclintock/vendor/blashbrook/papiclient" />
@@ -235,6 +239,22 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/var-dumper" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/theseer/tokenizer" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/voku/portable-ascii" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/clue/ndjson-react" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/evenement/evenement" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/fidry/cpu-core-counter" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/friendsofphp/php-cs-fixer" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/illuminate/auth" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/cache" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/child-process" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/dns" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/event-loop" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/promise" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/socket" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/stream" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/filesystem" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/options-resolver" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-php81" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/stopwatch" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

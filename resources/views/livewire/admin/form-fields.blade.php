@@ -41,20 +41,8 @@
                     @forelse($sfpFields as $index => $field)
                     <tr wire:key="sfp-{{ $index }}" class="hover:bg-gray-50 {{ $field['active'] ? '' : 'opacity-60' }}">
                         <td class="px-4 py-3">
-                            <div class="flex flex-col gap-0.5">
-                                <button type="button" wire:click="moveUpSfp({{ $index }})"
-                                    wire:loading.attr="disabled"
-                                    @if($index === 0) disabled @endif
-                                    class="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none" title="Move up">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
-                                </button>
-                                <button type="button" wire:click="moveDownSfp({{ $index }})"
-                                    wire:loading.attr="disabled"
-                                    @if($index === count($sfpFields) - 1) disabled @endif
-                                    class="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none" title="Move down">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-                            </div>
+                            <x-sfp::sort-btns :value="$index" up="moveUpSfp" down="moveDownSfp"
+                                :first="$index === 0" :last="$index === count($sfpFields) - 1" size="md" />
                         </td>
                         <td class="px-4 py-3 font-medium text-gray-900">{{ $field['label'] }}</td>
                         <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ $field['key'] }}</td>
@@ -115,20 +103,8 @@
                     @forelse($illFields as $index => $field)
                     <tr wire:key="ill-{{ $index }}" class="hover:bg-gray-50 {{ $field['active'] ? '' : 'opacity-60' }}">
                         <td class="px-4 py-3">
-                            <div class="flex flex-col gap-0.5">
-                                <button type="button" wire:click="moveUpIll({{ $index }})"
-                                    wire:loading.attr="disabled"
-                                    @if($index === 0) disabled @endif
-                                    class="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none" title="Move up">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
-                                </button>
-                                <button type="button" wire:click="moveDownIll({{ $index }})"
-                                    wire:loading.attr="disabled"
-                                    @if($index === count($illFields) - 1) disabled @endif
-                                    class="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none" title="Move down">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-                            </div>
+                            <x-sfp::sort-btns :value="$index" up="moveUpIll" down="moveDownIll"
+                                :first="$index === 0" :last="$index === count($illFields) - 1" size="md" />
                         </td>
                         <td class="px-4 py-3 font-medium text-gray-900">{{ $field['label'] }}</td>
                         <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ $field['key'] }}</td>

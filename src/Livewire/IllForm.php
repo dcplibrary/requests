@@ -649,12 +649,29 @@ class IllForm extends Component
             && in_array($key, ['title', 'author', 'publish_date', 'publisher', 'isbn'], true)) {
             return 'books';
         }
-        if (in_array($slug, ['magazine-article', 'newspaper-microfilm'], true)
+        if ($slug === 'dvd'
+            && in_array($key, ['title', 'director', 'cast'], true)) {
+            return 'dvd';
+        }
+        if ($slug === 'magazine-article'
+            && in_array($key, ['title', 'author', 'publish_date'], true)) {
+            return 'magazine';
+        }
+        if ($slug === 'magazine-article'
             && in_array($key, ['periodical_title', 'volume_number', 'page_number'], true)) {
             return 'photocopy';
         }
-        if ($slug === 'dvd' && in_array($key, ['title', 'director', 'cast'], true)) {
-            return 'dvd';
+        if ($slug === 'newspaper-microfilm'
+            && in_array($key, ['title', 'author', 'publish_date'], true)) {
+            return 'newspaper';
+        }
+        if ($slug === 'newspaper-microfilm'
+            && in_array($key, ['periodical_title', 'volume_number', 'page_number'], true)) {
+            return 'photocopy';
+        }
+        if ($slug === 'other'
+            && in_array($key, ['title', 'author', 'publish_date'], true)) {
+            return 'other-material';
         }
 
         return null;
@@ -727,7 +744,7 @@ class IllForm extends Component
             ];
         });
 
-        return $merged->filter(fn ($o) => $o->visible)->sortBy('sort_order')->values()->map(fn ($o) => (object) ['id' => $o->id, 'name' => $o->name]);
+        return $merged->filter(fn ($o) => $o->visible)->sortBy('sort_order')->values()->map(fn ($o) => (object) ['id' => $o->id, 'name' => $o->name, 'slug' => $o->slug]);
     }
 
     /**
@@ -870,6 +887,10 @@ class IllForm extends Component
         $fieldSectionKeys = $fields->mapWithKeys(fn ($f) => [$f->key => $this->getFieldSectionKey($f)])->all();
         $displayLabels = $fields->mapWithKeys(fn ($f) => [$f->key => $this->getDisplayLabelForField($f)])->all();
 
+        // Build section labels using the material type names from the ILL form
+        // (respects admin label_overrides set on form options).
+        $mtBySlug = $this->getIllMaterialTypesOptions()->keyBy('slug');
+
         return view('sfp::livewire.ill-form', [
             'orderedFields' => $fields,
             'visibleFields' => $this->visibleCustomFields,
@@ -879,9 +900,12 @@ class IllForm extends Component
             'illMaterialTypes' => $this->getIllMaterialTypesOptions(),
             'fieldSectionKeys' => $fieldSectionKeys,
             'sectionLabels' => [
-                'books' => 'Books',
-                'photocopy' => 'Photocopy/Microfilm',
-                'dvd' => 'DVD',
+                'books'          => 'Books',
+                'photocopy'      => 'Photocopy/Microfilm',
+                'dvd'            => $mtBySlug->get('dvd')?->name ?? 'DVD/VHS',
+                'magazine'       => $mtBySlug->get('magazine-article')?->name ?? 'Magazine Article',
+                'newspaper'      => $mtBySlug->get('newspaper-microfilm')?->name ?? 'Newspaper/Microfilm',
+                'other-material' => $mtBySlug->get('other')?->name ?? 'Other',
             ],
             'displayLabels' => $displayLabels,
             'catalogOwnedMessage' => Setting::get(
