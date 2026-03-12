@@ -280,13 +280,13 @@
                 </div>
 
                 <input type="hidden" name="email_confirmed"    x-model="emailPayload.confirmed">
-                <input type="hidden" name="email_skip"         x-model="emailPayload.skip ? '1' : ''">
-                <input type="hidden" name="email_subject"      x-model="emailPayload.subject">
-                <input type="hidden" name="email_body"         x-model="emailPayload.body">
-                <input type="hidden" name="email_to"           x-model="emailPayload.to">
-                <input type="hidden" name="email_cc"           x-model="emailPayload.cc">
-                <input type="hidden" name="email_bcc"          x-model="emailPayload.bcc">
-                <input type="hidden" name="email_copy_to_self" x-model="emailPayload.copyToSelf ? '1' : ''">
+                <input type="hidden" name="email_skip"         :value="emailPayload.skip ? '1' : ''">
+                <input type="hidden" name="email_subject"      :value="emailPayload.subject">
+                <input type="hidden" name="email_body"         :value="emailPayload.body">
+                <input type="hidden" name="email_to"           :value="emailPayload.to">
+                <input type="hidden" name="email_cc"           :value="emailPayload.cc">
+                <input type="hidden" name="email_bcc"          :value="emailPayload.bcc">
+                <input type="hidden" name="email_copy_to_self" :value="emailPayload.copyToSelf ? '1' : ''">
 
                 <button type="submit"
                         :disabled="loading"
