@@ -171,9 +171,10 @@ class RequestController extends Controller
         ]);
 
         // Auto-claim on first open: assign to the current staff user if unassigned.
+        // Suppressed by ?noclaim=1 (used after reroute / manual unassign).
         $justClaimed = false;
         $assignmentEnabled = (bool) Setting::get('assignment_enabled', false);
-        if ($assignmentEnabled && ! $patronRequest->assigned_to_user_id) {
+        if ($assignmentEnabled && ! $patronRequest->assigned_to_user_id && ! request()->boolean('noclaim')) {
             $actor = $this->currentStaffUser(request());
             if ($actor) {
                 $patronRequest->update([
@@ -280,6 +281,13 @@ class RequestController extends Controller
             'user_id' => $actor?->id,
             'note' => $note,
         ]);
+
+        // After unassign, redirect with noclaim so auto-claim doesn't immediately re-grab it.
+        if (! $newAssigneeId) {
+            return redirect()
+                ->to(route('request.staff.requests.show', $patronRequest) . '?noclaim=1')
+                ->with('success', 'Assignment updated.');
+        }
 
         return back()->with('success', 'Assignment updated.');
     }

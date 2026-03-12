@@ -82,6 +82,12 @@
                 </div>
                 @endif
             </dl>
+            @if($patronRequest->material)
+                <div class="mt-3 pt-3 border-t border-gray-100">
+                    <a href="{{ route('request.staff.titles.show', $patronRequest->material) }}"
+                       class="text-xs text-blue-600 hover:underline">View full title details →</a>
+                </div>
+            @endif
         </div>
 
         @if($patronRequest->request_kind === 'sfp')
