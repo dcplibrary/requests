@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [3.6.3](https://github.com/dcplibrary/requests/compare/v3.6.2...v3.6.3) (2026-03-12)
+
+
+### Bug Fixes
+
+* correct publisher token ([e7c2471](https://github.com/dcplibrary/requests/commit/e7c24713d9b8b4dd8bc0c195a5d45317e8d7ed7a))
+
 ## [3.6.2](https://github.com/dcplibrary/requests/compare/v3.6.1...v3.6.2) (2026-03-12)
 
 
