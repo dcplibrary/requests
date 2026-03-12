@@ -449,6 +449,35 @@ class SettingsSeeder extends Seeder
                 'description' => 'How many days to keep server-side backup files. Files older than this are removed when pruning runs.',
             ],
 
+            // --- External lookup links ---
+            [
+                'key'         => 'sfp_isbn_lookup_url',
+                'value'       => 'https://www.amazon.com/s?k=ISBN+{isbn}',
+                'label'       => 'SFP ISBN Lookup URL',
+                'type'        => 'string',
+                'group'       => 'external_links',
+                'description' => 'URL template for looking up SFP items by ISBN (e.g. Amazon). Use {isbn} as a placeholder.',
+                'tokens'      => json_encode(['{isbn}']),
+            ],
+            [
+                'key'         => 'ill_isbn_lookup_url',
+                'value'       => 'https://www.worldcat.org/isbn/{isbn}',
+                'label'       => 'ILL ISBN Lookup URL',
+                'type'        => 'string',
+                'group'       => 'external_links',
+                'description' => 'URL template for looking up ILL items by ISBN (e.g. WorldCat). Use {isbn} as a placeholder.',
+                'tokens'      => json_encode(['{isbn}']),
+            ],
+            [
+                'key'         => 'polaris_leap_url',
+                'value'       => 'https://catalog.dcplibrary.org/leapwebapp/staff/default#patrons/{PatronID}/record',
+                'label'       => 'Polaris Leap Patron URL',
+                'type'        => 'string',
+                'group'       => 'external_links',
+                'description' => 'URL template for viewing a patron in Polaris Leap. Use {PatronID} as a placeholder.',
+                'tokens'      => json_encode(['{PatronID}']),
+            ],
+
             // --- Auto-order exclusions (popular authors) ---
             [
                 'key' => 'auto_order_author_exclusions',

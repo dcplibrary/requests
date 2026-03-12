@@ -47,19 +47,12 @@
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Email / Phone</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Polaris</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Requests</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Flags</th>
                 <th class="px-4 py-3"></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
             @forelse($patrons as $patron)
             @php
-                $isSuspect  = in_array($patron->id, $suspectedDuplicateIds);
-                $hasMismatch = $patron->name_first_matches === false
-                    || $patron->name_last_matches === false
-                    || $patron->phone_matches === false
-                    || $patron->email_matches === false;
-                $notFound   = $patron->found_in_polaris === false && $patron->polaris_lookup_attempted;
                 $neverLooked = ! $patron->polaris_lookup_attempted;
             @endphp
             <tr class="hover:bg-gray-50">
@@ -86,26 +79,13 @@
                     @endif
                 </td>
                 <td class="px-4 py-3 text-gray-600">{{ $patron->requests_count }}</td>
-                <td class="px-4 py-3">
-                    <div class="flex flex-wrap gap-1">
-                        @if($hasMismatch)
-                            <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">Mismatch</span>
-                        @endif
-                        @if($isSuspect)
-                            <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-orange-100 text-orange-700">Possible duplicate</span>
-                        @endif
-                        @if($notFound)
-                            <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-600">Not in Polaris</span>
-                        @endif
-                    </div>
-                </td>
                 <td class="px-4 py-3 text-right">
                     <x-requests::icon-btn :href="route('request.staff.patrons.show', $patron)" variant="view" label="View" />
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="7" class="px-4 py-10 text-center text-gray-400">
+                <td colspan="6" class="px-4 py-10 text-center text-gray-400">
                     {{ $showAll ? 'No patrons found.' : 'No flagged patrons — everything looks good.' }}
                 </td>
             </tr>

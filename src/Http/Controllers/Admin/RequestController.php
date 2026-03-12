@@ -246,6 +246,9 @@ class RequestController extends Controller
             'staffUsers' => StaffUser::query()->where('active', true)->orderBy('name')->get(['id', 'name', 'email']),
             'showConvertToIll' => $showConvertToIll,
             'rerouteFields' => $rerouteFields,
+            'sfpIsbnLookupUrl' => Setting::get('sfp_isbn_lookup_url'),
+            'illIsbnLookupUrl' => Setting::get('ill_isbn_lookup_url'),
+            'polarisLeapUrl'   => Setting::get('polaris_leap_url'),
         ]);
     }
 

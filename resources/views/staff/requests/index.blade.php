@@ -149,7 +149,7 @@
         </thead>
         <tbody class="divide-y divide-gray-100">
             @forelse($requests as $req)
-            <tr class="hover:bg-gray-50">
+            <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{{ route('request.staff.requests.show', $req) }}'">
                 <td class="px-4 py-3 text-gray-400">{{ $req->id }}</td>
                 <td class="px-4 py-3">
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium

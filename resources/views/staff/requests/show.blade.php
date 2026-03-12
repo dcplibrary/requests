@@ -83,9 +83,18 @@
                 @endif
             </dl>
             @if($patronRequest->material)
-                <div class="mt-3 pt-3 border-t border-gray-100">
+                <div class="mt-3 pt-3 border-t border-gray-100 flex items-center gap-3">
                     <a href="{{ route('request.staff.titles.show', $patronRequest->material) }}"
                        class="text-xs text-blue-600 hover:underline">View full title details →</a>
+                    @if($patronRequest->material->isbn)
+                        @if($patronRequest->request_kind === 'ill' && ($illIsbnLookupUrl ?? null))
+                            @php $isbnUrl = str_replace('{isbn}', $patronRequest->material->isbn13 ?? $patronRequest->material->isbn, $illIsbnLookupUrl); @endphp
+                            <x-requests::external-link-btn :href="$isbnUrl" icon="globe" label="View on WorldCat" />
+                        @elseif(($sfpIsbnLookupUrl ?? null))
+                            @php $isbnUrl = str_replace('{isbn}', $patronRequest->material->isbn13 ?? $patronRequest->material->isbn, $sfpIsbnLookupUrl); @endphp
+                            <x-requests::external-link-btn :href="$isbnUrl" icon="cart" label="View on Amazon" />
+                        @endif
+                    @endif
                 </div>
             @endif
         </div>
@@ -98,9 +107,9 @@
                     && in_array($v->field->scope, ['sfp', 'both'])
                 )->sortBy(fn ($v) => $v->field?->sort_order ?? 9999)->values();
             @endphp
-            @if($sfpCustomVals->isNotEmpty())
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">SFP Details</h2>
+            @if($sfpCustomVals->isNotEmpty())
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 @foreach($sfpCustomVals as $val)
                     <div class="md:col-span-1">
@@ -111,8 +120,11 @@
                     </div>
                 @endforeach
             </dl>
-        </div>
+            @else
+                <p class="text-sm text-gray-400">No custom field values recorded.</p>
             @endif
+            <x-requests::patron-info :patron="$patronRequest->patron" :leap-url="$polarisLeapUrl ?? null" />
+        </div>
         @endif
 
         @if($patronRequest->request_kind === 'ill')
@@ -138,6 +150,7 @@
                     @endforeach
                 </dl>
             @endif
+            <x-requests::patron-info :patron="$patronRequest->patron" :leap-url="$polarisLeapUrl ?? null" />
         </div>
         @endif
 
