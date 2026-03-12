@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.11.0](https://github.com/dcplibrary/requests/compare/v3.10.0...v3.11.0) (2026-03-12)
+
+
+### Features
+
+* compact action buttons and put them in a panel ([523d8e9](https://github.com/dcplibrary/requests/commit/523d8e95dd2f36dc99c3ee0996f5fbe102239bdb))
+
 # [3.10.0](https://github.com/dcplibrary/requests/compare/v3.9.0...v3.10.0) (2026-03-12)
 
 
