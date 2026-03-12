@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.8.0](https://github.com/dcplibrary/requests/compare/v3.7.1...v3.8.0) (2026-03-12)
+
+
+### Features
+
+* allow user to unassign item from themself ([4f5fb90](https://github.com/dcplibrary/requests/commit/4f5fb906ec6a3169193bb115ce17e3219254e95a))
+
 ## [3.7.1](https://github.com/dcplibrary/requests/compare/v3.7.0...v3.7.1) (2026-03-12)
 
 
