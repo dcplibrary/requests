@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [3.4.1](https://github.com/dcplibrary/requests/compare/v3.4.0...v3.4.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* enable staff routing settings ([922d4ac](https://github.com/dcplibrary/requests/commit/922d4ac80604981d709cf441f50f9df1da904fed))
+
 # [3.4.0](https://github.com/dcplibrary/requests/compare/v3.3.0...v3.4.0) (2026-03-12)
 
 
