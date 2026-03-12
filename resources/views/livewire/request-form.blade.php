@@ -375,6 +375,45 @@
                 @endif
             </div>
 
+        {{-- ── generic fallback for unmapped core fields (e.g. console) ── --}}
+        @elseif($isVisible)
+            <div>
+                <label for="{{ $field->key }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ $field->label }}
+                    @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
+                </label>
+
+                @if($field->type === 'select')
+                    <select id="{{ $field->key }}" wire:model.live="{{ $field->key }}"
+                            class="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select…</option>
+                        @foreach($coreFieldOptions[$field->id] ?? [] as $slug => $name)
+                            <option value="{{ $slug }}">{{ $name }}</option>
+                        @endforeach
+                    </select>
+                @elseif($field->type === 'radio')
+                    <div class="flex items-center gap-4 flex-wrap" role="radiogroup" aria-required="{{ $field->required ? 'true' : 'false' }}">
+                        @foreach($coreFieldOptions[$field->id] ?? [] as $slug => $name)
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" wire:model.live="{{ $field->key }}" value="{{ $slug }}" name="{{ $field->key }}" class="text-blue-600 focus:ring-blue-500" />
+                                <span class="text-sm text-gray-800">{{ $name }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                @elseif($field->type === 'textarea')
+                    <textarea id="{{ $field->key }}" wire:model="{{ $field->key }}" rows="3"
+                              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"></textarea>
+                @else
+                    <input type="text" id="{{ $field->key }}" wire:model="{{ $field->key }}"
+                           class="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ $errors->has($field->key) ? 'border-red-500' : 'border-gray-300' }}"
+                           @if($field->required) aria-required="true" @endif />
+                @endif
+
+                @error($field->key)
+                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                @enderror
+            </div>
+
         @endif
         @endforeach
 

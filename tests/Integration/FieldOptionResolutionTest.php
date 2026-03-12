@@ -345,4 +345,69 @@ class FieldOptionResolutionTest extends TestCase
         $illResult = $this->formFilteredOptionMap($fieldId, $illId);
         $this->assertSame('Adult', $illResult['adult']);
     }
+
+    // ── selectOrRadioRule() ──────────────────────────────────────────────────
+
+    /**
+     * Ensure required select/radio rules include all allowed slugs.
+     *
+     * @return void
+     */
+    #[Test]
+    public function select_or_radio_rule_required_with_options(): void
+    {
+        $fieldId = $this->seedField('genre', [
+            'fiction' => 'Fiction', 'mystery' => 'Mystery', 'scifi' => 'Sci-Fi',
+        ]);
+        $field = Field::find($fieldId);
+
+        $rule = $this->selectOrRadioRule($field, true, null);
+
+        $this->assertSame('required|in:fiction,mystery,scifi', $rule);
+    }
+
+    /**
+     * Ensure nullable select/radio rules include allowed slugs.
+     *
+     * @return void
+     */
+    #[Test]
+    public function select_or_radio_rule_nullable_with_options(): void
+    {
+        $fieldId = $this->seedField('console', ['switch' => 'Nintendo Switch']);
+        $field   = Field::find($fieldId);
+
+        $rule = $this->selectOrRadioRule($field, false, null);
+
+        $this->assertSame('nullable|in:switch', $rule);
+    }
+
+    /**
+     * Ensure form-specific hidden overrides remove slugs from validation rules.
+     *
+     * @return void
+     */
+    #[Test]
+    public function select_or_radio_rule_respects_form_overrides(): void
+    {
+        $fieldId = $this->seedField('genre', [
+            'fiction' => 'Fiction', 'mystery' => 'Mystery', 'scifi' => 'Sci-Fi',
+        ]);
+        $field  = Field::find($fieldId);
+        $formId = $this->seedForm('sfp');
+
+        // Hide 'mystery' for this form.
+        $now = date('Y-m-d H:i:s');
+        Capsule::table('form_field_option_overrides')->insert([
+            'form_id' => $formId, 'field_id' => $fieldId, 'option_slug' => 'mystery',
+            'visible' => 0, 'sort_order' => 0, 'created_at' => $now, 'updated_at' => $now,
+        ]);
+
+        $rule = $this->selectOrRadioRule($field, true, $formId);
+
+        $this->assertStringStartsWith('required|in:', $rule);
+        $this->assertStringContainsString('fiction', $rule);
+        $this->assertStringContainsString('scifi', $rule);
+        $this->assertStringNotContainsString('mystery', $rule);
+    }
 }

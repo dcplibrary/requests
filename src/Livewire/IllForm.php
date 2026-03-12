@@ -2,7 +2,10 @@
 
 namespace Dcplibrary\Requests\Livewire;
 
+use Dcplibrary\Requests\Livewire\Concerns\EvaluatesFieldConditions;
 use Dcplibrary\Requests\Livewire\Concerns\FiltersFormFieldOptions;
+use Dcplibrary\Requests\Livewire\Concerns\RemembersPatron;
+use Dcplibrary\Requests\Livewire\Concerns\WithCoverService;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Form;
@@ -14,7 +17,6 @@ use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Models\PatronRequest;
 use Dcplibrary\Requests\Models\Material;
 use Dcplibrary\Requests\Services\BibliocommonsService;
-use Dcplibrary\Requests\Services\CoverService;
 use Dcplibrary\Requests\Services\IsbnDbService;
 use Dcplibrary\Requests\Services\NotificationService;
 use Dcplibrary\Requests\Services\PatronService;
@@ -26,7 +28,10 @@ use Livewire\Component;
 #[Layout('requests::layouts.requests')]
 class IllForm extends Component
 {
+    use EvaluatesFieldConditions;
     use FiltersFormFieldOptions;
+    use RemembersPatron;
+    use WithCoverService;
     public int $step = 1;
 
     // Step 1 (patron)
@@ -81,16 +86,7 @@ class IllForm extends Component
 
     public function mount(): void
     {
-        // When a patron switches from the SFP form (e.g. after age-of-book warning) to ILL,
-        // pre-fill from shared request.patron session so they don't re-enter details.
-        $remembered = session('request.patron');
-        if (is_array($remembered)) {
-            $this->barcode    = (string) ($remembered['barcode'] ?? $this->barcode);
-            $this->name_first = (string) ($remembered['name_first'] ?? $this->name_first);
-            $this->name_last  = (string) ($remembered['name_last'] ?? $this->name_last);
-            $this->phone      = (string) ($remembered['phone'] ?? $this->phone);
-            $this->email      = (string) ($remembered['email'] ?? $this->email);
-        }
+        $this->hydratePatronFromSession();
 
         $allowed = $this->getAllowedMaterialTypeIds();
         if (! empty($allowed)) {
@@ -117,13 +113,7 @@ class IllForm extends Component
     public function nextStep(): void
     {
         if ($this->step === 1) {
-            $this->validate([
-                'barcode'    => 'required|min:5|max:20',
-                'name_first' => 'required|min:1|max:100',
-                'name_last'  => 'required|min:1|max:100',
-                'phone'      => 'required|min:7|max:20',
-                'email'      => 'nullable|email|max:255',
-            ]);
+            $this->validate($this->patronValidationRules());
         }
 
         if ($this->step === 2) {
@@ -206,50 +196,23 @@ class IllForm extends Component
         });
     }
 
-    /** @deprecated No longer used — field type now comes from sfp_form_fields.type column. */
-
-    /**
-     * Current state for conditional logic evaluation: key => selected slug/string.
-     *
-     * @return array<string, string|null>
-     */
-    /**
-     * Current state for conditional logic: material_type from selection, plus select/radio custom values.
-     *
-     * @return array<string, string|null>
-     */
-    private function customState(): array
-    {
-        $state = [
-            'material_type' => $this->materialTypeSlug(),
-        ];
-
-        foreach ($this->stepTwoFields as $field) {
-            if (! in_array($field->type, ['select', 'radio'], true)) {
-                continue;
-            }
-            $val = $this->custom[$field->key] ?? null;
-            $state[$field->key] = is_string($val) ? $val : null;
-        }
-
-        return $state;
-    }
-
     /**
      * @return array<string, bool>
      */
     public function getVisibleCustomFieldsProperty(): array
     {
-        $state = $this->customState();
-
-        return $this->stepTwoFields
-            ->mapWithKeys(fn ($f) => [$f->key => Field::evaluateCondition($f->condition, $state)])
-            ->all();
+        return $this->buildVisibilityMap($this->stepTwoFields);
     }
 
+    /**
+     * True when the given custom field key passes its condition.
+     *
+     * @param  string  $key
+     * @return bool
+     */
     public function customFieldVisible(string $key): bool
     {
-        return $this->visibleCustomFields[$key] ?? false;
+        return $this->isFieldVisible($key, $this->visibleCustomFields);
     }
 
     private function clearHiddenFields(): void
@@ -268,11 +231,12 @@ class IllForm extends Component
      */
     private function buildStepTwoRules(): array
     {
-        $rules = [];
-        $state = $this->customState();
+        $rules  = [];
+        $state  = $this->formConditionState();
+        $formId = Form::bySlug('ill')?->id;
 
         foreach ($this->stepTwoFields as $field) {
-            $visible  = Field::evaluateCondition($field->condition, $state);
+            $visible  = Field::evaluateCondition($field->condition ?? ['match' => 'all', 'rules' => []], $state);
             $required = $visible && $field->required;
             // When "Other" material type is selected, title can come from other_specify; don't require title.
             if ($field->key === 'title' && ($state['material_type'] ?? '') === 'other') {
@@ -282,7 +246,7 @@ class IllForm extends Component
             $path = "custom.{$field->key}";
 
             $rules[$path] = match ($field->type) {
-                'radio', 'select' => $this->selectOrRadioRule($field->field, $required),
+                'radio', 'select' => $this->selectOrRadioRule($field->field, $required, $formId),
                 'text'            => $required ? 'required|string|max:500' : 'nullable|string|max:500',
                 'textarea'        => $required ? 'required|string|max:5000' : 'nullable|string|max:5000',
                 'date'            => $required ? 'required|date' : 'nullable|date',
@@ -293,22 +257,6 @@ class IllForm extends Component
         }
 
         return $rules;
-    }
-
-    /**
-     * Build a select/radio validation rule using ILL form option overrides.
-     *
-     * @param  Field  $field
-     * @param  bool   $required
-     * @return string
-     */
-    private function selectOrRadioRule(Field $field, bool $required): string
-    {
-        $form  = Form::bySlug('ill');
-        $slugs = $this->formFilteredOptions($field->id, $form?->id)->pluck('slug')->all();
-        $base  = $required ? 'required' : 'nullable';
-
-        return $slugs !== [] ? $base . '|in:' . implode(',', $slugs) : $base;
     }
 
     // --- Submission ---
@@ -565,33 +513,13 @@ class IllForm extends Component
             'note'              => 'ILL request submitted by patron.',
         ]);
 
-        session()->put('request.patron', [
-            'barcode'    => $this->barcode,
-            'name_first' => $this->name_first,
-            'name_last'  => $this->name_last,
-            'phone'      => $this->phone,
-            'email'      => $this->email,
-        ]);
+        $this->savePatronToSession();
 
         app(NotificationService::class)->notifyStaffNewRequest($req);
 
         $this->createdRequestId = $req->id;
         $this->processing = false;
         $this->step = 4;
-    }
-
-    /**
-     * Decorate ISBNdb results with cover_url (same pattern as RequestForm).
-     */
-    private function withCovers(array $results, string $source): array
-    {
-        $covers = app(CoverService::class);
-        return array_map(function (array $result) use ($covers) {
-            $isbn = $result['isbn13'] ?? $result['isbn'] ?? null;
-            $fallback = $result['image'] ?? null;
-            $result['cover_url'] = $covers->url($isbn, $fallback);
-            return $result;
-        }, $results);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Livewire\Concerns;
 
+use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\FormFieldOptionOverride;
 use Illuminate\Support\Collection;
@@ -70,5 +71,23 @@ trait FiltersFormFieldOptions
         return $this->formFilteredOptions($fieldId, $formId)
             ->pluck('name', 'slug')
             ->all();
+    }
+
+    /**
+     * Build a select/radio validation rule from the allowed slugs for a field.
+     *
+     * @param  Field     $field
+     * @param  bool      $required
+     * @param  int|null  $formId
+     * @return string
+     */
+    private function selectOrRadioRule(Field $field, bool $required, ?int $formId): string
+    {
+        $slugs = $this->formFilteredOptions($field->id, $formId)
+            ->pluck('slug')
+            ->all();
+        $base = $required ? 'required' : 'nullable';
+
+        return $slugs !== [] ? $base . '|in:' . implode(',', $slugs) : $base;
     }
 }

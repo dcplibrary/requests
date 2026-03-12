@@ -2,7 +2,10 @@
 
 namespace Dcplibrary\Requests\Livewire;
 
+use Dcplibrary\Requests\Livewire\Concerns\EvaluatesFieldConditions;
 use Dcplibrary\Requests\Livewire\Concerns\FiltersFormFieldOptions;
+use Dcplibrary\Requests\Livewire\Concerns\RemembersPatron;
+use Dcplibrary\Requests\Livewire\Concerns\WithCoverService;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\CatalogFormatLabel;
 use Dcplibrary\Requests\Models\Field;
@@ -14,7 +17,6 @@ use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Models\PatronRequest;
 use Dcplibrary\Requests\Services\BibliocommonsService;
-use Dcplibrary\Requests\Services\CoverService;
 use Dcplibrary\Requests\Services\IsbnDbService;
 use Dcplibrary\Requests\Services\PatronService;
 use Dcplibrary\Requests\Services\NotificationService;
@@ -27,7 +29,10 @@ use Livewire\Component;
 #[Layout('requests::layouts.requests')]
 class RequestForm extends Component
 {
+    use EvaluatesFieldConditions;
     use FiltersFormFieldOptions;
+    use RemembersPatron;
+    use WithCoverService;
 
     // --- Steps ---
     public int $step = 1; // 1=patron, 2=material, 3=resolution, 4=confirmation
@@ -116,16 +121,7 @@ class RequestForm extends Component
 
     public function mount(): void
     {
-        // If the patron previously submitted a request and chose "Submit Another Request",
-        // we keep their patron info in the session for convenience.
-        $remembered = session('request.patron');
-        if (is_array($remembered)) {
-            $this->barcode     = (string) ($remembered['barcode'] ?? $this->barcode);
-            $this->name_first  = (string) ($remembered['name_first'] ?? $this->name_first);
-            $this->name_last   = (string) ($remembered['name_last'] ?? $this->name_last);
-            $this->phone       = (string) ($remembered['phone'] ?? $this->phone);
-            $this->email       = (string) ($remembered['email'] ?? $this->email);
-        }
+        $this->hydratePatronFromSession();
 
         // Pre-select "Book" as default material type
         $mtField = Field::where('key', 'material_type')->first();
@@ -155,13 +151,7 @@ class RequestForm extends Component
             $this->barcodeNotFound = false;
             $this->barcodeNotFoundMessage = '';
 
-            $this->validate([
-                'barcode'    => 'required|min:5|max:20',
-                'name_first' => 'required|min:1|max:100',
-                'name_last'  => 'required|min:1|max:100',
-                'phone'      => 'required|min:7|max:20',
-                'email'      => 'nullable|email|max:255',
-            ]);
+            $this->validate($this->patronValidationRules());
 
             $this->checkPatronLimit();
 
@@ -203,19 +193,14 @@ class RequestForm extends Component
      */
     public function submitAnotherRequest(): void
     {
-        session()->put('request.patron', [
-            'barcode'    => $this->barcode,
-            'name_first' => $this->name_first,
-            'name_last'  => $this->name_last,
-            'phone'      => $this->phone,
-            'email'      => $this->email,
-        ]);
+        $this->savePatronToSession();
 
         // Reset item + resolution state only (keep patron fields)
         $this->reset([
             'title',
             'author',
             'publish_date',
+            'console',
             'custom',
             'showIllWarning',
             'other_material_text',
@@ -285,14 +270,10 @@ class RequestForm extends Component
             return;
         }
 
-        match ($key) {
-            'genre'        => $this->genre = '',
-            'title'        => $this->title = '',
-            'author'       => $this->author = '',
-            'isbn'         => $this->isbn = '',
-            'publish_date' => $this->publish_date = '',
-            default        => null,
-        };
+        // Generic: clear any matching public string property
+        if (property_exists($this, $key) && is_string($this->{$key})) {
+            $this->{$key} = '';
+        }
     }
 
     // --- ILL age warning (triggered by publish_date change) ---
@@ -315,7 +296,7 @@ class RequestForm extends Component
 
     // --- Form field config (cached) ---
 
-    /** @var string[] Core field keys rendered with dedicated Blade blocks. */
+    /** @var string[] Field keys rendered in the core form-field loop (dedicated or generic fallback blocks). */
     private const CORE_KEYS = ['material_type', 'audience', 'genre', 'title', 'author', 'isbn', 'publish_date', 'console'];
 
     /**
@@ -362,45 +343,24 @@ class RequestForm extends Component
     }
 
     /**
-     * Current form state used to evaluate conditional logic.
-     * Maps the condition rule 'field' names to the currently selected slug.
-     */
-    private function formState(): array
-    {
-        $materialSlug = $this->material_type_id
-            ? (FieldOption::find($this->material_type_id)?->slug ?? '')
-            : '';
-
-        $audienceSlug = $this->audience_id
-            ? (FieldOption::find($this->audience_id)?->slug ?? '')
-            : '';
-
-        return [
-            'material_type' => $materialSlug,
-            'audience'      => $audienceSlug,
-        ];
-    }
-
-    /**
      * Return the set of field keys that are visible given the current form state.
      *
      * @return array<string, bool>  ['genre' => true, 'console' => false, ...]
      */
     public function getVisibleFieldsProperty(): array
     {
-        $state = $this->formState();
-
-        return $this->formFields
-            ->mapWithKeys(fn (Field $f) => [$f->key => $f->isVisibleFor($state)])
-            ->all();
+        return $this->buildVisibilityMap($this->formFields);
     }
 
     /**
      * True when the given field key is both active and passes its condition.
+     *
+     * @param  string  $key
+     * @return bool
      */
     public function fieldVisible(string $key): bool
     {
-        return $this->visibleFields[$key] ?? false;
+        return $this->isFieldVisible($key, $this->visibleFields);
     }
 
     /**
@@ -469,34 +429,18 @@ class RequestForm extends Component
      */
     public function getVisibleCustomFieldsProperty(): array
     {
-        $state = $this->formState();
-
-        return $this->stepTwoCustomFields
-            ->mapWithKeys(fn (Field $f) => [$f->key => $f->isVisibleFor($state)])
-            ->all();
-    }
-
-    public function customFieldVisible(string $key): bool
-    {
-        return $this->visibleCustomFields[$key] ?? false;
+        return $this->buildVisibilityMap($this->stepTwoCustomFields);
     }
 
     /**
-     * Build a select/radio validation rule using SFP form option overrides.
+     * True when the given custom field key passes its condition.
      *
-     * @param  Field  $field
-     * @param  bool   $required
-     * @return string
+     * @param  string  $key
+     * @return bool
      */
-    private function customFieldSelectRule(Field $field, bool $required): string
+    public function customFieldVisible(string $key): bool
     {
-        $form  = Form::bySlug('sfp');
-        $slugs = $this->formFilteredOptions($field->id, $form?->id)
-            ->pluck('slug')
-            ->implode(',');
-        $base = $required ? 'required' : 'nullable';
-
-        return $slugs !== '' ? "{$base}|in:{$slugs}" : $base;
+        return $this->isFieldVisible($key, $this->visibleCustomFields);
     }
 
     /**
@@ -513,12 +457,17 @@ class RequestForm extends Component
             'audience_id'      => 'required|exists:field_options,id',
         ];
 
-        $genreField = Field::where('key', 'genre')->first();
-        $sfpForm    = Form::bySlug('sfp');
+        $sfpForm   = Form::bySlug('sfp');
+        $sfpFormId = $sfpForm?->id;
+        $state     = $this->formConditionState();
+
+        // Rules for core fields that have dedicated rendering blocks
         $fieldRuleMap = [
-            'genre'        => function (bool $req) use ($genreField, $sfpForm) {
-                $slugs = $genreField ? $this->formFilteredOptions($genreField->id, $sfpForm?->id)->pluck('slug')->implode(',') : '';
-                return $req && $slugs !== '' ? "required|in:$slugs" : ($slugs !== '' ? "nullable|in:$slugs" : 'nullable');
+            'genre'        => function (bool $req) use ($sfpFormId) {
+                $genreField = Field::where('key', 'genre')->first();
+                return $genreField
+                    ? $this->selectOrRadioRule($genreField, $req, $sfpFormId)
+                    : ($req ? 'required' : 'nullable');
             },
             'title'        => fn (bool $req) => $req ? 'required|min:1|max:500' : 'nullable|min:1|max:500',
             'author'       => fn (bool $req) => $req ? 'required|min:1|max:300' : 'nullable|min:1|max:300',
@@ -526,19 +475,26 @@ class RequestForm extends Component
             'publish_date' => fn ()           => 'nullable|string|max:50',
         ];
 
-        $state = $this->formState();
-
         foreach ($this->formFields as $field) {
-            if (! isset($fieldRuleMap[$field->key])) {
+            // material_type and audience have fixed rules above
+            if (in_array($field->key, ['material_type', 'audience'], true)) {
                 continue;
             }
 
             $required = $field->isRequiredFor($state);
 
-            // Map field key → Livewire property name (console has its own property now)
-            $prop = $field->key;
+            if (isset($fieldRuleMap[$field->key])) {
+                $rules[$field->key] = $fieldRuleMap[$field->key]($required);
+                continue;
+            }
 
-            $rules[$prop] = $fieldRuleMap[$field->key]($required);
+            // Generic rules for unmapped core fields based on type
+            $rules[$field->key] = match ($field->type) {
+                'select', 'radio' => $this->selectOrRadioRule($field, $required, $sfpFormId),
+                'textarea'        => $required ? 'required|string|max:5000' : 'nullable|string|max:5000',
+                'text'            => $required ? 'required|string|max:500' : 'nullable|string|max:500',
+                default           => $required ? 'required' : 'nullable',
+            };
         }
 
         foreach ($this->stepTwoCustomFields as $field) {
@@ -546,11 +502,11 @@ class RequestForm extends Component
             $required = $visible && $field->required;
             $path = "custom.{$field->key}";
             $rules[$path] = match ($field->type) {
-                'textarea' => $required ? 'required|string|max:5000' : 'nullable|string|max:5000',
-                'text'     => $required ? 'required|string|max:500' : 'nullable|string|max:500',
-                'select', 'radio' => $this->customFieldSelectRule($field, $required),
-                'checkbox' => 'nullable|boolean',
-                default    => $required ? 'required' : 'nullable',
+                'textarea'        => $required ? 'required|string|max:5000' : 'nullable|string|max:5000',
+                'text'            => $required ? 'required|string|max:500' : 'nullable|string|max:500',
+                'select', 'radio' => $this->selectOrRadioRule($field, $required, $sfpFormId),
+                'checkbox'        => 'nullable|boolean',
+                default           => $required ? 'required' : 'nullable',
             };
         }
 
@@ -840,12 +796,22 @@ class RequestForm extends Component
             'duplicate_of_request_id'=> $priorRequest?->id,
         ]);
 
-        // Store material_type, audience, genre as EAV field values
+        // Store core field values as EAV
         $coreFieldValues = [
             'material_type' => $this->material_type_id ? (FieldOption::find($this->material_type_id)?->slug) : null,
             'audience'      => $this->audience_id ? (FieldOption::find($this->audience_id)?->slug) : null,
-            'genre'         => $this->genre ?: null,
         ];
+
+        // Auto-include any other core fields that have a matching string property
+        foreach ($this->formFields as $f) {
+            if (isset($coreFieldValues[$f->key])) {
+                continue;
+            }
+            if (property_exists($this, $f->key) && is_string($this->{$f->key}) && $this->{$f->key} !== '') {
+                $coreFieldValues[$f->key] = $this->{$f->key};
+            }
+        }
+
         foreach ($coreFieldValues as $key => $val) {
             if ($val === null || $val === '') {
                 continue;
@@ -894,29 +860,6 @@ class RequestForm extends Component
         $this->step = 4; // Confirmation
     }
 
-    /**
-     * Decorate search results with a cover_url from CoverService.
-     * Source 'catalog' uses isbns[0] + jacket fallback.
-     * Source 'isbndb' uses isbn13/isbn + image fallback.
-     */
-    private function withCovers(array $results, string $source): array
-    {
-        $covers = app(CoverService::class);
-
-        return array_map(function (array $result) use ($covers, $source) {
-            if ($source === 'catalog') {
-                $isbn     = $result['isbns'][0] ?? null;
-                $fallback = $result['jacket'] ?? null;
-            } else {
-                $isbn     = $result['isbn13'] ?? $result['isbn'] ?? null;
-                $fallback = $result['image'] ?? null;
-            }
-
-            $result['cover_url'] = $covers->url($isbn, $fallback);
-            return $result;
-        }, $results);
-    }
-
     public function render()
     {
         $visible = $this->visibleFields;
@@ -932,14 +875,24 @@ class RequestForm extends Component
                 ->all();
         }
 
-        $mtField = Field::where('key', 'material_type')->first();
-        $audField = Field::where('key', 'audience')->first();
+        $mtField    = Field::where('key', 'material_type')->first();
+        $audField   = Field::where('key', 'audience')->first();
         $genreField = Field::where('key', 'genre')->first();
+
+        // Build option maps for core select/radio fields without dedicated Blade variables
+        $coreFieldOptions = [];
+        foreach ($this->formFields as $f) {
+            if (in_array($f->type, ['select', 'radio'], true)
+                && ! in_array($f->key, ['material_type', 'audience', 'genre'], true)) {
+                $coreFieldOptions[$f->id] = $this->formFilteredOptionMap($f->id, $sfpFormId);
+            }
+        }
 
         return view('requests::livewire.request-form', [
             'materialTypes'         => $mtField ? $this->formFilteredOptions($mtField->id, $sfpFormId) : collect(),
             'audiences'             => $audField ? $this->formFilteredOptions($audField->id, $sfpFormId) : collect(),
             'genres'                => $genreField ? $this->formFilteredOptions($genreField->id, $sfpFormId) : collect(),
+            'coreFieldOptions'      => $coreFieldOptions,
             'orderedFields'         => $this->formFields,
             'stepTwoCustomFields'   => $this->stepTwoCustomFields,
             'customFieldOptionsByFieldId' => $customFieldOptions,
