@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [3.1.1](https://github.com/dcplibrary/requests/compare/v3.1.0...v3.1.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* make fields used for group conditions flexible ([f72e88b](https://github.com/dcplibrary/requests/commit/f72e88bf19c917785771279f77a2810a4c839f61))
+
 # [3.1.0](https://github.com/dcplibrary/requests/compare/v3.0.2...v3.1.0) (2026-03-11)
 
 
