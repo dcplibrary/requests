@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [3.7.1](https://github.com/dcplibrary/requests/compare/v3.7.0...v3.7.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* convert isbndb description to json ([9a050ae](https://github.com/dcplibrary/requests/commit/9a050ae5ecbf0e94b51c9b3c3736acb4fc174a66))
+
 # [3.7.0](https://github.com/dcplibrary/requests/compare/v3.6.3...v3.7.0) (2026-03-12)
 
 
