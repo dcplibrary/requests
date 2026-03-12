@@ -34,6 +34,22 @@
 
 {{-- Filters --}}
 <form method="GET" class="bg-white rounded-lg border border-gray-200 p-4 mb-6 flex flex-wrap gap-3 items-end">
+    @if($currentKind)
+        <input type="hidden" name="kind" value="{{ $currentKind }}">
+    @endif
+
+    @if($assignmentEnabled ?? false)
+    <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Assigned</label>
+        <select name="assigned" class="text-sm border border-gray-300 rounded px-2 py-1.5">
+            <option value="">Any</option>
+            <option value="me" {{ ($filters['assigned'] ?? '') === 'me' ? 'selected' : '' }}>Me</option>
+            <option value="unassigned" {{ ($filters['assigned'] ?? '') === 'unassigned' ? 'selected' : '' }}>Unassigned</option>
+        </select>
+    </div>
+    @endif
+
+    @unless($currentKind)
     <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Kind</label>
         <select name="kind" class="text-sm border border-gray-300 rounded px-2 py-1.5">
@@ -42,6 +58,8 @@
             <option value="ill" {{ ($filters['kind'] ?? '') === 'ill' ? 'selected' : '' }}>ILL</option>
         </select>
     </div>
+    @endunless
+
     <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
         <select name="status" class="text-sm border border-gray-300 rounded px-2 py-1.5">
@@ -53,6 +71,8 @@
             @endforeach
         </select>
     </div>
+
+    @unless($currentKind)
     <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Material Type</label>
         <select name="material_type" class="text-sm border border-gray-300 rounded px-2 py-1.5" @if(($filters['kind'] ?? '') === 'ill') disabled @endif>
@@ -75,6 +95,8 @@
             @endforeach
         </select>
     </div>
+    @endunless
+
     <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Search</label>
         <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
@@ -82,17 +104,7 @@
                class="text-sm border border-gray-300 rounded px-2 py-1.5 w-48">
     </div>
 
-    @if($assignmentEnabled ?? false)
-    <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Assigned</label>
-        <select name="assigned" class="text-sm border border-gray-300 rounded px-2 py-1.5">
-            <option value="">Any</option>
-            <option value="me" {{ ($filters['assigned'] ?? '') === 'me' ? 'selected' : '' }}>Me</option>
-            <option value="unassigned" {{ ($filters['assigned'] ?? '') === 'unassigned' ? 'selected' : '' }}>Unassigned</option>
-        </select>
-    </div>
-    @endif
-
+    @unless($currentKind)
     {{-- Custom-field filter (select/radio only) --}}
     @if(isset($customFilterFields) && $customFilterFields->count())
     <div>
@@ -118,11 +130,12 @@
         </select>
     </div>
     @endif
+    @endunless
 
     <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">Filter</button>
     @if(array_filter($filters))
         @php
-            $clearParams = ($filters['kind'] ?? '') !== '' ? ['kind' => $filters['kind']] : [];
+            $clearParams = $currentKind ? ['kind' => $currentKind] : [];
         @endphp
         <a href="{{ route('request.staff.requests.index', $clearParams) }}" class="px-4 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Clear</a>
     @endif
