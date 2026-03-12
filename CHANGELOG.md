@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.10.0](https://github.com/dcplibrary/requests/compare/v3.9.0...v3.10.0) (2026-03-12)
+
+
+### Features
+
+* slimmed down list filters to only assigned, status ([776e68f](https://github.com/dcplibrary/requests/commit/776e68f6f8682fd9516bfe6b6696937a9a8e3179))
+
 # [3.9.0](https://github.com/dcplibrary/requests/compare/v3.8.0...v3.9.0) (2026-03-12)
 
 
