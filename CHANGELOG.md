@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [3.6.2](https://github.com/dcplibrary/requests/compare/v3.6.1...v3.6.2) (2026-03-12)
+
+
+### Bug Fixes
+
+* remove static requirement groups to have audience filter ([89a0960](https://github.com/dcplibrary/requests/commit/89a0960080a1862d19d624ba220c514f9b5a8824))
+
 ## [3.6.1](https://github.com/dcplibrary/requests/compare/v3.6.0...v3.6.1) (2026-03-12)
 
 
