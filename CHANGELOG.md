@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [3.6.1](https://github.com/dcplibrary/requests/compare/v3.6.0...v3.6.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* remove ill from menu for spf only selectors ([a9ff119](https://github.com/dcplibrary/requests/commit/a9ff11991c0564c9b3ae561815cf7a2ca726e969))
+
 # [3.6.0](https://github.com/dcplibrary/requests/compare/v3.5.0...v3.6.0) (2026-03-12)
 
 
