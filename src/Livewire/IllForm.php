@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Livewire;
 
+use Dcplibrary\Requests\Livewire\Concerns\CreatesEnrichedMaterial;
 use Dcplibrary\Requests\Livewire\Concerns\EvaluatesFieldConditions;
 use Dcplibrary\Requests\Livewire\Concerns\FiltersFormFieldOptions;
 use Dcplibrary\Requests\Livewire\Concerns\RemembersPatron;
@@ -28,6 +29,7 @@ use Livewire\Component;
 #[Layout('requests::layouts.requests')]
 class IllForm extends Component
 {
+    use CreatesEnrichedMaterial;
     use EvaluatesFieldConditions;
     use FiltersFormFieldOptions;
     use RemembersPatron;
@@ -418,35 +420,15 @@ class IllForm extends Component
 
         $materialId = null;
         if ($isbndbData !== null) {
-            $titleForMatch  = $isbndbData['title'] ?? $submittedTitle;
-            $authorForMatch = $isbndbData['author_string'] ?? $submittedAuthor;
-            $material       = Material::findMatch($titleForMatch, $authorForMatch);
-
-            if ($material) {
-                $material->update([
-                    'isbn'               => $isbndbData['isbn'] ?? $material->isbn,
-                    'isbn13'             => $isbndbData['isbn13'] ?? $material->isbn13,
-                    'publisher'          => $isbndbData['publisher'] ?? $material->publisher,
-                    'exact_publish_date' => isset($isbndbData['publish_date']) ? date('Y-m-d', strtotime($isbndbData['publish_date'])) : $material->exact_publish_date,
-                    'edition'            => $isbndbData['edition'] ?? $material->edition,
-                    'overview'           => $isbndbData['overview'] ?? $material->overview,
-                    'source'             => 'isbndb',
-                ]);
-            } else {
-                $material = Material::create([
-                    'title'                   => $titleForMatch,
-                    'author'                  => $authorForMatch,
+            $material = $this->findOrCreateMaterial(
+                [
+                    'title'                   => $submittedTitle,
+                    'author'                  => $submittedAuthor,
                     'publish_date'            => $submittedPublishDate,
                     'material_type_option_id' => $this->material_type_id,
-                    'isbn'                    => $isbndbData['isbn'] ?? null,
-                    'isbn13'                  => $isbndbData['isbn13'] ?? null,
-                    'publisher'               => $isbndbData['publisher'] ?? null,
-                    'exact_publish_date'      => isset($isbndbData['publish_date']) ? date('Y-m-d', strtotime($isbndbData['publish_date'])) : null,
-                    'edition'                 => $isbndbData['edition'] ?? null,
-                    'overview'                => $isbndbData['overview'] ?? null,
-                    'source'                  => 'isbndb',
-                ]);
-            }
+                ],
+                $isbndbData,
+            );
             $materialId = $material->id;
         }
 

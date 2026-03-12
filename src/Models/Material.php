@@ -19,18 +19,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Duplicate materials (same normalized title + author) are surfaced in the
  * Titles admin view and can be merged by staff.
  *
- * @property int              $id
- * @property string           $title
- * @property string           $author
- * @property string|null      $publish_date       Flexible string (e.g. "2022", "January 2022")
- * @property string|null      $isbn
- * @property string|null      $isbn13
- * @property string|null      $publisher
- * @property \Carbon\Carbon|null $exact_publish_date
- * @property string|null      $edition
- * @property string|null      $overview
- * @property string           $source             'submitted'|'isbndb'|'polaris'
- * @property int|null         $material_type_option_id  FK→field_options (material type)
+ * @property int                   $id
+ * @property string                $title
+ * @property string                $author
+ * @property string|null           $publish_date            Flexible string (e.g. "2022", "January 2022")
+ * @property string|null           $isbn
+ * @property string|null           $isbn13
+ * @property string|null           $publisher
+ * @property \Carbon\Carbon|null   $exact_publish_date
+ * @property string|null           $edition
+ * @property string|null           $overview
+ * @property string|null           $title_long              Full title with subtitle (ISBNdb)
+ * @property string|null           $synopsis                Synopsis text (ISBNdb)
+ * @property array|null            $subjects                Subject headings (ISBNdb)
+ * @property string|null           $dewey_decimal           Dewey Decimal classification (ISBNdb)
+ * @property int|null              $pages                   Page count (ISBNdb)
+ * @property string|null           $language                Language code, e.g. "eng" (ISBNdb)
+ * @property float|null            $msrp                    List price / MSRP (ISBNdb)
+ * @property string|null           $binding                 e.g. "Hardcover", "Paperback" (ISBNdb)
+ * @property string|null           $dimensions              Physical dimensions (ISBNdb)
+ * @property string                $source                  'submitted'|'isbndb'|'polaris'
+ * @property int|null              $material_type_option_id FK→field_options (material type)
  */
 class Material extends Model
 {
@@ -44,12 +53,23 @@ class Material extends Model
         'exact_publish_date',
         'edition',
         'overview',
+        'title_long',
+        'synopsis',
+        'subjects',
+        'dewey_decimal',
+        'pages',
+        'language',
+        'msrp',
+        'binding',
+        'dimensions',
         'source',
         'material_type_option_id',
     ];
 
     protected $casts = [
         'exact_publish_date' => 'date',
+        'subjects'           => 'array',
+        'msrp'               => 'decimal:2',
     ];
 
     /** The material type option from the unified field_options table. */

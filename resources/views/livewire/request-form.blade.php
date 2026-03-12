@@ -558,33 +558,12 @@
 
         {{-- ISBNdb results --}}
         @elseif(count($isbndbResults) > 0 && $isbndbMatchAccepted === null)
-        <div>
+        <div x-data="{ detailOpen: false, detailItem: null, detailIndex: 0, openDetail(i) { this.detailItem = {{ Js::from($isbndbResults) }}[i]; this.detailIndex = i; this.detailOpen = true; } }">
             <p class="text-sm text-gray-600 mb-4">We found the following possible matches. Is one of these the item you're looking for?</p>
             <ul class="space-y-3" role="list">
                 @foreach($isbndbResults as $i => $result)
-                <li class="p-4 border border-gray-200 rounded-md bg-white shadow-sm">
-                    <div class="flex justify-between items-start gap-3">
-                        <div class="flex gap-3">
-                            @if($result['cover_url'])
-                            <img src="{{ $result['cover_url'] }}" alt="Cover of {{ $result['title'] }}" class="w-12 h-auto object-contain rounded shrink-0" />
-                            @endif
-                            <div>
-                                <p class="font-semibold text-gray-900 text-sm">{{ $result['title'] }}</p>
-                                <p class="text-gray-600 text-sm">{{ $result['author_string'] }}</p>
-                                <p class="text-gray-400 text-xs mt-1">
-                                    {{ $result['publisher'] ?? '' }}{{ ($result['publisher'] && $result['publish_date']) ? ' · ' : '' }}{{ $result['publish_date'] ?? '' }}
-                                </p>
-                                @if($result['isbn13'])
-                                    <p class="text-gray-400 text-xs">ISBN: {{ $result['isbn13'] }}</p>
-                                @endif
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            wire:click="acceptIsbndbMatch({{ $i }})"
-                            class="shrink-0 px-3 py-1 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                        >Yes, this is it</button>
-                    </div>
+                <li>
+                    <x-requests::isbndb-result-card :result="$result" :index="$i" />
                 </li>
                 @endforeach
             </ul>
@@ -595,6 +574,8 @@
                     class="text-sm text-gray-500 underline hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
                 >None of these match — submit anyway</button>
             </div>
+
+            <x-requests::isbndb-detail-modal />
         </div>
 
         @else

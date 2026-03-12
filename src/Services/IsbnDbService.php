@@ -161,22 +161,35 @@ class IsbnDbService
 
     /**
      * Normalize an ISBNdb book record to a consistent shape.
+     *
+     * Maps all available ISBNdb fields so downstream consumers (Livewire forms,
+     * the Material model) can store and display the full enrichment set.
+     *
+     * @param  array  $book  Raw book record from the ISBNdb API.
+     * @return array<string, mixed>
      */
     private function normalizeBook(array $book): array
     {
         return [
-            'isbn'             => $book['isbn'] ?? null,
-            'isbn13'           => $book['isbn13'] ?? null,
-            'title'            => $book['title'] ?? '',
-            'title_long'       => $book['title_long'] ?? '',
-            'authors'          => $book['authors'] ?? [],
-            'author_string'    => implode(', ', $book['authors'] ?? []),
-            'publisher'        => $book['publisher'] ?? null,
-            'publish_date'     => $book['date_published'] ?? null,
-            'edition'          => $book['edition'] ?? null,
-            'overview'         => $book['overview'] ?? null,
-            'image'            => $book['image'] ?? null,
-            'binding'          => $book['binding'] ?? null,
+            'isbn'          => $book['isbn'] ?? null,
+            'isbn13'        => $book['isbn13'] ?? null,
+            'title'         => $book['title'] ?? '',
+            'title_long'    => $book['title_long'] ?? '',
+            'authors'       => $book['authors'] ?? [],
+            'author_string' => implode(', ', $book['authors'] ?? []),
+            'publisher'     => $book['publisher'] ?? null,
+            'publish_date'  => $book['date_published'] ?? null,
+            'edition'       => $book['edition'] ?? null,
+            'overview'      => $book['overview'] ?? null,
+            'image'         => $book['image'] ?? null,
+            'binding'       => $book['binding'] ?? null,
+            'synopsis'      => $book['synopsis'] ?? null,
+            'subjects'      => $book['subjects'] ?? [],
+            'dewey_decimal' => $book['dewey_decimal'] ?? null,
+            'pages'         => isset($book['pages']) ? (int) $book['pages'] : null,
+            'language'      => $book['language'] ?? null,
+            'msrp'          => isset($book['msrp']) ? (float) $book['msrp'] : null,
+            'dimensions'    => $book['dimensions'] ?? null,
         ];
     }
 }

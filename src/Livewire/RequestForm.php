@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Livewire;
 
+use Dcplibrary\Requests\Livewire\Concerns\CreatesEnrichedMaterial;
 use Dcplibrary\Requests\Livewire\Concerns\EvaluatesFieldConditions;
 use Dcplibrary\Requests\Livewire\Concerns\FiltersFormFieldOptions;
 use Dcplibrary\Requests\Livewire\Concerns\RemembersPatron;
@@ -29,6 +30,7 @@ use Livewire\Component;
 #[Layout('requests::layouts.requests')]
 class RequestForm extends Component
 {
+    use CreatesEnrichedMaterial;
     use EvaluatesFieldConditions;
     use FiltersFormFieldOptions;
     use RemembersPatron;
@@ -742,32 +744,16 @@ class RequestForm extends Component
         $this->processing = true;
         $this->processingStep = 'Saving your request...';
 
-        // Resolve or create material
-        $material = Material::findMatch($this->title, $this->author);
-
-        if (! $material) {
-            $materialData = [
-                'title'                  => $this->title,
-                'author'                 => $this->author,
-                'publish_date'           => $this->publish_date ?: null,
-                'material_type_option_id'=> $this->material_type_id,
-                'source'                 => 'submitted',
-            ];
-
-            if ($isbndbData) {
-                $materialData = array_merge($materialData, [
-                    'isbn'             => $isbndbData['isbn'] ?? null,
-                    'isbn13'           => $isbndbData['isbn13'] ?? null,
-                    'publisher'        => $isbndbData['publisher'] ?? null,
-                    'exact_publish_date' => isset($isbndbData['publish_date']) ? date('Y-m-d', strtotime($isbndbData['publish_date'])) : null,
-                    'edition'          => $isbndbData['edition'] ?? null,
-                    'overview'         => $isbndbData['overview'] ?? null,
-                    'source'           => 'isbndb',
-                ]);
-            }
-
-            $material = Material::create($materialData);
-        }
+        // Resolve or create material (with ISBNdb enrichment when accepted).
+        $material = $this->findOrCreateMaterial(
+            [
+                'title'                   => $this->title,
+                'author'                  => $this->author,
+                'publish_date'            => $this->publish_date ?: null,
+                'material_type_option_id' => $this->material_type_id,
+            ],
+            $isbndbData,
+        );
 
         // Determine if duplicate — any prior request for this material counts,
         // including re-submissions from the same patron.

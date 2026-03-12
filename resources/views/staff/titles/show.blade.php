@@ -65,52 +65,7 @@
                     @endif
                 </div>
             </div>
-            <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <div class="col-span-2">
-                    <dt class="text-xs text-gray-500 mb-0.5">Title</dt>
-                    <dd class="font-medium text-gray-900">{{ $material->title }}</dd>
-                </div>
-                <div class="col-span-2">
-                    <dt class="text-xs text-gray-500 mb-0.5">Author</dt>
-                    <dd class="text-gray-700">{{ $material->author ?: '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-gray-500 mb-0.5">Publish Date</dt>
-                    <dd class="text-gray-700">{{ $material->publish_date ?: '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-gray-500 mb-0.5">Type</dt>
-                    <dd class="text-gray-700">{{ $material->materialTypeOption?->name ?? '—' }}</dd>
-                </div>
-                @if($material->isbn || $material->isbn13)
-                <div>
-                    <dt class="text-xs text-gray-500 mb-0.5">ISBN</dt>
-                    <dd class="font-mono text-gray-700 text-xs">{{ $material->isbn ?: '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-gray-500 mb-0.5">ISBN-13</dt>
-                    <dd class="font-mono text-gray-700 text-xs">{{ $material->isbn13 ?: '—' }}</dd>
-                </div>
-                @endif
-                @if($material->publisher)
-                <div>
-                    <dt class="text-xs text-gray-500 mb-0.5">Publisher</dt>
-                    <dd class="text-gray-700">{{ $material->publisher }}</dd>
-                </div>
-                @endif
-                @if($material->edition)
-                <div>
-                    <dt class="text-xs text-gray-500 mb-0.5">Edition</dt>
-                    <dd class="text-gray-700">{{ $material->edition }}</dd>
-                </div>
-                @endif
-                @if($material->overview)
-                <div class="col-span-2">
-                    <dt class="text-xs text-gray-500 mb-0.5">Overview</dt>
-                    <dd class="text-gray-600 text-xs leading-relaxed">{{ $material->overview }}</dd>
-                </div>
-                @endif
-            </dl>
+            <x-requests::material-details :material="$material" />
         </div>
 
         {{-- Requests --}}
