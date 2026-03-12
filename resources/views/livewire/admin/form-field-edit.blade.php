@@ -56,6 +56,20 @@
                 <span class="text-xs text-gray-400">— makes <span class="font-mono text-gray-500">{<span class="text-gray-500">{{ $fieldKey }}</span>}</span> available in notification templates</span>
             </div>
 
+            @if($showOptionsManager)
+            <div class="flex items-center gap-2">
+                <input type="hidden" name="filterable" value="0">
+                <input
+                    type="checkbox"
+                    id="ff_filterable"
+                    wire:model="filterable"
+                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label for="ff_filterable" class="text-sm font-medium text-gray-700 cursor-pointer">Filterable</label>
+                <span class="text-xs text-gray-400">— enables staff list filtering and selector group scoping by this field's options</span>
+            </div>
+            @endif
+
         </div>
     </div>
 
@@ -150,16 +164,11 @@
         @endif
     </div>
 
-    {{-- ── Options (if this field has manageable options) ── --}}
-    @if($optionConfig)
-    <div class="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 class="text-sm font-semibold text-gray-700 mb-4">Options</h2>
-        @livewire('requests-admin-options-manager', [
-            'modelClass'     => $optionConfig['class'],
-            'title'          => '',
-            'conditionField' => $optionConfig['conditionField'] ?? null,
-            'extraFields'    => $optionConfig['extraFields'] ?? [],
-        ], key('opts-' . $fieldKey))
+    {{-- ── Options hint (managed per-form) ── --}}
+    @if($showOptionsManager)
+    <div class="max-w-lg bg-white rounded-lg border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-700 mb-2">Options</h2>
+        <p class="text-sm text-gray-500">Options for this field are managed per-form. Edit this field from the <a href="{{ route('request.staff.settings.form-fields') }}" class="text-blue-600 hover:underline">SFP or ILL form tab</a> to manage option visibility and order.</p>
     </div>
     @endif
 

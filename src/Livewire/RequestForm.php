@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Livewire;
 
+use Dcplibrary\Requests\Livewire\Concerns\FiltersFormFieldOptions;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\CatalogFormatLabel;
 use Dcplibrary\Requests\Models\Field;
@@ -26,6 +27,8 @@ use Livewire\Component;
 #[Layout('requests::layouts.requests')]
 class RequestForm extends Component
 {
+    use FiltersFormFieldOptions;
+
     // --- Steps ---
     public int $step = 1; // 1=patron, 2=material, 3=resolution, 4=confirmation
 
@@ -478,12 +481,17 @@ class RequestForm extends Component
         return $this->visibleCustomFields[$key] ?? false;
     }
 
+    /**
+     * Build a select/radio validation rule using SFP form option overrides.
+     *
+     * @param  Field  $field
+     * @param  bool   $required
+     * @return string
+     */
     private function customFieldSelectRule(Field $field, bool $required): string
     {
-        $slugs = FieldOption::query()
-            ->where('field_id', $field->id)
-            ->active()
-            ->ordered()
+        $form  = Form::bySlug('sfp');
+        $slugs = $this->formFilteredOptions($field->id, $form?->id)
             ->pluck('slug')
             ->implode(',');
         $base = $required ? 'required' : 'nullable';
@@ -506,9 +514,10 @@ class RequestForm extends Component
         ];
 
         $genreField = Field::where('key', 'genre')->first();
+        $sfpForm    = Form::bySlug('sfp');
         $fieldRuleMap = [
-            'genre'        => function (bool $req) use ($genreField) {
-                $slugs = $genreField ? FieldOption::where('field_id', $genreField->id)->active()->pluck('slug')->implode(',') : '';
+            'genre'        => function (bool $req) use ($genreField, $sfpForm) {
+                $slugs = $genreField ? $this->formFilteredOptions($genreField->id, $sfpForm?->id)->pluck('slug')->implode(',') : '';
                 return $req && $slugs !== '' ? "required|in:$slugs" : ($slugs !== '' ? "nullable|in:$slugs" : 'nullable');
             },
             'title'        => fn (bool $req) => $req ? 'required|min:1|max:500' : 'nullable|min:1|max:500',
@@ -912,24 +921,25 @@ class RequestForm extends Component
     {
         $visible = $this->visibleFields;
 
+        $sfpForm   = Form::bySlug('sfp');
+        $sfpFormId = $sfpForm?->id;
+
         $customFieldIds = $this->stepTwoCustomFields->pluck('id')->all();
-        $customFieldOptions = FieldOption::query()
-            ->whereIn('field_id', $customFieldIds)
-            ->active()
-            ->ordered()
-            ->get()
-            ->groupBy('field_id')
-            ->map(fn ($g) => $g->pluck('name', 'slug')->all())
-            ->all();
+        $customFieldOptions = [];
+        foreach ($customFieldIds as $cfId) {
+            $customFieldOptions[$cfId] = $this->formFilteredOptions($cfId, $sfpFormId)
+                ->pluck('name', 'slug')
+                ->all();
+        }
 
         $mtField = Field::where('key', 'material_type')->first();
         $audField = Field::where('key', 'audience')->first();
         $genreField = Field::where('key', 'genre')->first();
 
         return view('requests::livewire.request-form', [
-            'materialTypes'         => $mtField ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->get() : collect(),
-            'audiences'             => $audField ? FieldOption::where('field_id', $audField->id)->active()->ordered()->get() : collect(),
-            'genres'                => $genreField ? FieldOption::where('field_id', $genreField->id)->active()->ordered()->get() : collect(),
+            'materialTypes'         => $mtField ? $this->formFilteredOptions($mtField->id, $sfpFormId) : collect(),
+            'audiences'             => $audField ? $this->formFilteredOptions($audField->id, $sfpFormId) : collect(),
+            'genres'                => $genreField ? $this->formFilteredOptions($genreField->id, $sfpFormId) : collect(),
             'orderedFields'         => $this->formFields,
             'stepTwoCustomFields'   => $this->stepTwoCustomFields,
             'customFieldOptionsByFieldId' => $customFieldOptions,

@@ -21,9 +21,10 @@ class SelectorGroupController extends Controller
      */
     public function index()
     {
-        return view('requests::staff.groups.index', [
-            'groups' => SelectorGroup::with(['fieldOptions.field', 'users'])->get(),
-        ]);
+        return view('requests::staff.groups.index', array_merge(
+            ['groups' => SelectorGroup::with(['fieldOptions.field', 'users'])->get()],
+            $this->fieldOptionChoices()
+        ));
     }
 
     /**
@@ -56,10 +57,7 @@ class SelectorGroupController extends Controller
             'notification_emails' => $data['notification_emails'] ?? null,
         ]);
 
-        $group->fieldOptions()->sync(array_merge(
-            $data['material_types'] ?? [],
-            $data['audiences'] ?? []
-        ));
+        $group->fieldOptions()->sync($this->flattenFieldOptionIds($data));
 
         return redirect()->route('request.staff.groups.index')->with('success', 'Group created.');
     }
@@ -101,10 +99,7 @@ class SelectorGroupController extends Controller
             'notification_emails' => $data['notification_emails'] ?? null,
         ]);
 
-        $group->fieldOptions()->sync(array_merge(
-            $data['material_types'] ?? [],
-            $data['audiences'] ?? []
-        ));
+        $group->fieldOptions()->sync($this->flattenFieldOptionIds($data));
 
         return redirect()->route('request.staff.groups.index')->with('success', 'Group updated.');
     }
@@ -135,34 +130,71 @@ class SelectorGroupController extends Controller
     private function validationRules(): array
     {
         return [
-            'name'               => 'required|string|max:100',
-            'description'        => 'nullable|string|max:500',
-            'active'             => 'boolean',
-            'notification_emails'=> 'nullable|string',
-            'material_types'     => 'nullable|array',
-            'material_types.*'   => 'exists:field_options,id',
-            'audiences'          => 'nullable|array',
-            'audiences.*'        => 'exists:field_options,id',
+            'name'                 => 'required|string|max:100',
+            'description'          => 'nullable|string|max:500',
+            'active'               => 'boolean',
+            'notification_emails'  => 'nullable|string',
+            'field_options'        => 'nullable|array',
+            'field_options.*'      => 'nullable|array',
+            'field_options.*.*'    => 'exists:field_options,id',
         ];
     }
 
     /**
-     * Build the material type and audience option collections for the form.
+     * Flatten the nested field_options input into a single array of IDs for sync.
      *
-     * @return array{materialTypes: \Illuminate\Support\Collection, audiences: \Illuminate\Support\Collection}
+     * Input shape: ['material_type' => [1, 3], 'audience' => [5], 'genre' => [10, 11]]
+     * Output:      [1, 3, 5, 10, 11]
+     *
+     * @param  array  $data  Validated request data.
+     * @return array<int>
+     */
+    private function flattenFieldOptionIds(array $data): array
+    {
+        $ids = [];
+        foreach ($data['field_options'] ?? [] as $fieldOptionIds) {
+            if (is_array($fieldOptionIds)) {
+                $ids = array_merge($ids, $fieldOptionIds);
+            }
+        }
+
+        return array_map('intval', array_filter($ids));
+    }
+
+    /**
+     * Build the filterable field + option collections for the group form.
+     *
+     * Returns all select/radio fields marked as filterable, each with their
+     * active options. The group edit form renders a checkbox section per field.
+     *
+     * @return array{filterableFields: \Illuminate\Support\Collection}
      */
     private function fieldOptionChoices(): array
     {
-        $mtField  = Field::where('key', 'material_type')->first();
-        $audField = Field::where('key', 'audience')->first();
+        $fields = Field::query()
+            ->where('filterable', true)
+            ->whereIn('type', ['select', 'radio'])
+            ->where('active', true)
+            ->ordered()
+            ->get();
 
-        return [
-            'materialTypes' => $mtField
-                ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->get()
-                : collect(),
-            'audiences' => $audField
-                ? FieldOption::where('field_id', $audField->id)->active()->ordered()->get()
-                : collect(),
-        ];
+        $fieldIds = $fields->pluck('id')->all();
+
+        $optionsByFieldId = FieldOption::query()
+            ->whereIn('field_id', $fieldIds)
+            ->active()
+            ->ordered()
+            ->get()
+            ->groupBy('field_id');
+
+        $filterableFields = $fields->map(function (Field $field) use ($optionsByFieldId) {
+            return (object) [
+                'key'     => $field->key,
+                'label'   => $field->label,
+                'options' => $optionsByFieldId->get($field->id, collect()),
+            ];
+        });
+
+        return ['filterableFields' => $filterableFields];
     }
 }

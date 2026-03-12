@@ -25,6 +25,7 @@ class FormFormFieldEdit extends Component
     public bool $required = false;
     public bool $visible = true;
     public string $scope = 'both';
+    public bool $filterable = false;
 
     /** @var array{match: string, rules: array<int, array<string, mixed>>} */
     public array $condition = ['match' => 'all', 'rules' => []];
@@ -43,6 +44,7 @@ class FormFormFieldEdit extends Component
 
         $field = Field::find($fieldId);
         $this->scope = $field->scope ?? 'both';
+        $this->filterable = (bool) ($field->filterable ?? false);
 
         // Load per-form conditional logic; fall back to the base field's condition so the
         // admin sees the effective condition rather than a blank state when none has been
@@ -82,10 +84,19 @@ class FormFormFieldEdit extends Component
             'conditional_logic' => $conditionalLogic,
         ]);
 
-        // Update scope on the base field and sync FormFieldConfig rows
+        // Update base field attributes (scope, filterable)
         $field = Field::find($this->fieldId);
-        if ($field && $field->scope !== $this->scope) {
-            $field->update(['scope' => $this->scope]);
+        if ($field) {
+            $updates = [];
+            if ($field->scope !== $this->scope) {
+                $updates['scope'] = $this->scope;
+            }
+            if ((bool) $field->filterable !== $this->filterable) {
+                $updates['filterable'] = $this->filterable;
+            }
+            if (! empty($updates)) {
+                $field->update($updates);
+            }
 
             $targetSlugs = $this->scope === 'both' ? ['sfp', 'ill'] : [$this->scope];
 

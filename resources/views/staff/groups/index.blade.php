@@ -12,8 +12,9 @@
         <thead class="bg-gray-50">
             <tr>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Name</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Material Types</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Audiences</th>
+                @foreach($filterableFields as $ff)
+                <th class="px-4 py-3 text-left font-medium text-gray-600">{{ $ff->label }}</th>
+                @endforeach
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Members</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Active</th>
                 <th class="px-4 py-3"></th>
@@ -28,12 +29,11 @@
                         <div class="text-xs text-gray-400">{{ $group->description }}</div>
                     @endif
                 </td>
+                @foreach($filterableFields as $ff)
                 <td class="px-4 py-3 text-gray-600 text-xs">
-                    {{ $group->fieldOptions->filter(fn($o) => $o->field?->key === 'material_type')->pluck('name')->join(', ') ?: '—' }}
+                    {{ $group->fieldOptions->filter(fn($o) => $o->field?->key === $ff->key)->pluck('name')->join(', ') ?: '—' }}
                 </td>
-                <td class="px-4 py-3 text-gray-600 text-xs">
-                    {{ $group->fieldOptions->filter(fn($o) => $o->field?->key === 'audience')->pluck('name')->join(', ') ?: '—' }}
-                </td>
+                @endforeach
                 <td class="px-4 py-3 text-gray-600">{{ $group->users->count() }}</td>
                 <td class="px-4 py-3">
                     <x-requests::status-pill :active="$group->active" />
@@ -44,7 +44,7 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">No groups yet.</td></tr>
+            <tr><td colspan="{{ 4 + count($filterableFields) }}" class="px-4 py-10 text-center text-gray-400">No groups yet.</td></tr>
             @endforelse
         </tbody>
     </table>

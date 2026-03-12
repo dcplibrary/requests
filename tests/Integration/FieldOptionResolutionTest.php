@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Tests\Integration;
 
+use Dcplibrary\Requests\Livewire\Concerns\FiltersFormFieldOptions;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\FormFieldOptionOverride;
@@ -12,17 +13,17 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Integration tests for the unified field-option resolution logic.
+ * Integration tests for the unified field-option resolution logic
+ * provided by the FiltersFormFieldOptions trait.
  *
  * Verifies that FieldOption queries, combined with FormFieldOptionOverride
- * records, produce the correct visible/ordered/labeled option sets —
- * the same logic used by IllForm::getFieldOptionsWithOverrides().
+ * records, produce the correct visible/ordered/labeled option sets.
  *
- * @see \Dcplibrary\Requests\Livewire\IllForm::getFieldOptionsWithOverrides()
- * @see \Dcplibrary\Requests\Livewire\IllForm::getOptionsForField()
+ * @see \Dcplibrary\Requests\Livewire\Concerns\FiltersFormFieldOptions
  */
 class FieldOptionResolutionTest extends TestCase
 {
+    use FiltersFormFieldOptions;
     /** @var bool */
     private static bool $booted = false;
 
@@ -128,59 +129,7 @@ class FieldOptionResolutionTest extends TestCase
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
-
-    /**
-     * Replicate IllForm::getFieldOptionsWithOverrides() locally for testing.
-     *
-     * @param  int       $fieldId
-     * @param  int|null  $formId
-     * @return \Illuminate\Support\Collection
-     */
-    private function resolve(int $fieldId, ?int $formId = null): \Illuminate\Support\Collection
-    {
-        $base = FieldOption::where('field_id', $fieldId)->active()->ordered()->get();
-
-        if (! $formId) {
-            return $base->values()->map(fn (FieldOption $opt, int $i) => (object) [
-                'id'         => $opt->id,
-                'slug'       => $opt->slug,
-                'name'       => $opt->name,
-                'visible'    => true,
-                'sort_order' => $opt->sort_order ?? ($i + 1) * 10000,
-            ]);
-        }
-
-        $overrides = FormFieldOptionOverride::where('form_id', $formId)
-            ->where('field_id', $fieldId)
-            ->get()
-            ->keyBy('option_slug');
-
-        return $base->map(function (FieldOption $opt, int $i) use ($overrides) {
-            $ov = $overrides->get($opt->slug);
-
-            return (object) [
-                'id'         => $opt->id,
-                'slug'       => $opt->slug,
-                'name'       => ($ov && $ov->label_override !== null && $ov->label_override !== '')
-                    ? $ov->label_override
-                    : $opt->name,
-                'visible'    => $ov ? (bool) $ov->visible : true,
-                'sort_order' => $ov ? $ov->sort_order : ($i + 1) * 10000,
-            ];
-        })->filter(fn ($o) => $o->visible)->sortBy('sort_order')->values();
-    }
-
-    /**
-     * Convenience: slug => name from resolve().
-     *
-     * @param  int       $fieldId
-     * @param  int|null  $formId
-     * @return array<string, string>
-     */
-    private function resolveFlat(int $fieldId, ?int $formId = null): array
-    {
-        return $this->resolve($fieldId, $formId)->pluck('name', 'slug')->all();
-    }
+    // formFilteredOptions() and formFilteredOptionMap() come from the trait.
 
     /**
      * Seed a field and its options.
@@ -236,7 +185,7 @@ class FieldOptionResolutionTest extends TestCase
             'book' => 'Book', 'dvd' => 'DVD', 'audiobook' => 'Audiobook',
         ]);
 
-        $result = $this->resolveFlat($fieldId);
+        $result = $this->formFilteredOptionMap($fieldId, null);
 
         $this->assertSame(['book' => 'Book', 'dvd' => 'DVD', 'audiobook' => 'Audiobook'], $result);
     }
@@ -247,7 +196,7 @@ class FieldOptionResolutionTest extends TestCase
         $fieldId = $this->seedField('audience', ['adult' => 'Adult', 'kids' => 'Kids']);
         $formId  = $this->seedForm('ill');
 
-        $result = $this->resolveFlat($fieldId, $formId);
+        $result = $this->formFilteredOptionMap($fieldId, $formId);
 
         $this->assertSame(['adult' => 'Adult', 'kids' => 'Kids'], $result);
     }
@@ -266,7 +215,7 @@ class FieldOptionResolutionTest extends TestCase
             'visible' => 0, 'sort_order' => 0, 'created_at' => $now, 'updated_at' => $now,
         ]);
 
-        $result = $this->resolveFlat($fieldId, $formId);
+        $result = $this->formFilteredOptionMap($fieldId, $formId);
 
         $this->assertArrayHasKey('fiction', $result);
         $this->assertArrayHasKey('nonfiction', $result);
@@ -286,7 +235,7 @@ class FieldOptionResolutionTest extends TestCase
             'created_at' => $now, 'updated_at' => $now,
         ]);
 
-        $result = $this->resolveFlat($fieldId, $formId);
+        $result = $this->formFilteredOptionMap($fieldId, $formId);
 
         $this->assertSame('Children', $result['kids']);
         $this->assertSame('Adult', $result['adult']);
@@ -311,9 +260,21 @@ class FieldOptionResolutionTest extends TestCase
              'visible' => 1, 'sort_order' => 3, 'created_at' => $now, 'updated_at' => $now],
         ]);
 
-        $slugs = array_keys($this->resolveFlat($fieldId, $formId));
+        $slugs = array_keys($this->formFilteredOptionMap($fieldId, $formId));
 
         $this->assertSame(['dvd', 'audiobook', 'book'], $slugs);
+    }
+
+    #[Test]
+    public function returns_field_option_models(): void
+    {
+        $fieldId = $this->seedField('audience', ['adult' => 'Adult', 'kids' => 'Kids']);
+        $formId  = $this->seedForm('sfp');
+
+        $options = $this->formFilteredOptions($fieldId, $formId);
+
+        $this->assertInstanceOf(FieldOption::class, $options->first());
+        $this->assertSame('adult', $options->first()->slug);
     }
 
     #[Test]
@@ -327,7 +288,7 @@ class FieldOptionResolutionTest extends TestCase
             ->where('slug', 'dvd')
             ->update(['active' => 0]);
 
-        $result = $this->resolveFlat($fieldId);
+        $result = $this->formFilteredOptionMap($fieldId, null);
 
         $this->assertArrayHasKey('book', $result);
         $this->assertArrayNotHasKey('dvd', $result);
@@ -352,13 +313,36 @@ class FieldOptionResolutionTest extends TestCase
             'visible' => 0, 'sort_order' => 0, 'created_at' => $now, 'updated_at' => $now,
         ]);
 
-        $sfpResult = $this->resolveFlat($fieldId, $sfpId);
-        $illResult = $this->resolveFlat($fieldId, $illId);
+        $sfpResult = $this->formFilteredOptionMap($fieldId, $sfpId);
+        $illResult = $this->formFilteredOptionMap($fieldId, $illId);
 
         $this->assertArrayNotHasKey('ya', $sfpResult);
         $this->assertArrayHasKey('kids', $sfpResult);
 
         $this->assertArrayHasKey('ya', $illResult);
         $this->assertArrayNotHasKey('kids', $illResult);
+    }
+
+    #[Test]
+    public function label_override_on_model_does_not_affect_other_forms(): void
+    {
+        $fieldId = $this->seedField('audience', ['adult' => 'Adult']);
+        $sfpId   = $this->seedForm('sfp');
+        $illId   = $this->seedForm('ill');
+
+        $now = date('Y-m-d H:i:s');
+        Capsule::table('form_field_option_overrides')->insert([
+            'form_id' => $sfpId, 'field_id' => $fieldId, 'option_slug' => 'adult',
+            'label_override' => 'Grown-Ups', 'visible' => 1, 'sort_order' => 1,
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+
+        // SFP gets the override label
+        $sfpResult = $this->formFilteredOptionMap($fieldId, $sfpId);
+        $this->assertSame('Grown-Ups', $sfpResult['adult']);
+
+        // ILL gets the base label (no override)
+        $illResult = $this->formFilteredOptionMap($fieldId, $illId);
+        $this->assertSame('Adult', $illResult['adult']);
     }
 }

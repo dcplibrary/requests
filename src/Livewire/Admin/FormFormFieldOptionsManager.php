@@ -58,29 +58,43 @@ class FormFormFieldOptionsManager extends Component
 
         FormFieldOptionOverride::updateOrInsert(
             ['form_id' => $this->formId, 'field_id' => $this->fieldId, 'option_slug' => $slug],
-            ['visible' => ! $current['visible']]
+            ['visible' => ! $current['visible'], 'sort_order' => $current['sort_order']]
         );
 
         $this->loadItems();
     }
 
-    public function moveUp(int $index): void
+    /**
+     * Move an option up by its slug.
+     *
+     * @param  string  $slug
+     * @return void
+     */
+    public function moveUp(string $slug): void
     {
-        if ($index <= 0) {
+        $this->items = array_values($this->items);
+        $index = collect($this->items)->search(fn ($item) => $item['slug'] === $slug);
+        if ($index === false || $index <= 0) {
             return;
         }
-        $this->items = array_values($this->items);
         [$this->items[$index - 1], $this->items[$index]] = [$this->items[$index], $this->items[$index - 1]];
         $this->items = array_values($this->items);
         $this->persistOrder();
     }
 
-    public function moveDown(int $index): void
+    /**
+     * Move an option down by its slug.
+     *
+     * @param  string  $slug
+     * @return void
+     */
+    public function moveDown(string $slug): void
     {
-        if ($index >= count($this->items) - 1) {
+        $this->items = array_values($this->items);
+        $index = collect($this->items)->search(fn ($item) => $item['slug'] === $slug);
+        if ($index === false || $index >= count($this->items) - 1) {
             return;
         }
-        $this->items = array_values($this->items);
         [$this->items[$index + 1], $this->items[$index]] = [$this->items[$index], $this->items[$index + 1]];
         $this->items = array_values($this->items);
         $this->persistOrder();
@@ -121,11 +135,10 @@ class FormFormFieldOptionsManager extends Component
     }
 
     /**
-     * Persist the current in-memory order to form_form_field_options.
-     * Writes (or updates) every row so the display order is fully captured.
-     */
-    /**
      * Persist the current in-memory order to form_field_option_overrides.
+     *
+     * Uses firstOrNew so that newly created rows default visible to true
+     * rather than leaving it null (which loadItems would interpret as hidden).
      *
      * @return void
      */
@@ -134,10 +147,16 @@ class FormFormFieldOptionsManager extends Component
         $rows = array_values($this->items);
         foreach ($rows as $i => $item) {
             $order = $i + 1;
-            FormFieldOptionOverride::updateOrInsert(
-                ['form_id' => $this->formId, 'field_id' => $this->fieldId, 'option_slug' => $item['slug']],
-                ['sort_order' => $order]
-            );
+            $override = FormFieldOptionOverride::firstOrNew([
+                'form_id'     => $this->formId,
+                'field_id'    => $this->fieldId,
+                'option_slug' => $item['slug'],
+            ]);
+            if (! $override->exists) {
+                $override->visible = true;
+            }
+            $override->sort_order = $order;
+            $override->save();
             $this->items[$i]['sort_order'] = $order;
         }
     }

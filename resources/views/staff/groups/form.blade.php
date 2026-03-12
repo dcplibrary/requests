@@ -22,32 +22,30 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea name="description" rows="2" class="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none">{{ old('description', $group->description) }}</textarea>
             </div>
+            @foreach($filterableFields as $ff)
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Material Types</label>
-                @forelse($materialTypes as $type)
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $ff->label }}</label>
+                @php
+                    $selectedIds = old(
+                        'field_options.' . $ff->key,
+                        $group->fieldOptions->filter(fn($o) => $o->field?->key === $ff->key)->pluck('id')->toArray()
+                    );
+                @endphp
+                @forelse($ff->options as $option)
                 <div class="flex items-center gap-2 mb-1.5">
-                    <input type="checkbox" name="material_types[]" id="mt_{{ $type->id }}" value="{{ $type->id }}"
-                           {{ in_array($type->id, old('material_types', $group->fieldOptions->filter(fn($o) => $o->field?->key === 'material_type')->pluck('id')->toArray())) ? 'checked' : '' }}
+                    <input type="checkbox" name="field_options[{{ $ff->key }}][]" id="fo_{{ $ff->key }}_{{ $option->id }}" value="{{ $option->id }}"
+                           {{ in_array($option->id, $selectedIds) ? 'checked' : '' }}
                            class="w-4 h-4 rounded border-gray-300 text-blue-600">
-                    <label for="mt_{{ $type->id }}" class="text-sm text-gray-700">{{ $type->name }}</label>
+                    <label for="fo_{{ $ff->key }}_{{ $option->id }}" class="text-sm text-gray-700">{{ $option->name }}</label>
                 </div>
                 @empty
-                <p class="text-sm text-gray-400">No material types defined yet.</p>
+                <p class="text-sm text-gray-400">No {{ strtolower($ff->label) }} options defined yet.</p>
                 @endforelse
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Audiences</label>
-                @forelse($audiences as $audience)
-                <div class="flex items-center gap-2 mb-1.5">
-                    <input type="checkbox" name="audiences[]" id="aud_{{ $audience->id }}" value="{{ $audience->id }}"
-                           {{ in_array($audience->id, old('audiences', $group->fieldOptions->filter(fn($o) => $o->field?->key === 'audience')->pluck('id')->toArray())) ? 'checked' : '' }}
-                           class="w-4 h-4 rounded border-gray-300 text-blue-600">
-                    <label for="aud_{{ $audience->id }}" class="text-sm text-gray-700">{{ $audience->name }}</label>
-                </div>
-                @empty
-                <p class="text-sm text-gray-400">No audiences defined yet.</p>
-                @endforelse
-            </div>
+            @endforeach
+            @if($filterableFields->isEmpty())
+            <p class="text-sm text-gray-400">No filterable fields available. Mark select/radio fields as "Filterable" in Form Fields settings.</p>
+            @endif
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Notification Emails</label>
                 <textarea name="notification_emails" rows="3"
@@ -55,7 +53,7 @@
                           placeholder="one@example.com, two@example.com&#10;(comma or newline separated)"
                 >{{ old('notification_emails', $group->notification_emails) }}</textarea>
                 <p class="mt-1 text-xs text-gray-500">
-                    When a new request matches this group's material type and audience, a routing email will be sent to these addresses.
+                    When a new request matches this group's field options, a routing email will be sent to these addresses.
                     Separate multiple addresses with commas or line breaks.
                 </p>
             </div>

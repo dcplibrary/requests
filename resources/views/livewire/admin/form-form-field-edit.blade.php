@@ -24,7 +24,7 @@
             <div class="flex flex-col gap-2">
                 @foreach(['sfp' => 'Suggest for Purchase only', 'ill' => 'Interlibrary Loan only', 'both' => 'Both forms'] as $val => $lbl)
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                        <input type="radio" wire:model="scope" value="{{ $val }}"
+                        <input type="radio" name="scope" wire:model="scope" value="{{ $val }}"
                                class="text-blue-600 focus:ring-blue-500">
                         <span class="text-sm text-gray-800">{{ $lbl }}</span>
                     </label>
@@ -59,6 +59,19 @@
                 <label for="pff_visible" class="text-sm font-medium text-gray-700 cursor-pointer">Visible</label>
                 <span class="text-xs text-gray-400">— show this field on this form</span>
             </div>
+            @if($hasOptions)
+            <div class="flex items-center gap-2">
+                <input type="hidden" name="filterable" value="0">
+                <input
+                    type="checkbox"
+                    id="pff_filterable"
+                    wire:model="filterable"
+                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label for="pff_filterable" class="text-sm font-medium text-gray-700 cursor-pointer">Filterable</label>
+                <span class="text-xs text-gray-400">— allow this field's options to be used for selector group routing</span>
+            </div>
+            @endif
         </div>
     </div>
 

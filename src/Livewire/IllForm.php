@@ -2,11 +2,11 @@
 
 namespace Dcplibrary\Requests\Livewire;
 
+use Dcplibrary\Requests\Livewire\Concerns\FiltersFormFieldOptions;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldConfig;
-use Dcplibrary\Requests\Models\FormFieldOptionOverride;
 use Dcplibrary\Requests\Models\Patron;
 use Dcplibrary\Requests\Models\RequestFieldValue;
 use Dcplibrary\Requests\Models\RequestStatus;
@@ -26,6 +26,7 @@ use Livewire\Component;
 #[Layout('requests::layouts.requests')]
 class IllForm extends Component
 {
+    use FiltersFormFieldOptions;
     public int $step = 1;
 
     // Step 1 (patron)
@@ -304,7 +305,7 @@ class IllForm extends Component
     private function selectOrRadioRule(Field $field, bool $required): string
     {
         $form  = Form::bySlug('ill');
-        $slugs = array_keys($this->getOptionsForField($field->id, $form?->id));
+        $slugs = $this->formFilteredOptions($field->id, $form?->id)->pluck('slug')->all();
         $base  = $required ? 'required' : 'nullable';
 
         return $slugs !== [] ? $base . '|in:' . implode(',', $slugs) : $base;
@@ -671,61 +672,6 @@ class IllForm extends Component
         return $field->label;
     }
 
-    /**
-     * Resolve field options for a given field, applying per-form visibility, sort order,
-     * and label overrides from form_field_option_overrides.
-     *
-     * @param  int       $fieldId
-     * @param  int|null  $formId
-     * @return \Illuminate\Support\Collection<int, object{id: int, slug: string, name: string, visible: bool, sort_order: int}>
-     */
-    private function getFieldOptionsWithOverrides(int $fieldId, ?int $formId = null): \Illuminate\Support\Collection
-    {
-        $base = FieldOption::where('field_id', $fieldId)->active()->ordered()->get();
-
-        if (! $formId) {
-            return $base->values()->map(fn (FieldOption $opt, int $i) => (object) [
-                'id'         => $opt->id,
-                'slug'       => $opt->slug,
-                'name'       => $opt->name,
-                'visible'    => true,
-                'sort_order' => $opt->sort_order ?? ($i + 1) * 10000,
-            ]);
-        }
-
-        $overrides = FormFieldOptionOverride::where('form_id', $formId)
-            ->where('field_id', $fieldId)
-            ->get()
-            ->keyBy('option_slug');
-
-        return $base->map(function (FieldOption $opt, int $i) use ($overrides) {
-            $ov = $overrides->get($opt->slug);
-
-            return (object) [
-                'id'         => $opt->id,
-                'slug'       => $opt->slug,
-                'name'       => ($ov && $ov->label_override !== null && $ov->label_override !== '')
-                    ? $ov->label_override
-                    : $opt->name,
-                'visible'    => $ov ? (bool) $ov->visible : true,
-                'sort_order' => $ov ? $ov->sort_order : ($i + 1) * 10000,
-            ];
-        })->filter(fn ($o) => $o->visible)->sortBy('sort_order')->values();
-    }
-
-    /**
-     * Get options as [slug => name] for a field, with per-form overrides applied.
-     *
-     * @param  int       $fieldId
-     * @param  int|null  $formId
-     * @return array<string, string>
-     */
-    private function getOptionsForField(int $fieldId, ?int $formId = null): array
-    {
-        return $this->getFieldOptionsWithOverrides($fieldId, $formId)
-            ->pluck('name', 'slug')
-            ->all();
-    }
 
     /**
      * Material type options for the ILL form (objects with id, name, slug).
@@ -741,8 +687,7 @@ class IllForm extends Component
 
         $form = Form::bySlug('ill');
 
-        return $this->getFieldOptionsWithOverrides($mtField->id, $form?->id)
-            ->map(fn ($o) => (object) ['id' => $o->id, 'name' => $o->name, 'slug' => $o->slug]);
+        return $this->formFilteredOptions($mtField->id, $form?->id);
     }
 
     /**
@@ -779,7 +724,7 @@ class IllForm extends Component
         $options = [];
         foreach ($fields as $f) {
             if (in_array($f->type, ['select', 'radio'], true)) {
-                $options[$f->id] = $this->getOptionsForField($f->id, $form?->id);
+                $options[$f->id] = $this->formFilteredOptionMap($f->id, $form?->id);
             }
         }
 

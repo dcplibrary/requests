@@ -109,6 +109,13 @@ class RequestPermissionsTest extends TestCase
             $table->string('scope')->default('both');
             $table->integer('sort_order')->default(0);
             $table->boolean('active')->default(true);
+            $table->boolean('required')->default(false);
+            $table->boolean('include_as_token')->default(false);
+            $table->boolean('filterable')->default(false);
+            $table->text('condition')->nullable();
+            $table->text('label_overrides')->nullable();
+            $table->integer('created_by')->nullable();
+            $table->integer('modified_by')->nullable();
             $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });
@@ -157,8 +164,8 @@ class RequestPermissionsTest extends TestCase
         $now = date('Y-m-d H:i:s');
 
         Capsule::table('fields')->insert([
-            ['key' => 'material_type', 'label' => 'Material Type', 'type' => 'select', 'sort_order' => 1, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
-            ['key' => 'audience', 'label' => 'Audience', 'type' => 'select', 'sort_order' => 2, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'material_type', 'label' => 'Material Type', 'type' => 'select', 'sort_order' => 1, 'active' => 1, 'filterable' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'audience', 'label' => 'Audience', 'type' => 'select', 'sort_order' => 2, 'active' => 1, 'filterable' => 1, 'created_at' => $now, 'updated_at' => $now],
         ]);
 
         self::$mtFieldId  = (int) Capsule::table('fields')->where('key', 'material_type')->value('id');
@@ -641,5 +648,88 @@ class RequestPermissionsTest extends TestCase
 
         $this->assertSame([$sfp, $ill], $this->visibleIds($selectorWithIll));
         $this->assertSame([$sfp], $this->visibleIds($selectorNoIll));
+    }
+
+    // =========================================================================
+    // 9. Dynamic filterable field scoping
+    // =========================================================================
+
+    #[Test]
+    public function non_filterable_field_is_ignored_by_scoping(): void
+    {
+        $this->seedVisibilitySettings(strictGroups: true);
+
+        // Mark audience as NOT filterable — only material_type participates.
+        Capsule::table('fields')->where('key', 'audience')->update(['filterable' => 0]);
+
+        // Group 100: Book only (no audience options).
+        $this->createGroup(100, [self::$bookOptId]);
+
+        $selector = $this->createUser(1);
+        $this->addToGroups(1, [100]);
+
+        // Both audience values should be visible because audience is not filterable.
+        $bookAdult = $this->insertRequest('sfp', 'book', 'adult');
+        $bookKids  = $this->insertRequest('sfp', 'book', 'kids');
+        $dvdAdult  = $this->insertRequest('sfp', 'dvd', 'adult');
+
+        $visible = $this->visibleIds($selector);
+
+        $this->assertContains($bookAdult, $visible);
+        $this->assertContains($bookKids, $visible);
+        $this->assertNotContains($dvdAdult, $visible);
+
+        // Restore for other tests.
+        Capsule::table('fields')->where('key', 'audience')->update(['filterable' => 1]);
+    }
+
+    #[Test]
+    public function new_filterable_field_dynamically_participates_in_scoping(): void
+    {
+        $this->seedVisibilitySettings(strictGroups: true);
+
+        // Add a third filterable field: genre.
+        $now = date('Y-m-d H:i:s');
+        Capsule::table('fields')->insert([
+            'key' => 'genre', 'label' => 'Genre', 'type' => 'select',
+            'sort_order' => 3, 'active' => 1, 'filterable' => 1,
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+        $genreFieldId = (int) Capsule::table('fields')->where('key', 'genre')->value('id');
+
+        Capsule::table('field_options')->insert([
+            ['field_id' => $genreFieldId, 'name' => 'Fiction', 'slug' => 'fiction', 'sort_order' => 1, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['field_id' => $genreFieldId, 'name' => 'Non-Fiction', 'slug' => 'nonfiction', 'sort_order' => 2, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+        ]);
+        $fictionOptId    = (int) Capsule::table('field_options')->where('slug', 'fiction')->value('id');
+        $nonfictionOptId = (int) Capsule::table('field_options')->where('slug', 'nonfiction')->value('id');
+
+        // Group 100: Book × Adult × Fiction.
+        $this->createGroup(100, [self::$bookOptId, self::$adultOptId, $fictionOptId]);
+
+        $selector = $this->createUser(1);
+        $this->addToGroups(1, [100]);
+
+        // Insert requests with genre field values.
+        $matchAll = $this->insertRequest('sfp', 'book', 'adult');
+        Capsule::table('request_field_values')->insert([
+            'request_id' => $matchAll, 'field_id' => $genreFieldId, 'value' => 'fiction',
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+
+        $wrongGenre = $this->insertRequest('sfp', 'book', 'adult');
+        Capsule::table('request_field_values')->insert([
+            'request_id' => $wrongGenre, 'field_id' => $genreFieldId, 'value' => 'nonfiction',
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+
+        $visible = $this->visibleIds($selector);
+
+        $this->assertContains($matchAll, $visible);
+        $this->assertNotContains($wrongGenre, $visible);
+
+        // Cleanup.
+        Capsule::table('field_options')->where('field_id', $genreFieldId)->delete();
+        Capsule::table('fields')->where('key', 'genre')->delete();
     }
 }

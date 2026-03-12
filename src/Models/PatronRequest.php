@@ -244,21 +244,19 @@ class PatronRequest extends Model
      * Apply scoped access predicate (no open access; no assignment override).
      *
      * SFP requests: the user must belong to a selector group whose field options
-     * cover both the request's material_type AND audience values (stored in
-     * request_field_values). We look up the field IDs by key once, then use
-     * correlated subqueries against the EAV table.
+     * cover ALL of the request's filterable field values (stored in
+     * request_field_values). Filterable fields are discovered dynamically — any
+     * select/radio field marked `filterable` that has at least one option
+     * assigned to a selector group will be checked.
+     *
+     * If a group has no options for a given filterable field, that field is
+     * treated as unrestricted (open) for that group.
      */
     private function applyScopedAccess(\Illuminate\Database\Eloquent\Builder $query, \Dcplibrary\Requests\Models\User $staffUser): void
     {
         $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
 
-        // Resolve field IDs for the two scoping fields.
-        // Use the Field model (not the DB facade) so the query goes through the
-        // same Eloquent connection — works in both full Laravel and Capsule tests.
-        $materialTypeFieldId = Field::where('key', 'material_type')->value('id');
-        $audienceFieldId     = Field::where('key', 'audience')->value('id');
-
-        $query->where(function ($q) use ($staffUser, $illGroupId, $materialTypeFieldId, $audienceFieldId) {
+        $query->where(function ($q) use ($staffUser, $illGroupId) {
             // ILL: only members of the ILL group.
             $q->where(function ($ill) use ($staffUser, $illGroupId) {
                 $ill->where('request_kind', 'ill');
@@ -274,44 +272,94 @@ class PatronRequest extends Model
                 }
             })
             // SFP: optionally strict selector-group pairing via field options.
-            ->orWhere(function ($sfp) use ($staffUser, $materialTypeFieldId, $audienceFieldId) {
+            ->orWhere(function ($sfp) use ($staffUser) {
                 $sfp->where('request_kind', 'sfp');
 
                 if (! Setting::get('requests_visibility_strict_groups', true)) {
                     return;
                 }
 
-                $userId = $staffUser->getKey();
-                $sfp->whereExists(function ($sub) use ($userId, $materialTypeFieldId, $audienceFieldId) {
-                    $sub->selectRaw('1')
-                        ->from('selector_group_user as sgu')
-                        // Material type match
-                        ->join('selector_group_field_option as sgfo_mt', 'sgfo_mt.selector_group_id', '=', 'sgu.selector_group_id')
-                        ->join('field_options as fo_mt', function ($join) use ($materialTypeFieldId) {
-                            $join->on('fo_mt.id', '=', 'sgfo_mt.field_option_id')
-                                ->where('fo_mt.field_id', $materialTypeFieldId);
-                        })
-                        ->join('request_field_values as rfv_mt', function ($join) use ($materialTypeFieldId) {
-                            $join->whereColumn('rfv_mt.request_id', 'requests.id')
-                                ->where('rfv_mt.field_id', $materialTypeFieldId)
-                                ->whereColumn('rfv_mt.value', 'fo_mt.slug');
-                        })
-                        // Audience match
-                        ->join('selector_group_field_option as sgfo_aud', function ($join) {
-                            $join->on('sgfo_aud.selector_group_id', '=', 'sgu.selector_group_id');
-                        })
-                        ->join('field_options as fo_aud', function ($join) use ($audienceFieldId) {
-                            $join->on('fo_aud.id', '=', 'sgfo_aud.field_option_id')
-                                ->where('fo_aud.field_id', $audienceFieldId);
-                        })
-                        ->join('request_field_values as rfv_aud', function ($join) use ($audienceFieldId) {
-                            $join->whereColumn('rfv_aud.request_id', 'requests.id')
-                                ->where('rfv_aud.field_id', $audienceFieldId)
-                                ->whereColumn('rfv_aud.value', 'fo_aud.slug');
-                        })
-                        ->where('sgu.user_id', $userId);
-                });
+                $this->applySfpFieldScoping($sfp, $staffUser);
             });
+        });
+    }
+
+    /**
+     * Build dynamic field-based scoping joins for SFP requests.
+     *
+     * Requires the user to belong to a single selector group that covers
+     * ALL of the request's filterable field values simultaneously (no
+     * "bridging" across groups). If a group has no options for a given
+     * field, that field is treated as unrestricted for that group.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $sfp
+     * @param  User  $staffUser
+     * @return void
+     */
+    private function applySfpFieldScoping(\Illuminate\Database\Eloquent\Builder $sfp, User $staffUser): void
+    {
+        // Discover filterable fields that actually have options assigned to groups.
+        $scopingFields = Field::query()
+            ->where('filterable', true)
+            ->whereIn('type', ['select', 'radio'])
+            ->where('active', true)
+            ->whereHas('options', function ($q) {
+                $q->whereExists(function ($sub) {
+                    $sub->selectRaw('1')
+                        ->from('selector_group_field_option')
+                        ->whereColumn('selector_group_field_option.field_option_id', 'field_options.id');
+                });
+            })
+            ->get(['id', 'key']);
+
+        if ($scopingFields->isEmpty()) {
+            // No filterable fields have group-assigned options → no SFP access for selectors.
+            $sfp->whereRaw('1 = 0');
+            return;
+        }
+
+        $userId = $staffUser->getKey();
+
+        // One outer EXISTS that anchors on a single group the user belongs to.
+        // All field checks are correlated to sgu.selector_group_id so the same
+        // group must satisfy every filterable field.
+        $sfp->whereExists(function ($outer) use ($userId, $scopingFields) {
+            $outer->selectRaw('1')
+                ->from('selector_group_user as sgu')
+                ->where('sgu.user_id', $userId);
+
+            foreach ($scopingFields as $field) {
+                $a = 'sf_' . $field->key;
+
+                // For this field the group must either:
+                //  (a) have an option matching the request's value, OR
+                //  (b) have NO options for this field at all (unrestricted).
+                $outer->where(function ($check) use ($field, $a) {
+                    $check->whereExists(function ($sub) use ($field, $a) {
+                        $sub->selectRaw('1')
+                            ->from("selector_group_field_option as sgfo_{$a}")
+                            ->whereColumn("sgfo_{$a}.selector_group_id", 'sgu.selector_group_id')
+                            ->join("field_options as fo_{$a}", function ($j) use ($field, $a) {
+                                $j->on("fo_{$a}.id", '=', "sgfo_{$a}.field_option_id")
+                                  ->where("fo_{$a}.field_id", $field->id);
+                            })
+                            ->join("request_field_values as rfv_{$a}", function ($j) use ($field, $a) {
+                                $j->whereColumn("rfv_{$a}.request_id", 'requests.id')
+                                  ->where("rfv_{$a}.field_id", $field->id)
+                                  ->whereColumn("rfv_{$a}.value", "fo_{$a}.slug");
+                            });
+                    })
+                    ->orWhereNotExists(function ($sub) use ($field, $a) {
+                        $sub->selectRaw('1')
+                            ->from("selector_group_field_option as sgfo_no_{$a}")
+                            ->whereColumn("sgfo_no_{$a}.selector_group_id", 'sgu.selector_group_id')
+                            ->join("field_options as fo_no_{$a}", function ($j) use ($field, $a) {
+                                $j->on("fo_no_{$a}.id", '=', "sgfo_no_{$a}.field_option_id")
+                                  ->where("fo_no_{$a}.field_id", $field->id);
+                            });
+                    });
+                });
+            }
         });
     }
 }
