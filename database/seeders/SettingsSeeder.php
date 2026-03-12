@@ -286,11 +286,11 @@ class SettingsSeeder extends Seeder
             ],
             [
                 'key'         => 'assignment_enabled',
-                'value'       => '0',
+                'value'       => '1',
                 'label'       => 'Enable Request Assignment',
                 'type'        => 'boolean',
                 'group'       => 'staff',
-                'description' => 'Allow staff to claim/reassign requests. When enabled, a status update will auto-claim an unassigned request.',
+                'description' => 'Allow staff to claim/reassign requests. When enabled, viewing an unassigned request auto-claims it. Rerouting changes field values and unassigns so the next group can claim.',
             ],
             [
                 'key'         => 'ill_selector_group_id',

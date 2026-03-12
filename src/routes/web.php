@@ -58,6 +58,8 @@ Route::group([
             Route::post('/requests/{patronRequest}/convert-kind',  [RequestController::class, 'convertKind'])->name('requests.convert-kind');
             Route::post('/requests/{patronRequest}/claim',         [RequestController::class, 'claim'])->name('requests.claim');
             Route::post('/requests/{patronRequest}/assign',        [RequestController::class, 'assign'])->name('requests.assign');
+            Route::post('/requests/{patronRequest}/reroute',       [RequestController::class, 'reroute'])->name('requests.reroute');
+            Route::get('/requests/{patronRequest}/reroute-preview', [RequestController::class, 'reroutePreview'])->name('requests.reroute-preview');
             Route::delete('/requests/{patronRequest}',            [RequestController::class, 'destroy'])->name('requests.destroy');
 
             Route::resource('patrons', PatronController::class)

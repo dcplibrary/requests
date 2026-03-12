@@ -5,8 +5,10 @@ namespace Dcplibrary\Requests\Http\Controllers\Admin;
 use Dcplibrary\Requests\Http\Controllers\Controller;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\RequestFieldValue;
 use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\PatronRequest;
+use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Models\User as StaffUser;
 use Dcplibrary\Requests\Services\BibliocommonsService;
@@ -164,6 +166,27 @@ class RequestController extends Controller
             'assignedBy',
         ]);
 
+        // Auto-claim on first open: assign to the current staff user if unassigned.
+        $justClaimed = false;
+        $assignmentEnabled = (bool) Setting::get('assignment_enabled', false);
+        if ($assignmentEnabled && ! $patronRequest->assigned_to_user_id) {
+            $actor = $this->currentStaffUser(request());
+            if ($actor) {
+                $patronRequest->update([
+                    'assigned_to_user_id' => $actor->id,
+                    'assigned_at'         => now(),
+                    'assigned_by_user_id' => $actor->id,
+                ]);
+                $patronRequest->statusHistory()->create([
+                    'request_status_id' => $patronRequest->request_status_id,
+                    'user_id'           => $actor->id,
+                    'note'              => 'Auto-claimed on open.',
+                ]);
+                $patronRequest->load(['assignedTo', 'assignedBy', 'statusHistory.status', 'statusHistory.user']);
+                $justClaimed = true;
+            }
+        }
+
         $fieldValueLabelByFieldId = [];
         $fieldIds = $patronRequest->fieldValues->pluck('field_id')->unique()->values()->all();
         if (! empty($fieldIds)) {
@@ -190,13 +213,34 @@ class RequestController extends Controller
         $showConvertToIll = $patronRequest->request_kind === 'sfp'
             && $patronRequest->ill_requested;
 
+        // Reroute: filterable select/radio fields that have group-assigned options.
+        $rerouteFields = collect();
+        if ($assignmentEnabled) {
+            $rerouteFields = Field::query()
+                ->where('filterable', true)
+                ->whereIn('type', ['select', 'radio'])
+                ->where('active', true)
+                ->whereHas('options', function ($q) {
+                    $q->whereExists(function ($sub) {
+                        $sub->selectRaw('1')
+                            ->from('selector_group_field_option')
+                            ->whereColumn('selector_group_field_option.field_option_id', 'field_options.id');
+                    });
+                })
+                ->with(['options' => fn ($q) => $q->active()->ordered()])
+                ->ordered()
+                ->get();
+        }
+
         return view('requests::staff.requests.show', [
             'patronRequest' => $patronRequest,
             'statuses'   => RequestStatus::active()->get(),
             'fieldValueLabelByFieldId' => $fieldValueLabelByFieldId,
-            'assignmentEnabled' => (bool) Setting::get('assignment_enabled', false),
+            'assignmentEnabled' => $assignmentEnabled,
+            'justClaimed' => $justClaimed,
             'staffUsers' => StaffUser::query()->where('active', true)->orderBy('name')->get(['id', 'name', 'email']),
             'showConvertToIll' => $showConvertToIll,
+            'rerouteFields' => $rerouteFields,
         ]);
     }
 
@@ -266,6 +310,188 @@ class RequestController extends Controller
         ]);
 
         return back()->with('success', 'Request claimed.');
+    }
+
+    /**
+     * Reroute a request by changing its filterable field values and unassigning it.
+     *
+     * The request flows to whichever selector group covers the new field combination.
+     * The next staff user in that group who opens it will auto-claim it.
+     *
+     * @param  Request        $httpRequest
+     * @param  PatronRequest  $patronRequest
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function reroute(Request $httpRequest, PatronRequest $patronRequest)
+    {
+        abort_unless(Setting::get('assignment_enabled', false), 404);
+
+        $allowed = PatronRequest::query()
+            ->visibleTo($httpRequest->user())
+            ->whereKey($patronRequest->getKey())
+            ->exists();
+        if (! $allowed) {
+            abort(403);
+        }
+
+        // Discover which fields are reroutable (filterable + have group-assigned options).
+        $rerouteFields = Field::query()
+            ->where('filterable', true)
+            ->whereIn('type', ['select', 'radio'])
+            ->where('active', true)
+            ->whereHas('options', function ($q) {
+                $q->whereExists(function ($sub) {
+                    $sub->selectRaw('1')
+                        ->from('selector_group_field_option')
+                        ->whereColumn('selector_group_field_option.field_option_id', 'field_options.id');
+                });
+            })
+            ->get(['id', 'key', 'label']);
+
+        if ($rerouteFields->isEmpty()) {
+            return back()->withErrors(['error' => 'No reroutable fields configured.']);
+        }
+
+        // Build validation rules dynamically.
+        $rules = [];
+        foreach ($rerouteFields as $field) {
+            $validSlugs = FieldOption::where('field_id', $field->id)->active()->pluck('slug')->all();
+            $rules["fields.{$field->key}"] = ['required', 'string', 'in:' . implode(',', $validSlugs)];
+        }
+        $data = $httpRequest->validate($rules);
+        $fieldInputs = $data['fields'] ?? [];
+
+        // Load current values and apply changes.
+        $patronRequest->load('fieldValues.field');
+        $changes = [];
+
+        foreach ($rerouteFields as $field) {
+            $newSlug = $fieldInputs[$field->key] ?? null;
+            if ($newSlug === null) {
+                continue;
+            }
+
+            $existing = $patronRequest->fieldValues->first(fn ($v) => $v->field_id === $field->id);
+            $oldSlug = $existing?->value;
+
+            if ($oldSlug === $newSlug) {
+                continue;
+            }
+
+            $oldLabel = $oldSlug
+                ? (FieldOption::where('field_id', $field->id)->where('slug', $oldSlug)->value('name') ?? $oldSlug)
+                : '(none)';
+            $newLabel = FieldOption::where('field_id', $field->id)->where('slug', $newSlug)->value('name') ?? $newSlug;
+
+            if ($existing) {
+                $existing->update(['value' => $newSlug]);
+            } else {
+                RequestFieldValue::create([
+                    'request_id' => $patronRequest->id,
+                    'field_id'   => $field->id,
+                    'value'      => $newSlug,
+                ]);
+            }
+
+            $changes[] = "{$field->label}: {$oldLabel} → {$newLabel}";
+        }
+
+        if (empty($changes)) {
+            return back()->with('success', 'No changes needed — fields already match.');
+        }
+
+        // Unassign so the next group member who opens it auto-claims.
+        $patronRequest->update([
+            'assigned_to_user_id' => null,
+            'assigned_at'         => null,
+            'assigned_by_user_id' => null,
+        ]);
+
+        $actor = $this->currentStaffUser($httpRequest);
+        $patronRequest->statusHistory()->create([
+            'request_status_id' => $patronRequest->request_status_id,
+            'user_id'           => $actor?->id,
+            'note'              => 'Rerouted: ' . implode('; ', $changes) . '.',
+        ]);
+
+        return redirect()
+            ->route('request.staff.requests.index')
+            ->with('success', 'Request #' . $patronRequest->id . ' rerouted and unassigned.');
+    }
+
+    /**
+     * Return JSON listing selector groups that would cover a given field combination.
+     *
+     * Used by the reroute form's Alpine.js to show a live "Will be visible to" preview.
+     *
+     * @param  Request        $httpRequest
+     * @param  PatronRequest  $patronRequest
+     * @return JsonResponse
+     */
+    public function reroutePreview(Request $httpRequest, PatronRequest $patronRequest): JsonResponse
+    {
+        abort_unless(Setting::get('assignment_enabled', false), 404);
+
+        // Collect field slugs from query params (e.g. ?material_type=book&audience=adult).
+        $rerouteFields = Field::query()
+            ->where('filterable', true)
+            ->whereIn('type', ['select', 'radio'])
+            ->where('active', true)
+            ->whereHas('options', function ($q) {
+                $q->whereExists(function ($sub) {
+                    $sub->selectRaw('1')
+                        ->from('selector_group_field_option')
+                        ->whereColumn('selector_group_field_option.field_option_id', 'field_options.id');
+                });
+            })
+            ->get(['id', 'key']);
+
+        // For each field, resolve the slug to an option ID.
+        $selectedOptionIds = [];
+        foreach ($rerouteFields as $field) {
+            $slug = $httpRequest->query($field->key);
+            if (! is_string($slug) || $slug === '') {
+                continue;
+            }
+            $optionId = FieldOption::where('field_id', $field->id)->where('slug', $slug)->value('id');
+            if ($optionId) {
+                $selectedOptionIds[$field->id] = $optionId;
+            }
+        }
+
+        // Find groups that cover ALL selected field values (same logic as applySfpFieldScoping).
+        // For each field: group must have matching option OR have no options for that field.
+        $groups = SelectorGroup::active()
+            ->with('fieldOptions')
+            ->get()
+            ->filter(function (SelectorGroup $group) use ($rerouteFields, $selectedOptionIds) {
+                foreach ($rerouteFields as $field) {
+                    $groupOptionIds = $group->fieldOptions
+                        ->where('field_id', $field->id)
+                        ->pluck('id')
+                        ->all();
+
+                    // If group has no options for this field, it's unrestricted — pass.
+                    if (empty($groupOptionIds)) {
+                        continue;
+                    }
+
+                    // If we have a selected option for this field, it must be in the group's options.
+                    $selected = $selectedOptionIds[$field->id] ?? null;
+                    if ($selected && ! in_array($selected, $groupOptionIds, true)) {
+                        return false;
+                    }
+                }
+                return true;
+            })
+            ->values();
+
+        return response()->json([
+            'groups' => $groups->map(fn (SelectorGroup $g) => [
+                'id'   => $g->id,
+                'name' => $g->name,
+            ])->values(),
+        ]);
     }
 
     public function convertKind(Request $httpRequest, PatronRequest $patronRequest)
