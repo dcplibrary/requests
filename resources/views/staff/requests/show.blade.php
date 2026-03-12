@@ -22,6 +22,7 @@
             {{ $patronRequest->status->name }}
         </span>
     @endif
+    <span class="text-xs text-gray-400">{{ $patronRequest->created_at->format('M j, Y g:ia') }}</span>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -248,142 +249,22 @@
         </div>
     </div>
 
-    {{-- Sidebar --}}
-    <div class="space-y-6">
-
-        {{-- Assignment --}}
-        @if($assignmentEnabled ?? false)
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Assignment</h2>
-
-            @if($patronRequest->assignedTo)
-                <div class="mb-3">
-                    <p class="text-sm font-medium text-gray-900">
-                        {{ $patronRequest->assignedTo->name ?: $patronRequest->assignedTo->email }}
-                    </p>
-                    <p class="text-xs text-gray-400">{{ $patronRequest->assignedTo->email }}</p>
-                    @if($patronRequest->assigned_at)
-                        <p class="text-xs text-gray-400 mt-1">Assigned {{ $patronRequest->assigned_at->format('M j, Y g:ia') }}</p>
-                    @endif
-                </div>
-            @else
-                <p class="text-sm text-gray-400 mb-3">Unassigned</p>
-            @endif
-
-            @if(! $patronRequest->assigned_to_user_id)
-                <form method="POST" action="{{ route('request.staff.requests.claim', $patronRequest) }}" class="mb-3">
-                    @csrf
-                    <button type="submit"
-                            class="w-full px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700">
-                        Claim
-                    </button>
-                </form>
-            @endif
-
-            <form method="POST" action="{{ route('request.staff.requests.assign', $patronRequest) }}" class="space-y-3">
-                @csrf
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Assign to</label>
-                    <select name="assigned_to_user_id" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
-                        <option value="">Unassigned</option>
-                        @foreach($staffUsers as $u)
-                            <option value="{{ $u->id }}" @selected($patronRequest->assigned_to_user_id == $u->id)>
-                                {{ $u->name ?: $u->email }} ({{ $u->email }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="submit"
-                        class="w-full px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                    Save Assignment
-                </button>
-            </form>
+    {{-- Actions panel --}}
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-sm font-semibold text-gray-700">Actions</h2>
         </div>
-        @endif
 
-        {{-- Reroute — change filterable fields to send request to a different group --}}
-        @if(($assignmentEnabled ?? false) && ($rerouteFields ?? collect())->isNotEmpty())
-        <div class="bg-white rounded-lg border border-gray-200 p-5"
-             x-data="rerouteForm('{{ route('request.staff.requests.reroute-preview', $patronRequest) }}')">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Reroute</h2>
-            <p class="text-xs text-gray-400 mb-3">Change fields to send this request to a different group. The request will be unassigned and auto-claimed by the next person who opens it.</p>
-
-            <form method="POST" action="{{ route('request.staff.requests.reroute', $patronRequest) }}" class="space-y-3">
-                @csrf
-                @foreach($rerouteFields as $rf)
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">{{ $rf->label }}</label>
-                        <select name="fields[{{ $rf->key }}]" x-model="fields.{{ $rf->key }}" @change="fetchPreview()"
-                                class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
-                            @foreach($rf->options as $opt)
-                                <option value="{{ $opt->slug }}" @selected($patronRequest->fieldValue($rf->key) === $opt->slug)>
-                                    {{ $opt->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endforeach
-
-                {{-- Live group preview --}}
-                <div class="text-xs rounded px-3 py-2" :class="previewGroups.length ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'">
-                    <template x-if="previewLoading">
-                        <span class="text-gray-400">Checking…</span>
-                    </template>
-                    <template x-if="!previewLoading && previewGroups.length">
-                        <span>
-                            <svg class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/></svg>
-                            Will be visible to: <span class="font-medium" x-text="previewGroups.map(g => g.name).join(', ')"></span>
-                        </span>
-                    </template>
-                    <template x-if="!previewLoading && !previewGroups.length">
-                        <span>
-                            <svg class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
-                            No groups match this combination
-                        </span>
-                    </template>
-                </div>
-
-                <button type="submit"
-                        class="w-full px-4 py-2 bg-amber-600 text-white text-sm rounded hover:bg-amber-700"
-                        onclick="return confirm('Reroute this request? It will be unassigned and sent to the matching group.')">
-                    Reroute &amp; Unassign
-                </button>
-            </form>
-        </div>
-        @endif
-
-        {{-- Convert to ILL — shown only on SFP requests where patron opted in to ILL --}}
-        @if($showConvertToIll)
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Workflow</h2>
-            <form method="POST" action="{{ route('request.staff.requests.convert-kind', $patronRequest) }}" class="space-y-3">
-                @csrf
-                <input type="hidden" name="to" value="ill">
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
-                    <textarea name="note" rows="2" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
-                </div>
-                <button type="submit"
-                        class="w-full px-4 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
-                        onclick="return confirm('Convert this request to ILL?')">
-                    Convert to ILL
-                </button>
-            </form>
-        </div>
-        @endif
-
-        {{-- Update status --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5"
-             x-data="statusUpdateForm('{{ route('request.staff.requests.preview-email', $patronRequest) }}')">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Update Status</h2>
+        {{-- ── Update Status ── --}}
+        <div class="px-5 py-4" x-data="statusUpdateForm('{{ route('request.staff.requests.preview-email', $patronRequest) }}')">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Update Status</h3>
             <form method="POST"
                   action="{{ route('request.staff.requests.status', $patronRequest) }}"
                   @submit.prevent="handleSubmit($event)"
                   x-ref="statusForm">
                 @csrf
                 @method('PATCH')
-                <div class="mb-3">
-                    <label class="block text-xs font-medium text-gray-600 mb-1">New status</label>
+                <div class="mb-2">
                     <select name="status_id" required x-model="selectedStatusId"
                             class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
                         <option value="">Select…</option>
@@ -394,12 +275,10 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
-                    <textarea name="note" rows="3" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
+                <div class="mb-2">
+                    <textarea name="note" rows="2" placeholder="Note (optional)" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
                 </div>
 
-                {{-- Hidden fields populated by the modal before submit --}}
                 <input type="hidden" name="email_confirmed"    x-model="emailPayload.confirmed">
                 <input type="hidden" name="email_skip"         x-model="emailPayload.skip ? '1' : ''">
                 <input type="hidden" name="email_subject"      x-model="emailPayload.subject">
@@ -416,259 +295,351 @@
                     <span x-show="loading" x-cloak>Checking…</span>
                 </button>
             </form>
-
             @include('requests::staff.requests._email-preview-modal')
         </div>
 
-        <script>
-        function statusUpdateForm(previewUrl) {
-            return {
-                selectedStatusId: '',
-                loading: false,
-
-                emailPreview: {
-                    show:           false,
-                    subject:        '',
-                    body:           '',
-                    to:             '',
-                    cc:             '',
-                    bcc:            '',
-                    staffEmail:     '',
-                    copyToSelf:     false,
-                    editingEnabled: false,
-                },
-
-                emailPayload: {
-                    confirmed:  '',
-                    skip:       false,
-                    subject:    '',
-                    body:       '',
-                    to:         '',
-                    cc:         '',
-                    bcc:        '',
-                    copyToSelf: false,
-                },
-
-                async handleSubmit(event) {
-                    const form = this.$refs.statusForm;
-
-                    if (!this.selectedStatusId) {
-                        form.submit();
-                        return;
-                    }
-
-                    this.loading = true;
-
-                    try {
-                        const url = previewUrl + '?status_id=' + encodeURIComponent(this.selectedStatusId);
-                        const res = await fetch(url, {
-                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                        });
-
-                        if (!res.ok) throw new Error('Preview request failed');
-
-                        const data = await res.json();
-
-                        // If preview is disabled system-wide or no email would be sent, submit immediately.
-                        if (!data.preview_enabled || !data.would_send) {
-                            this.emailPayload.confirmed = '';
-                            form.submit();
-                            return;
-                        }
-
-                        // Populate and show the modal.
-                        this.emailPreview.subject        = data.subject        || '';
-                        this.emailPreview.body           = data.body           || '';
-                        this.emailPreview.to             = data.to             || '';
-                        this.emailPreview.cc             = '';
-                        this.emailPreview.bcc            = '';
-                        this.emailPreview.staffEmail     = data.staff_email    || '';
-                        this.emailPreview.copyToSelf     = false;
-                        this.emailPreview.editingEnabled = data.editing_enabled || false;
-                        this.emailPreview.show           = true;
-
-                    } catch (e) {
-                        // Network / JSON error — fall back to plain submit.
-                        console.error('Email preview fetch failed:', e);
-                        this.emailPayload.confirmed = '';
-                        form.submit();
-                    } finally {
-                        this.loading = false;
-                    }
-                },
-
-                /** "Send Status & Email" — populate payload and submit. */
-                sendWithEmail() {
-                    this.emailPayload.confirmed  = '1';
-                    this.emailPayload.skip       = false;
-                    this.emailPayload.subject    = this.emailPreview.subject;
-                    this.emailPayload.body       = this.emailPreview.body;
-                    this.emailPayload.to         = this.emailPreview.to;
-                    this.emailPayload.cc         = this.emailPreview.cc;
-                    this.emailPayload.bcc        = this.emailPreview.bcc;
-                    this.emailPayload.copyToSelf = this.emailPreview.copyToSelf;
-                    this.emailPreview.show       = false;
-                    this.$nextTick(() => this.$refs.statusForm.submit());
-                },
-
-                /** "Cancel (skip email)" — save status, explicitly skip the email. */
-                cancelEmail() {
-                    this.emailPayload.confirmed = '';
-                    this.emailPayload.skip      = true;
-                    this.emailPreview.show      = false;
-                    this.$nextTick(() => this.$refs.statusForm.submit());
-                },
-
-                /** Set up Trix sync on init. */
-                init() {
-                    // When the modal opens, load body HTML into the Trix editor.
-                    this.$watch('emailPreview.show', (val) => {
-                        if (val) {
-                            this.$nextTick(() => this.loadEmailBodyIntoTrix());
-                        }
-                    });
-                    // Sync Trix edits back to emailPreview.body.
-                    document.addEventListener('trix-change', (e) => {
-                        if (e.target.getAttribute('input') === 'requests-email-preview-body') {
-                            const input = document.getElementById('requests-email-preview-body');
-                            if (input) this.emailPreview.body = input.value;
-                        }
-                    });
-                },
-
-                /** Load the current body HTML into the Trix editor. */
-                loadEmailBodyIntoTrix() {
-                    const trix = document.querySelector('trix-editor[input="requests-email-preview-body"]');
-                    if (trix && trix.editor) {
-                        trix.editor.loadHTML(this.emailPreview.body || '');
-                    }
-                },
-            };
-        }
-        </script>
-
-        @if(($assignmentEnabled ?? false) && ($rerouteFields ?? collect())->isNotEmpty())
-        <script>
-        function rerouteForm(previewUrl) {
-            return {
-                fields: {
-                    @foreach($rerouteFields as $rf)
-                        {{ $rf->key }}: '{{ $patronRequest->fieldValue($rf->key) ?? '' }}',
-                    @endforeach
-                },
-                previewGroups: [],
-                previewLoading: false,
-                _debounce: null,
-
-                init() {
-                    this.fetchPreview();
-                },
-
-                fetchPreview() {
-                    clearTimeout(this._debounce);
-                    this._debounce = setTimeout(() => this._doFetch(), 200);
-                },
-
-                async _doFetch() {
-                    this.previewLoading = true;
-                    try {
-                        const params = new URLSearchParams();
-                        for (const [k, v] of Object.entries(this.fields)) {
-                            if (v) params.set(k, v);
-                        }
-                        const res = await fetch(previewUrl + '?' + params.toString(), {
-                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            this.previewGroups = data.groups || [];
-                        }
-                    } catch (e) {
-                        console.error('Reroute preview failed:', e);
-                    } finally {
-                        this.previewLoading = false;
-                    }
-                }
-            };
-        }
-        </script>
+        {{-- ── Assignment ── --}}
+        @if($assignmentEnabled ?? false)
+        <div class="px-5 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assignment</h3>
+                    @if($patronRequest->assignedTo)
+                        <p class="text-sm text-gray-900 mt-1">{{ $patronRequest->assignedTo->name ?: $patronRequest->assignedTo->email }}</p>
+                    @else
+                        <p class="text-sm text-gray-400 mt-1">Unassigned</p>
+                    @endif
+                </div>
+                <div class="flex items-center gap-2">
+                    @if(! $patronRequest->assigned_to_user_id)
+                        <form method="POST" action="{{ route('request.staff.requests.claim', $patronRequest) }}">
+                            @csrf
+                            <button type="submit"
+                                    class="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700">
+                                Claim
+                            </button>
+                        </form>
+                    @endif
+                    <button type="button"
+                            @click="$dispatch('open-modal', 'reassign')"
+                            class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                        Reassign
+                    </button>
+                </div>
+            </div>
+        </div>
         @endif
 
-        {{-- Patron --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Patron</h2>
-            @if($patronRequest->patron)
-                <dl class="space-y-2 text-sm">
-                    <div>
-                        <dt class="text-gray-500 text-xs">Name</dt>
-                        <dd class="font-medium">{{ $patronRequest->patron->name_last }}, {{ $patronRequest->patron->name_first }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-gray-500 text-xs">Barcode</dt>
-                        <dd class="font-mono">{{ $patronRequest->patron->barcode }}</dd>
-                    </div>
-                    @if($patronRequest->patron->email)
-                    <div>
-                        <dt class="text-gray-500 text-xs">Email</dt>
-                        <dd>{{ $patronRequest->patron->email }}</dd>
-                    </div>
-                    @endif
-                    @if($patronRequest->patron->phone)
-                    <div>
-                        <dt class="text-gray-500 text-xs">Phone</dt>
-                        <dd>{{ $patronRequest->patron->phone }}</dd>
-                    </div>
-                    @endif
-                    <div>
-                        <dt class="text-gray-500 text-xs">Found in Polaris</dt>
-                        <dd>{{ $patronRequest->patron->found_in_polaris ? 'Yes' : 'No' }}</dd>
-                    </div>
-                </dl>
-            @else
-                <p class="text-sm text-gray-400">No patron data.</p>
-            @endif
-        </div>
-
-        {{-- Meta --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Meta</h2>
-            <dl class="space-y-2 text-sm">
+        {{-- ── Reroute ── --}}
+        @if(($assignmentEnabled ?? false) && ($rerouteFields ?? collect())->isNotEmpty())
+        <div class="px-5 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
                 <div>
-                    <dt class="text-gray-500 text-xs">Submitted</dt>
-                    <dd>{{ $patronRequest->created_at->format('M j, Y g:ia') }}</dd>
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Reroute</h3>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        @foreach($rerouteFields as $rf)
+                            @php $currentLabel = $rf->options->firstWhere('slug', $patronRequest->fieldValue($rf->key))?->name; @endphp
+                            @if($currentLabel)
+                                <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">{{ $currentLabel }}</span>
+                            @endif
+                        @endforeach
+                    </div>
                 </div>
-                @php
-                    $whereHeardVal = $patronRequest->fieldValues->first(fn ($v) => $v->field?->key === 'where_heard');
-                    $whereHeardDisplay = $whereHeardVal?->value ?? null;
-                @endphp
-                @if($whereHeardDisplay)
-                <div>
-                    <dt class="text-gray-500 text-xs">Where heard</dt>
-                    <dd>{{ $whereHeardDisplay }}</dd>
-                </div>
-                @endif
-            </dl>
-        </div>
-
-        {{-- Danger zone --}}
-        <div class="bg-white rounded-lg border border-red-200 p-5">
-            <h2 class="text-sm font-semibold text-red-700 uppercase tracking-wide mb-3">Danger Zone</h2>
-            <form method="POST" action="{{ route('request.staff.requests.destroy', $patronRequest) }}">
-                @csrf
-                @method('DELETE')
-                <button
-                    type="submit"
-                    class="w-full px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                    onclick="return confirm('Delete Request #{{ $patronRequest->id }}? This cannot be undone.')"
-                >
-                    Delete Request
+                <button type="button"
+                        @click="$dispatch('open-modal', 'reroute')"
+                        class="px-3 py-1.5 bg-amber-600 text-white text-xs rounded hover:bg-amber-700">
+                    Reroute
                 </button>
-            </form>
-            <p class="mt-2 text-xs text-gray-500">
-                Deleting a request removes it and its status history. The patron and title records are not deleted.
-            </p>
+            </div>
         </div>
+        @endif
 
+        {{-- ── Convert to ILL ── --}}
+        @if($showConvertToIll)
+        <div class="px-5 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Workflow</h3>
+                    <span class="inline-block mt-1 px-1.5 py-0.5 rounded text-xs bg-purple-50 text-purple-700">ILL eligible</span>
+                </div>
+                <button type="button"
+                        @click="$dispatch('open-modal', 'convert-ill')"
+                        class="px-3 py-1.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700">
+                    Convert to ILL
+                </button>
+            </div>
+        </div>
+        @endif
+
+        {{-- ── Danger zone ── --}}
+        <div class="px-5 py-4 border-t border-red-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-xs font-semibold text-red-600 uppercase tracking-wide">Danger Zone</h3>
+                </div>
+                <form method="POST" action="{{ route('request.staff.requests.destroy', $patronRequest) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            class="px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                            onclick="return confirm('Delete Request #{{ $patronRequest->id }}? This cannot be undone.')">
+                        Delete
+                    </button>
+                </form>
+            </div>
+            <p class="mt-1 text-xs text-gray-400">Removes the request and its status history.</p>
+        </div>
     </div>
 </div>
+
+{{-- ════════════════════════════════════════════════════════════════════════ --}}
+{{-- Modals (rendered outside the grid so they overlay correctly)            --}}
+{{-- ════════════════════════════════════════════════════════════════════════ --}}
+
+{{-- Reassign modal --}}
+@if($assignmentEnabled ?? false)
+<x-requests::action-modal name="reassign" title="Reassign Request">
+    <form method="POST" action="{{ route('request.staff.requests.assign', $patronRequest) }}" id="reassign-form" class="space-y-3">
+        @csrf
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Assign to</label>
+            <select name="assigned_to_user_id" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
+                <option value="">Unassigned</option>
+                @foreach($staffUsers as $u)
+                    <option value="{{ $u->id }}" @selected($patronRequest->assigned_to_user_id == $u->id)>
+                        {{ $u->name ?: $u->email }} ({{ $u->email }})
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
+            <textarea name="note" rows="2" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
+        </div>
+    </form>
+    <x-slot:footer>
+        <button type="button" @click="$dispatch('close-modal', 'reassign')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100">Cancel</button>
+        <button type="submit" form="reassign-form" class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">Save Assignment</button>
+    </x-slot:footer>
+</x-requests::action-modal>
+@endif
+
+{{-- Reroute modal --}}
+@if(($assignmentEnabled ?? false) && ($rerouteFields ?? collect())->isNotEmpty())
+<x-requests::action-modal name="reroute" title="Reroute Request" max-width="lg">
+    <div x-data="rerouteForm('{{ route('request.staff.requests.reroute-preview', $patronRequest) }}')">
+        <p class="text-xs text-gray-400 mb-3">Change fields to send this request to a different group. It will be unassigned and auto-claimed by the next person who opens it.</p>
+        <form method="POST" action="{{ route('request.staff.requests.reroute', $patronRequest) }}" id="reroute-form" class="space-y-3">
+            @csrf
+            @foreach($rerouteFields as $rf)
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">{{ $rf->label }}</label>
+                    <select name="fields[{{ $rf->key }}]" x-model="fields.{{ $rf->key }}" @change="fetchPreview()"
+                            class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
+                        @foreach($rf->options as $opt)
+                            <option value="{{ $opt->slug }}" @selected($patronRequest->fieldValue($rf->key) === $opt->slug)>
+                                {{ $opt->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endforeach
+
+            <div class="text-xs rounded px-3 py-2" :class="previewGroups.length ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'">
+                <template x-if="previewLoading"><span class="text-gray-400">Checking…</span></template>
+                <template x-if="!previewLoading && previewGroups.length">
+                    <span>
+                        <svg class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/></svg>
+                        Will be visible to: <span class="font-medium" x-text="previewGroups.map(g => g.name).join(', ')"></span>
+                    </span>
+                </template>
+                <template x-if="!previewLoading && !previewGroups.length">
+                    <span>
+                        <svg class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+                        No groups match this combination
+                    </span>
+                </template>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
+                <textarea name="note" rows="2" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
+            </div>
+        </form>
+    </div>
+    <x-slot:footer>
+        <button type="button" @click="$dispatch('close-modal', 'reroute')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100">Cancel</button>
+        <button type="submit" form="reroute-form" class="px-4 py-2 text-sm text-white bg-amber-600 rounded hover:bg-amber-700"
+                onclick="return confirm('Reroute this request? It will be unassigned and sent to the matching group.')">
+            Reroute &amp; Unassign
+        </button>
+    </x-slot:footer>
+</x-requests::action-modal>
+@endif
+
+{{-- Convert to ILL modal --}}
+@if($showConvertToIll)
+<x-requests::action-modal name="convert-ill" title="Convert to ILL">
+    <form method="POST" action="{{ route('request.staff.requests.convert-kind', $patronRequest) }}" id="convert-ill-form" class="space-y-3">
+        @csrf
+        <input type="hidden" name="to" value="ill">
+        <p class="text-sm text-gray-600">This will convert the request from SFP to Interlibrary Loan.</p>
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
+            <textarea name="note" rows="2" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
+        </div>
+    </form>
+    <x-slot:footer>
+        <button type="button" @click="$dispatch('close-modal', 'convert-ill')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100">Cancel</button>
+        <button type="submit" form="convert-ill-form" class="px-4 py-2 text-sm text-white bg-purple-600 rounded hover:bg-purple-700">Convert to ILL</button>
+    </x-slot:footer>
+</x-requests::action-modal>
+@endif
+
+{{-- ════════════════════════════════════════════════════════════════════════ --}}
+{{-- Scripts                                                                 --}}
+{{-- ════════════════════════════════════════════════════════════════════════ --}}
+
+<script>
+function statusUpdateForm(previewUrl) {
+    return {
+        selectedStatusId: '',
+        loading: false,
+
+        emailPreview: {
+            show:           false,
+            subject:        '',
+            body:           '',
+            to:             '',
+            cc:             '',
+            bcc:            '',
+            staffEmail:     '',
+            copyToSelf:     false,
+            editingEnabled: false,
+        },
+
+        emailPayload: {
+            confirmed:  '',
+            skip:       false,
+            subject:    '',
+            body:       '',
+            to:         '',
+            cc:         '',
+            bcc:        '',
+            copyToSelf: false,
+        },
+
+        async handleSubmit(event) {
+            const form = this.$refs.statusForm;
+            if (!this.selectedStatusId) { form.submit(); return; }
+            this.loading = true;
+            try {
+                const url = previewUrl + '?status_id=' + encodeURIComponent(this.selectedStatusId);
+                const res = await fetch(url, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!res.ok) throw new Error('Preview request failed');
+                const data = await res.json();
+                if (!data.preview_enabled || !data.would_send) {
+                    this.emailPayload.confirmed = '';
+                    form.submit();
+                    return;
+                }
+                this.emailPreview.subject        = data.subject        || '';
+                this.emailPreview.body           = data.body           || '';
+                this.emailPreview.to             = data.to             || '';
+                this.emailPreview.cc             = '';
+                this.emailPreview.bcc            = '';
+                this.emailPreview.staffEmail     = data.staff_email    || '';
+                this.emailPreview.copyToSelf     = false;
+                this.emailPreview.editingEnabled = data.editing_enabled || false;
+                this.emailPreview.show           = true;
+            } catch (e) {
+                console.error('Email preview fetch failed:', e);
+                this.emailPayload.confirmed = '';
+                form.submit();
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        sendWithEmail() {
+            this.emailPayload.confirmed  = '1';
+            this.emailPayload.skip       = false;
+            this.emailPayload.subject    = this.emailPreview.subject;
+            this.emailPayload.body       = this.emailPreview.body;
+            this.emailPayload.to         = this.emailPreview.to;
+            this.emailPayload.cc         = this.emailPreview.cc;
+            this.emailPayload.bcc        = this.emailPreview.bcc;
+            this.emailPayload.copyToSelf = this.emailPreview.copyToSelf;
+            this.emailPreview.show       = false;
+            this.$nextTick(() => this.$refs.statusForm.submit());
+        },
+
+        cancelEmail() {
+            this.emailPayload.confirmed = '';
+            this.emailPayload.skip      = true;
+            this.emailPreview.show      = false;
+            this.$nextTick(() => this.$refs.statusForm.submit());
+        },
+
+        init() {
+            this.$watch('emailPreview.show', (val) => {
+                if (val) this.$nextTick(() => this.loadEmailBodyIntoTrix());
+            });
+            document.addEventListener('trix-change', (e) => {
+                if (e.target.getAttribute('input') === 'requests-email-preview-body') {
+                    const input = document.getElementById('requests-email-preview-body');
+                    if (input) this.emailPreview.body = input.value;
+                }
+            });
+        },
+
+        loadEmailBodyIntoTrix() {
+            const trix = document.querySelector('trix-editor[input="requests-email-preview-body"]');
+            if (trix && trix.editor) trix.editor.loadHTML(this.emailPreview.body || '');
+        },
+    };
+}
+</script>
+
+@if(($assignmentEnabled ?? false) && ($rerouteFields ?? collect())->isNotEmpty())
+<script>
+function rerouteForm(previewUrl) {
+    return {
+        fields: {
+            @foreach($rerouteFields as $rf)
+                {{ $rf->key }}: '{{ $patronRequest->fieldValue($rf->key) ?? '' }}',
+            @endforeach
+        },
+        previewGroups: [],
+        previewLoading: false,
+        _debounce: null,
+
+        init() { this.fetchPreview(); },
+
+        fetchPreview() {
+            clearTimeout(this._debounce);
+            this._debounce = setTimeout(() => this._doFetch(), 200);
+        },
+
+        async _doFetch() {
+            this.previewLoading = true;
+            try {
+                const params = new URLSearchParams();
+                for (const [k, v] of Object.entries(this.fields)) { if (v) params.set(k, v); }
+                const res = await fetch(previewUrl + '?' + params.toString(), {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (res.ok) { const data = await res.json(); this.previewGroups = data.groups || []; }
+            } catch (e) {
+                console.error('Reroute preview failed:', e);
+            } finally {
+                this.previewLoading = false;
+            }
+        }
+    };
+}
+</script>
+@endif
 @endsection

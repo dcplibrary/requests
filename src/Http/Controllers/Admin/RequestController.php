@@ -264,10 +264,12 @@ class RequestController extends Controller
 
         $data = $httpRequest->validate([
             'assigned_to_user_id' => 'nullable|integer|exists:staff_users,id',
+            'note'                => 'nullable|string|max:2000',
         ]);
 
         $actor = $this->currentStaffUser($httpRequest);
         $newAssigneeId = $data['assigned_to_user_id'] ?? null;
+        $userNote      = trim((string) ($data['note'] ?? ''));
 
         $was = $patronRequest->assigned_to_user_id;
         $patronRequest->update([
@@ -276,14 +278,30 @@ class RequestController extends Controller
             'assigned_by_user_id' => $actor?->id,
         ]);
 
-        $note = $newAssigneeId
+        $historyNote = $newAssigneeId
             ? (($was ? 'Reassigned' : 'Assigned') . " to user #{$newAssigneeId}.")
             : 'Unassigned.';
+        if ($userNote) {
+            $historyNote .= " {$userNote}";
+        }
         $patronRequest->statusHistory()->create([
             'request_status_id' => $patronRequest->request_status_id,
             'user_id' => $actor?->id,
-            'note' => $note,
+            'note' => $historyNote,
         ]);
+
+        // Notify the new assignee (skip if unassigning or self-assigning).
+        if ($newAssigneeId && $actor && (int) $newAssigneeId !== $actor->id) {
+            $assignee = StaffUser::find($newAssigneeId);
+            if ($assignee) {
+                app(NotificationService::class)->notifyAssignee(
+                    $patronRequest->fresh(),
+                    $assignee,
+                    $actor,
+                    $userNote ?: null
+                );
+            }
+        }
 
         // After unassign, redirect with noclaim so auto-claim doesn't immediately re-grab it.
         if (! $newAssigneeId) {
@@ -423,11 +441,27 @@ class RequestController extends Controller
         ]);
 
         $actor = $this->currentStaffUser($httpRequest);
+        $userNote = trim((string) $httpRequest->input('note'));
+        $historyNote = 'Rerouted: ' . implode('; ', $changes) . '.';
+        if ($userNote) {
+            $historyNote .= " {$userNote}";
+        }
         $patronRequest->statusHistory()->create([
             'request_status_id' => $patronRequest->request_status_id,
             'user_id'           => $actor?->id,
-            'note'              => 'Rerouted: ' . implode('; ', $changes) . '.',
+            'note'              => $historyNote,
         ]);
+
+        // Notify the new group(s) that the request was rerouted to.
+        if ($actor) {
+            app(NotificationService::class)->notifyStaffWorkflowAction(
+                $patronRequest->fresh(),
+                'Rerouted',
+                $actor,
+                $userNote ?: null,
+                $changes
+            );
+        }
 
         return redirect()
             ->route('request.staff.requests.index')
@@ -547,7 +581,15 @@ class RequestController extends Controller
 
         // Notify ILL staff when something is converted into ILL.
         if ($to === 'ill') {
-            app(NotificationService::class)->notifyStaffNewRequest($patronRequest->fresh());
+            $staffUser = $this->currentStaffUser($httpRequest);
+            if ($staffUser) {
+                app(NotificationService::class)->notifyStaffWorkflowAction(
+                    $patronRequest->fresh(),
+                    'Converted to ILL',
+                    $staffUser,
+                    $note ?: null
+                );
+            }
             // Redirect to the list — the user may not have ILL access so back() could 403.
             return redirect()
                 ->route('request.staff.requests.index')

@@ -9,6 +9,7 @@ use Dcplibrary\Requests\Models\PatronStatusTemplate;
 use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Models\PatronRequest;
+use Dcplibrary\Requests\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -176,6 +177,99 @@ class NotificationService
         ];
     }
 
+    /**
+     * Notify the newly assigned staff user about a reassignment.
+     *
+     * Uses the staff routing template with a prepended header block showing
+     * who performed the action, the date, and an optional note.
+     *
+     * @param  PatronRequest  $request   The request being reassigned.
+     * @param  User           $assignee  The user being assigned to.
+     * @param  User           $actor     The staff member who performed the action.
+     * @param  string|null    $note      Optional note from the actor.
+     * @return void
+     */
+    public function notifyAssignee(PatronRequest $request, User $assignee, User $actor, ?string $note = null): void
+    {
+        if (! Setting::get('notifications_enabled', true)) return;
+        if (! Setting::get('staff_routing_enabled', true)) return;
+
+        $email = $assignee->email;
+        if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL)) return;
+
+        $request->loadMissing(['patron', 'fieldValues.field', 'status']);
+
+        $header = $this->buildWorkflowHeader('Reassigned', $actor, $note);
+
+        $subject = $this->replacePlaceholders(
+            (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}'),
+            $request
+        );
+        $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
+        $body = $header . $this->replacePlaceholders($bodyTemplate, $request);
+
+        try {
+            Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
+        } catch (\Throwable $e) {
+            Log::error('Assignee notification failed', [
+                'to'         => $email,
+                'request_id' => $request->id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Notify relevant staff groups about a workflow action (reroute or convert).
+     *
+     * Uses the staff routing template with a prepended header block showing
+     * the action performed, who did it, the date, an optional note, and
+     * (for reroutes) the field changes.
+     *
+     * @param  PatronRequest  $request  The request acted upon.
+     * @param  string         $action   Human-readable action label (e.g. "Rerouted", "Converted to ILL").
+     * @param  User           $actor    The staff member who performed the action.
+     * @param  string|null    $note     Optional note from the actor.
+     * @param  string[]       $changes  Field change descriptions (e.g. ["Type: Book → DVD"]).
+     * @return void
+     */
+    public function notifyStaffWorkflowAction(
+        PatronRequest $request,
+        string $action,
+        User $actor,
+        ?string $note = null,
+        array $changes = []
+    ): void {
+        if (! Setting::get('notifications_enabled', true)) return;
+        if (! Setting::get('staff_routing_enabled', true)) return;
+
+        $recipients = $this->getStaffRecipients($request);
+        if (empty($recipients)) return;
+
+        $request->loadMissing(['patron', 'fieldValues.field', 'status']);
+
+        $header = $this->buildWorkflowHeader($action, $actor, $note, $changes);
+
+        $subject = $this->replacePlaceholders(
+            (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}'),
+            $request
+        );
+        $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
+        $body = $header . $this->replacePlaceholders($bodyTemplate, $request);
+
+        foreach ($recipients as $email) {
+            try {
+                Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
+            } catch (\Throwable $e) {
+                Log::error('Staff workflow notification failed', [
+                    'to'         => $email,
+                    'request_id' => $request->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /**
@@ -295,6 +389,41 @@ class NotificationService
                 $emails[] = $user->email;
             }
         }
+    }
+
+    /**
+     * Build an HTML header block prepended to staff routing emails for workflow actions.
+     *
+     * @param  string       $action   Action label (e.g. "Rerouted").
+     * @param  User         $actor    Staff user who performed the action.
+     * @param  string|null  $note     Optional note text.
+     * @param  string[]     $changes  Optional field change descriptions.
+     * @return string
+     */
+    private function buildWorkflowHeader(string $action, User $actor, ?string $note = null, array $changes = []): string
+    {
+        $date = now()->format('M j, Y g:ia');
+        $name = e($actor->name ?: $actor->email);
+
+        $html = '<div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#374151;">';
+        $html .= '<strong style="color:#111827;">' . e($action) . '</strong>';
+        $html .= ' by ' . $name . ' &mdash; ' . $date;
+
+        if ($note = trim((string) $note)) {
+            $html .= '<div style="margin-top:6px;font-style:italic;color:#6b7280;">' . e($note) . '</div>';
+        }
+
+        if (! empty($changes)) {
+            $html .= '<ul style="margin:6px 0 0;padding-left:18px;">';
+            foreach ($changes as $change) {
+                $html .= '<li>' . e($change) . '</li>';
+            }
+            $html .= '</ul>';
+        }
+
+        $html .= '</div>';
+
+        return $html;
     }
 
     /**
