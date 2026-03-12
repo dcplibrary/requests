@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [3.11.1](https://github.com/dcplibrary/requests/compare/v3.11.0...v3.11.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* correct action modals ([c7a6b15](https://github.com/dcplibrary/requests/commit/c7a6b153b97edccdfe281c5dddc05f80d77ca9f1))
+
 # [3.11.0](https://github.com/dcplibrary/requests/compare/v3.10.0...v3.11.0) (2026-03-12)
 
 
