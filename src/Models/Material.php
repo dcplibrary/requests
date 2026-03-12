@@ -4,6 +4,7 @@ namespace Dcplibrary\Requests\Models;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -68,9 +69,24 @@ class Material extends Model
 
     protected $casts = [
         'exact_publish_date' => 'date',
-        'subjects'           => 'array',
         'msrp'               => 'decimal:2',
     ];
+
+    /**
+     * Cast subjects to/from a JSON array.
+     *
+     * Uses an explicit accessor/mutator instead of a $casts entry so
+     * the array is reliably JSON-encoded before reaching the query builder.
+     *
+     * @return Attribute<array|null, array|string|null>
+     */
+    protected function subjects(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value ? json_decode($value, true) : null,
+            set: fn ($value) => is_array($value) ? json_encode($value) : $value,
+        );
+    }
 
     /** The material type option from the unified field_options table. */
     public function materialTypeOption(): BelongsTo
