@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.3.0](https://github.com/dcplibrary/requests/compare/v3.2.0...v3.3.0) (2026-03-12)
+
+
+### Features
+
+* make anonymous field components ([e93cebd](https://github.com/dcplibrary/requests/commit/e93cebd2d08c5c31f9da1250be5786163e86b98e))
+
 # [3.2.0](https://github.com/dcplibrary/requests/compare/v3.1.1...v3.2.0) (2026-03-12)
 
 
