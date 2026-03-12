@@ -393,6 +393,7 @@ class NotificationService
         return match ($key) {
             'ill_requested' => $request->ill_requested === null ? '' : ($request->ill_requested ? 'Yes' : 'No'),
             'isbn'          => $request->material?->isbn ?? $request->material?->isbn13 ?? '',
+            'publisher'     => (string) ($request->material?->publisher ?? ''),
             'publish_date'  => $request->submitted_publish_date ?? '',
             'where_heard'   => (string) ($request->where_heard ?? ''),
             'console'       => (string) ($request->other_material_text ?? ''),

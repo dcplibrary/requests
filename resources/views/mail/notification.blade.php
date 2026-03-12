@@ -91,7 +91,7 @@
             <tr>
                 <td style="padding:16px 28px;background-color:#ffffff;border-top:1px solid #e2e8f0;
                             font-size:12px;color:#94a3b8;line-height:1.6;text-align:center;">
-                    {!! nl2br(e($footerText)) !!}
+                    {!! $footerText !!}
                 </td>
             </tr>
 
