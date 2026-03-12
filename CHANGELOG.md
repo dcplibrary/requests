@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.7.0](https://github.com/dcplibrary/requests/compare/v3.6.3...v3.7.0) (2026-03-12)
+
+
+### Features
+
+* add more isbndb enriched data for patrons and selectors ([6428d4f](https://github.com/dcplibrary/requests/commit/6428d4f3b22b1d460bcb24d63b910ee3983e3181))
+
 ## [3.6.3](https://github.com/dcplibrary/requests/compare/v3.6.2...v3.6.3) (2026-03-12)
 
 
