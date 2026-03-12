@@ -106,7 +106,7 @@ class FieldsAndOptionsSeeder extends Seeder
 
             // SFP-only custom fields
             ['key' => 'where_heard',      'label' => 'Where did you hear about this?',                   'type' => 'textarea', 'step' => 2, 'scope' => 'sfp',  'sort_order' => 100, 'active' => true,  'required' => false, 'include_as_token' => true,  'filterable' => false, 'condition' => null],
-            ['key' => 'console',          'label' => 'Console',                                          'type' => 'select',   'step' => 2, 'scope' => 'sfp',  'sort_order' => 110, 'active' => true,  'required' => false, 'include_as_token' => true,  'filterable' => false, 'condition' => $consoleCondition],
+            ['key' => 'console',          'label' => 'Console',                                          'type' => 'radio',    'step' => 2, 'scope' => 'sfp',  'sort_order' => 110, 'active' => true,  'required' => false, 'include_as_token' => true,  'filterable' => false, 'condition' => $consoleCondition],
             ['key' => 'ill_requested',    'label' => 'If the library decides not to purchase this item, would you like the library to try to obtain it from another library (via interlibrary loan)?', 'type' => 'checkbox', 'step' => 2, 'scope' => 'sfp', 'sort_order' => 120, 'active' => true, 'required' => false, 'include_as_token' => true, 'filterable' => false, 'condition' => null],
 
             // ILL-only custom fields

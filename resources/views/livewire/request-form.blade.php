@@ -253,20 +253,14 @@
                     {{ $field->label }}
                     @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
                 </legend>
-                <div class="space-y-1" role="radiogroup" aria-required="{{ $field->required ? 'true' : 'false' }}">
-                    @foreach($audiences as $audience)
-                    <label class="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-50 {{ $audience_id == $audience->id ? 'bg-blue-50 ring-1 ring-blue-200' : '' }}">
-                        <input
-                            type="radio"
-                            wire:model.live="audience_id"
-                            value="{{ $audience->id }}"
-                            name="audience"
-                            class="text-blue-600 focus:ring-blue-500"
-                        />
-                        <span class="text-sm text-gray-800">{{ $audience->name }}</span>
-                    </label>
-                    @endforeach
-                </div>
+                <x-requests::radio-group
+                    name="audience"
+                    wire-model="audience_id"
+                    :options="$audiences->pluck('name', 'id')->all()"
+                    :selected="$audience_id"
+                    variant="card"
+                    :required="$field->required"
+                />
                 @error('audience_id')
                     <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
                 @enderror
@@ -279,14 +273,14 @@
                     {{ $field->label }}
                     @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
                 </legend>
-                <div class="flex items-center gap-4 flex-wrap" role="radiogroup" aria-required="{{ $field->required ? 'true' : 'false' }}">
-                    @foreach($genres as $genreOption)
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" wire:model.live="genre" value="{{ $genreOption->slug }}" name="genre" class="text-blue-600 focus:ring-blue-500" />
-                        <span class="text-sm text-gray-800">{{ $genreOption->name }}</span>
-                    </label>
-                    @endforeach
-                </div>
+                <x-requests::radio-group
+                    name="genre"
+                    wire-model="genre"
+                    :options="$genres->pluck('name', 'slug')->all()"
+                    :selected="$genre"
+                    variant="inline"
+                    :required="$field->required"
+                />
                 @error('genre')
                     <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
                 @enderror
@@ -384,22 +378,20 @@
                 </label>
 
                 @if($field->type === 'select')
-                    <select id="{{ $field->key }}" wire:model.live="{{ $field->key }}"
-                            class="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select…</option>
-                        @foreach($coreFieldOptions[$field->id] ?? [] as $slug => $name)
-                            <option value="{{ $slug }}">{{ $name }}</option>
-                        @endforeach
-                    </select>
+                    <x-requests::select-field
+                        :name="$field->key"
+                        :wire-model="$field->key"
+                        :options="$coreFieldOptions[$field->id] ?? []"
+                    />
                 @elseif($field->type === 'radio')
-                    <div class="flex items-center gap-4 flex-wrap" role="radiogroup" aria-required="{{ $field->required ? 'true' : 'false' }}">
-                        @foreach($coreFieldOptions[$field->id] ?? [] as $slug => $name)
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" wire:model.live="{{ $field->key }}" value="{{ $slug }}" name="{{ $field->key }}" class="text-blue-600 focus:ring-blue-500" />
-                                <span class="text-sm text-gray-800">{{ $name }}</span>
-                            </label>
-                        @endforeach
-                    </div>
+                    <x-requests::radio-group
+                        :name="$field->key"
+                        :wire-model="$field->key"
+                        :options="$coreFieldOptions[$field->id] ?? []"
+                        :selected="$this->{$field->key} ?? null"
+                        variant="card"
+                        :required="$field->required"
+                    />
                 @elseif($field->type === 'textarea')
                     <textarea id="{{ $field->key }}" wire:model="{{ $field->key }}" rows="3"
                               class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"></textarea>
@@ -433,22 +425,20 @@
                         class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
                     ></textarea>
                 @elseif($field->type === 'radio')
-                    <div class="flex flex-wrap gap-4" role="radiogroup">
-                        @foreach($customFieldOptionsByFieldId[$field->id] ?? [] as $slug => $name)
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" wire:model.live="custom.{{ $field->key }}" value="{{ $slug }}" class="text-blue-600 focus:ring-blue-500" />
-                                <span class="text-sm text-gray-800">{{ $name }}</span>
-                            </label>
-                        @endforeach
-                    </div>
+                    <x-requests::radio-group
+                        :name="$field->key"
+                        :wire-model="'custom.' . $field->key"
+                        :options="$customFieldOptionsByFieldId[$field->id] ?? []"
+                        :selected="$this->custom[$field->key] ?? null"
+                        variant="inline"
+                        :required="(bool) $field->required"
+                    />
                 @elseif($field->type === 'select')
-                    <select id="custom_{{ $field->key }}" wire:model.live="custom.{{ $field->key }}"
-                            class="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select…</option>
-                        @foreach($customFieldOptionsByFieldId[$field->id] ?? [] as $slug => $name)
-                            <option value="{{ $slug }}">{{ $name }}</option>
-                        @endforeach
-                    </select>
+                    <x-requests::select-field
+                        :name="'custom_' . $field->key"
+                        :wire-model="'custom.' . $field->key"
+                        :options="$customFieldOptionsByFieldId[$field->id] ?? []"
+                    />
                 @elseif($field->type === 'html')
                     @once
                         @push('head')
