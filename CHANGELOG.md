@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.2.0](https://github.com/dcplibrary/requests/compare/v3.1.1...v3.2.0) (2026-03-12)
+
+
+### Features
+
+* extra common functions and helpers into shareable traits ([20e718f](https://github.com/dcplibrary/requests/commit/20e718f8df5fb8065d8c20880a0cd33b2a210697))
+
 ## [3.1.1](https://github.com/dcplibrary/requests/compare/v3.1.0...v3.1.1) (2026-03-12)
 
 
