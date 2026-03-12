@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.5.0](https://github.com/dcplibrary/requests/compare/v3.4.1...v3.5.0) (2026-03-12)
+
+
+### Features
+
+* add automatic claim and rerouting to different group ([380795b](https://github.com/dcplibrary/requests/commit/380795b457b86c81746ce23d52eb7c25364c70fd))
+
 ## [3.4.1](https://github.com/dcplibrary/requests/compare/v3.4.0...v3.4.1) (2026-03-12)
 
 
