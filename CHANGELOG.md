@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.4.0](https://github.com/dcplibrary/requests/compare/v3.3.0...v3.4.0) (2026-03-12)
+
+
+### Features
+
+* make option selects changeable from radio to dropdown and vice versa ([c80fad2](https://github.com/dcplibrary/requests/commit/c80fad2d063f28c239428178c170f5df7de9ebc4))
+
 # [3.3.0](https://github.com/dcplibrary/requests/compare/v3.2.0...v3.3.0) (2026-03-12)
 
 
