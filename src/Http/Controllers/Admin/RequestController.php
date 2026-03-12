@@ -131,6 +131,9 @@ class RequestController extends Controller
         $mtField  = Field::where('key', 'material_type')->first();
         $audField = Field::where('key', 'audience')->first();
 
+        $staffUser = $this->currentStaffUser($request);
+        $hasIllAccess = $staffUser && $staffUser->hasIllAccess();
+
         return view('requests::staff.requests.index', [
             'requests'       => $requests,
             'statuses'       => RequestStatus::active()->get(),
@@ -141,6 +144,7 @@ class RequestController extends Controller
             'customFilterFields'  => $customFilterFields,
             'customFilterOptions' => $customFilterOptions,
             'assignmentEnabled'   => $assignmentEnabled,
+            'hasIllAccess'        => $hasIllAccess,
         ]);
     }
 

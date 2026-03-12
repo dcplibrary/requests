@@ -15,7 +15,7 @@
     </h1>
     <div class="flex items-center gap-3">
         <span class="text-sm text-gray-500">{{ $requests->total() }} total</span>
-        @if($currentKind === 'ill')
+        @if($currentKind === 'ill' && ($hasIllAccess ?? false))
             <a href="{{ route('request.ill.form') }}" target="_blank"
                class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New ILL Request</a>
         @elseif($currentKind === 'sfp')
@@ -24,8 +24,10 @@
         @else
             <a href="{{ route('request.form') }}" target="_blank"
                class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New SFP Request</a>
+            @if($hasIllAccess ?? false)
             <a href="{{ route('request.ill.form') }}" target="_blank"
                class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New ILL Request</a>
+            @endif
         @endif
     </div>
 </div>
