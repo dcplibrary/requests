@@ -200,6 +200,10 @@ class NotificationService
 
     /**
      * Groups that have access to this request (and thus should receive routing).
+     *
+     * Uses the same "unrestricted" logic as applySfpFieldScoping(): if a group
+     * has no options assigned for a given filterable field, that field is treated
+     * as unrestricted (matches everything) for that group.
      */
     private function getStaffRecipientGroups(PatronRequest $request): \Illuminate\Support\Collection
     {
@@ -214,23 +218,58 @@ class NotificationService
                 }
             }
         } else {
-            // Look up the request's material_type and audience slugs from field values.
             $request->loadMissing('fieldValues.field');
-            $mtSlug  = $request->fieldValue('material_type');
-            $audSlug = $request->fieldValue('audience');
 
-            // Resolve those slugs to FieldOption IDs.
-            $mtOptionId  = $mtSlug  ? FieldOption::whereHas('field', fn ($q) => $q->where('key', 'material_type'))->where('slug', $mtSlug)->value('id')  : null;
-            $audOptionId = $audSlug ? FieldOption::whereHas('field', fn ($q) => $q->where('key', 'audience'))->where('slug', $audSlug)->value('id') : null;
+            // Discover filterable fields that have group-assigned options.
+            $scopingFields = Field::query()
+                ->where('filterable', true)
+                ->whereIn('type', ['select', 'radio'])
+                ->where('active', true)
+                ->whereHas('options', function ($q) {
+                    $q->whereExists(function ($sub) {
+                        $sub->selectRaw('1')
+                            ->from('selector_group_field_option')
+                            ->whereColumn('selector_group_field_option.field_option_id', 'field_options.id');
+                    });
+                })
+                ->get(['id', 'key']);
+
+            // Resolve each field's slug to an option ID.
+            $selectedOptionIds = [];
+            foreach ($scopingFields as $field) {
+                $slug = $request->fieldValue($field->key);
+                if ($slug) {
+                    $optionId = FieldOption::where('field_id', $field->id)->where('slug', $slug)->value('id');
+                    if ($optionId) {
+                        $selectedOptionIds[$field->id] = $optionId;
+                    }
+                }
+            }
 
             $candidates = SelectorGroup::active()
                 ->with(['fieldOptions', 'users'])
                 ->get();
 
-            $groups = $candidates->filter(function ($group) use ($mtOptionId, $audOptionId) {
-                $optionIds = $group->fieldOptions->pluck('id');
-                return ($mtOptionId && $optionIds->contains($mtOptionId))
-                    && ($audOptionId && $optionIds->contains($audOptionId));
+            // For each group: every scoping field must either match or be unrestricted.
+            $groups = $candidates->filter(function ($group) use ($scopingFields, $selectedOptionIds) {
+                foreach ($scopingFields as $field) {
+                    $groupOptionIds = $group->fieldOptions
+                        ->where('field_id', $field->id)
+                        ->pluck('id')
+                        ->all();
+
+                    // No options for this field = unrestricted — pass.
+                    if (empty($groupOptionIds)) {
+                        continue;
+                    }
+
+                    // If the request has a value for this field, it must be in the group's options.
+                    $selected = $selectedOptionIds[$field->id] ?? null;
+                    if ($selected && ! in_array($selected, $groupOptionIds, true)) {
+                        return false;
+                    }
+                }
+                return true;
             });
         }
 
