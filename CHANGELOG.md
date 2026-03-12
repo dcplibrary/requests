@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.9.0](https://github.com/dcplibrary/requests/compare/v3.8.0...v3.9.0) (2026-03-12)
+
+
+### Features
+
+* add amazon search links and polaris leap links ([69a856c](https://github.com/dcplibrary/requests/commit/69a856c2fa2603ae8434c0b51c50eb2363f41ed8))
+
 # [3.8.0](https://github.com/dcplibrary/requests/compare/v3.7.1...v3.8.0) (2026-03-12)
 
 
