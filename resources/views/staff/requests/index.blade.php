@@ -13,7 +13,21 @@
             Suggestions for Purchase
         @endif
     </h1>
-    <span class="text-sm text-gray-500">{{ $requests->total() }} total</span>
+    <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-500">{{ $requests->total() }} total</span>
+        @if($currentKind === 'ill')
+            <a href="{{ route('request.ill.form') }}" target="_blank"
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New ILL Request</a>
+        @elseif($currentKind === 'sfp')
+            <a href="{{ route('request.form') }}" target="_blank"
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New SFP Request</a>
+        @else
+            <a href="{{ route('request.form') }}" target="_blank"
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New SFP Request</a>
+            <a href="{{ route('request.ill.form') }}" target="_blank"
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New ILL Request</a>
+        @endif
+    </div>
 </div>
 
 {{-- Filters --}}
