@@ -2,6 +2,14 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.6.0](https://github.com/dcplibrary/requests/compare/v3.5.0...v3.6.0) (2026-03-12)
+
+
+### Features
+
+* add new buttons to ill and sfp lists ([67742db](https://github.com/dcplibrary/requests/commit/67742db5c026b82a7feade4021c2660e395af9c9))
+* add new buttons to sfp and ill lists ([64e3b23](https://github.com/dcplibrary/requests/commit/64e3b23d2adedc0d9cb378a4d4ad27f14004a72e))
+
 # [3.5.0](https://github.com/dcplibrary/requests/compare/v3.4.1...v3.5.0) (2026-03-12)
 
 
