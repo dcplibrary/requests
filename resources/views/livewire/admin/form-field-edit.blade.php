@@ -20,6 +20,25 @@
                 <p class="mt-1 text-xs text-gray-400">Shown to staff in the admin. Does not affect field behaviour.</p>
             </div>
 
+            <div>
+                <label for="ff_type" class="block text-sm font-medium text-gray-700 mb-1">
+                    Field Type <span class="text-red-500">*</span>
+                </label>
+                <select
+                    id="ff_type"
+                    wire:model="type"
+                    class="w-full max-w-xs border border-gray-300 rounded px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                >
+                    @foreach($fieldTypes as $val => $lbl)
+                        <option value="{{ $val }}">{{ $lbl }}</option>
+                    @endforeach
+                </select>
+                @error('type')
+                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+                <p class="mt-1 text-xs text-gray-400">Controls how the field renders on the patron form (e.g. dropdown vs radio buttons).</p>
+            </div>
+
             <div class="flex items-center gap-2">
                 <input type="hidden" name="required" value="0">
                 <input
@@ -183,6 +202,39 @@
             href="{{ route('request.staff.settings.form-fields') }}"
             class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200"
         >Cancel</a>
+    </div>
+
+    {{-- ── Danger zone ── --}}
+    <div class="max-w-lg border border-red-200 rounded-lg p-6 mt-2" x-data="{ confirmDelete: false }">
+        <h2 class="text-sm font-semibold text-red-700 mb-2">Danger Zone</h2>
+        <p class="text-xs text-gray-500 mb-4">Deleting a field removes it from all forms and soft-deletes its options. Historical request data is preserved.</p>
+
+        <template x-if="!confirmDelete">
+            <button
+                type="button"
+                @click="confirmDelete = true"
+                class="px-4 py-2 border border-red-300 text-red-700 text-sm rounded hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+            >
+                <svg class="w-4 h-4 inline -mt-0.5 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+                Delete This Field
+            </button>
+        </template>
+
+        <template x-if="confirmDelete">
+            <div class="flex items-center gap-3">
+                <span class="text-sm text-red-700 font-medium">Are you sure?</span>
+                <button
+                    type="button"
+                    wire:click="deleteField"
+                    class="px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                >Yes, delete permanently</button>
+                <button
+                    type="button"
+                    @click="confirmDelete = false"
+                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200"
+                >Cancel</button>
+            </div>
+        </template>
     </div>
 
 </div>

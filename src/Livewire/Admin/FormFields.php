@@ -2,8 +2,11 @@
 
 namespace Dcplibrary\Requests\Livewire\Admin;
 
+use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Models\FormFieldOptionOverride;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Livewire\Component;
 
@@ -162,6 +165,44 @@ class FormFields extends Component
         }
     }
 
+    /**
+     * Soft-delete a field and cascade-remove related config/option rows.
+     *
+     * @param  int  $fieldId
+     * @return void
+     */
+    public function deleteField(int $fieldId): void
+    {
+        $field = Field::findOrFail($fieldId);
+        $label = $field->label;
+
+        DB::transaction(function () use ($field): void {
+            // Remove per-form config rows (hard delete — no SoftDeletes)
+            FormFieldConfig::where('field_id', $field->id)->delete();
+
+            // Remove per-form option overrides (hard delete)
+            FormFieldOptionOverride::where('field_id', $field->id)->delete();
+
+            // Remove selector group pivots
+            $optionIds = $field->options()->pluck('id')->all();
+            if ($optionIds) {
+                DB::table('selector_group_field_option')
+                    ->whereIn('field_option_id', $optionIds)
+                    ->delete();
+            }
+
+            // Soft-delete options, then the field itself
+            $field->options()->delete();
+            $field->delete();
+        });
+
+        session()->flash('success', "'{$label}' has been deleted.");
+        $this->loadFromDb();
+    }
+
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         return view('requests::livewire.admin.form-fields');

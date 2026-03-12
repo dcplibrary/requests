@@ -70,8 +70,9 @@
                         <td class="px-4 py-3">
                             <x-requests::status-pill :active="$field['active']" />
                         </td>
-                        <td class="px-4 py-3 text-right">
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
                             <x-requests::icon-btn :href="$field['edit_url']" variant="edit" label="Edit" />
+                            <x-requests::icon-btn variant="delete" label="Delete" x-on:click="if(confirm('Delete \u201c{{ $field['label'] }}\u201d? This cannot be undone.')) $wire.deleteField({{ $field['id'] }})" />
                         </td>
                     </tr>
                     @empty
@@ -136,8 +137,9 @@
                         <td class="px-4 py-3">
                             <x-requests::status-pill :active="$field['active']" />
                         </td>
-                        <td class="px-4 py-3 text-right">
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
                             <x-requests::icon-btn :href="$field['edit_url']" variant="edit" label="Edit" />
+                            <x-requests::icon-btn variant="delete" label="Delete" x-on:click="if(confirm('Delete \u201c{{ $field['label'] }}\u201d? This cannot be undone.')) $wire.deleteField({{ $field['id'] }})" />
                         </td>
                     </tr>
                     @empty

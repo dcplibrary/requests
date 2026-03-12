@@ -4,6 +4,9 @@ namespace Dcplibrary\Requests\Livewire\Admin;
 
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
+use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Models\FormFieldOptionOverride;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 /**
@@ -15,6 +18,7 @@ class FormFieldEdit extends Component
     public int $fieldId;
 
     public string $label    = '';
+    public string $type     = 'text';
     public bool   $required = false;
     public bool   $active   = false;
     public bool   $includeAsToken = false;
@@ -32,6 +36,7 @@ class FormFieldEdit extends Component
 
         $this->fieldId        = $fieldId;
         $this->label          = $field->label;
+        $this->type           = $field->type ?? 'text';
         $this->required       = (bool) $field->required;
         $this->active         = (bool) $field->active;
         $this->includeAsToken = (bool) $field->include_as_token;
@@ -42,11 +47,31 @@ class FormFieldEdit extends Component
 
     // ── Save ──────────────────────────────────────────────────────────────────
 
+    /** @var array<string, string> Valid field types for the dropdown. */
+    public const FIELD_TYPES = [
+        'text'     => 'Text',
+        'textarea' => 'Textarea',
+        'select'   => 'Select (Dropdown)',
+        'radio'    => 'Radio',
+        'checkbox' => 'Checkbox',
+        'date'     => 'Date',
+        'number'   => 'Number',
+        'html'     => 'Rich Text (HTML)',
+    ];
+
+    /**
+     * Persist field changes.
+     *
+     * @return void
+     */
     public function save(): void
     {
         $this->label = trim($this->label);
 
-        $this->validate(['label' => 'required|string|max:100']);
+        $this->validate([
+            'label' => 'required|string|max:100',
+            'type'  => 'required|in:' . implode(',', array_keys(self::FIELD_TYPES)),
+        ]);
 
         $condition = ($this->hasCondition && ! empty($this->condition['rules']))
             ? $this->condition
@@ -54,6 +79,7 @@ class FormFieldEdit extends Component
 
         Field::where('id', $this->fieldId)->update([
             'label'            => $this->label,
+            'type'             => $this->type,
             'required'         => $this->required,
             'active'           => $this->active,
             'include_as_token' => $this->includeAsToken,
@@ -62,6 +88,42 @@ class FormFieldEdit extends Component
         ]);
 
         session()->flash('success', "'{$this->label}' updated.");
+        $this->redirect(route('request.staff.settings.form-fields'));
+    }
+
+    /**
+     * Soft-delete the field and cascade-remove related config rows.
+     *
+     * @return void
+     */
+    public function deleteField(): void
+    {
+        $field = Field::findOrFail($this->fieldId);
+        $label = $field->label;
+
+        DB::transaction(function () use ($field): void {
+            // Remove per-form config rows (hard delete — no SoftDeletes)
+            FormFieldConfig::where('field_id', $field->id)->delete();
+
+            // Remove per-form option overrides (hard delete)
+            FormFieldOptionOverride::where('field_id', $field->id)->delete();
+
+            // Remove selector group pivots
+            $optionIds = $field->options()->pluck('id')->all();
+            if ($optionIds) {
+                DB::table('selector_group_field_option')
+                    ->whereIn('field_option_id', $optionIds)
+                    ->delete();
+            }
+
+            // Soft-delete options
+            $field->options()->delete();
+
+            // Soft-delete the field itself
+            $field->delete();
+        });
+
+        session()->flash('success', "'{$label}' has been deleted.");
         $this->redirect(route('request.staff.settings.form-fields'));
     }
 
@@ -135,6 +197,7 @@ class FormFieldEdit extends Component
 
         return view('requests::livewire.admin.form-field-edit', [
             'fieldKey'            => $field->key,
+            'fieldTypes'          => self::FIELD_TYPES,
             'showOptionsManager'  => in_array($field->type, ['select', 'radio'], true),
             'materialTypeOptions' => $mtField
                 ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->pluck('name', 'slug')
