@@ -26,6 +26,7 @@ use Dcplibrary\Requests\Livewire\RequestForm;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -63,6 +64,7 @@ class RequestsServiceProvider extends ServiceProvider
         $this->registerBlaze();
         $this->registerLivewire();
         $this->registerPublishables();
+        $this->shareCssVersion();
 
         // Always load migrations so `php artisan migrate` discovers them
         // without needing to publish them first.
@@ -95,7 +97,8 @@ class RequestsServiceProvider extends ServiceProvider
 
             return response(file_get_contents($path), 200)
                 ->header('Content-Type', 'text/css')
-                ->header('Cache-Control', 'public, max-age=31536000');
+                ->header('Cache-Control', 'public, max-age=86400')
+                ->header('ETag', md5_file($path));
         })->name('request.assets.css');
 
         // Logo — served via URL so email clients (e.g. Gmail) don't strip it as a data: URI.
@@ -158,6 +161,18 @@ class RequestsServiceProvider extends ServiceProvider
         Livewire::component('requests-admin-custom-fields', CustomFieldsAdmin::class);
         Livewire::component('requests-admin-custom-field-edit', CustomFieldEditAdmin::class);
         Livewire::component('requests-admin-custom-field-options', CustomFieldOptionsManager::class);
+    }
+
+    /**
+     * Share the CSS asset version hash with all views for cache-busting.
+     *
+     * @return void
+     */
+    protected function shareCssVersion(): void
+    {
+        $cssPath = __DIR__ . '/../resources/dist/requests.css';
+        $version = file_exists($cssPath) ? substr(md5_file($cssPath), 0, 8) : 'dev';
+        View::share('requestsCssVersion', $version);
     }
 
     protected function registerPublishables(): void

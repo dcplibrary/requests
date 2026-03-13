@@ -310,19 +310,19 @@
                         <p class="text-sm text-gray-400 mt-1">Unassigned</p>
                     @endif
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-col gap-2">
                     @if(! $patronRequest->assigned_to_user_id)
                         <form method="POST" action="{{ route('request.staff.requests.claim', $patronRequest) }}">
                             @csrf
                             <button type="submit"
-                                    class="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700">
+                                    class="w-40 px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
                                 Claim
                             </button>
                         </form>
                     @endif
                     <button type="button"
                             @click="$dispatch('open-modal', 'reassign')"
-                            class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                            class="w-40 px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
                         Reassign
                     </button>
                 </div>
@@ -330,25 +330,22 @@
         </div>
         @endif
 
-        {{-- ── Reroute ── --}}
+        {{-- ── Change Selection Type ── --}}
         @if(($rerouteFields ?? collect())->isNotEmpty())
         <div class="px-5 py-4 border-t border-gray-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Reroute</h3>
-                    <div class="flex flex-wrap gap-1 mt-1">
-                        @foreach($rerouteFields as $rf)
-                            @php $currentLabel = $rf->options->firstWhere('slug', $patronRequest->fieldValue($rf->key))?->name; @endphp
-                            @if($currentLabel)
-                                <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">{{ $currentLabel }}</span>
-                            @endif
-                        @endforeach
-                    </div>
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Change Selection Type</h3>
+                    @if($currentGroupName ?? null)
+                        <span class="inline-block mt-1 px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">{{ $currentGroupName }}</span>
+                    @else
+                        <span class="inline-block mt-1 text-xs text-gray-400">No matching group</span>
+                    @endif
                 </div>
                 <button type="button"
                         @click="$dispatch('open-modal', 'reroute')"
-                        class="flex-shrink-0 px-3 py-1.5 bg-amber-600 text-white text-xs rounded hover:bg-amber-700">
-                    Reroute
+                        class="flex-shrink-0 w-40 px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                    Change Selection Type
                 </button>
             </div>
         </div>
@@ -364,7 +361,7 @@
                 </div>
                 <button type="button"
                         @click="$dispatch('open-modal', 'convert-ill')"
-                        class="px-3 py-1.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700">
+                        class="flex-shrink-0 w-40 px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
                     Convert to ILL
                 </button>
             </div>
@@ -376,18 +373,18 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-xs font-semibold text-red-600 uppercase tracking-wide">Danger Zone</h3>
+                    <p class="mt-1 text-xs text-gray-400">Removes the request and its status history.</p>
                 </div>
                 <form method="POST" action="{{ route('request.staff.requests.destroy', $patronRequest) }}">
                     @csrf
                     @method('DELETE')
                     <button type="submit"
-                            class="px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                            class="flex-shrink-0 w-40 px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700"
                             onclick="return confirm('Delete Request #{{ $patronRequest->id }}? This cannot be undone.')">
                         Delete
                     </button>
                 </form>
             </div>
-            <p class="mt-1 text-xs text-gray-400">Removes the request and its status history.</p>
         </div>
     </div>
 </div>
@@ -424,11 +421,11 @@
 </x-requests::action-modal>
 @endif
 
-{{-- Reroute modal --}}
+{{-- Change Selection Type modal --}}
 @if(($rerouteFields ?? collect())->isNotEmpty())
-<x-requests::action-modal name="reroute" title="Reroute Request" max-width="lg">
+<x-requests::action-modal name="reroute" title="Change Selection Type" max-width="lg">
     <div x-data="rerouteForm('{{ route('request.staff.requests.reroute-preview', $patronRequest) }}')">
-        <p class="text-xs text-gray-400 mb-3">Select a group to reroute this request to. The request will be unassigned and auto-claimed by the next person in that group.</p>
+        <p class="text-xs text-gray-400 mb-3">Select a group to change this request's selection type. The request will be unassigned and auto-claimed by the next person in that group.</p>
         <form method="POST" action="{{ route('request.staff.requests.reroute', $patronRequest) }}" id="reroute-form" class="space-y-3">
             @csrf
             <input type="hidden" name="group_id" :value="selectedGroupId">
@@ -497,10 +494,10 @@
     </div>
     <x-slot:footer>
         <button type="button" @click="$dispatch('close-modal', 'reroute')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100">Cancel</button>
-        <button type="submit" form="reroute-form" class="px-4 py-2 text-sm text-white bg-amber-600 rounded hover:bg-amber-700 disabled:opacity-50"
+        <button type="submit" form="reroute-form" class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50"
                 :disabled="!selectedGroupId"
-                onclick="return confirm('Reroute this request? It will be unassigned and sent to the selected group.')">
-            Reroute &amp; Unassign
+                onclick="return confirm('Change selection type? The request will be unassigned and sent to the selected group.')">
+            Change &amp; Unassign
         </button>
     </x-slot:footer>
 </x-requests::action-modal>
@@ -520,7 +517,7 @@
     </form>
     <x-slot:footer>
         <button type="button" @click="$dispatch('close-modal', 'convert-ill')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100">Cancel</button>
-        <button type="submit" form="convert-ill-form" class="px-4 py-2 text-sm text-white bg-purple-600 rounded hover:bg-purple-700">Convert to ILL</button>
+        <button type="submit" form="convert-ill-form" class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">Convert to ILL</button>
     </x-slot:footer>
 </x-requests::action-modal>
 @endif

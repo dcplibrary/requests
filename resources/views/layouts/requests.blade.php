@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Suggest a Purchase — Daviess County Public Library</title>
-    <link rel="stylesheet" href="{{ route('request.assets.css') }}">
+    <link rel="stylesheet" href="{{ route('request.assets.css') }}?v={{ $requestsCssVersion ?? 'dev' }}">
     @livewireStyles
     @stack('head')
 </head>

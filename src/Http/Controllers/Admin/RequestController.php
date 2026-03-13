@@ -231,9 +231,36 @@ class RequestController extends Controller
         }
 
         // Selector groups for the reroute modal (only when reroutable fields exist).
-        $selectorGroups = $rerouteFields->isNotEmpty()
-            ? SelectorGroup::active()->orderBy('name')->get(['id', 'name'])
-            : collect();
+        // Load with fieldOptions so we can also determine the current matching group.
+        $selectorGroups = collect();
+        $currentGroupName = null;
+        if ($rerouteFields->isNotEmpty()) {
+            $selectorGroups = SelectorGroup::active()
+                ->with('fieldOptions')
+                ->orderBy('name')
+                ->get();
+
+            // Find the first group whose field options match all of the
+            // request's current filterable field values.
+            foreach ($selectorGroups as $group) {
+                $matches = true;
+                foreach ($rerouteFields as $field) {
+                    $groupOpts = $group->fieldOptions->where('field_id', $field->id);
+                    if ($groupOpts->isEmpty()) {
+                        continue; // unrestricted for this field
+                    }
+                    $slug = $patronRequest->fieldValue($field->key);
+                    if (! $slug || ! $groupOpts->pluck('slug')->contains($slug)) {
+                        $matches = false;
+                        break;
+                    }
+                }
+                if ($matches) {
+                    $currentGroupName = $group->name;
+                    break;
+                }
+            }
+        }
 
         return view('requests::staff.requests.show', [
             'patronRequest' => $patronRequest,
@@ -245,6 +272,7 @@ class RequestController extends Controller
             'showConvertToIll' => $showConvertToIll,
             'rerouteFields' => $rerouteFields,
             'selectorGroups' => $selectorGroups,
+            'currentGroupName' => $currentGroupName,
             'sfpIsbnLookupUrl' => Setting::get('sfp_isbn_lookup_url'),
             'illIsbnLookupUrl' => Setting::get('ill_isbn_lookup_url'),
             'polarisLeapUrl'   => Setting::get('polaris_leap_url'),
