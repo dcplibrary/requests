@@ -230,6 +230,11 @@ class RequestController extends Controller
                 ->get();
         }
 
+        // Selector groups for the reroute modal (only when reroutable fields exist).
+        $selectorGroups = $rerouteFields->isNotEmpty()
+            ? SelectorGroup::active()->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return view('requests::staff.requests.show', [
             'patronRequest' => $patronRequest,
             'statuses'   => RequestStatus::active()->get(),
@@ -239,6 +244,7 @@ class RequestController extends Controller
             'staffUsers' => StaffUser::query()->where('active', true)->orderBy('name')->get(['id', 'name', 'email']),
             'showConvertToIll' => $showConvertToIll,
             'rerouteFields' => $rerouteFields,
+            'selectorGroups' => $selectorGroups,
             'sfpIsbnLookupUrl' => Setting::get('sfp_isbn_lookup_url'),
             'illIsbnLookupUrl' => Setting::get('ill_isbn_lookup_url'),
             'polarisLeapUrl'   => Setting::get('polaris_leap_url'),
@@ -339,10 +345,11 @@ class RequestController extends Controller
     }
 
     /**
-     * Reroute a request by changing its filterable field values and unassigning it.
+     * Reroute a request to a different selector group.
      *
-     * The request flows to whichever selector group covers the new field combination.
-     * The next staff user in that group who opens it will auto-claim it.
+     * Accepts a group_id and optional field overrides (for fields where the
+     * target group has multiple options). Adjusts filterable field values to
+     * match the target group and unassigns the request.
      *
      * @param  Request        $httpRequest
      * @param  PatronRequest  $patronRequest
@@ -360,47 +367,59 @@ class RequestController extends Controller
             abort(403);
         }
 
-        // Discover which fields are reroutable (filterable select/radio).
+        $httpRequest->validate([
+            'group_id'   => 'required|integer|exists:selector_groups,id',
+            'fields'     => 'nullable|array',
+            'fields.*'   => 'nullable|string',
+            'note'       => 'nullable|string|max:2000',
+        ]);
+
+        $group = SelectorGroup::with('fieldOptions.field')->findOrFail($httpRequest->group_id);
+        $fieldOverrides = $httpRequest->input('fields', []);
+
         $rerouteFields = Field::query()
             ->where('filterable', true)
             ->whereIn('type', ['select', 'radio'])
             ->where('active', true)
             ->get(['id', 'key', 'label']);
 
-        if ($rerouteFields->isEmpty()) {
-            return back()->withErrors(['error' => 'No reroutable fields configured.']);
-        }
-
-        // Build validation rules dynamically.
-        $rules = [];
-        foreach ($rerouteFields as $field) {
-            $validSlugs = FieldOption::where('field_id', $field->id)->active()->pluck('slug')->all();
-            $rules["fields.{$field->key}"] = ['required', 'string', 'in:' . implode(',', $validSlugs)];
-        }
-        $data = $httpRequest->validate($rules);
-        $fieldInputs = $data['fields'] ?? [];
-
-        // Load current values and apply changes.
         $patronRequest->load('fieldValues.field');
         $changes = [];
 
         foreach ($rerouteFields as $field) {
-            $newSlug = $fieldInputs[$field->key] ?? null;
-            if ($newSlug === null) {
+            $groupOptions = $group->fieldOptions->where('field_id', $field->id);
+
+            // Unrestricted for this field — no change needed.
+            if ($groupOptions->isEmpty()) {
                 continue;
             }
 
             $existing = $patronRequest->fieldValues->first(fn ($v) => $v->field_id === $field->id);
-            $oldSlug = $existing?->value;
+            $currentSlug = $existing?->value;
 
-            if ($oldSlug === $newSlug) {
+            // Current value already matches one of the group's options.
+            if ($currentSlug && $groupOptions->pluck('slug')->contains($currentSlug)) {
                 continue;
             }
 
-            $oldLabel = $oldSlug
-                ? (FieldOption::where('field_id', $field->id)->where('slug', $oldSlug)->value('name') ?? $oldSlug)
+            // Determine new slug: use form override if provided, otherwise auto-pick single option.
+            $newSlug = $fieldOverrides[$field->key] ?? null;
+            if (! $newSlug && $groupOptions->count() === 1) {
+                $newSlug = $groupOptions->first()->slug;
+            }
+            if (! $newSlug) {
+                return back()->withErrors(['error' => "Please select a value for {$field->label}."]);
+            }
+
+            // Validate the chosen slug belongs to this group.
+            if (! $groupOptions->pluck('slug')->contains($newSlug)) {
+                return back()->withErrors(['error' => "Invalid option for {$field->label}."]);
+            }
+
+            $oldLabel = $currentSlug
+                ? (FieldOption::where('field_id', $field->id)->where('slug', $currentSlug)->value('name') ?? $currentSlug)
                 : '(none)';
-            $newLabel = FieldOption::where('field_id', $field->id)->where('slug', $newSlug)->value('name') ?? $newSlug;
+            $newLabel = $groupOptions->firstWhere('slug', $newSlug)?->name ?? $newSlug;
 
             if ($existing) {
                 $existing->update(['value' => $newSlug]);
@@ -416,7 +435,7 @@ class RequestController extends Controller
         }
 
         if (empty($changes)) {
-            return back()->with('success', 'No changes needed — fields already match.');
+            return back()->with('success', 'No changes needed — fields already match this group.');
         }
 
         // Unassign so the next group member who opens it auto-claims.
@@ -428,7 +447,7 @@ class RequestController extends Controller
 
         $actor = $this->currentStaffUser($httpRequest);
         $userNote = trim((string) $httpRequest->input('note'));
-        $historyNote = 'Rerouted: ' . implode('; ', $changes) . '.';
+        $historyNote = 'Rerouted to ' . $group->name . ': ' . implode('; ', $changes) . '.';
         if ($userNote) {
             $historyNote .= " {$userNote}";
         }
@@ -438,7 +457,7 @@ class RequestController extends Controller
             'note'              => $historyNote,
         ]);
 
-        // Notify the new group(s) that the request was rerouted to.
+        // Notify the target group.
         if ($actor) {
             app(NotificationService::class)->notifyStaffWorkflowAction(
                 $patronRequest->fresh(),
@@ -451,13 +470,14 @@ class RequestController extends Controller
 
         return redirect()
             ->route('request.staff.requests.index')
-            ->with('success', 'Request #' . $patronRequest->id . ' rerouted and unassigned.');
+            ->with('success', 'Request #' . $patronRequest->id . ' rerouted to ' . $group->name . '.');
     }
 
     /**
-     * Return JSON listing selector groups that would cover a given field combination.
+     * Return JSON showing what field changes are needed to reroute to a given group.
      *
-     * Used by the reroute form's Alpine.js to show a live "Will be visible to" preview.
+     * For each filterable field, compares the request's current value against the
+     * target group's options. Returns a list of changes with available options.
      *
      * @param  Request        $httpRequest
      * @param  PatronRequest  $patronRequest
@@ -467,58 +487,62 @@ class RequestController extends Controller
     {
         abort_unless(Setting::get('assignment_enabled', false), 404);
 
-        // Collect field slugs from query params (e.g. ?material_type=book&audience=adult).
+        $groupId = (int) $httpRequest->query('group_id');
+        if (! $groupId) {
+            return response()->json(['changes' => [], 'no_changes' => true]);
+        }
+
+        $group = SelectorGroup::with('fieldOptions.field')->find($groupId);
+        if (! $group) {
+            return response()->json(['changes' => [], 'no_changes' => true]);
+        }
+
+        $patronRequest->loadMissing('fieldValues.field');
+
         $rerouteFields = Field::query()
             ->where('filterable', true)
             ->whereIn('type', ['select', 'radio'])
             ->where('active', true)
-            ->get(['id', 'key']);
+            ->get(['id', 'key', 'label']);
 
-        // For each field, resolve the slug to an option ID.
-        $selectedOptionIds = [];
+        $changes = [];
         foreach ($rerouteFields as $field) {
-            $slug = $httpRequest->query($field->key);
-            if (! is_string($slug) || $slug === '') {
+            $groupOptions = $group->fieldOptions->where('field_id', $field->id);
+
+            // Unrestricted — no change needed.
+            if ($groupOptions->isEmpty()) {
                 continue;
             }
-            $optionId = FieldOption::where('field_id', $field->id)->where('slug', $slug)->value('id');
-            if ($optionId) {
-                $selectedOptionIds[$field->id] = $optionId;
+
+            $currentSlug = $patronRequest->fieldValue($field->key);
+            $currentLabel = $currentSlug
+                ? (FieldOption::where('field_id', $field->id)->where('slug', $currentSlug)->value('name') ?? $currentSlug)
+                : '(none)';
+
+            // Already matches — no change needed.
+            if ($currentSlug && $groupOptions->pluck('slug')->contains($currentSlug)) {
+                continue;
             }
+
+            $options = $groupOptions->map(fn ($opt) => [
+                'slug' => $opt->slug,
+                'name' => $opt->name,
+            ])->values();
+
+            $changes[] = [
+                'field_key'     => $field->key,
+                'field_label'   => $field->label,
+                'current_value' => $currentSlug ?? '',
+                'current_label' => $currentLabel,
+                'options'       => $options,
+                'auto_selected' => $options->count() === 1 ? $options->first()['slug'] : null,
+            ];
         }
 
-        // Find groups that cover ALL selected field values (same logic as applySfpFieldScoping).
-        // For each field: group must have matching option OR have no options for that field.
-        $groups = SelectorGroup::active()
-            ->with('fieldOptions')
-            ->get()
-            ->filter(function (SelectorGroup $group) use ($rerouteFields, $selectedOptionIds) {
-                foreach ($rerouteFields as $field) {
-                    $groupOptionIds = $group->fieldOptions
-                        ->where('field_id', $field->id)
-                        ->pluck('id')
-                        ->all();
-
-                    // If group has no options for this field, it's unrestricted — pass.
-                    if (empty($groupOptionIds)) {
-                        continue;
-                    }
-
-                    // If we have a selected option for this field, it must be in the group's options.
-                    $selected = $selectedOptionIds[$field->id] ?? null;
-                    if ($selected && ! in_array($selected, $groupOptionIds, true)) {
-                        return false;
-                    }
-                }
-                return true;
-            })
-            ->values();
-
         return response()->json([
-            'groups' => $groups->map(fn (SelectorGroup $g) => [
-                'id'   => $g->id,
-                'name' => $g->name,
-            ])->values(),
+            'group'      => ['id' => $group->id, 'name' => $group->name],
+            'changes'    => $changes,
+            'no_changes' => empty($changes),
         ]);
     }
 

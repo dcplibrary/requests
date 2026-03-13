@@ -428,38 +428,66 @@
 @if(($rerouteFields ?? collect())->isNotEmpty())
 <x-requests::action-modal name="reroute" title="Reroute Request" max-width="lg">
     <div x-data="rerouteForm('{{ route('request.staff.requests.reroute-preview', $patronRequest) }}')">
-        <p class="text-xs text-gray-400 mb-3">Change fields to send this request to a different group. It will be unassigned and auto-claimed by the next person who opens it.</p>
+        <p class="text-xs text-gray-400 mb-3">Select a group to reroute this request to. The request will be unassigned and auto-claimed by the next person in that group.</p>
         <form method="POST" action="{{ route('request.staff.requests.reroute', $patronRequest) }}" id="reroute-form" class="space-y-3">
             @csrf
-            @foreach($rerouteFields as $rf)
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">{{ $rf->label }}</label>
-                    <select name="fields[{{ $rf->key }}]" x-model="fields.{{ $rf->key }}" @change="fetchPreview()"
-                            class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
-                        @foreach($rf->options as $opt)
-                            <option value="{{ $opt->slug }}" @selected($patronRequest->fieldValue($rf->key) === $opt->slug)>
-                                {{ $opt->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-            @endforeach
+            <input type="hidden" name="group_id" :value="selectedGroupId">
 
-            <div class="text-xs rounded px-3 py-2" :class="previewGroups.length ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'">
-                <template x-if="previewLoading"><span class="text-gray-400">Checking…</span></template>
-                <template x-if="!previewLoading && previewGroups.length">
-                    <span>
-                        <svg class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/></svg>
-                        Will be visible to: <span class="font-medium" x-text="previewGroups.map(g => g.name).join(', ')"></span>
-                    </span>
-                </template>
-                <template x-if="!previewLoading && !previewGroups.length">
-                    <span>
-                        <svg class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
-                        No groups match this combination
-                    </span>
-                </template>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Target Group</label>
+                <select x-model="selectedGroupId" @change="fetchPreview()"
+                        class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
+                    <option value="">Select a group…</option>
+                    @foreach($selectorGroups as $sg)
+                        <option value="{{ $sg->id }}">{{ $sg->name }}</option>
+                    @endforeach
+                </select>
             </div>
+
+            {{-- Field changes preview (populated by AJAX) --}}
+            <template x-if="loading">
+                <p class="text-xs text-gray-400">Checking field changes…</p>
+            </template>
+            <template x-if="!loading && noChanges && selectedGroupId">
+                <div class="text-xs rounded px-3 py-2 bg-green-50 text-green-700 border border-green-200">
+                    <svg class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                    No field changes needed — this request already matches the group.
+                </div>
+            </template>
+            <template x-if="!loading && changes.length">
+                <div class="space-y-2">
+                    <template x-for="change in changes" :key="change.field_key">
+                        <div class="rounded border border-amber-200 bg-amber-50 px-3 py-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-700" x-text="change.field_label"></span>
+                                <span class="text-xs text-gray-400">
+                                    <span x-text="change.current_label"></span> →
+                                    <template x-if="change.auto_selected">
+                                        <span class="font-medium text-amber-700" x-text="change.options[0].name"></span>
+                                    </template>
+                                    <template x-if="!change.auto_selected">
+                                        <span class="text-amber-600">choose below</span>
+                                    </template>
+                                </span>
+                            </div>
+                            {{-- Multi-option: user must pick --}}
+                            <template x-if="!change.auto_selected">
+                                <select :name="'fields[' + change.field_key + ']'"
+                                        class="mt-1 w-full text-sm border border-gray-300 rounded px-2 py-1.5">
+                                    <option value="">Select…</option>
+                                    <template x-for="opt in change.options" :key="opt.slug">
+                                        <option :value="opt.slug" x-text="opt.name"></option>
+                                    </template>
+                                </select>
+                            </template>
+                            {{-- Single option: auto-selected, include as hidden field --}}
+                            <template x-if="change.auto_selected">
+                                <input type="hidden" :name="'fields[' + change.field_key + ']'" :value="change.auto_selected">
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
 
             <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
@@ -469,8 +497,9 @@
     </div>
     <x-slot:footer>
         <button type="button" @click="$dispatch('close-modal', 'reroute')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100">Cancel</button>
-        <button type="submit" form="reroute-form" class="px-4 py-2 text-sm text-white bg-amber-600 rounded hover:bg-amber-700"
-                onclick="return confirm('Reroute this request? It will be unassigned and sent to the matching group.')">
+        <button type="submit" form="reroute-form" class="px-4 py-2 text-sm text-white bg-amber-600 rounded hover:bg-amber-700 disabled:opacity-50"
+                :disabled="!selectedGroupId"
+                onclick="return confirm('Reroute this request? It will be unassigned and sent to the selected group.')">
             Reroute &amp; Unassign
         </button>
     </x-slot:footer>
@@ -607,35 +636,37 @@ function statusUpdateForm(previewUrl) {
 <script>
 function rerouteForm(previewUrl) {
     return {
-        fields: {
-            @foreach($rerouteFields as $rf)
-                {{ $rf->key }}: '{{ $patronRequest->fieldValue($rf->key) ?? '' }}',
-            @endforeach
-        },
-        previewGroups: [],
-        previewLoading: false,
+        selectedGroupId: '',
+        changes: [],
+        noChanges: false,
+        loading: false,
         _debounce: null,
-
-        init() { this.fetchPreview(); },
 
         fetchPreview() {
             clearTimeout(this._debounce);
-            this._debounce = setTimeout(() => this._doFetch(), 200);
+            this._debounce = setTimeout(() => this._doFetch(), 150);
         },
 
         async _doFetch() {
-            this.previewLoading = true;
+            if (!this.selectedGroupId) {
+                this.changes = [];
+                this.noChanges = false;
+                return;
+            }
+            this.loading = true;
             try {
-                const params = new URLSearchParams();
-                for (const [k, v] of Object.entries(this.fields)) { if (v) params.set(k, v); }
-                const res = await fetch(previewUrl + '?' + params.toString(), {
+                const res = await fetch(previewUrl + '?group_id=' + encodeURIComponent(this.selectedGroupId), {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 });
-                if (res.ok) { const data = await res.json(); this.previewGroups = data.groups || []; }
+                if (res.ok) {
+                    const data = await res.json();
+                    this.changes   = data.changes   || [];
+                    this.noChanges = data.no_changes || false;
+                }
             } catch (e) {
                 console.error('Reroute preview failed:', e);
             } finally {
-                this.previewLoading = false;
+                this.loading = false;
             }
         }
     };
