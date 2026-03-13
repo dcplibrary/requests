@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [3.11.3](https://github.com/dcplibrary/requests/compare/v3.11.2...v3.11.3) (2026-03-13)
+
+
+### Bug Fixes
+
+* set up reroute button ([aab026d](https://github.com/dcplibrary/requests/commit/aab026d910b452e5e8ae6473843ad4ebb3e2e818))
+
 ## [3.11.2](https://github.com/dcplibrary/requests/compare/v3.11.1...v3.11.2) (2026-03-13)
 
 
