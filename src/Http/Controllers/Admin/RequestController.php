@@ -218,20 +218,13 @@ class RequestController extends Controller
         $showConvertToIll = $patronRequest->request_kind === 'sfp'
             && $patronRequest->ill_requested;
 
-        // Reroute: filterable select/radio fields that have group-assigned options.
+        // Reroute: all filterable select/radio fields.
         $rerouteFields = collect();
         if ($assignmentEnabled) {
             $rerouteFields = Field::query()
                 ->where('filterable', true)
                 ->whereIn('type', ['select', 'radio'])
                 ->where('active', true)
-                ->whereHas('options', function ($q) {
-                    $q->whereExists(function ($sub) {
-                        $sub->selectRaw('1')
-                            ->from('selector_group_field_option')
-                            ->whereColumn('selector_group_field_option.field_option_id', 'field_options.id');
-                    });
-                })
                 ->with(['options' => fn ($q) => $q->active()->ordered()])
                 ->ordered()
                 ->get();
@@ -367,18 +360,11 @@ class RequestController extends Controller
             abort(403);
         }
 
-        // Discover which fields are reroutable (filterable + have group-assigned options).
+        // Discover which fields are reroutable (filterable select/radio).
         $rerouteFields = Field::query()
             ->where('filterable', true)
             ->whereIn('type', ['select', 'radio'])
             ->where('active', true)
-            ->whereHas('options', function ($q) {
-                $q->whereExists(function ($sub) {
-                    $sub->selectRaw('1')
-                        ->from('selector_group_field_option')
-                        ->whereColumn('selector_group_field_option.field_option_id', 'field_options.id');
-                });
-            })
             ->get(['id', 'key', 'label']);
 
         if ($rerouteFields->isEmpty()) {
@@ -486,13 +472,6 @@ class RequestController extends Controller
             ->where('filterable', true)
             ->whereIn('type', ['select', 'radio'])
             ->where('active', true)
-            ->whereHas('options', function ($q) {
-                $q->whereExists(function ($sub) {
-                    $sub->selectRaw('1')
-                        ->from('selector_group_field_option')
-                        ->whereColumn('selector_group_field_option.field_option_id', 'field_options.id');
-                });
-            })
             ->get(['id', 'key']);
 
         // For each field, resolve the slug to an option ID.

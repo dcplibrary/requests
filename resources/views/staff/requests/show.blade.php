@@ -331,7 +331,7 @@
         @endif
 
         {{-- ── Reroute ── --}}
-        @if(($assignmentEnabled ?? false) && ($rerouteFields ?? collect())->isNotEmpty())
+        @if(($rerouteFields ?? collect())->isNotEmpty())
         <div class="px-5 py-4 border-t border-gray-200">
             <div class="flex items-center justify-between">
                 <div>
@@ -425,7 +425,7 @@
 @endif
 
 {{-- Reroute modal --}}
-@if(($assignmentEnabled ?? false) && ($rerouteFields ?? collect())->isNotEmpty())
+@if(($rerouteFields ?? collect())->isNotEmpty())
 <x-requests::action-modal name="reroute" title="Reroute Request" max-width="lg">
     <div x-data="rerouteForm('{{ route('request.staff.requests.reroute-preview', $patronRequest) }}')">
         <p class="text-xs text-gray-400 mb-3">Change fields to send this request to a different group. It will be unassigned and auto-claimed by the next person who opens it.</p>
@@ -603,7 +603,7 @@ function statusUpdateForm(previewUrl) {
 }
 </script>
 
-@if(($assignmentEnabled ?? false) && ($rerouteFields ?? collect())->isNotEmpty())
+@if(($rerouteFields ?? collect())->isNotEmpty())
 <script>
 function rerouteForm(previewUrl) {
     return {
