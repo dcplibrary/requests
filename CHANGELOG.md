@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [3.12.0](https://github.com/dcplibrary/requests/compare/v3.11.6...v3.12.0) (2026-03-13)
+
+
+### Features
+
+* add change selection group and align buttons ([6709ae6](https://github.com/dcplibrary/requests/commit/6709ae6beb2f2869462528de03bb8577a76e371d))
+
 ## [3.11.6](https://github.com/dcplibrary/requests/compare/v3.11.5...v3.11.6) (2026-03-13)
 
 
