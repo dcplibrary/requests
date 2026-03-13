@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [3.11.4](https://github.com/dcplibrary/requests/compare/v3.11.3...v3.11.4) (2026-03-13)
+
+
+### Bug Fixes
+
+* change rerouting to group ([bc2f962](https://github.com/dcplibrary/requests/commit/bc2f962f980b3d136f9d45f523b0d41fdf37d42f))
+
 ## [3.11.3](https://github.com/dcplibrary/requests/compare/v3.11.2...v3.11.3) (2026-03-13)
 
 
