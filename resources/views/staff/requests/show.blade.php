@@ -347,7 +347,7 @@
                 </div>
                 <button type="button"
                         @click="$dispatch('open-modal', 'reroute')"
-                        class="px-3 py-1.5 bg-amber-600 text-white text-xs rounded hover:bg-amber-700">
+                        class="flex-shrink-0 px-3 py-1.5 bg-amber-600 text-white text-xs rounded hover:bg-amber-700">
                     Reroute
                 </button>
             </div>
