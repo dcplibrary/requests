@@ -250,7 +250,7 @@
     </div>
 
     {{-- Actions panel --}}
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden" x-data>
         <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 class="text-sm font-semibold text-gray-700">Actions</h2>
         </div>
