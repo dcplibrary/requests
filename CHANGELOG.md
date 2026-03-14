@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.2.0](https://github.com/dcplibrary/requests/compare/v4.1.0...v4.2.0) (2026-03-14)
+
+
+### Features
+
+* add bulk editing ([e4dd339](https://github.com/dcplibrary/requests/commit/e4dd339f82b59aa9c85b5fe798a85cafb24c70dd))
+
 # [4.1.0](https://github.com/dcplibrary/requests/compare/v4.0.3...v4.1.0) (2026-03-14)
 
 
