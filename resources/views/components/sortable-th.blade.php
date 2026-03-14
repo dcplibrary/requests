@@ -10,12 +10,14 @@
         <x-requests::sortable-th column="created_at" label="Submitted" />
 
     Props:
-        column — string — The database column name used for sorting.
-        label  — string — The visible header text.
+        column     — string — The database column name used for sorting.
+        label      — string — The visible header text.
+        arrowSide  — string — 'left' or 'right' (default: 'right').
 --}}
 @props([
     'column',
     'label',
+    'arrowSide' => 'right',
 ])
 
 @php
@@ -29,8 +31,17 @@
 <th {{ $attributes->merge(['class' => 'px-4 py-3 text-left']) }}>
     <a href="{{ $url }}"
        class="inline-flex items-center gap-1 hover:text-gray-900 {{ $isActive ? 'text-gray-900 font-semibold' : 'text-gray-600 font-medium' }}">
+        @if($isActive && $arrowSide === 'left')
+            <svg class="h-3 w-3 flex-shrink-0 text-gray-400" viewBox="0 0 10 6" fill="currentColor" aria-hidden="true">
+                @if($currentDir === 'asc')
+                    <path d="M5 0L10 6H0z" />
+                @else
+                    <path d="M5 6L0 0h10z" />
+                @endif
+            </svg>
+        @endif
         {{ $label }}
-        @if($isActive)
+        @if($isActive && $arrowSide === 'right')
             <svg class="h-3 w-3 flex-shrink-0 text-gray-400" viewBox="0 0 10 6" fill="currentColor" aria-hidden="true">
                 @if($currentDir === 'asc')
                     <path d="M5 0L10 6H0z" />

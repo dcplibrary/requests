@@ -144,6 +144,20 @@ class RequestController extends Controller
         $staffUser = $this->currentStaffUser($request);
         $hasIllAccess = $staffUser && $staffUser->hasIllAccess();
 
+        // Compute selector group name per request (in-memory, no extra queries).
+        $scopingFields = Field::query()
+            ->where('filterable', true)
+            ->whereIn('type', ['select', 'radio'])
+            ->where('active', true)
+            ->get(['id', 'key']);
+        $selectorGroups = SelectorGroup::active()->with('fieldOptions')->orderBy('name')->get();
+
+        /** @var array<int, string|null> */
+        $groupNameByRequestId = [];
+        foreach ($requests as $req) {
+            $groupNameByRequestId[$req->id] = $this->resolveGroupName($req, $selectorGroups, $scopingFields);
+        }
+
         return view('requests::staff.requests.index', [
             'requests'       => $requests,
             'statuses'       => RequestStatus::active()->get(),
@@ -155,7 +169,40 @@ class RequestController extends Controller
             'customFilterOptions' => $customFilterOptions,
             'assignmentEnabled'   => $assignmentEnabled,
             'hasIllAccess'        => $hasIllAccess,
+            'groupNameByRequestId' => $groupNameByRequestId,
         ]);
+    }
+
+    /**
+     * Resolve the selector group name for a request by matching its field
+     * values against the group's field options. Returns the first match.
+     *
+     * @param  PatronRequest                                      $req
+     * @param  \Illuminate\Database\Eloquent\Collection           $groups
+     * @param  \Illuminate\Support\Collection                     $scopingFields
+     * @return string|null
+     */
+    private function resolveGroupName(PatronRequest $req, $groups, $scopingFields): ?string
+    {
+        foreach ($groups as $group) {
+            $matches = true;
+            foreach ($scopingFields as $field) {
+                $groupOpts = $group->fieldOptions->where('field_id', $field->id);
+                if ($groupOpts->isEmpty()) {
+                    continue; // unrestricted for this field
+                }
+                $slug = $req->fieldValue($field->key);
+                if (! $slug || ! $groupOpts->pluck('slug')->contains($slug)) {
+                    $matches = false;
+                    break;
+                }
+            }
+            if ($matches) {
+                return $group->name;
+            }
+        }
+
+        return null;
     }
 
     public function show(PatronRequest $patronRequest)

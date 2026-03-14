@@ -150,15 +150,19 @@
                 <x-requests::sortable-th column="id" label="#" />
                 <x-requests::sortable-th column="request_kind" label="Kind" />
                 @endunless
-                @if($assignmentEnabled ?? false)
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">Assignee</th>
-                @endif
-                <x-requests::sortable-th column="submitted_title" label="Title / Author" />
+                <x-requests::sortable-th column="submitted_title" label="Title / Author" arrow-side="left" />
+                @if($currentKind)
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Selection Type</th>
+                @else
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Type</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Audience</th>
+                @endif
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Patron</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Status</th>
                 <x-requests::sortable-th column="created_at" label="Submitted" />
+                @if($assignmentEnabled ?? false)
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Assignee</th>
+                @endif
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -170,6 +174,50 @@
                     <x-requests::kind-badge :kind="$req->request_kind" />
                 </td>
                 @endunless
+                <td class="px-4 py-3">
+                    <div class="font-medium text-gray-900 truncate max-w-xs">
+                        {{ $req->material?->title ?? $req->submitted_title ?? '—' }}
+                    </div>
+                    @if($req->material?->author ?? $req->submitted_author)
+                        <div class="text-gray-500 text-xs">{{ $req->material?->author ?? $req->submitted_author }}</div>
+                    @endif
+                    @if($req->is_duplicate)
+                        <x-requests::badge variant="yellow">Duplicate</x-requests::badge>
+                    @endif
+                </td>
+                @if($currentKind)
+                <td class="px-4 py-3">
+                    <div class="text-gray-900">{{ $req->fieldValueLabel('material_type') ?? '—' }}</div>
+                    @if($groupNameByRequestId[$req->id] ?? null)
+                        <div class="text-xs text-gray-500">{{ $groupNameByRequestId[$req->id] }}</div>
+                    @endif
+                </td>
+                @else
+                <td class="px-4 py-3 text-gray-600">{{ $req->fieldValueLabel('material_type') ?? '—' }}</td>
+                <td class="px-4 py-3 text-gray-600">{{ $req->fieldValueLabel('audience') ?? '—' }}</td>
+                @endif
+                <td class="px-4 py-3">
+                    @if($req->patron)
+                        <div class="text-gray-900">{{ $req->patron->name_last }}, {{ $req->patron->name_first }}</div>
+                        <div class="text-xs text-gray-400">{{ $req->patron->barcode }}</div>
+                    @else
+                        <span class="text-gray-400">—</span>
+                    @endif
+                </td>
+                <td class="px-4 py-3">
+                    @if($req->status && $req->status->icon)
+                        <span title="{{ $req->status->name }}">
+                            <x-requests::status-icon :name="$req->status->icon" class="h-5 w-5" style="color: {{ $req->status->color }};" />
+                        </span>
+                    @elseif($req->status)
+                        <span class="inline-block h-3 w-3 rounded-full" style="background-color: {{ $req->status->color }};" title="{{ $req->status->name }}"></span>
+                    @else
+                        <span class="text-gray-400">—</span>
+                    @endif
+                </td>
+                <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                    {{ $req->created_at->format('M j, Y') }}
+                </td>
                 @if($assignmentEnabled ?? false)
                 <td class="px-4 py-3">
                     @if($req->assignedTo)
@@ -188,37 +236,10 @@
                     @endif
                 </td>
                 @endif
-                <td class="px-4 py-3">
-                    <div class="font-medium text-gray-900 truncate max-w-xs">
-                        {{ $req->material?->title ?? $req->submitted_title ?? '—' }}
-                    </div>
-                    @if($req->material?->author ?? $req->submitted_author)
-                        <div class="text-gray-500 text-xs">{{ $req->material?->author ?? $req->submitted_author }}</div>
-                    @endif
-                    @if($req->is_duplicate)
-                        <x-requests::badge variant="yellow">Duplicate</x-requests::badge>
-                    @endif
-                </td>
-                <td class="px-4 py-3 text-gray-600">{{ $req->fieldValueLabel('material_type') ?? '—' }}</td>
-                <td class="px-4 py-3 text-gray-600">{{ $req->fieldValueLabel('audience') ?? '—' }}</td>
-                <td class="px-4 py-3">
-                    @if($req->patron)
-                        <div class="text-gray-900">{{ $req->patron->name_last }}, {{ $req->patron->name_first }}</div>
-                        <div class="text-xs text-gray-400">{{ $req->patron->barcode }}</div>
-                    @else
-                        <span class="text-gray-400">—</span>
-                    @endif
-                </td>
-                <td class="px-4 py-3">
-                    <x-requests::status-color-badge :status="$req->status" />
-                </td>
-                <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                    {{ $req->created_at->format('M j, Y') }}
-                </td>
             </tr>
             @empty
             <tr>
-                <td colspan="{{ (($assignmentEnabled ?? false) ? 9 : 8) - ($currentKind ? 2 : 0) }}"
+                <td colspan="{{ (($assignmentEnabled ?? false) ? 9 : 8) - ($currentKind ? 3 : 0) }}"
             </tr>
             @endforelse
         </tbody>
