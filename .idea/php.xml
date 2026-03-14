@@ -255,7 +255,7 @@
       <path value="$PROJECT_DIR$/.claude/worktrees/crazy-mcclintock/vendor/phar-io/manifest" />
     </include_path>
   </component>
-  <component name="PhpProjectSharedConfiguration" php_language_level="8.3" />
+  <component name="PhpProjectSharedConfiguration" php_language_level="8.4" />
   <component name="PhpStanOptionsConfiguration">
     <option name="transferred" value="true" />
   </component>

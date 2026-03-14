@@ -4,8 +4,8 @@
     <option name="directories">
       <list>
         <option value="$PROJECT_DIR$/tests" />
-        <option value="$PROJECT_DIR$/.claude/worktrees/crazy-mcclintock/tests" />
         <option value="$PROJECT_DIR$/.claude/worktrees/intelligent-jones/tests" />
+        <option value="$PROJECT_DIR$/.claude/worktrees/crazy-mcclintock/tests" />
       </list>
     </option>
   </component>
