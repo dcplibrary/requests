@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.0.3](https://github.com/dcplibrary/requests/compare/v4.0.2...v4.0.3) (2026-03-14)
+
+
+### Bug Fixes
+
+* reorganize list view ([cf693b5](https://github.com/dcplibrary/requests/commit/cf693b5f52106087f09fff2718ff4d91dff56534))
+
 ## [4.0.2](https://github.com/dcplibrary/requests/compare/v4.0.1...v4.0.2) (2026-03-14)
 
 
