@@ -146,8 +146,10 @@
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
+                @unless($currentKind)
                 <x-requests::sortable-th column="id" label="#" />
                 <x-requests::sortable-th column="request_kind" label="Kind" />
+                @endunless
                 @if($assignmentEnabled ?? false)
                     <th class="px-4 py-3 text-left font-medium text-gray-600">Assignee</th>
                 @endif
@@ -157,23 +159,32 @@
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Patron</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Status</th>
                 <x-requests::sortable-th column="created_at" label="Submitted" />
-                <th class="px-4 py-3"></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
             @forelse($requests as $req)
             <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{{ route('request.staff.requests.show', $req) }}'">
+                @unless($currentKind)
                 <td class="px-4 py-3 text-gray-400">{{ $req->id }}</td>
                 <td class="px-4 py-3">
                     <x-requests::kind-badge :kind="$req->request_kind" />
                 </td>
+                @endunless
                 @if($assignmentEnabled ?? false)
                 <td class="px-4 py-3">
                     @if($req->assignedTo)
-                        <div class="text-gray-900 text-sm">{{ $req->assignedTo->name ?: $req->assignedTo->email }}</div>
-                        <div class="text-xs text-gray-400">{{ $req->assignedTo->email }}</div>
+                        @php
+                            $initials = collect(explode(' ', $req->assignedTo->name ?: $req->assignedTo->email))
+                                ->map(fn ($w) => strtoupper(mb_substr($w, 0, 1)))
+                                ->take(2)
+                                ->implode('');
+                        @endphp
+                        <span title="{{ $req->assignedTo->name ?: $req->assignedTo->email }}"
+                              class="inline-flex items-center justify-center h-7 w-7 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold cursor-default">
+                            {{ $initials }}
+                        </span>
                     @else
-                        <span class="text-xs text-gray-400 italic">Unassigned</span>
+                        <span class="inline-flex items-center justify-center h-7 w-7 rounded-full bg-gray-100 text-gray-400 text-xs cursor-default" title="Unassigned">—</span>
                     @endif
                 </td>
                 @endif
@@ -204,13 +215,10 @@
                 <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                     {{ $req->created_at->format('M j, Y') }}
                 </td>
-                <td class="px-4 py-3 text-right">
-                    <x-requests::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
-                </td>
             </tr>
             @empty
             <tr>
-                <td colspan="{{ ($assignmentEnabled ?? false) ? 10 : 9 }}" class="px-4 py-10 text-center text-gray-400">No requests found.</td>
+                <td colspan="{{ (($assignmentEnabled ?? false) ? 9 : 8) - ($currentKind ? 2 : 0) }}"
             </tr>
             @endforelse
         </tbody>
