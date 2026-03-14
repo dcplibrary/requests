@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.3.1](https://github.com/dcplibrary/requests/compare/v4.3.0...v4.3.1) (2026-03-14)
+
+
+### Bug Fixes
+
+* create universal status button ([7bd07eb](https://github.com/dcplibrary/requests/commit/7bd07eb38c977f0205ac43db9e54045d523628c4))
+
 # [4.3.0](https://github.com/dcplibrary/requests/compare/v4.2.0...v4.3.0) (2026-03-14)
 
 
