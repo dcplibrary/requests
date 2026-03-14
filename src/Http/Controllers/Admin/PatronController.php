@@ -22,9 +22,17 @@ class PatronController extends Controller
 
         $suspectedDuplicateIds = $this->getSuspectedDuplicateIds();
 
-        $query = Patron::withCount('requests')
-            ->orderBy('name_last')
-            ->orderBy('name_first');
+        $query = Patron::withCount('requests');
+
+        // Sorting
+        $sortable = ['name_last', 'barcode', 'requests_count'];
+        $sort = $request->query('sort');
+        $direction = strtolower($request->query('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+        if ($sort && in_array($sort, $sortable, true)) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->orderBy('name_last')->orderBy('name_first');
+        }
 
         if ($search) {
             $term = '%' . $search . '%';

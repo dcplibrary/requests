@@ -15,12 +15,12 @@
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Name</th>
+                <x-requests::sortable-th column="name" label="Name" />
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Subject</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Statuses</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Material types</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Default</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Enabled</th>
+                <x-requests::sortable-th column="enabled" label="Enabled" />
                 <th class="px-4 py-3"></th>
             </tr>
         </thead>

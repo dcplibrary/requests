@@ -27,7 +27,7 @@ class FormFields extends Component
 
     public function mount(): void
     {
-        $tab = request()->get('tab');
+        $tab = request()->query('tab');
         if (in_array($tab, ['sfp', 'ill'], true)) {
             $this->activeFormTab = $tab;
         }

@@ -17,12 +17,24 @@ class PatronStatusTemplateController extends Controller
     /**
      * List all patron status templates.
      *
+     * @param  Request  $request
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
+        $sortable  = ['name', 'enabled'];
+        $sort      = $request->query('sort');
+        $direction = strtolower($request->query('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        $query = PatronStatusTemplate::with(['requestStatuses', 'fieldOptions.field']);
+        if ($sort && in_array($sort, $sortable, true)) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->ordered();
+        }
+
         return view('requests::staff.patron-status-templates.index', [
-            'templates' => PatronStatusTemplate::with(['requestStatuses', 'fieldOptions.field'])->ordered()->get(),
+            'templates' => $query->get(),
         ]);
     }
 

@@ -76,7 +76,6 @@ class IsbnDbService
                 'Content-Type'  => 'application/json',
             ])
             ->get("{$this->baseUrl}/books/" . urlencode($searchTitle), [
-                'language' => 'en',
                 'pageSize' => 20,
             ]);
 
@@ -108,7 +107,6 @@ class IsbnDbService
                 'Content-Type'  => 'application/json',
             ])
             ->get("{$this->baseUrl}/books/" . urlencode($lastName), [
-                'language' => 'en',
                 'pageSize' => 20,
             ]);
 

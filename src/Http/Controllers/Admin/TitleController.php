@@ -23,9 +23,17 @@ class TitleController extends Controller
 
         $query = Material::visibleTo($staffUser)
             ->withCount('requests')
-            ->with(['materialTypeOption', 'requests.status'])
-            ->orderByDesc('requests_count')
-            ->orderBy('title');
+            ->with(['materialTypeOption', 'requests.status']);
+
+        // Sorting
+        $sortable = ['title', 'author', 'requests_count'];
+        $sort = $request->query('sort');
+        $direction = strtolower($request->query('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+        if ($sort && in_array($sort, $sortable, true)) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->orderByDesc('requests_count')->orderBy('title');
+        }
 
         if ($search) {
             $term = '%' . $search . '%';

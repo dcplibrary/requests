@@ -89,18 +89,11 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.251 1.09-1.251 1.902v.75m0 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
             </svg>
         </a>
-        @php
-            $nameParts = explode(' ', trim($authUser->name ?? ''));
-            $initials = strtoupper(substr($nameParts[0] ?? '', 0, 1));
-            if (count($nameParts) > 1) {
-                $initials .= strtoupper(substr(end($nameParts), 0, 1));
-            }
-        @endphp
         <div class="relative" x-data="{ open: false }" @click.away="open = false">
 
             <button @click="open = !open"
-                    class="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-sm hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
-                {{ $initials ?: 'U' }}
+                    class="hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-full">
+                <x-requests::avatar :name="$authUser->name ?? ''" size="md" />
             </button>
 
             <div x-show="open"

@@ -35,12 +35,12 @@
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Title</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Author</th>
+                <x-requests::sortable-th column="title" label="Title" />
+                <x-requests::sortable-th column="author" label="Author" />
                 <th class="px-4 py-3 text-left font-medium text-gray-600">ISBN</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Type</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Kind</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Requests</th>
+                <x-requests::sortable-th column="requests_count" label="Requests" />
                 <th class="px-4 py-3"></th>
             </tr>
         </thead>

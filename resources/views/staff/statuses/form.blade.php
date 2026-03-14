@@ -34,6 +34,10 @@
                 </script>
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Icon</label>
+                <x-requests::icon-select name="icon" :value="$status->icon" />
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order <span class="text-red-500">*</span></label>
                 <input type="number" name="sort_order" value="{{ old('sort_order', $status->sort_order ?? 0) }}" required min="0"
                        class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">

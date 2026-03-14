@@ -11,10 +11,27 @@ use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
-    public function index()
+    /**
+     * List all staff users.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\View\View
+     */
+    public function index(Request $request)
     {
+        $sortable  = ['name', 'email', 'role', 'active'];
+        $sort      = $request->query('sort');
+        $direction = strtolower($request->query('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        $query = User::query();
+        if ($sort && in_array($sort, $sortable, true)) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->orderBy('name');
+        }
+
         return view('requests::staff.users.index', [
-            'users' => User::orderBy('name')->get(),
+            'users' => $query->get(),
         ]);
     }
 

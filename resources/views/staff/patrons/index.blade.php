@@ -38,15 +38,15 @@
 @endif
 
 {{-- Table --}}
-<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+<x-requests::card padding="p-0" class="overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Name</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Barcode</th>
+                <x-requests::sortable-th column="name_last" label="Name" />
+                <x-requests::sortable-th column="barcode" label="Barcode" />
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Email / Phone</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Polaris</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Requests</th>
+                <x-requests::sortable-th column="requests_count" label="Requests" />
                 <th class="px-4 py-3"></th>
             </tr>
         </thead>
@@ -71,11 +71,11 @@
                 </td>
                 <td class="px-4 py-3">
                     @if($neverLooked)
-                        <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-500">Pending</span>
+                        <x-requests::badge variant="gray">Pending</x-requests::badge>
                     @elseif($patron->found_in_polaris)
-                        <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700">Found</span>
+                        <x-requests::badge variant="green">Found</x-requests::badge>
                     @else
-                        <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-700">Not found</span>
+                        <x-requests::badge variant="red">Not found</x-requests::badge>
                     @endif
                 </td>
                 <td class="px-4 py-3 text-gray-600">{{ $patron->requests_count }}</td>
@@ -92,7 +92,7 @@
             @endforelse
         </tbody>
     </table>
-</div>
+</x-requests::card>
 
 <div class="mt-4">
     {{ $patrons->links() }}

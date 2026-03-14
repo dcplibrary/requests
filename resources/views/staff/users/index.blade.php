@@ -10,11 +10,11 @@
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Name</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Email</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Role</th>
+                <x-requests::sortable-th column="name" label="Name" />
+                <x-requests::sortable-th column="email" label="Email" />
+                <x-requests::sortable-th column="role" label="Role" />
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Groups</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Active</th>
+                <x-requests::sortable-th column="active" label="Active" />
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Last Login</th>
                 <th class="px-4 py-3"></th>
             </tr>

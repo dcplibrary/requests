@@ -11,10 +11,27 @@ use Illuminate\Support\Str;
 
 class RequestStatusController extends Controller
 {
-    public function index()
+    /**
+     * List all request statuses.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\View\View
+     */
+    public function index(Request $request)
     {
+        $sortable  = ['name', 'sort_order', 'active'];
+        $sort      = $request->query('sort');
+        $direction = strtolower($request->query('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        $query = RequestStatus::query();
+        if ($sort && in_array($sort, $sortable, true)) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->orderBy('sort_order');
+        }
+
         return view('requests::staff.statuses.index', [
-            'statuses' => RequestStatus::orderBy('sort_order')->get(),
+            'statuses' => $query->get(),
         ]);
     }
 
@@ -28,6 +45,7 @@ class RequestStatusController extends Controller
         $data = $request->validate([
             'name'         => 'required|string|max:100',
             'color'        => 'required|string|max:20',
+            'icon'         => 'nullable|string|max:50',
             'sort_order'   => 'required|integer|min:0',
             'active'       => 'boolean',
             'is_terminal'  => 'boolean',
@@ -50,6 +68,7 @@ class RequestStatusController extends Controller
         $data = $request->validate([
             'name'         => 'required|string|max:100',
             'color'        => 'required|string|max:20',
+            'icon'         => 'nullable|string|max:50',
             'sort_order'   => 'required|integer|min:0',
             'active'       => 'boolean',
             'is_terminal'  => 'boolean',

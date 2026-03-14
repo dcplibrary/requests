@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $name
  * @property string $slug
  * @property string $color        Hex color code for status badge (e.g. '#72bf44')
+ * @property string|null $icon     Heroicon outline name (e.g. 'clock', 'check-circle')
  * @property int    $sort_order
  * @property bool   $active
  * @property bool   $is_terminal  True for resolved statuses (Purchased, Denied, etc.)
@@ -25,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class RequestStatus extends Model
 {
-    protected $fillable = ['name', 'slug', 'color', 'sort_order', 'active', 'is_terminal', 'notify_patron', 'description'];
+    protected $fillable = ['name', 'slug', 'color', 'icon', 'sort_order', 'active', 'is_terminal', 'notify_patron', 'description'];
 
     protected $casts = [
         'active' => 'boolean',

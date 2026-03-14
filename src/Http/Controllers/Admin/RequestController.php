@@ -12,6 +12,7 @@ use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Models\User as StaffUser;
 use Dcplibrary\Requests\Services\BibliocommonsService;
+use Dcplibrary\Requests\Services\CoverService;
 use Dcplibrary\Requests\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,11 +24,20 @@ class RequestController extends Controller
         $user = $request->user();
 
         $query = PatronRequest::with(['patron', 'material', 'status', 'assignedTo', 'fieldValues.field'])
-            ->visibleTo($user)
-            ->latest();
+            ->visibleTo($user);
+
+        // Sorting
+        $sortable = ['id', 'request_kind', 'submitted_title', 'created_at'];
+        $sort = $request->query('sort');
+        $direction = strtolower($request->query('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+        if ($sort && in_array($sort, $sortable, true)) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->latest();
+        }
 
         // Filters
-        $kind = $request->get('kind');
+        $kind = $request->query('kind');
         if (in_array($kind, ['sfp', 'ill'], true)) {
             $query->where('request_kind', $kind);
         } else {
@@ -72,7 +82,7 @@ class RequestController extends Controller
 
         // Assignment filters (when enabled)
         $assignmentEnabled = (bool) Setting::get('assignment_enabled', false);
-        $assigned = $request->get('assigned');
+        $assigned = $request->query('assigned');
         if ($assignmentEnabled && is_string($assigned) && $assigned !== '') {
             $currentStaffUser = $this->currentStaffUser($request);
             if ($assigned === 'me' && $currentStaffUser) {
@@ -83,8 +93,8 @@ class RequestController extends Controller
         }
 
         // Filter by dynamic fields (select/radio with value slug)
-        $cfKey = $request->get('cf');
-        $cfValue = $request->get('cf_value');
+        $cfKey = $request->query('cf');
+        $cfValue = $request->query('cf_value');
         if (is_string($cfKey) && $cfKey !== '' && is_string($cfValue) && $cfValue !== '') {
             $field = Field::query()
                 ->where('key', $cfKey)
@@ -262,8 +272,17 @@ class RequestController extends Controller
             }
         }
 
+        // Build cover image URL: Syndetics → Open Library → null.
+        $material = $patronRequest->material;
+        $coverIsbn = $material?->isbn13 ?? $material?->isbn ?? null;
+        $openLibFallback = $coverIsbn
+            ? "https://covers.openlibrary.org/b/isbn/{$coverIsbn}-L.jpg"
+            : null;
+        $coverUrl = app(CoverService::class)->url($coverIsbn, $openLibFallback);
+
         return view('requests::staff.requests.show', [
             'patronRequest' => $patronRequest,
+            'coverUrl'   => $coverUrl,
             'statuses'   => RequestStatus::active()->get(),
             'fieldValueLabelByFieldId' => $fieldValueLabelByFieldId,
             'assignmentEnabled' => $assignmentEnabled,

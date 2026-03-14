@@ -3,12 +3,12 @@
 @section('title', $material->title)
 
 @section('content')
-<div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('request.staff.titles.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Titles</a>
-    <span class="text-gray-300">/</span>
-    <h1 class="text-xl font-bold text-gray-900 truncate max-w-2xl">{{ $material->title }}</h1>
-    <span class="text-sm text-gray-400 font-mono">#{{ $material->id }}</span>
-</div>
+<x-requests::page-header
+    :back-url="route('request.staff.titles.index')"
+    back-label="Titles"
+    :title="$material->title"
+    :id="$material->id"
+/>
 
 {{-- Duplicate warning --}}
 @if($duplicates->isNotEmpty())
@@ -52,27 +52,27 @@
     <div class="lg:col-span-2 space-y-6">
 
         {{-- Title details --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
+        <x-requests::card padding="p-5">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Title Details</h2>
+                <x-requests::section-heading class="mb-0">Title Details</x-requests::section-heading>
                 <div class="flex items-center gap-2">
                     @if($material->source === 'isbndb')
-                        <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700">ISBNdb</span>
+                        <x-requests::badge variant="blue">ISBNdb</x-requests::badge>
                     @elseif($material->source === 'polaris')
-                        <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700">Polaris</span>
+                        <x-requests::badge variant="green">Polaris</x-requests::badge>
                     @else
-                        <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-500">Submitted</span>
+                        <x-requests::badge variant="gray">Submitted</x-requests::badge>
                     @endif
                 </div>
             </div>
             <x-requests::material-details :material="$material" />
-        </div>
+        </x-requests::card>
 
         {{-- Requests --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
+        <x-requests::card padding="p-5">
+            <x-requests::section-heading class="mb-4">
                 Requests ({{ $material->requests->count() }})
-            </h2>
+            </x-requests::section-heading>
             @if($material->requests->isEmpty())
                 <p class="text-sm text-gray-400">No requests linked to this title.</p>
             @else
@@ -111,14 +111,7 @@
                         </td>
                         <td class="px-3 py-2 text-gray-500 text-xs">{{ $req->fieldValueLabel('audience') ?? '—' }}</td>
                         <td class="px-3 py-2">
-                            @if($req->status)
-                                <span class="inline-block px-1.5 py-0.5 rounded text-xs font-medium"
-                                      style="background-color:{{ $req->status->color }}22;color:{{ $req->status->color }}">
-                                    {{ $req->status->name }}
-                                </span>
-                            @else
-                                <span class="text-gray-400 text-xs">—</span>
-                            @endif
+                            <x-requests::status-color-badge :status="$req->status" />
                         </td>
                         <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">
                             {{ $req->created_at->format('M j, Y') }}
@@ -131,7 +124,7 @@
                 </tbody>
             </table>
             @endif
-        </div>
+        </x-requests::card>
 
     </div>
 
@@ -140,10 +133,10 @@
 
         {{-- Bulk status update --}}
         @if($material->requests->isNotEmpty())
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+        <x-requests::card padding="p-5">
+            <x-requests::section-heading>
                 Bulk Status Update
-            </h2>
+            </x-requests::section-heading>
             <p class="text-xs text-gray-500 mb-3">
                 Apply a status to all {{ $material->requests->count() }} request{{ $material->requests->count() !== 1 ? 's' : '' }} for this title at once.
             </p>
@@ -171,12 +164,12 @@
                     Apply to All Requests
                 </button>
             </form>
-        </div>
+        </x-requests::card>
         @endif
 
         {{-- Meta --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Meta</h2>
+        <x-requests::card padding="p-5">
+            <x-requests::section-heading>Meta</x-requests::section-heading>
             <dl class="space-y-2 text-sm">
                 <div>
                     <dt class="text-xs text-gray-500">Material ID</dt>
@@ -191,11 +184,11 @@
                     <dd class="text-gray-700">{{ $material->updated_at->format('M j, Y g:ia') }}</dd>
                 </div>
             </dl>
-        </div>
+        </x-requests::card>
 
         {{-- Manual merge --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Manual Merge</h2>
+        <x-requests::card padding="p-5">
+            <x-requests::section-heading class="mb-2">Manual Merge</x-requests::section-heading>
             <p class="text-xs text-gray-500 mb-3">
                 Move all requests from another title record into this one, then delete that record.
             </p>
@@ -215,7 +208,7 @@
                     Merge into this →
                 </button>
             </form>
-        </div>
+        </x-requests::card>
 
     </div>
 </div>

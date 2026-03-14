@@ -11,12 +11,12 @@
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Name</th>
+                <x-requests::sortable-th column="name" label="Name" />
                 @foreach($filterableFields as $ff)
                 <th class="px-4 py-3 text-left font-medium text-gray-600">{{ $ff->label }}</th>
                 @endforeach
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Members</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Active</th>
+                <x-requests::sortable-th column="active" label="Active" />
                 <th class="px-4 py-3"></th>
             </tr>
         </thead>

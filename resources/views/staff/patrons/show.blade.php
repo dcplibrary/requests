@@ -3,12 +3,12 @@
 @section('title', 'Patron: ' . $patron->full_name)
 
 @section('content')
-<div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('request.staff.patrons.index') }}" class="text-sm text-blue-600 hover:underline">&larr; Patrons</a>
-    <span class="text-gray-300">/</span>
-    <h1 class="text-xl font-bold text-gray-900">{{ $patron->full_name }}</h1>
-    <span class="text-sm text-gray-400 font-mono">#{{ $patron->id }}</span>
-</div>
+<x-requests::page-header
+    :back-url="route('request.staff.patrons.index')"
+    back-label="Patrons"
+    :title="$patron->full_name"
+    :id="$patron->id"
+/>
 
 {{-- Possible Duplicates Section --}}
 @if($suspects->isNotEmpty())
@@ -258,9 +258,9 @@
     <div class="lg:col-span-2 space-y-6">
 
         {{-- Submitted data --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
+        <x-requests::card padding="p-5">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Submitted Data</h2>
+                <x-requests::section-heading class="mb-0">Submitted Data</x-requests::section-heading>
                 <x-requests::icon-btn :href="route('request.staff.patrons.edit', $patron)" variant="edit" label="Edit" />
             </div>
             <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
@@ -281,12 +281,12 @@
                     <dd>{{ $patron->email ?: '—' }}</dd>
                 </div>
             </dl>
-        </div>
+        </x-requests::card>
 
         {{-- Polaris lookup & comparison --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
+        <x-requests::card padding="p-5">
             <div class="flex items-center justify-between mb-3">
-                <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Polaris Lookup</h2>
+                <x-requests::section-heading class="mb-0">Polaris Lookup</x-requests::section-heading>
                 <form method="POST" action="{{ route('request.staff.patrons.retrigger-polaris', $patron) }}">
                     @csrf
                     <button type="submit"
@@ -299,14 +299,14 @@
 
             <div class="mb-4">
                 @if(! $patron->polaris_lookup_attempted)
-                    <span class="inline-block px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-500">Lookup pending</span>
+                    <x-requests::badge variant="gray">Lookup pending</x-requests::badge>
                 @elseif($patron->found_in_polaris)
-                    <span class="inline-block px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">Found in Polaris</span>
+                    <x-requests::badge variant="green">Found in Polaris</x-requests::badge>
                     @if($patron->polaris_lookup_at)
                         <span class="text-xs text-gray-400 ml-2">{{ $patron->polaris_lookup_at->format('M j, Y g:ia') }}</span>
                     @endif
                 @else
-                    <span class="inline-block px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">Not found in Polaris</span>
+                    <x-requests::badge variant="red">Not found in Polaris</x-requests::badge>
                     @if($patron->polaris_lookup_at)
                         <span class="text-xs text-gray-400 ml-2">Last checked {{ $patron->polaris_lookup_at->format('M j, Y g:ia') }}</span>
                     @endif
@@ -351,13 +351,13 @@
             <p class="mt-2 text-xs text-gray-400">Polaris Patron ID: {{ $patron->polaris_patron_id }}</p>
             @endif
             @endif
-        </div>
+        </x-requests::card>
 
         {{-- Request history --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
+        <x-requests::card padding="p-5">
+            <x-requests::section-heading class="mb-4">
                 Requests ({{ $patron->requests->count() }})
-            </h2>
+            </x-requests::section-heading>
             @if($patron->requests->isEmpty())
                 <p class="text-sm text-gray-400">No requests.</p>
             @else
@@ -379,26 +379,16 @@
                         <td class="px-3 py-2 text-gray-400 text-xs">{{ $req->id }}</td>
                         <td class="px-3 py-2 text-gray-900 max-w-xs truncate">
                             {{ $req->submitted_title }}
-                            @if($req->is_duplicate)
-                                <span class="ml-1 text-xs bg-yellow-100 text-yellow-700 px-1 py-0.5 rounded">Dup</span>
+                    @if($req->is_duplicate)
+                                <x-requests::badge variant="yellow" class="ml-1">Dup</x-requests::badge>
                             @endif
                         </td>
                         <td class="px-3 py-2">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                                {{ $req->request_kind === 'ill' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700' }}">
-                                {{ strtoupper($req->request_kind ?? 'sfp') }}
-                            </span>
+                            <x-requests::kind-badge :kind="$req->request_kind" />
                         </td>
                         <td class="px-3 py-2 text-gray-500 text-xs">{{ $req->fieldValueLabel('material_type') ?? '—' }}</td>
                         <td class="px-3 py-2">
-                            @if($req->status)
-                                <span class="inline-block px-1.5 py-0.5 rounded text-xs font-medium"
-                                      style="background-color:{{ $req->status->color }}22;color:{{ $req->status->color }}">
-                                    {{ $req->status->name }}
-                                </span>
-                            @else
-                                <span class="text-gray-400 text-xs">—</span>
-                            @endif
+                            <x-requests::status-color-badge :status="$req->status" />
                         </td>
                         <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">{{ $req->created_at->format('M j, Y') }}</td>
                         <td class="px-3 py-2 text-right">
@@ -409,7 +399,7 @@
                 </tbody>
             </table>
             @endif
-        </div>
+        </x-requests::card>
 
     </div>
 
@@ -417,8 +407,8 @@
     <div class="space-y-6">
 
         {{-- Meta --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Meta</h2>
+        <x-requests::card padding="p-5">
+            <x-requests::section-heading>Meta</x-requests::section-heading>
             <dl class="space-y-2 text-sm">
                 <div>
                     <dt class="text-xs text-gray-500">First seen</dt>
@@ -435,11 +425,11 @@
                 </div>
                 @endif
             </dl>
-        </div>
+        </x-requests::card>
 
         {{-- Manual merge fallback --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Manual Merge</h2>
+        <x-requests::card padding="p-5">
+            <x-requests::section-heading class="mb-2">Manual Merge</x-requests::section-heading>
             <p class="text-xs text-gray-500 mb-3">
                 Enter another patron's ID to review a merge. This record will be treated as the one to delete.
             </p>
@@ -455,7 +445,7 @@
                     Review Merge →
                 </button>
             </form>
-        </div>
+        </x-requests::card>
 
     </div>
 </div>

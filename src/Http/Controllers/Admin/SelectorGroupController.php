@@ -17,12 +17,24 @@ class SelectorGroupController extends Controller
     /**
      * List all selector groups.
      *
+     * @param  Request  $request
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
+        $sortable  = ['name', 'active'];
+        $sort      = $request->query('sort');
+        $direction = strtolower($request->query('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        $query = SelectorGroup::with(['fieldOptions.field', 'users']);
+        if ($sort && in_array($sort, $sortable, true)) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->orderBy('name');
+        }
+
         return view('requests::staff.groups.index', array_merge(
-            ['groups' => SelectorGroup::with(['fieldOptions.field', 'users'])->get()],
+            ['groups' => $query->get()],
             $this->fieldOptionChoices()
         ));
     }

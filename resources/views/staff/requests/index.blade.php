@@ -142,21 +142,21 @@
 </form>
 
 {{-- Table --}}
-<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+<x-requests::card padding="p-0" class="overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">#</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Kind</th>
+                <x-requests::sortable-th column="id" label="#" />
+                <x-requests::sortable-th column="request_kind" label="Kind" />
                 @if($assignmentEnabled ?? false)
                     <th class="px-4 py-3 text-left font-medium text-gray-600">Assignee</th>
                 @endif
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Title / Author</th>
+                <x-requests::sortable-th column="submitted_title" label="Title / Author" />
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Type</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Audience</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Patron</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Status</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Submitted</th>
+                <x-requests::sortable-th column="created_at" label="Submitted" />
                 <th class="px-4 py-3"></th>
             </tr>
         </thead>
@@ -165,10 +165,7 @@
             <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{{ route('request.staff.requests.show', $req) }}'">
                 <td class="px-4 py-3 text-gray-400">{{ $req->id }}</td>
                 <td class="px-4 py-3">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                        {{ $req->request_kind === 'ill' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700' }}">
-                        {{ strtoupper($req->request_kind ?? 'sfp') }}
-                    </span>
+                    <x-requests::kind-badge :kind="$req->request_kind" />
                 </td>
                 @if($assignmentEnabled ?? false)
                 <td class="px-4 py-3">
@@ -188,7 +185,7 @@
                         <div class="text-gray-500 text-xs">{{ $req->material?->author ?? $req->submitted_author }}</div>
                     @endif
                     @if($req->is_duplicate)
-                        <span class="inline-block mt-0.5 text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">Duplicate</span>
+                        <x-requests::badge variant="yellow">Duplicate</x-requests::badge>
                     @endif
                 </td>
                 <td class="px-4 py-3 text-gray-600">{{ $req->fieldValueLabel('material_type') ?? '—' }}</td>
@@ -202,14 +199,7 @@
                     @endif
                 </td>
                 <td class="px-4 py-3">
-                    @if($req->status)
-                        <span class="inline-block px-2 py-0.5 rounded text-xs font-medium"
-                              style="background-color: {{ $req->status->color }}22; color: {{ $req->status->color }};">
-                            {{ $req->status->name }}
-                        </span>
-                    @else
-                        <span class="text-gray-400">—</span>
-                    @endif
+                    <x-requests::status-color-badge :status="$req->status" />
                 </td>
                 <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                     {{ $req->created_at->format('M j, Y') }}
@@ -225,7 +215,7 @@
             @endforelse
         </tbody>
     </table>
-</div>
+</x-requests::card>
 
 <div class="mt-4">
     {{ $requests->links() }}

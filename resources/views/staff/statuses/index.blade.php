@@ -11,12 +11,12 @@
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Name</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Color</th>
+                <x-requests::sortable-th column="name" label="Name" />
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Icon</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Terminal</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Order</th>
+                <x-requests::sortable-th column="sort_order" label="Order" />
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Notify</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Active</th>
+                <x-requests::sortable-th column="active" label="Active" />
                 <th class="px-4 py-3"></th>
             </tr>
         </thead>
@@ -29,7 +29,13 @@
                         <span class="font-medium text-gray-900">{{ $status->name }}</span>
                     </span>
                 </td>
-                <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ $status->color }}</td>
+                <td class="px-4 py-3 text-gray-500">
+                    @if($status->icon)
+                        <x-requests::status-icon :name="$status->icon" class="w-5 h-5" />
+                    @else
+                        <span class="text-gray-300">&mdash;</span>
+                    @endif
+                </td>
                 <td class="px-4 py-3 text-gray-600">{{ $status->is_terminal ? 'Yes' : 'No' }}</td>
                 <td class="px-4 py-3 text-gray-600">{{ $status->sort_order }}</td>
                 <td class="px-4 py-3">
