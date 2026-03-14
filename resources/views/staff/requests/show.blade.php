@@ -263,18 +263,45 @@
                 <input type="hidden" name="email_copy_to_self" :value="emailPayload.copyToSelf ? '1' : ''">
             </form>
 
+            @php
+                /**
+                 * Return '#fff' or '#1f2937' (gray-800) depending on background luminance.
+                 * Uses WCAG relative luminance formula for AA contrast compliance.
+                 */
+                $contrastText = function (string $hex): string {
+                    $hex = ltrim($hex, '#');
+                    if (strlen($hex) === 3) $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+                    [$r, $g, $b] = [hexdec(substr($hex,0,2))/255, hexdec(substr($hex,2,2))/255, hexdec(substr($hex,4,2))/255];
+                    $lin = fn($c) => $c <= 0.03928 ? $c / 12.92 : pow(($c + 0.055) / 1.055, 2.4);
+                    $L = 0.2126 * $lin($r) + 0.7152 * $lin($g) + 0.0722 * $lin($b);
+                    return $L > 0.35 ? '#1f2937' : '#ffffff';
+                };
+            @endphp
             <div class="space-y-2">
                 @foreach($statuses as $s)
+                @if($s->id === $patronRequest->request_status_id)
                 <button type="button"
                         @click="selectStatus('{{ $s->id }}')"
                         :disabled="loading"
-                        class="w-full flex items-center gap-2 h-11 px-4 rounded text-white font-medium text-sm transition-colors disabled:opacity-60"
-                        style="background-color: {{ $s->color }};">
+                        class="w-full flex items-center gap-2 h-11 px-4 rounded font-medium text-sm transition-colors disabled:opacity-60 ring-2 ring-offset-2"
+                        style="background-color: {{ $s->color }}; color: {{ $contrastText($s->color) }}; --tw-ring-color: {{ $s->color }};">
                     @if($s->icon)
                         <x-requests::status-icon :name="$s->icon" class="w-4 h-4" />
                     @endif
                     {{ $s->name }}
                 </button>
+                @else
+                <button type="button"
+                        @click="selectStatus('{{ $s->id }}')"
+                        :disabled="loading"
+                        class="w-full flex items-center gap-2 h-11 px-4 rounded font-medium text-sm border-2 transition-colors disabled:opacity-60 hover:opacity-80"
+                        style="color: {{ $s->color }}; border-color: {{ $s->color }};">
+                    @if($s->icon)
+                        <x-requests::status-icon :name="$s->icon" class="w-4 h-4" />
+                    @endif
+                    {{ $s->name }}
+                </button>
+                @endif
                 @endforeach
             </div>
 
@@ -304,7 +331,47 @@
                             <x-requests::sidebar-btn icon="user" label="Claim" onclick="this.closest('form').submit()" />
                         </form>
                     @endif
-                    <x-requests::sidebar-btn icon="user" label="Reassign" @click="$dispatch('open-modal', 'reassign')" />
+
+                    {{-- Reassign dropdown (Groups + Users) --}}
+                    <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                        <button type="button" @click="open = !open"
+                                class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded hover:bg-gray-50 transition-colors">
+                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
+                            <span class="flex-1 text-left">Reassign</span>
+                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                        </button>
+
+                        <div x-show="open" x-cloak x-transition
+                             class="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                            @if($selectorGroups->isNotEmpty())
+                            <div class="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">Groups</div>
+                            @foreach($selectorGroups as $sg)
+                                <form method="POST" action="{{ route('request.staff.requests.reroute', $patronRequest) }}">
+                                    @csrf
+                                    <input type="hidden" name="group_id" value="{{ $sg->id }}">
+                                    <button type="submit" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                            onclick="if(!confirm('Reroute to {{ $sg->name }}?')) { event.preventDefault(); }">
+                                        {{ $sg->name }}
+                                    </button>
+                                </form>
+                            @endforeach
+                            @endif
+
+                            @if($staffUsers->isNotEmpty())
+                            <div class="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 {{ $selectorGroups->isNotEmpty() ? 'border-t' : '' }}">Users</div>
+                            @foreach($staffUsers as $u)
+                                <form method="POST" action="{{ route('request.staff.requests.assign', $patronRequest) }}">
+                                    @csrf
+                                    <input type="hidden" name="assigned_to_user_id" value="{{ $u->id }}">
+                                    <button type="submit" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                            onclick="if(!confirm('Assign to {{ $u->name ?: $u->email }}?')) { event.preventDefault(); }">
+                                        {{ $u->name ?: $u->email }}
+                                    </button>
+                                </form>
+                            @endforeach
+                            @endif
+                        </div>
+                    </div>
                 @endif
 
                 <form method="POST" action="{{ route('request.staff.requests.catalog-recheck', $patronRequest) }}">
@@ -323,9 +390,6 @@
                     @endif
                 @endif
 
-                @if(($rerouteFields ?? collect())->isNotEmpty())
-                    <x-requests::sidebar-btn icon="arrow-right-left" label="Change Selection Type" @click="$dispatch('open-modal', 'reroute')" />
-                @endif
 
                 @if($showConvertToIll)
                     <x-requests::sidebar-btn icon="arrow-right-left" label="Convert to ILL" @click="$dispatch('open-modal', 'convert-ill')" />
@@ -345,116 +409,6 @@
 {{-- ════════════════════════════════════════════════════════════════════════ --}}
 {{-- Modals (rendered outside the grid so they overlay correctly)            --}}
 {{-- ════════════════════════════════════════════════════════════════════════ --}}
-
-{{-- Reassign modal --}}
-@if($assignmentEnabled ?? false)
-<x-requests::action-modal name="reassign" title="Reassign Request">
-    <form method="POST" action="{{ route('request.staff.requests.assign', $patronRequest) }}" id="reassign-form" class="space-y-3">
-        @csrf
-        <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Assign to</label>
-            <select name="assigned_to_user_id" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
-                <option value="">Unassigned</option>
-                @foreach($staffUsers as $u)
-                    <option value="{{ $u->id }}" @selected($patronRequest->assigned_to_user_id == $u->id)>
-                        {{ $u->name ?: $u->email }} ({{ $u->email }})
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
-            <textarea name="note" rows="2" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
-        </div>
-    </form>
-    <x-slot:footer>
-        <button type="button" @click="$dispatch('close-modal', 'reassign')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100">Cancel</button>
-        <button type="submit" form="reassign-form" class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">Save Assignment</button>
-    </x-slot:footer>
-</x-requests::action-modal>
-@endif
-
-{{-- Change Selection Type modal --}}
-@if(($rerouteFields ?? collect())->isNotEmpty())
-<x-requests::action-modal name="reroute" title="Change Selection Type" max-width="lg">
-    <div x-data="rerouteForm('{{ route('request.staff.requests.reroute-preview', $patronRequest) }}')">
-        <p class="text-xs text-gray-400 mb-3">Select a group to change this request's selection type. The request will be unassigned and auto-claimed by the next person in that group.</p>
-        <form method="POST" action="{{ route('request.staff.requests.reroute', $patronRequest) }}" id="reroute-form" class="space-y-3">
-            @csrf
-            <input type="hidden" name="group_id" :value="selectedGroupId">
-
-            <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Target Group</label>
-                <select x-model="selectedGroupId" @change="fetchPreview()"
-                        class="w-full text-sm border border-gray-300 rounded px-2 py-1.5">
-                    <option value="">Select a group…</option>
-                    @foreach($selectorGroups as $sg)
-                        <option value="{{ $sg->id }}">{{ $sg->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            {{-- Field changes preview (populated by AJAX) --}}
-            <template x-if="loading">
-                <p class="text-xs text-gray-400">Checking field changes…</p>
-            </template>
-            <template x-if="!loading && noChanges && selectedGroupId">
-                <div class="text-xs rounded px-3 py-2 bg-green-50 text-green-700 border border-green-200">
-                    <svg class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                    No field changes needed — this request already matches the group.
-                </div>
-            </template>
-            <template x-if="!loading && changes.length">
-                <div class="space-y-2">
-                    <template x-for="change in changes" :key="change.field_key">
-                        <div class="rounded border border-amber-200 bg-amber-50 px-3 py-2">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-medium text-gray-700" x-text="change.field_label"></span>
-                                <span class="text-xs text-gray-400">
-                                    <span x-text="change.current_label"></span> →
-                                    <template x-if="change.auto_selected">
-                                        <span class="font-medium text-amber-700" x-text="change.options[0].name"></span>
-                                    </template>
-                                    <template x-if="!change.auto_selected">
-                                        <span class="text-amber-600">choose below</span>
-                                    </template>
-                                </span>
-                            </div>
-                            {{-- Multi-option: user must pick --}}
-                            <template x-if="!change.auto_selected">
-                                <select :name="'fields[' + change.field_key + ']'"
-                                        class="mt-1 w-full text-sm border border-gray-300 rounded px-2 py-1.5">
-                                    <option value="">Select…</option>
-                                    <template x-for="opt in change.options" :key="opt.slug">
-                                        <option :value="opt.slug" x-text="opt.name"></option>
-                                    </template>
-                                </select>
-                            </template>
-                            {{-- Single option: auto-selected, include as hidden field --}}
-                            <template x-if="change.auto_selected">
-                                <input type="hidden" :name="'fields[' + change.field_key + ']'" :value="change.auto_selected">
-                            </template>
-                        </div>
-                    </template>
-                </div>
-            </template>
-
-            <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
-                <textarea name="note" rows="2" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
-            </div>
-        </form>
-    </div>
-    <x-slot:footer>
-        <button type="button" @click="$dispatch('close-modal', 'reroute')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100">Cancel</button>
-        <button type="submit" form="reroute-form" class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50"
-                :disabled="!selectedGroupId"
-                onclick="return confirm('Change selection type? The request will be unassigned and sent to the selected group.')">
-            Change &amp; Unassign
-        </button>
-    </x-slot:footer>
-</x-requests::action-modal>
-@endif
 
 {{-- Synopsis modal --}}
 @if($synopsis && strlen($synopsis) > 280)

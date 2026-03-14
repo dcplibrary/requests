@@ -170,6 +170,8 @@ class RequestController extends Controller
             'assignmentEnabled'   => $assignmentEnabled,
             'hasIllAccess'        => $hasIllAccess,
             'groupNameByRequestId' => $groupNameByRequestId,
+            'selectorGroups' => $selectorGroups,
+            'staffUsers'     => $assignmentEnabled ? StaffUser::where('active', true)->orderBy('name')->get(['id', 'name', 'email']) : collect(),
         ]);
     }
 
@@ -909,6 +911,168 @@ class RequestController extends Controller
             : 'Catalog re-checked: item not found in catalog.';
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Bulk update the status of selected requests.
+     *
+     * @param  Request  $httpRequest
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function bulkStatus(Request $httpRequest)
+    {
+        $httpRequest->validate([
+            'ids'       => 'required|array|min:1',
+            'ids.*'     => 'integer|exists:requests,id',
+            'status_id' => 'required|integer|exists:request_statuses,id',
+        ]);
+
+        $actor = $this->currentStaffUser($httpRequest);
+        $requests = PatronRequest::query()
+            ->visibleTo($httpRequest->user())
+            ->whereIn('id', $httpRequest->input('ids'))
+            ->get();
+
+        if ($requests->isEmpty()) {
+            return back()->withErrors(['error' => 'No accessible requests selected.']);
+        }
+
+        $statusId = (int) $httpRequest->input('status_id');
+        $status = RequestStatus::findOrFail($statusId);
+
+        foreach ($requests as $req) {
+            $req->transitionStatus($statusId, $actor?->id, 'Bulk status change.');
+        }
+
+        return back()->with('success', $requests->count() . " request(s) moved to {$status->name}.");
+    }
+
+    /**
+     * Bulk reassign selected requests to a group (reroute) or a user (assign).
+     *
+     * When a group is chosen, each request's filterable field values are updated
+     * to match the group (auto-picking the single option per field) and the
+     * request is unassigned. When a user is chosen, each request is assigned to
+     * that user.
+     *
+     * @param  Request  $httpRequest
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function bulkReassign(Request $httpRequest)
+    {
+        abort_unless(Setting::get('assignment_enabled', false), 404);
+
+        $httpRequest->validate([
+            'ids'      => 'required|array|min:1',
+            'ids.*'    => 'integer|exists:requests,id',
+            'group_id' => 'nullable|integer|exists:selector_groups,id',
+            'user_id'  => 'nullable|integer|exists:staff_users,id',
+        ]);
+
+        $groupId = $httpRequest->input('group_id');
+        $userId  = $httpRequest->input('user_id');
+
+        if (! $groupId && ! $userId) {
+            return back()->withErrors(['error' => 'Please select a group or user.']);
+        }
+
+        $actor = $this->currentStaffUser($httpRequest);
+        $requests = PatronRequest::with('fieldValues.field')
+            ->visibleTo($httpRequest->user())
+            ->whereIn('id', $httpRequest->input('ids'))
+            ->get();
+
+        if ($requests->isEmpty()) {
+            return back()->withErrors(['error' => 'No accessible requests selected.']);
+        }
+
+        // --- Reroute to group ---
+        if ($groupId) {
+            $group = SelectorGroup::with('fieldOptions.field')->findOrFail($groupId);
+
+            $rerouteFields = Field::query()
+                ->where('filterable', true)
+                ->whereIn('type', ['select', 'radio'])
+                ->where('active', true)
+                ->get(['id', 'key', 'label']);
+
+            $rerouted = 0;
+            foreach ($requests as $req) {
+                $changes = [];
+                foreach ($rerouteFields as $field) {
+                    $groupOptions = $group->fieldOptions->where('field_id', $field->id);
+                    if ($groupOptions->isEmpty()) {
+                        continue;
+                    }
+
+                    $existing = $req->fieldValues->first(fn ($v) => $v->field_id === $field->id);
+                    $currentSlug = $existing?->value;
+
+                    if ($currentSlug && $groupOptions->pluck('slug')->contains($currentSlug)) {
+                        continue;
+                    }
+
+                    // Auto-pick single option; skip if ambiguous.
+                    if ($groupOptions->count() !== 1) {
+                        continue;
+                    }
+                    $newSlug = $groupOptions->first()->slug;
+
+                    $oldLabel = $currentSlug
+                        ? (FieldOption::where('field_id', $field->id)->where('slug', $currentSlug)->value('name') ?? $currentSlug)
+                        : '(none)';
+                    $newLabel = $groupOptions->first()->name;
+
+                    if ($existing) {
+                        $existing->update(['value' => $newSlug]);
+                    } else {
+                        RequestFieldValue::create([
+                            'request_id' => $req->id,
+                            'field_id'   => $field->id,
+                            'value'      => $newSlug,
+                        ]);
+                    }
+                    $changes[] = "{$field->label}: {$oldLabel} → {$newLabel}";
+                }
+
+                $req->update([
+                    'assigned_to_user_id' => null,
+                    'assigned_at'         => null,
+                    'assigned_by_user_id' => null,
+                ]);
+
+                $historyNote = 'Bulk rerouted to ' . $group->name . '.';
+                if (! empty($changes)) {
+                    $historyNote .= ' ' . implode('; ', $changes) . '.';
+                }
+                $req->statusHistory()->create([
+                    'request_status_id' => $req->request_status_id,
+                    'user_id'           => $actor?->id,
+                    'note'              => $historyNote,
+                ]);
+                $rerouted++;
+            }
+
+            return back()->with('success', "{$rerouted} request(s) rerouted to {$group->name}.");
+        }
+
+        // --- Assign to user ---
+        $assignee = StaffUser::findOrFail($userId);
+        foreach ($requests as $req) {
+            $was = $req->assigned_to_user_id;
+            $req->update([
+                'assigned_to_user_id' => $assignee->id,
+                'assigned_at'         => now(),
+                'assigned_by_user_id' => $actor?->id,
+            ]);
+            $req->statusHistory()->create([
+                'request_status_id' => $req->request_status_id,
+                'user_id'           => $actor?->id,
+                'note'              => ($was ? 'Bulk reassigned' : 'Bulk assigned') . " to {$assignee->name}.",
+            ]);
+        }
+
+        return back()->with('success', $requests->count() . " request(s) assigned to {$assignee->name}.");
     }
 
     public function destroy(Request $httpRequest, PatronRequest $patronRequest)

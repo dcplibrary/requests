@@ -49,17 +49,6 @@
     </div>
     @endif
 
-    @unless($currentKind)
-    <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Kind</label>
-        <select name="kind" class="text-sm border border-gray-300 rounded px-2 py-1.5">
-            <option value="">All</option>
-            <option value="sfp" {{ ($filters['kind'] ?? '') === 'sfp' ? 'selected' : '' }}>SFP</option>
-            <option value="ill" {{ ($filters['kind'] ?? '') === 'ill' ? 'selected' : '' }}>ILL</option>
-        </select>
-    </div>
-    @endunless
-
     <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
         <select name="status" class="text-sm border border-gray-300 rounded px-2 py-1.5">
@@ -72,65 +61,12 @@
         </select>
     </div>
 
-    @unless($currentKind)
-    <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Material Type</label>
-        <select name="material_type" class="text-sm border border-gray-300 rounded px-2 py-1.5" @if(($filters['kind'] ?? '') === 'ill') disabled @endif>
-            <option value="">All types</option>
-            @foreach($materialTypes as $mt)
-                <option value="{{ $mt->id }}" {{ ($filters['material_type'] ?? '') == $mt->id ? 'selected' : '' }}>
-                    {{ $mt->name }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-    <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Audience</label>
-        <select name="audience" class="text-sm border border-gray-300 rounded px-2 py-1.5" @if(($filters['kind'] ?? '') === 'ill') disabled @endif>
-            <option value="">All audiences</option>
-            @foreach($audiences as $a)
-                <option value="{{ $a->id }}" {{ ($filters['audience'] ?? '') == $a->id ? 'selected' : '' }}>
-                    {{ $a->name }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-    @endunless
-
     <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Search</label>
         <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
                placeholder="Title, author, barcode…"
                class="text-sm border border-gray-300 rounded px-2 py-1.5 w-48">
     </div>
-
-    @unless($currentKind)
-    {{-- Custom-field filter (select/radio only) --}}
-    @if(isset($customFilterFields) && $customFilterFields->count())
-    <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Custom field</label>
-        <select name="cf" class="text-sm border border-gray-300 rounded px-2 py-1.5" onchange="this.form.submit()">
-            <option value="">—</option>
-            @foreach($customFilterFields as $cf)
-                <option value="{{ $cf->key }}" {{ ($filters['cf'] ?? '') === $cf->key ? 'selected' : '' }}>
-                    {{ $cf->label }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-    <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Value</label>
-        <select name="cf_value" class="text-sm border border-gray-300 rounded px-2 py-1.5">
-            <option value="">—</option>
-            @foreach($customFilterOptions ?? [] as $opt)
-                <option value="{{ $opt->slug }}" {{ ($filters['cf_value'] ?? '') === $opt->slug ? 'selected' : '' }}>
-                    {{ $opt->name }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-    @endif
-    @endunless
 
     <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">Filter</button>
     @if(array_filter($filters))
@@ -141,15 +77,84 @@
     @endif
 </form>
 
+{{-- Bulk action bar (visible when checkboxes selected) --}}
+<div id="bulk-bar" class="hidden mb-3 flex items-center gap-3 flex-wrap">
+    <span class="text-sm text-gray-600"><strong id="bulk-count">0</strong> selected</span>
+
+    @php
+        $contrastText = function (string $hex): string {
+            $hex = ltrim($hex, '#');
+            if (strlen($hex) === 3) $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+            [$r, $g, $b] = [hexdec(substr($hex,0,2))/255, hexdec(substr($hex,2,2))/255, hexdec(substr($hex,4,2))/255];
+            $lin = fn($c) => $c <= 0.03928 ? $c / 12.92 : pow(($c + 0.055) / 1.055, 2.4);
+            $L = 0.2126 * $lin($r) + 0.7152 * $lin($g) + 0.0722 * $lin($b);
+            return $L > 0.35 ? '#1f2937' : '#ffffff';
+        };
+    @endphp
+    <div class="flex items-center gap-1">
+        @foreach($statuses as $s)
+            <button type="button" class="bulk-status-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-medium shadow-sm hover:opacity-80" data-status-id="{{ $s->id }}" title="{{ $s->name }}" style="background-color: {{ $s->color }}; color: {{ $contrastText($s->color) }};">
+                @if($s->icon)
+                    <x-requests::status-icon :name="$s->icon" class="h-4 w-4" />
+                @endif
+                <span>{{ $s->name }}</span>
+            </button>
+        @endforeach
+    </div>
+
+    @if($assignmentEnabled ?? false)
+    <div class="relative">
+        <button type="button" id="reassign-btn"
+                class="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 shadow-sm">
+            Reassign
+            <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+        </button>
+
+        <div id="reassign-dropdown" class="hidden absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+            @if($selectorGroups->isNotEmpty())
+            <div class="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">Groups</div>
+            @foreach($selectorGroups as $group)
+                <button type="button" class="reassign-option w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50" data-group-id="{{ $group->id }}">
+                    {{ $group->name }}
+                </button>
+            @endforeach
+            @endif
+
+            @if($staffUsers->isNotEmpty())
+            <div class="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 {{ $selectorGroups->isNotEmpty() ? 'border-t' : '' }}">Users</div>
+            @foreach($staffUsers as $su)
+                <button type="button" class="reassign-option w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50" data-user-id="{{ $su->id }}">
+                    {{ $su->name ?: $su->email }}
+                </button>
+            @endforeach
+            @endif
+        </div>
+    </div>
+    @endif
+</div>
+
+@if($assignmentEnabled ?? false)
+<form id="bulk-reassign-form" method="POST" action="{{ route('request.staff.requests.bulk-reassign') }}" class="hidden">
+    @csrf
+    <input type="hidden" name="group_id" id="bulk-group-id">
+    <input type="hidden" name="user_id" id="bulk-user-id">
+</form>
+@endif
+
+<form id="bulk-status-form" method="POST" action="{{ route('request.staff.requests.bulk-status') }}" class="hidden">
+    @csrf
+    <input type="hidden" name="status_id" id="bulk-status-id">
+</form>
+
 {{-- Table --}}
 <x-requests::card padding="p-0" class="overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
-                @unless($currentKind)
-                <x-requests::sortable-th column="id" label="#" />
-                <x-requests::sortable-th column="request_kind" label="Kind" />
-                @endunless
+                <th class="px-4 py-3 w-8">
+                    <input type="checkbox" id="select-all" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </th>
+                <x-requests::sortable-th column="created_at" label="Submitted" />
                 <x-requests::sortable-th column="submitted_title" label="Title / Author" arrow-side="left" />
                 @if($currentKind)
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Selection Type</th>
@@ -159,7 +164,6 @@
                 @endif
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Patron</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Status</th>
-                <x-requests::sortable-th column="created_at" label="Submitted" />
                 @if($assignmentEnabled ?? false)
                     <th class="px-4 py-3 text-left font-medium text-gray-600">Assignee</th>
                 @endif
@@ -168,18 +172,21 @@
         <tbody class="divide-y divide-gray-100">
             @forelse($requests as $req)
             <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{{ route('request.staff.requests.show', $req) }}'">
-                @unless($currentKind)
-                <td class="px-4 py-3 text-gray-400">{{ $req->id }}</td>
-                <td class="px-4 py-3">
-                    <x-requests::kind-badge :kind="$req->request_kind" />
+                <td class="px-4 py-3" onclick="event.stopPropagation()">
+                    <input type="checkbox" name="selected[]" value="{{ $req->id }}" class="request-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                 </td>
-                @endunless
+                <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                    {{ $req->created_at->format('M j, Y') }}
+                </td>
                 <td class="px-4 py-3">
                     <div class="font-medium text-gray-900 truncate max-w-xs">
                         {{ $req->material?->title ?? $req->submitted_title ?? '—' }}
                     </div>
                     @if($req->material?->author ?? $req->submitted_author)
                         <div class="text-gray-500 text-xs">{{ $req->material?->author ?? $req->submitted_author }}</div>
+                    @endif
+                    @if($req->material?->isbn13 ?? $req->material?->isbn)
+                        <div class="text-gray-400 text-xs">{{ $req->material?->isbn13 ?? $req->material?->isbn }}</div>
                     @endif
                     @if($req->is_duplicate)
                         <x-requests::badge variant="yellow">Duplicate</x-requests::badge>
@@ -215,9 +222,6 @@
                         <span class="text-gray-400">—</span>
                     @endif
                 </td>
-                <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                    {{ $req->created_at->format('M j, Y') }}
-                </td>
                 @if($assignmentEnabled ?? false)
                 <td class="px-4 py-3">
                     @if($req->assignedTo)
@@ -239,7 +243,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="{{ (($assignmentEnabled ?? false) ? 9 : 8) - ($currentKind ? 3 : 0) }}"
+                <td colspan="{{ (($assignmentEnabled ?? false) ? 8 : 7) - ($currentKind ? 1 : 0) }}"
             </tr>
             @endforelse
         </tbody>
@@ -249,4 +253,95 @@
 <div class="mt-4">
     {{ $requests->links() }}
 </div>
+
+<script>
+(function () {
+    const selectAll  = document.getElementById('select-all');
+    const bulkBar    = document.getElementById('bulk-bar');
+    const bulkCount  = document.getElementById('bulk-count');
+    const reassignBtn = document.getElementById('reassign-btn');
+    const dropdown   = document.getElementById('reassign-dropdown');
+    const form       = document.getElementById('bulk-reassign-form');
+
+    function getChecked() {
+        return document.querySelectorAll('.request-checkbox:checked');
+    }
+
+    function syncBar() {
+        const count = getChecked().length;
+        if (bulkBar) {
+            bulkBar.classList.toggle('hidden', count === 0);
+            if (bulkCount) bulkCount.textContent = count;
+        }
+    }
+
+    // Select-all toggle
+    selectAll?.addEventListener('change', function () {
+        document.querySelectorAll('.request-checkbox').forEach(cb => cb.checked = this.checked);
+        syncBar();
+    });
+
+    // Individual checkbox changes
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('request-checkbox')) syncBar();
+    });
+
+    // Toggle dropdown
+    reassignBtn?.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dropdown?.classList.toggle('hidden');
+    });
+
+    // Close dropdown on outside click
+    document.addEventListener('click', function () {
+        dropdown?.classList.add('hidden');
+    });
+
+    // Helper: inject selected IDs into a form
+    function injectIds(targetForm, checked) {
+        targetForm.querySelectorAll('input[name="ids[]"]').forEach(i => i.remove());
+        checked.forEach(function (cb) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids[]';
+            input.value = cb.value;
+            targetForm.appendChild(input);
+        });
+    }
+
+    // Bulk status buttons
+    const statusForm = document.getElementById('bulk-status-form');
+    document.querySelectorAll('.bulk-status-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const checked = getChecked();
+            if (checked.length === 0) return;
+            const label = this.title || this.textContent.trim();
+            if (!confirm('Change ' + checked.length + ' request(s) to "' + label + '"?')) return;
+            injectIds(statusForm, checked);
+            document.getElementById('bulk-status-id').value = this.dataset.statusId;
+            statusForm.submit();
+        });
+    });
+
+    // Handle reassign option click
+    document.querySelectorAll('.reassign-option').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const checked = getChecked();
+            if (checked.length === 0) return;
+
+            const groupId = this.dataset.groupId || '';
+            const userId  = this.dataset.userId  || '';
+            const label   = this.textContent.trim();
+
+            if (!confirm('Reassign ' + checked.length + ' request(s) to "' + label + '"?')) return;
+
+            injectIds(form, checked);
+            document.getElementById('bulk-group-id').value = groupId;
+            document.getElementById('bulk-user-id').value  = userId;
+            form.submit();
+        });
+    });
+})();
+</script>
 @endsection
