@@ -263,53 +263,14 @@
                 <input type="hidden" name="email_copy_to_self" :value="emailPayload.copyToSelf ? '1' : ''">
             </form>
 
-            @php
-                /**
-                 * Return '#fff' or '#1f2937' (gray-800) depending on background luminance.
-                 * Uses WCAG relative luminance formula for AA contrast compliance.
-                 */
-                $contrastText = function (string $hex): string {
-                    $hex = ltrim($hex, '#');
-                    if (strlen($hex) === 3) $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
-                    [$r, $g, $b] = [hexdec(substr($hex,0,2))/255, hexdec(substr($hex,2,2))/255, hexdec(substr($hex,4,2))/255];
-                    $lin = fn($c) => $c <= 0.03928 ? $c / 12.92 : pow(($c + 0.055) / 1.055, 2.4);
-                    $L = 0.2126 * $lin($r) + 0.7152 * $lin($g) + 0.0722 * $lin($b);
-                    return $L > 0.35 ? '#1f2937' : '#ffffff';
-                };
-            @endphp
             <div class="space-y-2">
                 @foreach($statuses as $s)
-                @if($s->id === $patronRequest->request_status_id)
-                {{-- Active status: full color background, white text, Active badge --}}
-                <button type="button"
-                        @click="selectStatus('{{ $s->id }}')"
-                        :disabled="loading"
-                        class="w-full flex items-center gap-2 h-11 px-4 rounded font-medium text-sm text-white transition-all disabled:opacity-60"
-                        style="background-color: {{ $s->color }};"
-                        onmouseenter="this.style.filter='brightness(0.85)'"
-                        onmouseleave="this.style.filter=''">
-                    @if($s->icon)
-                        <x-requests::status-icon :name="$s->icon" class="w-4 h-4" />
-                    @endif
-                    {{ $s->name }}
-                </button>
-                @else
-                {{-- Inactive status: pale outlined, light hover fill --}}
-                <button type="button"
-                        x-data="{ hov: false }"
-                        @mouseenter="hov = true"
-                        @mouseleave="hov = false"
-                        @click="selectStatus('{{ $s->id }}')"
-                        :disabled="loading"
-                        class="w-full flex items-center gap-2 h-11 px-4 rounded font-medium text-sm border transition-all disabled:opacity-60"
-                        style="--sc: {{ $s->color }}; border-color: color-mix(in srgb, var(--sc) 30%, white); color: var(--sc);"
-                        :style="hov ? { backgroundColor: 'color-mix(in srgb, var(--sc) 10%, white)' } : { backgroundColor: 'transparent' }">
-                    @if($s->icon)
-                        <x-requests::status-icon :name="$s->icon" class="w-4 h-4" />
-                    @endif
-                    {{ $s->name }}
-                </button>
-                @endif
+                    <x-requests::status-btn
+                        :status="$s"
+                        :active="$s->id === $patronRequest->request_status_id"
+                        size="lg"
+                        x-on:click="selectStatus('{{ $s->id }}')"
+                        x-bind:disabled="loading" />
                 @endforeach
             </div>
 

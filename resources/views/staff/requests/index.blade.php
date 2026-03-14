@@ -81,24 +81,9 @@
 <div id="bulk-bar" class="hidden mb-3 flex items-center gap-3 flex-wrap">
     <span class="text-sm text-gray-600"><strong id="bulk-count">0</strong> selected</span>
 
-    @php
-        $contrastText = function (string $hex): string {
-            $hex = ltrim($hex, '#');
-            if (strlen($hex) === 3) $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
-            [$r, $g, $b] = [hexdec(substr($hex,0,2))/255, hexdec(substr($hex,2,2))/255, hexdec(substr($hex,4,2))/255];
-            $lin = fn($c) => $c <= 0.03928 ? $c / 12.92 : pow(($c + 0.055) / 1.055, 2.4);
-            $L = 0.2126 * $lin($r) + 0.7152 * $lin($g) + 0.0722 * $lin($b);
-            return $L > 0.35 ? '#1f2937' : '#ffffff';
-        };
-    @endphp
     <div class="flex items-center gap-1">
         @foreach($statuses as $s)
-            <button type="button" class="bulk-status-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-medium shadow-sm hover:opacity-80" data-status-id="{{ $s->id }}" title="{{ $s->name }}" style="background-color: {{ $s->color }}; color: {{ $contrastText($s->color) }};">
-                @if($s->icon)
-                    <x-requests::status-icon :name="$s->icon" class="h-4 w-4" />
-                @endif
-                <span>{{ $s->name }}</span>
-            </button>
+            <x-requests::status-btn :status="$s" :active="true" class="bulk-status-btn" data-status-id="{{ $s->id }}" />
         @endforeach
     </div>
 
