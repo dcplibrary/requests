@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.1.0](https://github.com/dcplibrary/requests/compare/v4.0.3...v4.1.0) (2026-03-14)
+
+
+### Features
+
+* streamline suggestion list with icons ([9d7e45e](https://github.com/dcplibrary/requests/commit/9d7e45ec8f1fce1d2ba07817a9fd5466bdaefc0f))
+
 ## [4.0.3](https://github.com/dcplibrary/requests/compare/v4.0.2...v4.0.3) (2026-03-14)
 
 
