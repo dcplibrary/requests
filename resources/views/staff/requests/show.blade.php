@@ -280,22 +280,30 @@
             <div class="space-y-2">
                 @foreach($statuses as $s)
                 @if($s->id === $patronRequest->request_status_id)
+                {{-- Active status: full color background, white text, Active badge --}}
                 <button type="button"
                         @click="selectStatus('{{ $s->id }}')"
                         :disabled="loading"
-                        class="w-full flex items-center gap-2 h-11 px-4 rounded font-medium text-sm transition-colors disabled:opacity-60 ring-2 ring-offset-2"
-                        style="background-color: {{ $s->color }}; color: {{ $contrastText($s->color) }}; --tw-ring-color: {{ $s->color }};">
+                        class="w-full flex items-center gap-2 h-11 px-4 rounded font-medium text-sm text-white transition-all disabled:opacity-60"
+                        style="background-color: {{ $s->color }};"
+                        onmouseenter="this.style.filter='brightness(0.85)'"
+                        onmouseleave="this.style.filter=''">
                     @if($s->icon)
                         <x-requests::status-icon :name="$s->icon" class="w-4 h-4" />
                     @endif
                     {{ $s->name }}
                 </button>
                 @else
+                {{-- Inactive status: pale outlined, light hover fill --}}
                 <button type="button"
+                        x-data="{ hov: false }"
+                        @mouseenter="hov = true"
+                        @mouseleave="hov = false"
                         @click="selectStatus('{{ $s->id }}')"
                         :disabled="loading"
-                        class="w-full flex items-center gap-2 h-11 px-4 rounded font-medium text-sm border-2 transition-colors disabled:opacity-60 hover:opacity-80"
-                        style="color: {{ $s->color }}; border-color: {{ $s->color }};">
+                        class="w-full flex items-center gap-2 h-11 px-4 rounded font-medium text-sm border transition-all disabled:opacity-60"
+                        style="--sc: {{ $s->color }}; border-color: color-mix(in srgb, var(--sc) 30%, white); color: var(--sc);"
+                        :style="hov ? { backgroundColor: 'color-mix(in srgb, var(--sc) 10%, white)' } : { backgroundColor: 'transparent' }">
                     @if($s->icon)
                         <x-requests::status-icon :name="$s->icon" class="w-4 h-4" />
                     @endif

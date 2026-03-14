@@ -1,5 +1,5 @@
 {{--
-    Icon selector — a dropdown grid of outline Heroicons with a live preview.
+    Icon selector — a dropdown grid of solid Heroicons with a live preview.
 
     Usage:
         <x-requests::icon-select name="icon" :value="$model->icon" />
@@ -58,7 +58,7 @@
         'arrow-uturn-down'        => 'Arrow U-Turn Down',
         'arrows-pointing-in'      => 'Arrows In',
         'arrows-pointing-out'     => 'Arrows Out',
-        'arrows-right-left'       => 'Arrows Right Left',
+        'arrows-right-left'       => 'Arrows Left Right',
         'arrows-up-down'          => 'Arrows Up Down',
     ];
 @endphp
