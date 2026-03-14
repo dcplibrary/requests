@@ -2,6 +2,14 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.0.1](https://github.com/dcplibrary/requests/compare/v4.0.0...v4.0.1) (2026-03-14)
+
+
+### Bug Fixes
+
+* composer update ([a8ea2b7](https://github.com/dcplibrary/requests/commit/a8ea2b766904db857562ef1c80caeb80f35b58a7))
+* update composer dependencies ([f3d3b87](https://github.com/dcplibrary/requests/commit/f3d3b874657b2b28cf39b2df53c71570c0e7c56f))
+
 # [4.0.0](https://github.com/dcplibrary/requests/compare/v3.12.0...v4.0.0) (2026-03-14)
 
 
