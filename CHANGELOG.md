@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.3.0](https://github.com/dcplibrary/requests/compare/v4.2.0...v4.3.0) (2026-03-14)
+
+
+### Features
+
+* update style of status buttons ([2cda57a](https://github.com/dcplibrary/requests/commit/2cda57a9dcb1ecb5767d9888b5ecdf446cbc984a))
+
 # [4.2.0](https://github.com/dcplibrary/requests/compare/v4.1.0...v4.2.0) (2026-03-14)
 
 
