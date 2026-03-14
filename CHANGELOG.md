@@ -2,6 +2,18 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.0.0](https://github.com/dcplibrary/requests/compare/v3.12.0...v4.0.0) (2026-03-14)
+
+
+### Features
+
+* sortable table columns across all list views.  redesigned detail views. ([0be866e](https://github.com/dcplibrary/requests/commit/0be866e42dc9346d8d3ed3cc1a8dff03f7a370c1))
+
+
+### BREAKING CHANGES
+
+* sortable-th component added; all index controllers now accept sort/direction query params
+
 # [3.12.0](https://github.com/dcplibrary/requests/compare/v3.11.6...v3.12.0) (2026-03-13)
 
 
