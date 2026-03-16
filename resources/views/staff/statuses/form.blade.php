@@ -20,14 +20,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Color <span class="text-red-500">*</span></label>
-                <div class="flex items-center gap-2 mb-2">
-                    <input type="color" name="color" id="color_picker" value="{{ old('color', $status->color ?? '#6b7280') }}"
-                           class="w-10 h-9 border border-gray-300 rounded cursor-pointer p-0.5">
-                    <input type="text" id="color_text" value="{{ old('color', $status->color ?? '#6b7280') }}"
-                           class="w-32 border border-gray-300 rounded px-3 py-2 text-sm font-mono"
-                           oninput="document.getElementById('color_picker').value=this.value">
-                </div>
-                <div class="flex flex-wrap gap-1.5">
+                <div class="flex flex-wrap gap-1.5 mb-2">
                     @foreach([
                         '#6b7280' => 'Gray',
                         '#ef4444' => 'Red',
@@ -41,14 +34,21 @@
                         '#6366f1' => 'Indigo',
                         '#8b5cf6' => 'Violet',
                         '#ec4899' => 'Pink',
-                    ] as $hex => $name)
+                    ] as $presetHex => $presetName)
                         <button type="button"
-                                onclick="document.getElementById('color_picker').value='{{ $hex }}'; document.getElementById('color_text').value='{{ $hex }}';"
-                                class="w-6 h-6 rounded border border-black/10 hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400"
-                                style="background-color: {{ $hex }};"
-                                title="{{ $name }}">
+                                onclick="document.getElementById('color_picker').value='{{ $presetHex }}'; document.getElementById('color_text').value='{{ $presetHex }}';"
+                                class="rounded border focus:outline-none"
+                                style="background-color: {{ $presetHex }}; width: 1.5rem; height: 1.5rem; border-color: rgba(0,0,0,0.1);"
+                                title="{{ $presetName }}">
                         </button>
                     @endforeach
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="color" name="color" id="color_picker" value="{{ old('color', $status->color ?? '#6b7280') }}"
+                           class="w-10 h-9 border border-gray-300 rounded cursor-pointer p-0.5">
+                    <input type="text" id="color_text" value="{{ old('color', $status->color ?? '#6b7280') }}"
+                           class="w-32 border border-gray-300 rounded px-3 py-2 text-sm font-mono"
+                           oninput="document.getElementById('color_picker').value=this.value">
                 </div>
                 <script>
                     document.getElementById('color_picker').addEventListener('input', function() {
