@@ -2,6 +2,14 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.4.3](https://github.com/dcplibrary/requests/compare/v4.4.2...v4.4.3) (2026-03-16)
+
+
+### Bug Fixes
+
+* set auto-claim on page reload ([0ac158e](https://github.com/dcplibrary/requests/commit/0ac158e5bf7efa4d898f47703ec4d4a88b048424))
+* update auto-claim ([9e5f285](https://github.com/dcplibrary/requests/commit/9e5f285369234015e6481909f2ed7771666b8bc8))
+
 ## [4.4.2](https://github.com/dcplibrary/requests/compare/v4.4.1...v4.4.2) (2026-03-16)
 
 
