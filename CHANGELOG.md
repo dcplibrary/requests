@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.6.4](https://github.com/dcplibrary/requests/compare/v4.6.3...v4.6.4) (2026-03-16)
+
+
+### Bug Fixes
+
+* correct token display in email ([4247002](https://github.com/dcplibrary/requests/commit/42470024242341864645718e52a5a0c7516b7bd9))
+
 ## [4.6.3](https://github.com/dcplibrary/requests/compare/v4.6.2...v4.6.3) (2026-03-16)
 
 
