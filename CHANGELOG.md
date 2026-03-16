@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.4.1](https://github.com/dcplibrary/requests/compare/v4.4.0...v4.4.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* color swatches now appear above status color picker ([3536c93](https://github.com/dcplibrary/requests/commit/3536c93a66f62357b9cb227f79fceba3998a0b4d))
+
 # [4.4.0](https://github.com/dcplibrary/requests/compare/v4.3.1...v4.4.0) (2026-03-16)
 
 
