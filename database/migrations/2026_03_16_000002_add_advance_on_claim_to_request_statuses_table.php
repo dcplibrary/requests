@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('request_statuses', function (Blueprint $table) {
-            $table->boolean('advance_on_claim')->default(false)->after('action_label')
+            $table->boolean('advance_on_claim')->default(false)
                   ->comment('When true, a request on this status is automatically advanced to the next status (by sort_order) when claimed by a staff member.');
         });
     }

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('request_statuses', function (Blueprint $table) {
-            $table->string('action_label', 50)->nullable()->after('icon')
+            $table->string('action_label', 50)->nullable()
                   ->comment('Short verb shown as an action button in staff routing emails (e.g. "Review", "Purchase", "Deny").');
         });
     }

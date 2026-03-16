@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('requests', function (Blueprint $table) {
-            $table->boolean('notify_by_email')->default(false)->after('is_duplicate')
+            $table->boolean('notify_by_email')->default(false)
                   ->comment('Patron opted in to email notifications for this request at time of submission.');
         });
     }
