@@ -251,17 +251,21 @@ class RequestController extends Controller
             }
         }
 
-        // If the request is assigned but still carrying the "unclaimed" status,
-        // advance it to "pending". Runs regardless of whether it was just claimed
-        // now or was already claimed on a previous visit.
-        if ($patronRequest->assigned_to_user_id
-            && strtolower($patronRequest->status?->slug ?? '') === 'unclaimed'
-        ) {
-            $pendingStatus = RequestStatus::where('slug', 'pending')->first();
-            if ($pendingStatus) {
-                $actor = $actor ?? $this->currentStaffUser(request());
-                $patronRequest->transitionStatus($pendingStatus->id, $actor?->id, 'Status advanced from Unclaimed on open.');
-                $patronRequest->load(['status', 'statusHistory.status', 'statusHistory.user']);
+        // If the request is assigned but still on the very first status (by sort_order),
+        // advance it to the second status. Uses sort_order rather than slugs so it
+        // works regardless of what the statuses are named.
+        // Runs on every open so it also catches requests claimed before this logic existed.
+        if ($patronRequest->assigned_to_user_id && $patronRequest->request_status_id) {
+            $firstStatus = RequestStatus::orderBy('sort_order')->first();
+            if ($firstStatus && $patronRequest->request_status_id === $firstStatus->id) {
+                $secondStatus = RequestStatus::where('sort_order', '>', $firstStatus->sort_order)
+                    ->orderBy('sort_order')
+                    ->first();
+                if ($secondStatus) {
+                    $actor = $actor ?? $this->currentStaffUser(request());
+                    $patronRequest->transitionStatus($secondStatus->id, $actor?->id, 'Status advanced on claim.');
+                    $patronRequest->load(['status', 'statusHistory.status', 'statusHistory.user']);
+                }
             }
         }
 
