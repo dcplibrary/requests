@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.4.2](https://github.com/dcplibrary/requests/compare/v4.4.1...v4.4.2) (2026-03-16)
+
+
+### Bug Fixes
+
+* automate transition from unclaimed to pending ([b900c11](https://github.com/dcplibrary/requests/commit/b900c119e2ba6b20b2fe6a2787db65c68aee25e7))
+
 ## [4.4.1](https://github.com/dcplibrary/requests/compare/v4.4.0...v4.4.1) (2026-03-16)
 
 
