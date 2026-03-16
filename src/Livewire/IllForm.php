@@ -402,7 +402,7 @@ class IllForm extends Component
         $this->processing = true;
         $this->processingStep = 'Submitting your request...';
 
-        $pendingStatus = RequestStatus::where('slug', 'pending')->first()
+        $pendingStatus = RequestStatus::where('applies_to_ill', true)->orderBy('sort_order')->first()
             ?? RequestStatus::orderBy('sort_order')->firstOrFail();
 
         $materialSlug    = $this->materialTypeSlug();

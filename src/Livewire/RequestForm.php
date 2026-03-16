@@ -761,7 +761,7 @@ class RequestForm extends Component
         // including re-submissions from the same patron.
         $priorRequest = PatronRequest::where('material_id', $material->id)->first();
 
-        $pendingStatus = RequestStatus::where('slug', 'pending')->first()
+        $pendingStatus = RequestStatus::where('applies_to_sfp', true)->orderBy('sort_order')->first()
             ?? RequestStatus::orderBy('sort_order')->firstOrFail();
 
         $patronRequest = PatronRequest::create([

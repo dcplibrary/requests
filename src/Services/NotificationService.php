@@ -447,6 +447,7 @@ class NotificationService
         $statuses = RequestStatus::where('active', true)
             ->whereNotNull('action_label')
             ->where('action_label', '!=', '')
+            ->forKind($request->request_kind)
             ->orderBy('sort_order')
             ->get(['id', 'action_label', 'color']);
 

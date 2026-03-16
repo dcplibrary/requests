@@ -72,6 +72,26 @@
                 <input type="number" name="sort_order" value="{{ old('sort_order', $status->sort_order ?? 0) }}" required min="0"
                        class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
             </div>
+            {{-- Request kind availability --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Available for</label>
+                <div class="flex flex-col gap-2">
+                    <label class="inline-flex items-center gap-2">
+                        <input type="hidden" name="applies_to_sfp" value="0">
+                        <input type="checkbox" name="applies_to_sfp" id="applies_to_sfp" value="1"
+                               {{ old('applies_to_sfp', $status->applies_to_sfp ?? true) ? 'checked' : '' }}
+                               class="w-4 h-4 rounded border-gray-300 text-blue-600">
+                        <span class="text-sm text-gray-700">Suggest for Purchase (SFP)</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2">
+                        <input type="hidden" name="applies_to_ill" value="0">
+                        <input type="checkbox" name="applies_to_ill" id="applies_to_ill" value="1"
+                               {{ old('applies_to_ill', $status->applies_to_ill ?? true) ? 'checked' : '' }}
+                               class="w-4 h-4 rounded border-gray-300 text-blue-600">
+                        <span class="text-sm text-gray-700">Interlibrary Loan (ILL)</span>
+                    </label>
+                </div>
+            </div>
             <div class="flex items-center gap-2">
                 <input type="hidden" name="is_terminal" value="0">
                 <input type="checkbox" name="is_terminal" id="is_terminal" value="1"

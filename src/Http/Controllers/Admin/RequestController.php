@@ -259,6 +259,7 @@ class RequestController extends Controller
             $currentStatus = $patronRequest->status ?? RequestStatus::find($patronRequest->request_status_id);
             if ($currentStatus?->advance_on_claim) {
                 $nextStatus = RequestStatus::where('sort_order', '>', $currentStatus->sort_order)
+                    ->forKind($patronRequest->request_kind)
                     ->orderBy('sort_order')
                     ->first();
                 if ($nextStatus) {
@@ -350,7 +351,7 @@ class RequestController extends Controller
         return view('requests::staff.requests.show', [
             'patronRequest' => $patronRequest,
             'coverUrl'   => $coverUrl,
-            'statuses'   => RequestStatus::active()->get(),
+            'statuses'   => RequestStatus::active()->forKind($patronRequest->request_kind)->get(),
             'fieldValueLabelByFieldId' => $fieldValueLabelByFieldId,
             'assignmentEnabled' => $assignmentEnabled,
             'justClaimed' => $justClaimed,

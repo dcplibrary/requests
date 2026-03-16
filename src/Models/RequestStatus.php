@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $icon     Heroicon outline name (e.g. 'clock', 'check-circle')
  * @property string|null $action_label Short verb for email action buttons (e.g. 'Review', 'Purchase')
  * @property bool   $advance_on_claim When true, claiming a request on this status auto-advances it to the next status by sort_order
+ * @property bool   $applies_to_sfp  Whether this status is available for Suggest for Purchase requests
+ * @property bool   $applies_to_ill  Whether this status is available for Interlibrary Loan requests
  * @property int    $sort_order
  * @property bool   $active
  * @property bool   $is_terminal  True for resolved statuses (Purchased, Denied, etc.)
@@ -28,13 +30,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class RequestStatus extends Model
 {
-    protected $fillable = ['name', 'slug', 'color', 'icon', 'action_label', 'advance_on_claim', 'sort_order', 'active', 'is_terminal', 'notify_patron', 'description'];
+    protected $fillable = ['name', 'slug', 'color', 'icon', 'action_label', 'advance_on_claim', 'applies_to_sfp', 'applies_to_ill', 'sort_order', 'active', 'is_terminal', 'notify_patron', 'description'];
 
     protected $casts = [
-        'active' => 'boolean',
-        'is_terminal' => 'boolean',
-        'notify_patron' => 'boolean',
+        'active'          => 'boolean',
+        'is_terminal'     => 'boolean',
+        'notify_patron'   => 'boolean',
         'advance_on_claim' => 'boolean',
+        'applies_to_sfp'  => 'boolean',
+        'applies_to_ill'  => 'boolean',
     ];
 
     /** Requests currently in this status. */
@@ -64,5 +68,18 @@ class RequestStatus extends Model
     public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('active', true)->orderBy('sort_order');
+    }
+
+    /**
+     * Scope to statuses that apply to the given request kind ('sfp' or 'ill').
+     * Unknown kinds are not filtered (all statuses pass through).
+     */
+    public function scopeForKind(\Illuminate\Database\Eloquent\Builder $query, ?string $kind): \Illuminate\Database\Eloquent\Builder
+    {
+        return match ($kind) {
+            'sfp'   => $query->where('applies_to_sfp', true),
+            'ill'   => $query->where('applies_to_ill', true),
+            default => $query,
+        };
     }
 }
