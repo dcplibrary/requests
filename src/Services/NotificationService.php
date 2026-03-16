@@ -6,12 +6,14 @@ use Dcplibrary\Requests\Mail\RequestMail;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\PatronStatusTemplate;
+use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Models\PatronRequest;
 use Dcplibrary\Requests\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 
 class NotificationService
 {
@@ -40,6 +42,7 @@ class NotificationService
         );
         $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
         $body = $this->replacePlaceholders($bodyTemplate, $request);
+        $body .= $this->buildEmailActionButtons($request);
 
         foreach ($recipients as $email) {
             try {
@@ -207,6 +210,7 @@ class NotificationService
         );
         $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
         $body = $header . $this->replacePlaceholders($bodyTemplate, $request);
+        $body .= $this->buildEmailActionButtons($request);
 
         try {
             Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
@@ -422,6 +426,54 @@ class NotificationService
         }
 
         $html .= '</div>';
+
+        return $html;
+    }
+
+    /**
+     * Build an HTML block of one-click action buttons for staff routing emails.
+     *
+     * Renders a button for every active, non-terminal RequestStatus that has an
+     * `action_label` set. Each button is a signed, expiring URL that, when
+     * clicked, transitions the request to that status without requiring login.
+     *
+     * Returns an empty string when no statuses have action labels configured.
+     */
+    private function buildEmailActionButtons(PatronRequest $request): string
+    {
+        $statuses = RequestStatus::where('active', true)
+            ->whereNotNull('action_label')
+            ->where('action_label', '!=', '')
+            ->orderBy('sort_order')
+            ->get(['id', 'action_label', 'color']);
+
+        if ($statuses->isEmpty()) {
+            return '';
+        }
+
+        $html  = '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;">';
+        $html .= '<p style="margin:0 0 10px;font-size:12px;color:#6b7280;font-style:italic;">Quick actions — click to update status directly from this email:</p>';
+        $html .= '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+
+        foreach ($statuses as $status) {
+            $url = URL::temporarySignedRoute(
+                'request.email-action',
+                now()->addDays(14),
+                ['patronRequest' => $request->id, 'status_id' => $status->id]
+            );
+
+            $color = $status->color ?: '#4b5563';
+            $label = e($status->action_label);
+
+            $html .= '<a href="' . $url . '" '
+                . 'style="display:inline-block;padding:8px 18px;background:' . e($color) . ';color:#ffffff;'
+                . 'text-decoration:none;border-radius:6px;font-size:13px;font-weight:bold;'
+                . 'font-family:sans-serif;line-height:1;">'
+                . $label
+                . '</a>';
+        }
+
+        $html .= '</div></div>';
 
         return $html;
     }

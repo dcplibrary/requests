@@ -25,6 +25,12 @@ $staffMiddleware = array_merge(
     ['request.role']
 );
 
+// --- Public: Signed email action (no auth required — URL is signed + expiring) ---
+Route::get(
+    $prefix . '/email-action/{patronRequest}',
+    [RequestController::class, 'emailAction']
+)->name('request.email-action')->middleware($middleware);
+
 Route::group([
     'prefix'     => $prefix,
     'middleware' => $middleware,

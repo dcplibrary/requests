@@ -220,7 +220,7 @@ class PatronRequestAssignmentTest extends TestCase
         if ($assignmentEnabled && ! $patronRequest->assigned_to_user_id && ! $noclaim && $actor) {
             $patronRequest->update([
                 'assigned_to_user_id' => $actor->id,
-                'assigned_at'         => now(),
+                'assigned_at'         => \Carbon\Carbon::now(),
                 'assigned_by_user_id' => $actor->id,
             ]);
             $patronRequest->statusHistory()->create([

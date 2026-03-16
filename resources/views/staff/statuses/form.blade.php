@@ -61,6 +61,13 @@
                 <x-requests::icon-select name="icon" :value="$status->icon" />
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email Action Label</label>
+                <p class="text-xs text-gray-500 mb-1">Optional. A short verb shown as a one-click button in staff routing emails (e.g. <em>Review</em>, <em>Purchase</em>, <em>Deny</em>). Leave blank to omit a button for this status.</p>
+                <input type="text" name="action_label" value="{{ old('action_label', $status->action_label ?? '') }}"
+                       class="w-48 border border-gray-300 rounded px-3 py-2 text-sm"
+                       placeholder="e.g. Review">
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order <span class="text-red-500">*</span></label>
                 <input type="number" name="sort_order" value="{{ old('sort_order', $status->sort_order ?? 0) }}" required min="0"
                        class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
@@ -71,6 +78,16 @@
                        {{ old('is_terminal', $status->is_terminal ?? false) ? 'checked' : '' }}
                        class="w-4 h-4 rounded border-gray-300 text-blue-600">
                 <label for="is_terminal" class="text-sm font-medium text-gray-700">Terminal (final state)</label>
+            </div>
+            <div class="flex items-start gap-2">
+                <input type="hidden" name="advance_on_claim" value="0">
+                <input type="checkbox" name="advance_on_claim" id="advance_on_claim" value="1"
+                       {{ old('advance_on_claim', $status->advance_on_claim ?? false) ? 'checked' : '' }}
+                       class="w-4 h-4 mt-0.5 rounded border-gray-300 text-blue-600">
+                <div>
+                    <label for="advance_on_claim" class="text-sm font-medium text-gray-700">Auto-advance to next status when claimed</label>
+                    <p class="text-xs text-gray-500 mt-0.5">When a request on this status is opened and claimed by staff, automatically advance it to the next status (by sort order).</p>
+                </div>
             </div>
             <div class="flex items-center gap-2">
                 <input type="hidden" name="notify_patron" value="0">

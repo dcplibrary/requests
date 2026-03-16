@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $slug
  * @property string $color        Hex color code for status badge (e.g. '#72bf44')
  * @property string|null $icon     Heroicon outline name (e.g. 'clock', 'check-circle')
+ * @property string|null $action_label Short verb for email action buttons (e.g. 'Review', 'Purchase')
+ * @property bool   $advance_on_claim When true, claiming a request on this status auto-advances it to the next status by sort_order
  * @property int    $sort_order
  * @property bool   $active
  * @property bool   $is_terminal  True for resolved statuses (Purchased, Denied, etc.)
@@ -26,12 +28,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class RequestStatus extends Model
 {
-    protected $fillable = ['name', 'slug', 'color', 'icon', 'sort_order', 'active', 'is_terminal', 'notify_patron', 'description'];
+    protected $fillable = ['name', 'slug', 'color', 'icon', 'action_label', 'advance_on_claim', 'sort_order', 'active', 'is_terminal', 'notify_patron', 'description'];
 
     protected $casts = [
         'active' => 'boolean',
         'is_terminal' => 'boolean',
         'notify_patron' => 'boolean',
+        'advance_on_claim' => 'boolean',
     ];
 
     /** Requests currently in this status. */

@@ -46,11 +46,13 @@ class RequestStatusController extends Controller
             'name'         => 'required|string|max:100',
             'color'        => 'required|string|max:20',
             'icon'         => 'nullable|string|max:50',
-            'sort_order'   => 'required|integer|min:0',
-            'active'       => 'boolean',
-            'is_terminal'  => 'boolean',
-            'notify_patron' => 'boolean',
-            'description'  => 'nullable|string|max:2000',
+            'action_label'     => 'nullable|string|max:50',
+            'advance_on_claim' => 'boolean',
+            'sort_order'       => 'required|integer|min:0',
+            'active'           => 'boolean',
+            'is_terminal'      => 'boolean',
+            'notify_patron'    => 'boolean',
+            'description'      => 'nullable|string|max:2000',
         ]);
 
         RequestStatus::create(array_merge($data, ['slug' => Str::slug($data['name'])]));
@@ -69,11 +71,13 @@ class RequestStatusController extends Controller
             'name'         => 'required|string|max:100',
             'color'        => 'required|string|max:20',
             'icon'         => 'nullable|string|max:50',
-            'sort_order'   => 'required|integer|min:0',
-            'active'       => 'boolean',
-            'is_terminal'  => 'boolean',
-            'notify_patron' => 'boolean',
-            'description'  => 'nullable|string|max:2000',
+            'action_label'     => 'nullable|string|max:50',
+            'advance_on_claim' => 'boolean',
+            'sort_order'       => 'required|integer|min:0',
+            'active'           => 'boolean',
+            'is_terminal'      => 'boolean',
+            'notify_patron'    => 'boolean',
+            'description'      => 'nullable|string|max:2000',
         ]);
 
         $status->update($data);
