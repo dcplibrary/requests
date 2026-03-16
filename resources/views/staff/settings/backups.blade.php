@@ -105,82 +105,47 @@
         <div class="p-5">
             <h3 class="text-sm font-semibold text-gray-700 mb-1">Export Database</h3>
             <p class="text-sm text-gray-500 mb-4">
-                Download a full dump of the database (all tables and data). Choose SQL or JSON.
-                JSON is driver-agnostic and restores cleanly on any database (e.g. MySQL → SQLite).
+                Download a full SQL dump of the database. Includes all tables and data —
+                requests, patrons, titles, and configuration.
             </p>
-            <div class="flex flex-wrap items-center gap-3">
-                <form method="POST" action="{{ route('request.staff.backups.db-export') }}" class="inline">
-                    @csrf
-                    <button type="submit"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium">
-                        {!! $icon['download'] !!} Download database (SQL)
-                    </button>
-                </form>
-                <form method="POST" action="{{ route('request.staff.backups.db-export-json') }}" class="inline">
-                    @csrf
-                    <button type="submit"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium">
-                        {!! $icon['download'] !!} Download database (JSON)
-                    </button>
-                </form>
-            </div>
+            <form method="POST" action="{{ route('request.staff.backups.db-export') }}">
+                @csrf
+                <button type="submit"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium">
+                    {!! $icon['download'] !!} Download SQL Dump
+                </button>
+            </form>
         </div>
 
         {{-- DB Restore --}}
         <div class="p-5">
             <h3 class="text-sm font-semibold text-gray-700 mb-1">Import Database</h3>
             <p class="text-sm text-gray-500 mb-4">
-                Upload a <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">.sql</code> or
-                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">.json</code> backup.
+                Upload a <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">.sql</code> file
+                to restore the database.
                 <strong class="text-orange-600">This will overwrite existing data.</strong>
-                JSON restore requires the database schema to already exist (run migrations first).
+                Export a backup first.
             </p>
-            <div class="space-y-4">
-                <form method="POST"
-                      action="{{ route('request.staff.backups.db-import') }}"
-                      enctype="multipart/form-data"
-                      class="flex flex-wrap items-end gap-3"
-                      onsubmit="return confirm('This will overwrite the current database with the uploaded file. Are you sure?')">
-                    @csrf
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">SQL file</label>
-                        <input type="file"
-                               name="sql_file"
-                               accept=".sql,text/plain"
-                               required
-                               class="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
-                    </div>
+            <form method="POST"
+                  action="{{ route('request.staff.backups.db-import') }}"
+                  enctype="multipart/form-data"
+                  onsubmit="return confirm('This will overwrite the current database with the uploaded file. Are you sure?')">
+                @csrf
+                <div class="space-y-3">
+                    <input type="file"
+                           name="sql_file"
+                           accept=".sql,text/plain"
+                           required
+                           class="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
                     <button type="submit"
                             class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded font-medium">
-                        {!! $icon['restore'] !!} Restore from SQL
+                        {!! $icon['restore'] !!} Restore Database
                     </button>
-                    @error('sql_file')
-                        <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p>
-                    @enderror
-                </form>
-                <form method="POST"
-                      action="{{ route('request.staff.backups.db-import-json') }}"
-                      enctype="multipart/form-data"
-                      class="flex flex-wrap items-end gap-3"
-                      onsubmit="return confirm('This will overwrite the current database with the uploaded JSON file. Are you sure?')">
-                    @csrf
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">JSON file</label>
-                        <input type="file"
-                               name="db_json_file"
-                               accept=".json,application/json"
-                               required
-                               class="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
-                    </div>
-                    <button type="submit"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded font-medium">
-                        {!! $icon['restore'] !!} Restore from JSON
-                    </button>
-                    @error('db_json_file')
-                        <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p>
-                    @enderror
-                </form>
-            </div>
+                </div>
+                @error('sql_file')
+                    <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </form>
         </div>
 
         {{-- Storage Export --}}
@@ -223,11 +188,6 @@
                         <input type="checkbox" name="types[]" value="db" checked
                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         Database (SQL)
-                    </label>
-                    <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                        <input type="checkbox" name="types[]" value="db-json"
-                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        Database (JSON)
                     </label>
                 </div>
                 <button type="submit"
