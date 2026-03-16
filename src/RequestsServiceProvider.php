@@ -4,6 +4,7 @@ namespace Dcplibrary\Requests;
 
 use Dcplibrary\Requests\Console\Commands\SeedDefaultsCommand;
 use Dcplibrary\Requests\Console\Commands\BackupCommand;
+use Dcplibrary\Requests\Console\Commands\RestoreDbCommand;
 use Dcplibrary\Requests\Console\Commands\UsersBackupCommand;
 use Dcplibrary\Requests\Console\Commands\UsersRestoreCommand;
 use Dcplibrary\Requests\Http\Middleware\RequireStaffRole;
@@ -78,6 +79,7 @@ class RequestsServiceProvider extends ServiceProvider
         $this->commands([
             SeedDefaultsCommand::class,
             BackupCommand::class,
+            RestoreDbCommand::class,
             UsersBackupCommand::class,
             UsersRestoreCommand::class,
         ]);

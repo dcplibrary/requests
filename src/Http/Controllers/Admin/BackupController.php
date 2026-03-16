@@ -10,6 +10,7 @@ use Dcplibrary\Requests\Models\CatalogFormatLabel;
 use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
+use Dcplibrary\Requests\Services\SqlStatementSplitter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -128,30 +129,41 @@ class BackupController extends Controller
 
         $ext = pathinfo($filename, PATHINFO_EXTENSION);
 
+        // ── Full database JSON restore ────────────────────────────────────────
+        if ($ext === 'json') {
+            $payload = json_decode(file_get_contents($path), true);
+            if (is_array($payload) && isset($payload['tables'])) {
+                try {
+                    $this->restoreDatabaseFromJsonPayload($payload['tables']);
+                } catch (\Throwable $e) {
+                    return back()->withErrors(['filename' => 'Database restore failed: ' . $e->getMessage()]);
+                }
+                Cache::flush();
+                return back()->with('success', "Database restored from {$filename}.");
+            }
+            // Fall through to config restore if payload has 'data' not 'tables'
+            if (! is_array($payload) || ! isset($payload['data'])) {
+                return back()->withErrors(['filename' => 'Invalid backup file.']);
+            }
+            $summary = $this->applyConfigPayload($payload['data']);
+            return back()->with('success', "Config restored from {$filename}: {$summary}.");
+        }
+
         // ── SQL restore ───────────────────────────────────────────────────────
         if ($ext === 'sql') {
             try {
-                $pdo = DB::connection()->getPdo();
-                foreach ($this->splitSqlStatements(file_get_contents($path)) as $statement) {
-                    $pdo->exec($statement);
+                $driver     = DB::connection()->getDriverName();
+                $statements = SqlStatementSplitter::filterForDriver(SqlStatementSplitter::split(file_get_contents($path)), $driver);
+                foreach ($statements as $statement) {
+                    if ($statement !== '') {
+                        DB::unprepared($statement);
+                    }
                 }
             } catch (\Exception $e) {
                 return back()->withErrors(['filename' => 'Database restore failed: ' . $e->getMessage()]);
             }
             Cache::flush();
             return back()->with('success', "Database restored from {$filename}.");
-        }
-
-        // ── JSON config restore ───────────────────────────────────────────────
-        if ($ext === 'json') {
-            $payload = json_decode(file_get_contents($path), true);
-
-            if (! is_array($payload) || ! isset($payload['version'], $payload['data'])) {
-                return back()->withErrors(['filename' => 'Invalid config backup file.']);
-            }
-
-            $summary = $this->applyConfigPayload($payload['data']);
-            return back()->with('success', "Config restored from {$filename}: {$summary}.");
         }
 
         return back()->withErrors(['filename' => 'Unsupported file type.']);
@@ -182,6 +194,32 @@ class BackupController extends Controller
         return response()->download($path, $filename, [
             'Content-Type' => $mimes[$ext] ?? 'application/octet-stream',
         ]);
+    }
+
+    // ── Delete server backup file ─────────────────────────────────────────────
+
+    public function deleteFromServer(Request $request)
+    {
+        $request->validate([
+            'filename' => ['required', 'string', 'regex:/^requests-[\w\-]+\.(sql|json|zip)$/'],
+        ]);
+
+        $filename = $request->input('filename');
+        $path     = $this->backupDir . DIRECTORY_SEPARATOR . $filename;
+
+        if (! str_starts_with(realpath($path) ?: '', realpath($this->backupDir) ?: $this->backupDir)) {
+            return back()->withErrors(['filename' => 'Invalid file path.']);
+        }
+
+        if (! file_exists($path)) {
+            return back()->withErrors(['filename' => "File not found: {$filename}"]);
+        }
+
+        if (! @unlink($path)) {
+            return back()->withErrors(['filename' => "Could not delete {$filename}"]);
+        }
+
+        return back()->with('success', "Deleted {$filename}.");
     }
 
     // ── Backup retention ──────────────────────────────────────────────────────
@@ -268,9 +306,12 @@ class BackupController extends Controller
         $sql = file_get_contents($request->file('sql_file')->getRealPath());
 
         try {
-            $pdo = DB::connection()->getPdo();
-            foreach ($this->splitSqlStatements($sql) as $statement) {
-                $pdo->exec($statement);
+            $driver     = DB::connection()->getDriverName();
+            $statements = SqlStatementSplitter::filterForDriver(SqlStatementSplitter::split($sql), $driver);
+            foreach ($statements as $statement) {
+                if ($statement !== '') {
+                    DB::unprepared($statement);
+                }
             }
         } catch (\Exception $e) {
             return back()->withErrors(['sql_file' => 'Database restore failed: ' . $e->getMessage()]);
@@ -279,6 +320,98 @@ class BackupController extends Controller
         Cache::flush();
 
         return back()->with('success', 'Database restored successfully.');
+    }
+
+    // ── Database Export (JSON) ──────────────────────────────────────────────
+
+    /**
+     * Export the full database as JSON (tables and rows).
+     * Driver-agnostic: restore with importDatabaseFromJson() avoids SQL dialect issues.
+     */
+    public function exportDatabaseJson()
+    {
+        $tables = $this->listTables();
+        $payload = [
+            'version'     => 1,
+            'exported_at' => now()->toIso8601String(),
+            'app'         => 'dcplibrary/requests',
+            'tables'      => [],
+        ];
+
+        foreach ($tables as $table) {
+            $rows = DB::table($table)->get();
+            $payload['tables'][$table] = $rows->map(fn ($row) => (array) $row)->all();
+        }
+
+        $filename = 'requests-database-' . now()->format('Y-m-d-His') . '.json';
+        $json     = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        return response($json, 200, [
+            'Content-Type'        => 'application/json',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    // ── Database Import (JSON) ──────────────────────────────────────────────
+
+    /**
+     * Restore the full database from a JSON dump.
+     * Uses DB::table()->insert(); no SQL parsing, works on any driver.
+     */
+    public function importDatabaseFromJson(Request $request)
+    {
+        $request->validate([
+            'db_json_file' => 'required|file|max:102400', // 100 MB
+        ]);
+
+        $payload = json_decode(file_get_contents($request->file('db_json_file')->getRealPath()), true);
+
+        if (! is_array($payload) || ! isset($payload['tables'])) {
+            return back()->withErrors(['db_json_file' => 'Invalid database backup file — missing "tables" key.']);
+        }
+
+        try {
+            $this->restoreDatabaseFromJsonPayload($payload['tables']);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['db_json_file' => 'Database restore failed: ' . $e->getMessage()]);
+        }
+
+        Cache::flush();
+
+        return back()->with('success', 'Database restored successfully from JSON.');
+    }
+
+    /**
+     * Restore database from a payload['tables'] array (table name => list of rows).
+     * Disables FKs, truncates tables in list order, inserts in same order.
+     */
+    private function restoreDatabaseFromJsonPayload(array $tablesPayload): void
+    {
+        $driver  = DB::connection()->getDriverName();
+        $isSqlite = $driver === 'sqlite';
+
+        DB::statement($isSqlite ? 'PRAGMA foreign_keys = OFF' : 'SET FOREIGN_KEY_CHECKS=0');
+
+        try {
+            foreach (array_keys($tablesPayload) as $table) {
+                if ($isSqlite) {
+                    DB::table($table)->delete();
+                } else {
+                    DB::table($table)->truncate();
+                }
+            }
+
+            foreach ($tablesPayload as $table => $rows) {
+                if (empty($rows)) {
+                    continue;
+                }
+                foreach (array_chunk($rows, 200) as $chunk) {
+                    DB::table($table)->insert($chunk);
+                }
+            }
+        } finally {
+            DB::statement($isSqlite ? 'PRAGMA foreign_keys = ON' : 'SET FOREIGN_KEY_CHECKS=1');
+        }
     }
 
     // ── Save backup to server ─────────────────────────────────────────────────
@@ -291,7 +424,7 @@ class BackupController extends Controller
     {
         $request->validate([
             'types' => 'required|array|min:1',
-            'types.*' => 'in:config,db',
+            'types.*' => 'in:config,db,db-json',
         ]);
 
         $types = $request->input('types');
@@ -385,6 +518,28 @@ class BackupController extends Controller
                 $written[] = "requests-database-{$timestamp}.sql";
             } catch (\Throwable $e) {
                 $errors[] = "Database backup failed: {$e->getMessage()}";
+            }
+        }
+
+        // ── Database JSON ─────────────────────────────────────────────────────
+        if (in_array('db-json', $types)) {
+            try {
+                $tables = $this->listTables();
+                $payload = [
+                    'version'     => 1,
+                    'exported_at' => now()->toIso8601String(),
+                    'app'         => 'dcplibrary/requests',
+                    'tables'      => [],
+                ];
+                foreach ($tables as $table) {
+                    $rows = DB::table($table)->get();
+                    $payload['tables'][$table] = $rows->map(fn ($row) => (array) $row)->all();
+                }
+                $file = $this->backupDir . DIRECTORY_SEPARATOR . "requests-database-{$timestamp}.json";
+                file_put_contents($file, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                $written[] = "requests-database-{$timestamp}.json";
+            } catch (\Throwable $e) {
+                $errors[] = "Database JSON backup failed: {$e->getMessage()}";
             }
         }
 
@@ -590,9 +745,13 @@ class BackupController extends Controller
                 'modified' => filemtime($path),
             ];
 
-            if ($ext === 'json')      $groups['config'][]  = $meta;
-            elseif ($ext === 'sql')   $groups['db'][]      = $meta;
-            elseif ($ext === 'zip')   $groups['storage'][] = $meta;
+            if ($ext === 'json') {
+                $groups[str_starts_with($name, 'requests-database-') ? 'db' : 'config'][] = $meta;
+            } elseif ($ext === 'sql') {
+                $groups['db'][] = $meta;
+            } elseif ($ext === 'zip') {
+                $groups['storage'][] = $meta;
+            }
         }
 
         // Newest first within each group
@@ -601,82 +760,6 @@ class BackupController extends Controller
         }
 
         return $groups;
-    }
-
-    // ── SQL statement splitter ────────────────────────────────────────────────
-
-    /**
-     * Split a multi-statement SQL dump into individual statements.
-     *
-     * Uses a character-level state machine to correctly handle semicolons
-     * that appear inside quoted string literals or quoted identifiers,
-     * and skips single-line (--) comments entirely.
-     *
-     * This is required because SQLite's PDO::exec() only processes the first
-     * statement in a multi-statement string and silently ignores the rest
-     * (or throws a syntax error on drivers that reject multi-statement input).
-     */
-    private function splitSqlStatements(string $sql): array
-    {
-        $statements = [];
-        $current    = '';
-        $i          = 0;
-        $len        = strlen($sql);
-
-        while ($i < $len) {
-            $ch = $sql[$i];
-
-            // Skip line comments (-- ... \n)
-            if ($ch === '-' && $i + 1 < $len && $sql[$i + 1] === '-') {
-                while ($i < $len && $sql[$i] !== "\n") {
-                    $i++;
-                }
-                continue;
-            }
-
-            // Quoted strings/identifiers: copy verbatim until matching close quote
-            if ($ch === "'" || $ch === '"') {
-                $quote    = $ch;
-                $current .= $ch;
-                $i++;
-                while ($i < $len) {
-                    $c        = $sql[$i];
-                    $current .= $c;
-                    $i++;
-                    if ($c === $quote) {
-                        // SQL escaped quote: '' or ""
-                        if ($i < $len && $sql[$i] === $quote) {
-                            $current .= $sql[$i++];
-                        } else {
-                            break;
-                        }
-                    }
-                }
-                continue;
-            }
-
-            // Statement terminator
-            if ($ch === ';') {
-                $stmt = trim($current);
-                if ($stmt !== '') {
-                    $statements[] = $stmt;
-                }
-                $current = '';
-                $i++;
-                continue;
-            }
-
-            $current .= $ch;
-            $i++;
-        }
-
-        // Trailing statement without a trailing semicolon
-        $stmt = trim($current);
-        if ($stmt !== '') {
-            $statements[] = $stmt;
-        }
-
-        return array_values(array_filter($statements));
     }
 
     // ── Driver-aware helpers ──────────────────────────────────────────────────

@@ -126,10 +126,13 @@ Route::group([
             Route::post('/backups/config-export',   [BackupController::class, 'exportConfig'])->name('backups.config-export');
             Route::post('/backups/config-import',   [BackupController::class, 'importConfig'])->name('backups.config-import');
             Route::post('/backups/db-export',       [BackupController::class, 'exportDatabase'])->name('backups.db-export');
+            Route::post('/backups/db-export-json',  [BackupController::class, 'exportDatabaseJson'])->name('backups.db-export-json');
             Route::post('/backups/db-import',       [BackupController::class, 'importDatabase'])->name('backups.db-import');
+            Route::post('/backups/db-import-json',  [BackupController::class, 'importDatabaseFromJson'])->name('backups.db-import-json');
             Route::post('/backups/storage-export',    [BackupController::class, 'exportStorage'])->name('backups.storage-export');
             Route::post('/backups/server-save',     [BackupController::class, 'saveToServer'])->name('backups.server-save');
             Route::post('/backups/server-restore',  [BackupController::class, 'restoreFromServer'])->name('backups.server-restore');
+            Route::delete('/backups/server-delete', [BackupController::class, 'deleteFromServer'])->name('backups.server-delete');
             Route::get('/backups/server-download',  [BackupController::class, 'downloadFromServer'])->name('backups.server-download');
             Route::post('/backups/retention',       [BackupController::class, 'updateRetention'])->name('backups.retention');
             Route::post('/backups/prune',           [BackupController::class, 'pruneBackups'])->name('backups.prune');
