@@ -516,6 +516,7 @@ class NotificationService
         $map = [
             '{title}'             => $request->submitted_title  ?? '',
             '{author}'            => $request->submitted_author ?? '',
+            '{isbn}'              => $request->material?->isbn13 ?? $request->material?->isbn ?? $request->fieldValue('isbn') ?? '',
             '{patron_name}'       => $patronName,
             '{patron_first_name}' => $patron?->name_first        ?? '',
             '{patron_email}'      => $patron?->effective_email   ?? '',

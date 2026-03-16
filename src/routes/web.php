@@ -59,6 +59,7 @@ Route::group([
             Route::get('/requests',                                       [RequestController::class, 'index'])->name('requests.index');
             Route::post('/requests/bulk-reassign',               [RequestController::class, 'bulkReassign'])->name('requests.bulk-reassign');
             Route::post('/requests/bulk-status',                 [RequestController::class, 'bulkStatus'])->name('requests.bulk-status');
+            Route::delete('/requests/bulk-delete',               [RequestController::class, 'bulkDelete'])->name('requests.bulk-delete');
             Route::get('/requests/{patronRequest}',                        [RequestController::class, 'show'])->name('requests.show');
             Route::get('/requests/{patronRequest}/preview-email',          [RequestController::class, 'previewStatusEmail'])->name('requests.preview-email');
             Route::patch('/requests/{patronRequest}/status',               [RequestController::class, 'updateStatus'])->name('requests.status');

@@ -159,8 +159,9 @@ class RequestController extends Controller
         }
 
         return view('requests::staff.requests.index', [
-            'requests'       => $requests,
-            'statuses'       => RequestStatus::active()->get(),
+            'requests'           => $requests,
+            'currentStaffUser'   => $staffUser,
+            'statuses'           => RequestStatus::active()->get(),
             'materialTypes'  => $mtField ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->get() : collect(),
             'audiences'      => $audField ? FieldOption::where('field_id', $audField->id)->active()->ordered()->get() : collect(),
             'filters'        => $request->only(['kind', 'status', 'material_type', 'audience', 'search', 'cf', 'cf_value', 'assigned']),
@@ -1143,6 +1144,41 @@ class RequestController extends Controller
         }
 
         return back()->with('success', $requests->count() . " request(s) assigned to {$assignee->name}.");
+    }
+
+    /**
+     * Bulk delete selected requests. Admin only.
+     *
+     * @param  Request  $httpRequest
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function bulkDelete(Request $httpRequest)
+    {
+        $staffUser = $this->currentStaffUser($httpRequest);
+        if (! $staffUser || ! $staffUser->isAdmin()) {
+            abort(403);
+        }
+
+        $httpRequest->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:requests,id',
+        ]);
+
+        $requests = PatronRequest::query()
+            ->visibleTo($httpRequest->user())
+            ->whereIn('id', $httpRequest->input('ids'))
+            ->get();
+
+        if ($requests->isEmpty()) {
+            return back()->withErrors(['error' => 'No accessible requests selected.']);
+        }
+
+        $count = $requests->count();
+        foreach ($requests as $req) {
+            $req->delete();
+        }
+
+        return back()->with('success', "{$count} request(s) deleted.");
     }
 
     public function destroy(Request $httpRequest, PatronRequest $patronRequest)
