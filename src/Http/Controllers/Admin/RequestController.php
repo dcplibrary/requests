@@ -236,24 +236,11 @@ class RequestController extends Controller
         if ($assignmentEnabled && ! $patronRequest->assigned_to_user_id && ! request()->boolean('noclaim')) {
             $actor = $this->currentStaffUser(request());
             if ($actor) {
-                $updates = [
+                $patronRequest->update([
                     'assigned_to_user_id' => $actor->id,
                     'assigned_at'         => now(),
                     'assigned_by_user_id' => $actor->id,
-                ];
-
-                // Advance status from "unclaimed" → "pending" on auto-claim so the
-                // two states don't contradict each other.
-                $pendingStatus = null;
-                if ($patronRequest->status?->slug === 'unclaimed') {
-                    $pendingStatus = RequestStatus::where('slug', 'pending')->first();
-                    if ($pendingStatus) {
-                        $updates['request_status_id'] = $pendingStatus->id;
-                    }
-                }
-
-                $patronRequest->update($updates);
-
+                ]);
                 $patronRequest->statusHistory()->create([
                     'request_status_id' => $patronRequest->request_status_id,
                     'user_id'           => $actor->id,
@@ -261,6 +248,20 @@ class RequestController extends Controller
                 ]);
                 $patronRequest->load(['assignedTo', 'assignedBy', 'status', 'statusHistory.status', 'statusHistory.user']);
                 $justClaimed = true;
+            }
+        }
+
+        // If the request is assigned but still carrying the "unclaimed" status,
+        // advance it to "pending". Runs regardless of whether it was just claimed
+        // now or was already claimed on a previous visit.
+        if ($patronRequest->assigned_to_user_id
+            && strtolower($patronRequest->status?->slug ?? '') === 'unclaimed'
+        ) {
+            $pendingStatus = RequestStatus::where('slug', 'pending')->first();
+            if ($pendingStatus) {
+                $actor = $actor ?? $this->currentStaffUser(request());
+                $patronRequest->transitionStatus($pendingStatus->id, $actor?->id, 'Status advanced from Unclaimed on open.');
+                $patronRequest->load(['status', 'statusHistory.status', 'statusHistory.user']);
             }
         }
 
