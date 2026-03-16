@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.5.0](https://github.com/dcplibrary/requests/compare/v4.4.4...v4.5.0) (2026-03-16)
+
+
+### Features
+
+* add email buttons for updating status.  and action labels for statuses.  add setting for automated status change ([27181f1](https://github.com/dcplibrary/requests/commit/27181f1d223d12ae21cbb415b0564102b8919420))
+
 ## [4.4.4](https://github.com/dcplibrary/requests/compare/v4.4.3...v4.4.4) (2026-03-16)
 
 
