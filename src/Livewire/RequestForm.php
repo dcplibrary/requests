@@ -55,6 +55,8 @@ class RequestForm extends Component
     #[Validate('nullable|email|max:255')]
     public string $email = '';
 
+    public bool $notify_by_email = false;
+
     // --- Step 2: Material ---
     // Note: validation rules for these fields are built dynamically in buildStepTwoRules()
     // based on each field's 'active', 'required', and 'condition' config in sfp_form_fields.
@@ -771,6 +773,7 @@ class RequestForm extends Component
             'submitted_publish_date' => $this->publish_date ?: null,
             'other_material_text'    => $this->getShowOtherTextProperty() ? $this->other_material_text : null,
             'ill_requested'          => (bool) ($this->custom['ill_requested'] ?? false),
+            'notify_by_email'        => $this->notify_by_email,
             'catalog_searched'       => $this->catalogSearched,
             'catalog_result_count'   => count($this->catalogResults),
             'catalog_match_accepted' => $this->catalogMatchAccepted,

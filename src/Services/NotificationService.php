@@ -75,7 +75,10 @@ class NotificationService
 
         if (! $request->status?->notify_patron) return false;
 
-        $patronEmail = $request->patron?->email;
+        // Patron must have opted in to email notifications when they submitted.
+        if (! $request->notify_by_email) return false;
+
+        $patronEmail = $request->patron?->effective_email ?? $request->patron?->email;
         if (! $patronEmail) return false;
 
         $statusId = $request->request_status_id;

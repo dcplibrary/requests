@@ -35,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool|null        $isbndb_match_accepted
  * @property bool             $is_duplicate
  * @property int|null         $duplicate_of_request_id
+ * @property bool             $notify_by_email  Patron opted in to email notifications at time of submission
  * @property int|null         $assigned_to_user_id
  * @property \Carbon\Carbon|null $assigned_at
  * @property int|null         $assigned_by_user_id
@@ -62,6 +63,7 @@ class PatronRequest extends Model
         'isbndb_match_accepted',
         'is_duplicate',
         'duplicate_of_request_id',
+        'notify_by_email',
         'assigned_to_user_id',
         'assigned_at',
         'assigned_by_user_id',
@@ -74,6 +76,7 @@ class PatronRequest extends Model
         'isbndb_searched' => 'boolean',
         'isbndb_match_accepted' => 'boolean',
         'is_duplicate' => 'boolean',
+        'notify_by_email' => 'boolean',
         'assigned_at' => 'datetime',
     ];
 

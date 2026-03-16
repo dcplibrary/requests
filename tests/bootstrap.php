@@ -19,33 +19,28 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // Minimal facade boot for tests that reference Setting::get() (Cache facade).
 require_once __DIR__ . '/bootstrap_integration_settings.php';
 
+// Stub trait so Controller can be instantiated without laravel/framework.
+if (! trait_exists(\Illuminate\Foundation\Auth\Access\AuthorizesRequests::class)) {
+    require_once __DIR__ . '/stubs/AuthorizesRequestsStub.php';
+}
+
+// Global helpers for controller tests (abort, route, redirect).
+require_once __DIR__ . '/stubs/global_helpers.php';
+
 if (! function_exists('app')) {
     /**
      * Minimal test stub for Laravel's app() helper.
      *
-     * Used by PatronRequest::scopeVisibleTo() to allow dev-only behavior checks like
-     * app()->environment('local') even when laravel/framework isn't installed.
+     * With no args: returns the container (which has environment() for scopeVisibleTo).
+     * With a class name: resolves from the container so tests can bind mocks (e.g. NotificationService).
      */
-    function app()
+    function app($abstract = null, array $parameters = [])
     {
-        return new class {
-            public function environment(...$environments)
-            {
-                $current = getenv('APP_ENV') ?: ($_ENV['APP_ENV'] ?? 'testing');
-
-                if (count($environments) === 0) {
-                    return $current;
-                }
-
-                foreach ($environments as $env) {
-                    if ($env === $current) {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        };
+        $container = \Illuminate\Container\Container::getInstance();
+        if ($abstract === null) {
+            return $container;
+        }
+        return $container->make($abstract, $parameters);
     }
 }
 

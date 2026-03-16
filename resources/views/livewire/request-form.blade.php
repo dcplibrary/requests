@@ -142,6 +142,19 @@
                 @error('email')
                     <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
                 @enderror
+
+                <label class="inline-flex items-start gap-2 mt-2 cursor-pointer select-none">
+                    <input
+                        type="checkbox"
+                        id="notify_by_email"
+                        wire:model="notify_by_email"
+                        class="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                    />
+                    <span class="text-sm text-gray-700">
+                        Notify me by email when my request is updated
+                        <span class="text-gray-400 font-normal">&mdash; status updates will only be sent by email, not by phone or mail</span>
+                    </span>
+                </label>
             </div>
         </div>
 
