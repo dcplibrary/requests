@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.6.0](https://github.com/dcplibrary/requests/compare/v4.5.0...v4.6.0) (2026-03-16)
+
+
+### Features
+
+* add email checkbox and mulitple tests ([401e523](https://github.com/dcplibrary/requests/commit/401e5236a724865d83da76bfdfd8a6e13534da0f))
+
 # [4.5.0](https://github.com/dcplibrary/requests/compare/v4.4.4...v4.5.0) (2026-03-16)
 
 
