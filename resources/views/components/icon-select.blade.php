@@ -33,6 +33,7 @@
         'star'                    => 'Star',
         'bolt'                    => 'Bolt',
         'bell'                    => 'Bell',
+        'bell-alert'              => 'Bell Alert',
         'hand-thumb-up'           => 'Thumb Up',
         'hand-thumb-down'         => 'Thumb Down',
         'bookmark'                => 'Bookmark',

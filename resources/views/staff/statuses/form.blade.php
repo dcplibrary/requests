@@ -20,15 +20,38 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Color <span class="text-red-500">*</span></label>
-                <div class="flex items-center gap-2">
-                    <input type="color" name="color" value="{{ old('color', $status->color ?? '#6b7280') }}"
+                <div class="flex items-center gap-2 mb-2">
+                    <input type="color" name="color" id="color_picker" value="{{ old('color', $status->color ?? '#6b7280') }}"
                            class="w-10 h-9 border border-gray-300 rounded cursor-pointer p-0.5">
                     <input type="text" id="color_text" value="{{ old('color', $status->color ?? '#6b7280') }}"
                            class="w-32 border border-gray-300 rounded px-3 py-2 text-sm font-mono"
-                           oninput="document.querySelector('input[name=color]').value=this.value">
+                           oninput="document.getElementById('color_picker').value=this.value">
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                    @foreach([
+                        '#6b7280' => 'Gray',
+                        '#ef4444' => 'Red',
+                        '#f97316' => 'Orange',
+                        '#f59e0b' => 'Amber',
+                        '#eab308' => 'Yellow',
+                        '#84cc16' => 'Lime',
+                        '#10b981' => 'Emerald',
+                        '#14b8a6' => 'Teal',
+                        '#3b82f6' => 'Blue',
+                        '#6366f1' => 'Indigo',
+                        '#8b5cf6' => 'Violet',
+                        '#ec4899' => 'Pink',
+                    ] as $hex => $name)
+                        <button type="button"
+                                onclick="document.getElementById('color_picker').value='{{ $hex }}'; document.getElementById('color_text').value='{{ $hex }}';"
+                                class="w-6 h-6 rounded border border-black/10 hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400"
+                                style="background-color: {{ $hex }};"
+                                title="{{ $name }}">
+                        </button>
+                    @endforeach
                 </div>
                 <script>
-                    document.querySelector('input[name=color]').addEventListener('input', function() {
+                    document.getElementById('color_picker').addEventListener('input', function() {
                         document.getElementById('color_text').value = this.value;
                     });
                 </script>
