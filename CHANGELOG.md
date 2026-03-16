@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.6.2](https://github.com/dcplibrary/requests/compare/v4.6.1...v4.6.2) (2026-03-16)
+
+
+### Bug Fixes
+
+* add notify by email field ([1de1e47](https://github.com/dcplibrary/requests/commit/1de1e476023b0c279aa692fd34ad0bd799fe23d9))
+
 ## [4.6.1](https://github.com/dcplibrary/requests/compare/v4.6.0...v4.6.1) (2026-03-16)
 
 
