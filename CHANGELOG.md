@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.6.5](https://github.com/dcplibrary/requests/compare/v4.6.4...v4.6.5) (2026-03-16)
+
+
+### Bug Fixes
+
+* add delete to bulk operations ([386caec](https://github.com/dcplibrary/requests/commit/386caecce0dafbf1a1bb26b70b3b247d6fa0f7d8))
+
 ## [4.6.4](https://github.com/dcplibrary/requests/compare/v4.6.3...v4.6.4) (2026-03-16)
 
 
