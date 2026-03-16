@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
+use Dcplibrary\Requests\Http\Controllers\Concerns\ProvidesEmailTokens;
 use Dcplibrary\Requests\Http\Controllers\Controller;
 use Dcplibrary\Requests\Mail\RequestMail;
 use Dcplibrary\Requests\Models\Field;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 
 class SettingController extends Controller
 {
+    use ProvidesEmailTokens;
     public function index()
     {
         return view('requests::staff.settings.index', [
@@ -27,32 +29,7 @@ class SettingController extends Controller
 
     public function notifications()
     {
-        // Tokens that are not form/custom fields (patron, status, dates, URL).
-        $systemTokens = [
-            '{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}',
-            '{status}', '{submitted_date}', '{request_url}',
-        ];
-
-        // Field-based tokens (title, author, material_type, audience, genre, etc.).
-        $fieldTokens = [];
-        try {
-            $fieldTokens = Field::active()
-                ->where('include_as_token', true)
-                ->ordered()
-                ->pluck('key')
-                ->map(fn (string $k) => "{{$k}}")
-                ->all();
-        } catch (\Throwable $e) {
-            // Table may not exist during install
-        }
-
-        // Core request tokens (always include these so they're always listed).
-        $coreRequestTokens = ['{title}', '{author}', '{material_type}', '{audience}'];
-        $availableTokens = array_values(array_unique(array_merge(
-            $coreRequestTokens,
-            $systemTokens,
-            $fieldTokens
-        )));
+        $availableTokens = $this->availableTokens();
 
         $notifications = Setting::where('group', 'notifications')->orderBy('label')->get();
         $keyToTab = [
@@ -86,13 +63,7 @@ class SettingController extends Controller
         $patronSubject = $notifications->firstWhere('key', 'patron_status_subject');
         $patronEnabled = $notifications->firstWhere('key', 'patron_status_notification_enabled');
 
-        // Tokens not offered for subject lines (body-only / material-type-specific).
-        $subjectExcludedTokens = [
-            '{will_pay_up_to}', '{ill_requested}', '{prefer_email}', '{prefer_mail}', '{other_specify}',
-            '{publisher}', '{periodical_title}', '{article_author}', '{article_title}', '{volume_number}', '{page_number}',
-            '{director}', '{cast}', '{comments}', '{request_url}', '{genre}', '{isbn}', '{publish_date}',
-            '{where_heard}', '{date_needed_by}', '{console}', '{patron_email}', '{patron_phone}', '{audience}',
-        ];
+        $subjectExcludedTokens = $this->subjectExcludedTokens();
 
         $mtField = Field::where('key', 'material_type')->first();
         $materialTypes = $mtField
@@ -129,20 +100,8 @@ class SettingController extends Controller
         $staffMaterialTypeIdsSetting = $notifications->get('staff_routing_material_type_ids');
         $staffStatusIdsSetting = $notifications->get('staff_routing_status_ids');
 
-        $systemTokens = ['{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}', '{status}', '{submitted_date}', '{request_url}'];
-        $fieldTokens = [];
-        try {
-            $fieldTokens = Field::active()->where('include_as_token', true)->ordered()->pluck('key')->map(fn ($k) => "{{$k}}")->all();
-        } catch (\Throwable $e) {
-        }
-        $core = ['{title}', '{author}', '{material_type}', '{audience}'];
-        $availableTokens = array_values(array_unique(array_merge($core, $systemTokens, $fieldTokens)));
-        $subjectExcludedTokens = [
-            '{will_pay_up_to}', '{ill_requested}', '{prefer_email}', '{prefer_mail}', '{other_specify}',
-            '{publisher}', '{periodical_title}', '{article_author}', '{article_title}', '{volume_number}', '{page_number}',
-            '{director}', '{cast}', '{comments}', '{request_url}', '{genre}', '{isbn}', '{publish_date}',
-            '{where_heard}', '{date_needed_by}', '{console}', '{patron_email}', '{patron_phone}', '{audience}',
-        ];
+        $availableTokens       = $this->availableTokens();
+        $subjectExcludedTokens = $this->subjectExcludedTokens();
 
         $mtField = Field::where('key', 'material_type')->first();
         $materialTypes = $mtField
@@ -177,20 +136,9 @@ class SettingController extends Controller
         $patronSubject = $notifications->get('patron_status_subject');
         $patronTemplate = $notifications->get('patron_status_template');
 
-        $systemTokens = ['{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}', '{status}', '{status_description}', '{submitted_date}', '{request_url}'];
-        $fieldTokens = [];
-        try {
-            $fieldTokens = Field::active()->where('include_as_token', true)->ordered()->pluck('key')->map(fn ($k) => "{{$k}}")->all();
-        } catch (\Throwable $e) {
-        }
-        $core = ['{title}', '{author}', '{material_type}', '{audience}'];
-        $availableTokens = array_values(array_unique(array_merge($core, $systemTokens, $fieldTokens)));
-        $subjectExcludedTokens = [
-            '{will_pay_up_to}', '{ill_requested}', '{prefer_email}', '{prefer_mail}', '{other_specify}',
-            '{publisher}', '{periodical_title}', '{article_author}', '{article_title}', '{volume_number}', '{page_number}',
-            '{director}', '{cast}', '{comments}', '{request_url}', '{genre}', '{isbn}', '{publish_date}',
-            '{where_heard}', '{date_needed_by}', '{console}', '{patron_email}', '{patron_phone}', '{audience}', '{status_description}',
-        ];
+        // Patron email includes {status_description} as an available token.
+        $availableTokens       = $this->availableTokens(includeStatusDescription: true);
+        $subjectExcludedTokens = $this->subjectExcludedTokens();
 
         return view('requests::staff.settings.notifications-default-patron-email', [
             'patronEnabled'          => (bool) (optional($patronEnabled)->value ?? false),

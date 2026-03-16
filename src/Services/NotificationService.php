@@ -516,7 +516,6 @@ class NotificationService
         $map = [
             '{title}'             => $request->submitted_title  ?? '',
             '{author}'            => $request->submitted_author ?? '',
-            '{isbn}'              => $request->material?->isbn13 ?? $request->material?->isbn ?? $request->fieldValue('isbn') ?? '',
             '{patron_name}'       => $patronName,
             '{patron_first_name}' => $patron?->name_first        ?? '',
             '{patron_email}'      => $patron?->effective_email   ?? '',
@@ -533,7 +532,6 @@ class NotificationService
         $request->loadMissing('fieldValues.field');
         $kind = $request->request_kind ?: 'sfp';
         $tokenFields = Field::query()
-            ->where('active', true)
             ->where('include_as_token', true)
             ->forKind($kind)
             ->ordered()
@@ -581,7 +579,7 @@ class NotificationService
     {
         return match ($key) {
             'ill_requested' => $request->ill_requested === null ? '' : ($request->ill_requested ? 'Yes' : 'No'),
-            'isbn'          => $request->material?->isbn ?? $request->material?->isbn13 ?? '',
+            'isbn'          => $request->material?->isbn13 ?? $request->material?->isbn ?? $request->fieldValue('isbn') ?? '',
             'publisher'     => (string) ($request->material?->publisher ?? ''),
             'publish_date'  => $request->submitted_publish_date ?? '',
             'where_heard'   => (string) ($request->where_heard ?? ''),

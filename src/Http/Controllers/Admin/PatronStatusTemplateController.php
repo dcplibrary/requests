@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
+use Dcplibrary\Requests\Http\Controllers\Concerns\ProvidesEmailTokens;
 use Dcplibrary\Requests\Http\Controllers\Controller;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
  */
 class PatronStatusTemplateController extends Controller
 {
+    use ProvidesEmailTokens;
     /**
      * List all patron status templates.
      *
@@ -51,7 +53,7 @@ class PatronStatusTemplateController extends Controller
             'template'        => new PatronStatusTemplate(['enabled' => true, 'subject' => 'Update on your suggestion: {title}']),
             'requestStatuses' => RequestStatus::active()->orderBy('sort_order')->get(),
             'materialTypes'   => $mtField ? FieldOption::where('field_id', $mtField->id)->ordered()->get() : collect(),
-            'availableTokens'       => $this->availableTokens(),
+            'availableTokens'       => $this->availableTokens(includeStatusDescription: true),
             'subjectExcludedTokens' => $this->subjectExcludedTokens(),
         ]);
     }
@@ -97,7 +99,7 @@ class PatronStatusTemplateController extends Controller
             'template'        => $patronStatusTemplate,
             'requestStatuses' => RequestStatus::active()->orderBy('sort_order')->get(),
             'materialTypes'   => $mtField ? FieldOption::where('field_id', $mtField->id)->ordered()->get() : collect(),
-            'availableTokens'       => $this->availableTokens(),
+            'availableTokens'       => $this->availableTokens(includeStatusDescription: true),
             'subjectExcludedTokens' => $this->subjectExcludedTokens(),
         ]);
     }
@@ -175,43 +177,4 @@ class PatronStatusTemplateController extends Controller
         ]);
     }
 
-    /**
-     * Build the list of available email body tokens.
-     *
-     * @return list<string>
-     */
-    private function availableTokens(): array
-    {
-        $system = ['{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}', '{status}', '{status_description}', '{submitted_date}', '{request_url}'];
-        $core   = ['{title}', '{author}', '{material_type}', '{audience}'];
-
-        $fieldTokens = [];
-        try {
-            $fieldTokens = Field::active()
-                ->where('include_as_token', true)
-                ->ordered()
-                ->pluck('key')
-                ->map(fn (string $k) => "{{$k}}")
-                ->all();
-        } catch (\Throwable $e) {
-            // Table may not exist during initial install
-        }
-
-        return array_values(array_unique(array_merge($core, $system, $fieldTokens)));
-    }
-
-    /**
-     * Tokens excluded from subject lines (body-only).
-     *
-     * @return list<string>
-     */
-    private function subjectExcludedTokens(): array
-    {
-        return [
-            '{will_pay_up_to}', '{ill_requested}', '{prefer_email}', '{prefer_mail}', '{other_specify}',
-            '{publisher}', '{periodical_title}', '{article_author}', '{article_title}', '{volume_number}', '{page_number}',
-            '{director}', '{cast}', '{comments}', '{request_url}', '{genre}', '{isbn}', '{publish_date}',
-            '{where_heard}', '{date_needed_by}', '{console}', '{patron_email}', '{patron_phone}', '{audience}', '{status_description}',
-        ];
-    }
 }
