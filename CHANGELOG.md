@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.6.3](https://github.com/dcplibrary/requests/compare/v4.6.2...v4.6.3) (2026-03-16)
+
+
+### Bug Fixes
+
+* merge migrations affecting the same table ([24e7a41](https://github.com/dcplibrary/requests/commit/24e7a413b3ca8081564c78383b9ed24b7f108178))
+
 ## [4.6.2](https://github.com/dcplibrary/requests/compare/v4.6.1...v4.6.2) (2026-03-16)
 
 
