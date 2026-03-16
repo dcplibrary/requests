@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.6.6](https://github.com/dcplibrary/requests/compare/v4.6.5...v4.6.6) (2026-03-16)
+
+
+### Bug Fixes
+
+* update patronstatustemplate controller ([5c9533a](https://github.com/dcplibrary/requests/commit/5c9533a22629eb647b9c9a80aca100656d4da09a))
+
 ## [4.6.5](https://github.com/dcplibrary/requests/compare/v4.6.4...v4.6.5) (2026-03-16)
 
 
