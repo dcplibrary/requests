@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.7.0](https://github.com/dcplibrary/requests/compare/v4.6.7...v4.7.0) (2026-03-16)
+
+
+### Features
+
+* add json database export for cross-driver compatibility ([e1365c2](https://github.com/dcplibrary/requests/commit/e1365c20df8e39b4394cd3c4499e7a0630748309))
+
 ## [4.6.7](https://github.com/dcplibrary/requests/compare/v4.6.6...v4.6.7) (2026-03-16)
 
 
