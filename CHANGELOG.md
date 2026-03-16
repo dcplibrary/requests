@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.6.1](https://github.com/dcplibrary/requests/compare/v4.6.0...v4.6.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* remove 404 error when sfp submitted by falling back to status 1 ([5ec8d2e](https://github.com/dcplibrary/requests/commit/5ec8d2e977aa6cabe65d0a4df3509ace2f0326f6))
+
 # [4.6.0](https://github.com/dcplibrary/requests/compare/v4.5.0...v4.6.0) (2026-03-16)
 
 
