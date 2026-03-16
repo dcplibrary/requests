@@ -45,3 +45,10 @@ if (! function_exists('redirect')) {
         };
     }
 }
+
+if (! function_exists('back')) {
+    function back()
+    {
+        return redirect();
+    }
+}
