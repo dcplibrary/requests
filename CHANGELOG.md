@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.4.4](https://github.com/dcplibrary/requests/compare/v4.4.3...v4.4.4) (2026-03-16)
+
+
+### Bug Fixes
+
+* automate transition from status 1 to 2 ([d3cafa8](https://github.com/dcplibrary/requests/commit/d3cafa8188cdb679af88bc5a0a42ffb661a3b546))
+
 ## [4.4.3](https://github.com/dcplibrary/requests/compare/v4.4.2...v4.4.3) (2026-03-16)
 
 
