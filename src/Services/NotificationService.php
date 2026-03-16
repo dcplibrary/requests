@@ -562,7 +562,10 @@ class NotificationService
             }
         }
 
-        return str_replace(array_keys($map), array_values($map), $template);
+        $result = str_replace(array_keys($map), array_values($map), $template);
+
+        // Strip any remaining unrecognised {tokens} so they never appear literally.
+        return preg_replace('/\{[a-z0-9_]+\}/i', '', $result);
     }
 
     /**
