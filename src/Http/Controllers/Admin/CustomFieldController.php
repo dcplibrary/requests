@@ -7,6 +7,7 @@ use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Models\PatronRequest;
 
 /**
  * Legacy custom-field routes — redirects to the unified form-fields UI.
@@ -45,7 +46,7 @@ class CustomFieldController extends Controller
      */
     public function editForForm(Field $field, string $form)
     {
-        abort_unless(in_array($form, ['sfp', 'ill'], true), 404);
+        abort_unless(in_array($form, PatronRequest::kinds(), true), 404);
 
         $formModel = Form::bySlug($form);
         if (! $formModel) {
@@ -66,7 +67,7 @@ class CustomFieldController extends Controller
             ]
         );
 
-        $formLabel = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
+        $formLabel = request_form_name($form);
 
         return view('requests::staff.custom-fields.edit-for-form', [
             'field'     => $field,
@@ -88,7 +89,7 @@ class CustomFieldController extends Controller
      */
     public function editForFormOption(Field $field, string $form, int $optionId)
     {
-        abort_unless(in_array($form, ['sfp', 'ill'], true), 404);
+        abort_unless(in_array($form, PatronRequest::kinds(), true), 404);
         abort_unless(in_array($field->type, ['select', 'radio'], true), 404, 'This field does not have per-form option overrides.');
 
         $option = FieldOption::where('id', $optionId)
@@ -96,7 +97,7 @@ class CustomFieldController extends Controller
             ->first();
         abort_unless($option !== null, 404);
 
-        $formLabel  = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
+        $formLabel  = request_form_name($form);
         $optionName = $option->name;
 
         return view('requests::staff.custom-fields.edit-option-for-form', [

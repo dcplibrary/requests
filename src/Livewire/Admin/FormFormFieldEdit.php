@@ -6,6 +6,7 @@ use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Models\PatronRequest;
 use Livewire\Component;
 
 /**
@@ -98,7 +99,7 @@ class FormFormFieldEdit extends Component
                 $field->update($updates);
             }
 
-            $targetSlugs = $this->scope === 'both' ? ['sfp', 'ill'] : [$this->scope];
+            $targetSlugs = $this->scope === 'both' ? PatronRequest::kinds() : [$this->scope];
 
             // Create missing FormFieldConfig rows for newly added forms
             foreach ($targetSlugs as $slug) {
@@ -123,7 +124,7 @@ class FormFormFieldEdit extends Component
 
             // Remove FormFieldConfig rows for forms no longer in scope
             if ($this->scope !== 'both') {
-                $droppedSlug = $this->scope === 'sfp' ? 'ill' : 'sfp';
+                $droppedSlug = $this->scope === PatronRequest::KIND_SFP ? PatronRequest::KIND_ILL : PatronRequest::KIND_SFP;
                 $droppedForm = Form::bySlug($droppedSlug);
                 if ($droppedForm) {
                     FormFieldConfig::where('form_id', $droppedForm->id)

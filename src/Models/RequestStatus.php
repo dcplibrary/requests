@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Models;
 
+use Dcplibrary\Requests\Models\PatronRequest;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -71,14 +72,19 @@ class RequestStatus extends Model
     }
 
     /**
-     * Scope to statuses that apply to the given request kind ('sfp' or 'ill').
-     * Unknown kinds are not filtered (all statuses pass through).
+     * Scope to statuses that apply to the given request kind.
+     *
+     * Unknown kinds (or null) are not filtered — all statuses pass through.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string|null  $kind  One of {@see PatronRequest::KIND_SFP}, {@see PatronRequest::KIND_ILL}, or null.
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForKind(\Illuminate\Database\Eloquent\Builder $query, ?string $kind): \Illuminate\Database\Eloquent\Builder
     {
         return match ($kind) {
-            'sfp'   => $query->where('applies_to_sfp', true),
-            'ill'   => $query->where('applies_to_ill', true),
+            PatronRequest::KIND_SFP => $query->where('applies_to_sfp', true),
+            PatronRequest::KIND_ILL => $query->where('applies_to_ill', true),
             default => $query,
         };
     }

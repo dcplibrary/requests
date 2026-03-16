@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFP / ILL Process Flowchart</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 32px 24px;
+  }
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #0f172a;
+  }
+  .subtitle {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 40px;
+  }
+  .section {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin-bottom: 36px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .badge-sfp  { background: #dbeafe; color: #1d4ed8; }
+  .badge-ill  { background: #dcfce7; color: #15803d; }
+  .badge-staff { background: #fef9c3; color: #854d0e; }
+  h2 { font-size: 1.15rem; font-weight: 700; color: #0f172a; }
+  .note {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 16px;
+    line-height: 1.6;
+  }
+  .note strong { color: #334155; }
+  .mermaid { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>SFP &amp; ILL Request Process Flowchart</h1>
+<p class="subtitle">Patron submission flows and staff workflow — Daviess County Public Library Requests System</p>
+
+<!-- ── SFP PATRON FLOW ─────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-sfp">SFP</span>
+    <h2>Suggest for Purchase — Patron Submission</h2>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A([Patron opens SFP form]) --> B[Step 1: Enter name, barcode,\nphone, email]
+    B --> C{Polaris barcode\ncheck enabled?}
+    C -- No --> E
+    C -- Yes --> D{Barcode exists\nin Polaris?}
+    D -- Not found --> D1([Show 'card not found'\nmessage — stop])
+    D -- Found or API\nunavailable --> E
+
+    E{Patron at\nrequest limit?}
+    E -- Yes --> E1([Show limit message\nwith next available date — stop])
+    E -- No --> F[Step 2: Enter title, author,\npublish date, audience,\nmaterial type, custom fields]
+
+    F --> G{Author on\nauto-order list\n+ future date?}
+    G -- Yes --> G1([Show auto-order message — stop\nno request created])
+    G -- No --> H
+
+    H{Local materials\nmatch found?}
+    H -- Yes, same patron --> H1[/Show 'you already requested this'\nduplicate notice/]
+    H -- Yes, other patron --> H2[/Show 'already requested'\nduplicate notice/]
+    H1 & H2 --> H3{Patron still\nwants to submit?}
+    H3 -- Continues --> I
+    H3 -- Leaves --> Z([End])
+    H -- No match --> I
+
+    I{Catalog search\nenabled?}
+    I -- No --> K
+    I -- Yes → search Bibliocommons --> J{Results\nfound?}
+    J -- No --> K
+    J -- Yes --> J1[/Show catalog results\nStep 3/]
+    J1 --> J2{Patron selects\na result?}
+    J2 -- Confirms item\nin catalog --> J3([Redirect to place hold\nno request created])
+    J2 -- Skips / not\nmy item --> K
+
+    K{ISBNdb search\nenabled?}
+    K -- No --> M
+    K -- Yes → search ISBNdb --> L{Results\nfound?}
+    L -- No --> M
+    L -- Yes --> L1[/Show ISBNdb results\nStep 3/]
+    L1 --> L2{Patron selects\na match?}
+    L2 -- Accepts --> L3[Material enriched\nwith ISBN, cover, etc.]
+    L3 --> M
+    L2 -- Skips --> M
+
+    M[Save request\nat Status 1 for SFP]
+    M --> N[Send staff\nrouting email]
+    N --> O([Step 4: Confirmation\nshown to patron])
+
+    style D1 fill:#fee2e2,stroke:#fca5a5
+    style E1 fill:#fee2e2,stroke:#fca5a5
+    style G1 fill:#fef9c3,stroke:#fde047
+    style J3 fill:#dbeafe,stroke:#93c5fd
+    style O fill:#dcfce7,stroke:#86efac
+  </div>
+  <p class="note"><strong>Notes:</strong>
+    Duplicate requests are flagged but not blocked — patron may still submit.
+    Auto-order exclusions silently end the flow without creating a request.
+    Catalog matches redirect the patron to place a hold; no SFP request is recorded.
+    Notify-by-email opt-in is captured at Step 1 and stored on the request.
+  </p>
+</div>
+
+<!-- ── ILL PATRON FLOW ────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-ill">ILL</span>
+    <h2>Interlibrary Loan — Patron Submission</h2>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A([Patron opens ILL form]) --> B[Step 1: Enter name, barcode,\nphone, email]
+    B --> C[Step 2: Select material type\nFill in custom fields\ntitle, author, date, etc.]
+
+    C --> D{Patron at\nILL limit?}
+    D -- Yes --> D1([Show limit message\nwith next available date — stop])
+    D -- No --> E
+
+    E{Material type is\nbook, audiobook, or DVD?}
+    E -- No → skip catalog --> G
+    E -- Yes → search Bibliocommons --> F{Results\nfound?}
+    F -- No --> G
+    F -- Yes --> F1[/Show catalog results\nStep 3/]
+    F1 --> F2{Patron selects\na result?}
+    F2 -- Confirms item\nin catalog --> F3([Redirect to place hold\nno request created])
+    F2 -- Skips --> G
+
+    G{Material type is\nISBNdb-searchable\nAND ISBNdb enabled?}
+    G -- No --> I
+    G -- Yes → search ISBNdb --> H{Results\nfound?}
+    H -- No --> I
+    H -- Yes --> H1[/Show ISBNdb results\nStep 3/]
+    H1 --> H2{Patron selects\na match?}
+    H2 -- Accepts --> H3[Material enriched\nwith ISBN, cover, etc.]
+    H3 --> I
+    H2 -- Skips --> I
+
+    I[Save request\nat Status 1 for ILL]
+    I --> J[Send staff\nrouting email]
+    J --> K([Step 4: Confirmation\nshown to patron])
+
+    style D1 fill:#fee2e2,stroke:#fca5a5
+    style F3 fill:#dbeafe,stroke:#93c5fd
+    style K fill:#dcfce7,stroke:#86efac
+  </div>
+  <p class="note"><strong>Notes:</strong>
+    ILL limit is configured separately from the SFP limit via <code>ill_limit_count</code>.
+    Catalog search only runs for material types likely to be in circulation (book, audiobook, DVD).
+    ISBNdb searchability is configured per material type in Material Types settings.
+  </p>
+</div>
+
+<!-- ── STAFF WORKFLOW ─────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-staff">Staff</span>
+    <h2>Staff Workflow — Both SFP &amp; ILL</h2>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A([Request submitted\nby patron]) --> B[Appears in staff dashboard\nwith Status 1]
+    B --> C[Staff routing email\nsent to matched selector group]
+
+    C --> D{Assignment\nenabled?}
+    D -- No --> F
+    D -- Yes --> E{Request\nunassigned?}
+    E -- No --> F
+    E -- Yes → staff opens request --> E1[Auto-claim:\nassign to opening staff member]
+    E1 --> E2{Current status has\n'advance on claim' flag?}
+    E2 -- Yes --> E3[Advance to\nnext status by sort_order]
+    E3 --> F
+    E2 -- No --> F
+
+    F[Staff reviews\nrequest detail]
+
+    F --> G{Action taken}
+
+    G --> G1[Change status]
+    G1 --> G2{Patron opted in\nto email\nnotifications?}
+    G2 -- No --> G3[Status updated\nno email sent]
+    G2 -- Yes → new status has\nnotify_patron=true --> G4[Patron notification\nemail sent]
+    G4 & G3 --> G5{Status is\nterminal?}
+    G5 -- Yes --> Z([Request closed])
+    G5 -- No --> F
+
+    G --> G6[Reassign to\nstaff user]
+    G6 --> G7[Assignee notification\nemail sent]
+    G7 --> F
+
+    G --> G8{Reroute to\ndifferent group?}
+    G8 -- Yes, SFP only --> G9[Update filterable fields\nunassign request\nnotify new group]
+    G9 --> F
+
+    G --> G10{Convert kind?}
+    G10 -- SFP → ILL --> G11[Update request_kind\nnotify ILL staff]
+    G11 --> F
+    G10 -- ILL → SFP --> G12[Update request_kind]
+    G12 --> F
+
+    G --> G13[Use email\naction button\nfrom routing email]
+    G13 --> G14[Signed URL validates\nstatus updated\npatron notified if opted in]
+    G14 --> F
+
+    G --> G15[Delete request\nadmin only]
+    G15 --> Z2([Request deleted])
+
+    style Z fill:#dcfce7,stroke:#86efac
+    style Z2 fill:#fee2e2,stroke:#fca5a5
+  </div>
+  <p class="note"><strong>Notes:</strong>
+    Email action buttons in routing emails use signed, expiring URLs (14-day TTL) — no login required.
+    Auto-claim runs on every open, not just the first; already-claimed requests are not re-claimed.
+    The 'advance on claim' flag is configured per status under Settings → Statuses.
+    Rerouting is only available for SFP requests (filterable fields control selector group assignment).
+    Bulk actions available: status change, reassign (admin), delete (admin).
+    Statuses can be scoped to SFP-only, ILL-only, or both via <code>applies_to_sfp</code> / <code>applies_to_ill</code> flags.
+  </p>
+</div>
+
+<!-- ── STATUS TRANSITION ──────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-staff">Status</span>
+    <h2>Status Transition Logic</h2>
+  </div>
+  <div class="mermaid">
+flowchart LR
+    S1[Status 1\nlowest sort_order\napplies_to_sfp/ill]
+    S1 -->|staff changes status| S2[Status 2]
+    S1 -->|advance_on_claim=true\nauto-advance on open| S2
+    S2 -->|staff changes status| SN[Status N]
+    SN -->|staff changes status| ST[Terminal Status\nis_terminal=true]
+    ST -->|no further transitions| DONE([Request closed])
+
+    subgraph Email triggers
+      direction TB
+      EA[Email action button\nclaimed from notification]
+      EA -->|signed URL\nno login required| S2
+    end
+
+    subgraph Patron notification
+      direction TB
+      PN{notify_patron\non new status?}
+      PN -- Yes + patron opted in --> PE[Patron email sent]
+      PN -- No or not opted in --> PS[Silent transition]
+    end
+
+    S2 -.->|on transition| PN
+    SN -.->|on transition| PN
+
+    style DONE fill:#dcfce7,stroke:#86efac
+    style ST fill:#f1f5f9,stroke:#94a3b8
+  </div>
+  <p class="note"><strong>Notes:</strong>
+    Status 1 is always the lowest <code>sort_order</code> status matching the request's kind — no hardcoded slug.
+    Terminal statuses block further transitions in the UI.
+    <code>notify_patron</code> is a per-status flag; email is only sent when the patron also opted in at submission time.
+  </p>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryTextColor: '#1e3a5f',
+      primaryBorderColor: '#93c5fd',
+      lineColor: '#64748b',
+      secondaryColor: '#f1f5f9',
+      tertiaryColor: '#fef9c3',
+      fontSize: '13px',
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 16,
+    },
+  });
+</script>
+</body>
+</html>

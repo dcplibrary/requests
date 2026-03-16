@@ -43,7 +43,12 @@ class Form extends Model
         return $this->hasMany(FormFieldOptionOverride::class);
     }
 
-    /** Resolve form by slug (e.g. 'ill', 'sfp'). */
+    /**
+     * Resolve form by slug.
+     *
+     * @param  string  $slug  Form slug (e.g. 'ill', 'sfp'). Use {@see \Dcplibrary\Requests\Models\PatronRequest::KIND_SFP} or KIND_ILL for consistency.
+     * @return static|null  The form model, or null if not found.
+     */
     public static function bySlug(string $slug): ?self
     {
         return static::where('slug', $slug)->first();

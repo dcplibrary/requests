@@ -79,8 +79,8 @@
                         <button type="button"
                                 wire:click="convertToIll({{ $req->id }})"
                                 class="text-xs px-3 py-1.5 rounded bg-purple-600 text-white hover:bg-purple-700"
-                                onclick="return confirm('Convert this request to Interlibrary Loan?')">
-                            Convert to ILL
+                                onclick="return confirm('Convert this request to {{ request_form_name('ill') }}?')">
+                            Convert to {{ request_form_name('ill') }}
                         </button>
                     </div>
                 @endif

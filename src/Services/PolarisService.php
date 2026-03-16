@@ -18,9 +18,9 @@ class PolarisService
      */
     public function barcodeExists(string $barcode): ?bool
     {
-        $domain   = env('PAPI_DOMAIN');
-        $staff    = env('PAPI_STAFF');
-        $password = env('PAPI_PASSWORD');
+        $domain   = config('requests.polaris.domain', '');
+        $staff    = config('requests.polaris.staff', '');
+        $password = config('requests.polaris.password', '');
 
         // Polaris integration is optional — if not configured, let the form through.
         if (! $domain || ! $staff || ! $password) {

@@ -48,12 +48,12 @@ class PatronRequests extends Component
             return;
         }
 
-        if (($req->request_kind ?? 'sfp') === 'ill') {
+        if (($req->request_kind ?? PatronRequest::KIND_SFP) === PatronRequest::KIND_ILL) {
             return;
         }
 
         $req->update([
-            'request_kind'  => 'ill',
+            'request_kind'  => PatronRequest::KIND_ILL,
             'ill_requested' => true,
         ]);
 

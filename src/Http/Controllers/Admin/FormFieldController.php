@@ -7,6 +7,7 @@ use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Models\PatronRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -34,9 +35,9 @@ class FormFieldController extends Controller
      */
     public function create(Request $request)
     {
-        $formSlug = in_array($request->query('form'), ['sfp', 'ill'], true)
+        $formSlug = in_array($request->query('form'), PatronRequest::kinds(), true)
             ? $request->query('form')
-            : 'sfp';
+            : PatronRequest::KIND_SFP;
 
         return view('requests::staff.form-fields.form', [
             'field'    => new Field(),
@@ -59,7 +60,7 @@ class FormFieldController extends Controller
             'label'    => 'required|string|max:100',
             'key'      => 'nullable|string|max:100|regex:/^[a-z][a-z0-9_]*$/|unique:fields,key',
             'type'     => ['required', Rule::in(['text', 'textarea', 'html', 'date', 'number', 'checkbox', 'select', 'radio'])],
-            'scope'    => ['required', Rule::in(['sfp', 'ill', 'both'])],
+            'scope'    => ['required', Rule::in(array_merge(PatronRequest::kinds(), ['both']))],
             'required' => 'boolean',
             'active'   => 'boolean',
         ]);
@@ -88,7 +89,7 @@ class FormFieldController extends Controller
         ]);
 
         // Determine which forms to attach to based on scope
-        $formSlugs = $data['scope'] === 'both' ? ['sfp', 'ill'] : [$data['scope']];
+        $formSlugs = $data['scope'] === 'both' ? PatronRequest::kinds() : [$data['scope']];
 
         foreach ($formSlugs as $slug) {
             $formModel = Form::bySlug($slug);
@@ -107,7 +108,7 @@ class FormFieldController extends Controller
             ]);
         }
 
-        $tab = $data['scope'] === 'both' ? 'sfp' : $data['scope'];
+        $tab = $data['scope'] === 'both' ? PatronRequest::KIND_SFP : $data['scope'];
 
         return redirect()
             ->route('request.staff.settings.form-fields', ['tab' => $tab])
@@ -145,7 +146,7 @@ class FormFieldController extends Controller
             ]
         );
 
-        $formLabel = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
+        $formLabel = request_form_name($form);
 
         return view('requests::staff.form-fields.edit-for-form', [
             'field'     => $field,
@@ -167,13 +168,13 @@ class FormFieldController extends Controller
      */
     public function editForFormOption(Field $field, string $form, string $slug)
     {
-        abort_unless(in_array($form, ['sfp', 'ill'], true), 404);
+        abort_unless(in_array($form, PatronRequest::kinds(), true), 404);
         abort_unless(in_array($field->type, ['select', 'radio']), 404, 'This field does not have per-form option overrides.');
 
         $option = FieldOption::where('field_id', $field->id)->where('slug', $slug)->first();
         abort_unless($option !== null, 404);
 
-        $formLabel  = $form === 'ill' ? 'Interlibrary Loan' : 'Suggest for Purchase';
+        $formLabel  = request_form_name($form);
         $optionName = $option->name;
 
         return view('requests::staff.form-fields.edit-option-for-form', [

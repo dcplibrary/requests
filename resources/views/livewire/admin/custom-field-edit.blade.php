@@ -35,8 +35,8 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Applies to</label>
                 <select wire:model="requestKind" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-                    <option value="sfp">Suggest for Purchase</option>
-                    <option value="ill">Interlibrary Loan</option>
+                    <option value="sfp">{{ request_form_name('sfp') }}</option>
+                    <option value="ill">{{ request_form_name('ill') }}</option>
                     <option value="both">Both</option>
                 </select>
             </div>

@@ -121,14 +121,14 @@ class Patron extends Model
      *
      * @param  'sfp'|'ill'  $kind
      */
-    public function recentRequestCount(string $kind = 'sfp'): int
+    public function recentRequestCount(string $kind = PatronRequest::KIND_SFP): int
     {
         $query = $this->requests()->where('created_at', '>=', $this->windowStart($kind));
 
-        if ($kind === 'ill') {
-            $query->where('request_kind', 'ill');
+        if ($kind === PatronRequest::KIND_ILL) {
+            $query->where('request_kind', PatronRequest::KIND_ILL);
         } else {
-            $query->where(fn ($q) => $q->whereNull('request_kind')->orWhere('request_kind', 'sfp'));
+            $query->where(fn ($q) => $q->whereNull('request_kind')->orWhere('request_kind', PatronRequest::KIND_SFP));
         }
 
         return $query->count();
@@ -140,10 +140,10 @@ class Patron extends Model
      *
      * @param  'sfp'|'ill'  $kind
      */
-    public function hasReachedLimit(string $kind = 'sfp'): bool
+    public function hasReachedLimit(string $kind = PatronRequest::KIND_SFP): bool
     {
-        $key   = $kind === 'ill' ? 'ill_limit_count' : 'sfp_limit_count';
-        $raw   = Setting::get($key, $kind === 'sfp' ? '5' : '');
+        $key   = $kind === PatronRequest::KIND_ILL ? 'ill_limit_count' : 'sfp_limit_count';
+        $raw   = Setting::get($key, $kind === PatronRequest::KIND_SFP ? '5' : '');
         $limit = trim((string) $raw) === '' ? 0 : (int) $raw;
         if ($limit <= 0) {
             return false; // unlimited
@@ -158,9 +158,9 @@ class Patron extends Model
      *
      * @param  'sfp'|'ill'  $kind
      */
-    public function nextAvailableDate(string $kind = 'sfp'): ?Carbon
+    public function nextAvailableDate(string $kind = PatronRequest::KIND_SFP): ?Carbon
     {
-        $prefix = $kind === 'ill' ? 'ill_limit_' : 'sfp_limit_';
+        $prefix = $kind === PatronRequest::KIND_ILL ? 'ill_limit_' : 'sfp_limit_';
         $type   = Setting::get($prefix . 'window_type', 'rolling');
 
         if ($type === 'calendar_month') {
@@ -174,10 +174,10 @@ class Patron extends Model
         $daysSetting = $prefix . 'window_days';
         $days        = (int) Setting::get($daysSetting, 30);
         $query       = $this->requests()->where('created_at', '>=', $this->windowStart($kind));
-        if ($kind === 'ill') {
-            $query->where('request_kind', 'ill');
+        if ($kind === PatronRequest::KIND_ILL) {
+            $query->where('request_kind', PatronRequest::KIND_ILL);
         } else {
-            $query->where(fn ($q) => $q->whereNull('request_kind')->orWhere('request_kind', 'sfp'));
+            $query->where(fn ($q) => $q->whereNull('request_kind')->orWhere('request_kind', PatronRequest::KIND_SFP));
         }
         $oldest = $query->oldest()->first();
 
@@ -191,9 +191,9 @@ class Patron extends Model
      *
      * @param  'sfp'|'ill'  $kind
      */
-    private function windowStart(string $kind = 'sfp'): Carbon
+    private function windowStart(string $kind = PatronRequest::KIND_SFP): Carbon
     {
-        $prefix = $kind === 'ill' ? 'ill_limit_' : 'sfp_limit_';
+        $prefix = $kind === PatronRequest::KIND_ILL ? 'ill_limit_' : 'sfp_limit_';
         $type   = Setting::get($prefix . 'window_type', 'rolling');
 
         return match ($type) {
@@ -208,9 +208,9 @@ class Patron extends Model
      *
      * @param  'sfp'|'ill'  $kind
      */
-    private function calendarMonthStart(string $kind = 'sfp'): Carbon
+    private function calendarMonthStart(string $kind = PatronRequest::KIND_SFP): Carbon
     {
-        $prefix   = $kind === 'ill' ? 'ill_limit_' : 'sfp_limit_';
+        $prefix   = $kind === PatronRequest::KIND_ILL ? 'ill_limit_' : 'sfp_limit_';
         $resetDay = max(1, min(28, (int) Setting::get($prefix . 'calendar_reset_day', 1)));
         $now      = now();
 
@@ -224,9 +224,9 @@ class Patron extends Model
      *
      * @param  'sfp'|'ill'  $kind
      */
-    private function nextCalendarMonthStart(string $kind = 'sfp'): Carbon
+    private function nextCalendarMonthStart(string $kind = PatronRequest::KIND_SFP): Carbon
     {
-        $prefix   = $kind === 'ill' ? 'ill_limit_' : 'sfp_limit_';
+        $prefix   = $kind === PatronRequest::KIND_ILL ? 'ill_limit_' : 'sfp_limit_';
         $resetDay = max(1, min(28, (int) Setting::get($prefix . 'calendar_reset_day', 1)));
         $now      = now();
 

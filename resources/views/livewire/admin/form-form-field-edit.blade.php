@@ -22,7 +22,7 @@
         <fieldset>
             <legend class="block text-sm font-semibold text-gray-700 mb-3">Scope</legend>
             <div class="flex flex-col gap-2">
-                @foreach(['sfp' => 'Suggest for Purchase only', 'ill' => 'Interlibrary Loan only', 'both' => 'Both forms'] as $val => $lbl)
+                @foreach(['sfp' => request_form_name('sfp') . ' only', 'ill' => request_form_name('ill') . ' only', 'both' => 'Both forms'] as $val => $lbl)
                     <label class="inline-flex items-center gap-2 cursor-pointer">
                         <input type="radio" name="scope" wire:model="scope" value="{{ $val }}"
                                class="text-blue-600 focus:ring-blue-500">

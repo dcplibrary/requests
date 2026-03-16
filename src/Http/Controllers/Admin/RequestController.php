@@ -16,6 +16,7 @@ use Dcplibrary\Requests\Services\CoverService;
 use Dcplibrary\Requests\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class RequestController extends Controller
 {
@@ -38,7 +39,7 @@ class RequestController extends Controller
 
         // Filters
         $kind = $request->query('kind');
-        if (in_array($kind, ['sfp', 'ill'], true)) {
+        if (is_string($kind) && in_array($kind, PatronRequest::kinds(), true)) {
             $query->where('request_kind', $kind);
         } else {
             $kind = null;
@@ -47,28 +48,10 @@ class RequestController extends Controller
             $query->whereHas('status', fn ($q) => $q->where('slug', $request->status));
         }
         if ($request->filled('material_type')) {
-            $mtFieldId = Field::where('key', 'material_type')->value('id');
-            if ($mtFieldId) {
-                $query->whereExists(function ($sub) use ($request, $mtFieldId) {
-                    $sub->selectRaw('1')
-                        ->from('request_field_values')
-                        ->whereColumn('request_field_values.request_id', 'requests.id')
-                        ->where('request_field_values.field_id', $mtFieldId)
-                        ->where('request_field_values.value', $request->material_type);
-                });
-            }
+            $query->whereFieldValue('material_type', $request->material_type, $kind);
         }
         if ($request->filled('audience')) {
-            $audFieldId = Field::where('key', 'audience')->value('id');
-            if ($audFieldId) {
-                $query->whereExists(function ($sub) use ($request, $audFieldId) {
-                    $sub->selectRaw('1')
-                        ->from('request_field_values')
-                        ->whereColumn('request_field_values.request_id', 'requests.id')
-                        ->where('request_field_values.field_id', $audFieldId)
-                        ->where('request_field_values.value', $request->audience);
-                });
-            }
+            $query->whereFieldValue('audience', $request->audience, $kind);
         }
         if ($request->filled('search')) {
             $term = '%' . $request->search . '%';
@@ -104,13 +87,7 @@ class RequestController extends Controller
                 ->first();
 
             if ($field) {
-                $query->whereExists(function ($sub) use ($field, $cfValue) {
-                    $sub->selectRaw('1')
-                        ->from('request_field_values as rfv')
-                        ->whereColumn('rfv.request_id', 'requests.id')
-                        ->where('rfv.field_id', $field->id)
-                        ->where('rfv.value', $cfValue);
-                });
+                $query->whereFieldValue($cfKey, $cfValue, $kind);
             }
         }
 
@@ -294,7 +271,7 @@ class RequestController extends Controller
         }
 
         // Show "Convert to ILL" button when this is an SFP request and ILL was requested.
-        $showConvertToIll = $patronRequest->request_kind === 'sfp'
+        $showConvertToIll = $patronRequest->request_kind === PatronRequest::KIND_SFP
             && $patronRequest->ill_requested;
 
         // Reroute: all filterable select/radio fields.
@@ -673,11 +650,11 @@ class RequestController extends Controller
         }
 
         $data = $httpRequest->validate([
-            'to' => 'required|in:sfp,ill',
+            'to' => ['required', Rule::in(PatronRequest::kinds())],
             'note' => 'nullable|string|max:2000',
         ]);
 
-        $from = $patronRequest->request_kind ?: 'sfp';
+        $from = $patronRequest->request_kind ?: PatronRequest::KIND_SFP;
         $to   = $data['to'];
 
         if ($from === $to) {
@@ -686,7 +663,7 @@ class RequestController extends Controller
 
         $patronRequest->update([
             'request_kind'  => $to,
-            'ill_requested' => $to === 'ill' ? true : $patronRequest->ill_requested,
+            'ill_requested' => $to === PatronRequest::KIND_ILL ? true : $patronRequest->ill_requested,
         ]);
 
         $staffUserId = $this->currentStaffUser($httpRequest)?->id;
@@ -699,7 +676,7 @@ class RequestController extends Controller
         ]);
 
         // Notify ILL staff when something is converted into ILL.
-        if ($to === 'ill') {
+        if ($to === PatronRequest::KIND_ILL) {
             $staffUser = $this->currentStaffUser($httpRequest);
             if ($staffUser) {
                 app(NotificationService::class)->notifyStaffWorkflowAction(

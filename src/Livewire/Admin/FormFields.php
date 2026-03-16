@@ -6,6 +6,7 @@ use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldConfig;
 use Dcplibrary\Requests\Models\FormFieldOptionOverride;
+use Dcplibrary\Requests\Models\PatronRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Livewire\Component;
@@ -23,12 +24,12 @@ class FormFields extends Component
     public array $illFields = [];
 
     /** Active tab: 'sfp' | 'ill' */
-    public string $activeFormTab = 'sfp';
+    public string $activeFormTab = PatronRequest::KIND_SFP;
 
     public function mount(): void
     {
         $tab = request()->query('tab');
-        if (in_array($tab, ['sfp', 'ill'], true)) {
+        if (is_string($tab) && in_array($tab, PatronRequest::kinds(), true)) {
             $this->activeFormTab = $tab;
         }
         $this->loadFromDb();
@@ -36,16 +37,16 @@ class FormFields extends Component
 
     private function loadFromDb(): void
     {
-        $formSfp = Form::bySlug('sfp');
-        $formIll = Form::bySlug('ill');
+        $formSfp = Form::bySlug(PatronRequest::KIND_SFP);
+        $formIll = Form::bySlug(PatronRequest::KIND_ILL);
         if (! $formSfp || ! $formIll) {
             $this->suggestFields = [];
             $this->illFields = [];
             return;
         }
 
-        $this->suggestFields = $this->loadFormFields($formSfp, 'sfp');
-        $this->illFields = $this->loadFormFields($formIll, 'ill');
+        $this->suggestFields = $this->loadFormFields($formSfp, PatronRequest::KIND_SFP);
+        $this->illFields = $this->loadFormFields($formIll, PatronRequest::KIND_ILL);
     }
 
     /**

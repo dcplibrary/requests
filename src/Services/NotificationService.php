@@ -310,7 +310,7 @@ class NotificationService
     {
         $groups = collect();
 
-        if ($request->request_kind === 'ill') {
+        if ($request->request_kind === PatronRequest::KIND_ILL) {
             $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
             if ($illGroupId > 0) {
                 $illGroup = SelectorGroup::active()->with('users')->find($illGroupId);
@@ -530,7 +530,7 @@ class NotificationService
 
         // Extend with dynamic field tokens from the unified fields table.
         $request->loadMissing('fieldValues.field');
-        $kind = $request->request_kind ?: 'sfp';
+        $kind = $request->request_kind ?: PatronRequest::KIND_SFP;
         $tokenFields = Field::query()
             ->where('include_as_token', true)
             ->forKind($kind)

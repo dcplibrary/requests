@@ -139,7 +139,7 @@ class IllForm extends Component
      */
     public function getCustomFieldsProperty()
     {
-        return Field::forKind('ill')->ordered()->get();
+        return Field::forKind(PatronRequest::KIND_ILL)->ordered()->get();
     }
 
     /**
@@ -149,7 +149,7 @@ class IllForm extends Component
      */
     public function getStepTwoFieldsProperty()
     {
-        $form = Form::bySlug('ill');
+        $form = Form::bySlug(PatronRequest::KIND_ILL);
 
         if ($form) {
             $configs = $form->fieldConfigs()
@@ -184,7 +184,7 @@ class IllForm extends Component
         }
 
         // Fallback: no ILL form config, use base fields only
-        return Field::forKind('ill')->where('step', 2)->active()->ordered()->get()->map(function (Field $f, int $i) {
+        return Field::forKind(PatronRequest::KIND_ILL)->where('step', 2)->active()->ordered()->get()->map(function (Field $f, int $i) {
             return (object) [
                 'key'         => $f->key,
                 'id'          => $f->id,
@@ -235,7 +235,7 @@ class IllForm extends Component
     {
         $rules  = [];
         $state  = $this->formConditionState();
-        $formId = Form::bySlug('ill')?->id;
+        $formId = Form::bySlug(PatronRequest::KIND_ILL)?->id;
 
         foreach ($this->stepTwoFields as $field) {
             $visible  = Field::evaluateCondition($field->condition ?? ['match' => 'all', 'rules' => []], $state);
@@ -281,11 +281,11 @@ class IllForm extends Component
             'email'      => $this->email ?: null,
         ])['patron'];
 
-        if ($patron->hasReachedLimit('ill')) {
+        if ($patron->hasReachedLimit(PatronRequest::KIND_ILL)) {
             $this->limitReached = true;
             $raw = Setting::get('ill_limit_count', '');
             $this->limitCount   = trim((string) $raw) === '' ? 0 : (int) $raw;
-            $this->limitUntil   = $patron->nextAvailableDate('ill')?->format('F j, Y');
+            $this->limitUntil   = $patron->nextAvailableDate(PatronRequest::KIND_ILL)?->format('F j, Y');
             $this->processing   = false;
             return;
         }
@@ -390,11 +390,11 @@ class IllForm extends Component
      */
     private function saveRequest(Patron $patron, ?array $isbndbData = null): void
     {
-        if ($patron->hasReachedLimit('ill')) {
+        if ($patron->hasReachedLimit(PatronRequest::KIND_ILL)) {
             $this->limitReached = true;
             $raw = Setting::get('ill_limit_count', '');
             $this->limitCount   = trim((string) $raw) === '' ? 0 : (int) $raw;
-            $this->limitUntil   = $patron->nextAvailableDate('ill')?->format('F j, Y');
+            $this->limitUntil   = $patron->nextAvailableDate(PatronRequest::KIND_ILL)?->format('F j, Y');
             $this->processing   = false;
             return;
         }
@@ -415,7 +415,7 @@ class IllForm extends Component
             $submittedTitle = 'Other: ' . $otherSpecify;
         }
         if ($submittedTitle === '') {
-            $submittedTitle = 'Interlibrary Loan request';
+            $submittedTitle = request_form_name(PatronRequest::KIND_ILL) . ' request';
         }
 
         $materialId = null;
@@ -436,7 +436,7 @@ class IllForm extends Component
             'patron_id'               => $patron->id,
             'material_id'             => $materialId,
             'request_status_id'       => $pendingStatus->id,
-            'request_kind'            => 'ill',
+            'request_kind'            => PatronRequest::KIND_ILL,
             'submitted_title'         => $submittedTitle,
             'submitted_author'        => $submittedAuthor ?: '—',
             'submitted_publish_date'  => $submittedPublishDate,
@@ -595,7 +595,7 @@ class IllForm extends Component
             return collect();
         }
 
-        $form = Form::bySlug('ill');
+        $form = Form::bySlug(PatronRequest::KIND_ILL);
 
         return $this->formFilteredOptions($mtField->id, $form?->id);
     }
@@ -628,7 +628,7 @@ class IllForm extends Component
     public function render()
     {
         $fields = $this->stepTwoFields;
-        $form   = Form::bySlug('ill');
+        $form   = Form::bySlug(PatronRequest::KIND_ILL);
 
         // Build options for all select/radio fields from the unified field_options table.
         $options = [];

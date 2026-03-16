@@ -12,47 +12,11 @@
 
     {{-- Step 1: Patron --}}
     @if($step === 1)
-    <section aria-labelledby="patron-heading">
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">Interlibrary Loan Request</h1>
-        <p class="text-sm text-gray-600 mb-6">Request items the library doesn’t own from other libraries.</p>
-
-        <div class="space-y-5 bg-white rounded-lg border border-gray-200 p-6">
-            <div>
-                <label for="barcode" class="block text-sm font-medium text-gray-700 mb-1">Library Barcode Number <span class="text-red-600">*</span></label>
-                <input type="text" id="barcode" wire:model="barcode"
-                       class="w-full max-w-xs rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ $errors->has('barcode') ? 'border-red-500' : 'border-gray-300' }}" />
-                @error('barcode')<p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>@enderror
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label for="name_first" class="block text-sm font-medium text-gray-700 mb-1">First Name <span class="text-red-600">*</span></label>
-                    <input type="text" id="name_first" wire:model="name_first"
-                           class="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ $errors->has('name_first') ? 'border-red-500' : 'border-gray-300' }}" />
-                    @error('name_first')<p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label for="name_last" class="block text-sm font-medium text-gray-700 mb-1">Last Name <span class="text-red-600">*</span></label>
-                    <input type="text" id="name_last" wire:model="name_last"
-                           class="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ $errors->has('name_last') ? 'border-red-500' : 'border-gray-300' }}" />
-                    @error('name_last')<p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>@enderror
-                </div>
-            </div>
-
-            <div>
-                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone <span class="text-red-600">*</span></label>
-                <input type="tel" id="phone" wire:model="phone"
-                       class="w-full max-w-xs rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ $errors->has('phone') ? 'border-red-500' : 'border-gray-300' }}" />
-                @error('phone')<p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>@enderror
-            </div>
-
-            <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" id="email" wire:model="email"
-                       class="w-full max-w-sm rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300" />
-                @error('email')<p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>@enderror
-            </div>
-        </div>
+    <x-requests::patron-step
+        :title="request_form_name('ill') . ' Request'"
+        subtitle="Request items the library doesn't own from other libraries."
+        :show-notify-by-email="false"
+    />
 
         <div class="mt-6 flex justify-end">
             <button type="button" wire:click="nextStep"
@@ -61,7 +25,6 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </button>
         </div>
-    </section>
 
     {{-- Step 2: Borrow details --}}
     @elseif($step === 2)

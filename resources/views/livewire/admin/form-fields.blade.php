@@ -7,14 +7,14 @@
                     wire:click="$set('activeFormTab', 'sfp')"
                     class="px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors
                            {{ $activeFormTab === 'sfp' ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50' }}">
-                Suggest for Purchase
+                {{ request_form_name('sfp') }}
             </button>
             <button type="button"
                     role="tab"
                     wire:click="$set('activeFormTab', 'ill')"
                     class="px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors
                            {{ $activeFormTab === 'ill' ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50' }}">
-                Interlibrary Loan
+                {{ request_form_name('ill') }}
             </button>
         </nav>
     </div>

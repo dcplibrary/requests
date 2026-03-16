@@ -42,9 +42,9 @@ class LookupPatronInPolaris implements ShouldQueue
                 ->protected()
                 ->uri('/authenticator/staff')
                 ->params([
-                    'Domain'   => env('PAPI_DOMAIN'),
-                    'Username' => env('PAPI_STAFF'),
-                    'Password' => env('PAPI_PASSWORD'),
+                    'Domain'   => config('requests.polaris.domain', ''),
+                    'Username' => config('requests.polaris.staff', ''),
+                    'Password' => config('requests.polaris.password', ''),
                 ])
                 ->execRequest();
 

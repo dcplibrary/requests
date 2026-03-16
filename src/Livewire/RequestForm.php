@@ -314,7 +314,7 @@ class RequestForm extends Component
      */
     public function getFormFieldsProperty()
     {
-        $form = Form::bySlug('sfp');
+        $form = Form::bySlug(PatronRequest::KIND_SFP);
 
         if ($form) {
             $configs = $form->fieldConfigs()
@@ -339,7 +339,7 @@ class RequestForm extends Component
         }
 
         // Fallback: no SFP form config — use base fields directly
-        return Field::forKind('sfp')
+        return Field::forKind(PatronRequest::KIND_SFP)
             ->whereIn('key', self::CORE_KEYS)
             ->active()
             ->ordered()
@@ -375,7 +375,7 @@ class RequestForm extends Component
      */
     public function getStepTwoCustomFieldsProperty()
     {
-        $form = Form::bySlug('sfp');
+        $form = Form::bySlug(PatronRequest::KIND_SFP);
 
         if ($form) {
             $configs = $form->fieldConfigs()
@@ -400,7 +400,7 @@ class RequestForm extends Component
         }
 
         // Fallback: no SFP form config — use base fields directly
-        return Field::forKind('sfp')
+        return Field::forKind(PatronRequest::KIND_SFP)
             ->where('step', 2)
             ->whereNotIn('key', self::CORE_KEYS)
             ->active()
@@ -461,7 +461,7 @@ class RequestForm extends Component
             'audience_id'      => 'required|exists:field_options,id',
         ];
 
-        $sfpForm   = Form::bySlug('sfp');
+        $sfpForm   = Form::bySlug(PatronRequest::KIND_SFP);
         $sfpFormId = $sfpForm?->id;
         $state     = $this->formConditionState();
 
@@ -853,7 +853,7 @@ class RequestForm extends Component
     {
         $visible = $this->visibleFields;
 
-        $sfpForm   = Form::bySlug('sfp');
+        $sfpForm   = Form::bySlug(PatronRequest::KIND_SFP);
         $sfpFormId = $sfpForm?->id;
 
         $customFieldIds = $this->stepTwoCustomFields->pluck('id')->all();

@@ -54,7 +54,7 @@
             <fieldset>
                 <legend class="block text-sm font-medium text-gray-700 mb-1">Scope <span class="text-red-500">*</span></legend>
                 <div class="flex flex-col gap-2">
-                    @foreach(['sfp' => 'Suggest for Purchase only', 'ill' => 'Interlibrary Loan only', 'both' => 'Both forms'] as $val => $lbl)
+                    @foreach(['sfp' => request_form_name('sfp') . ' only', 'ill' => request_form_name('ill') . ' only', 'both' => 'Both forms'] as $val => $lbl)
                         <label class="inline-flex items-center gap-2 cursor-pointer">
                             <input type="radio" name="scope" value="{{ $val }}"
                                    {{ old('scope', $formSlug) === $val ? 'checked' : '' }}

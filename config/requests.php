@@ -66,4 +66,17 @@ return [
         'name'       => env('REQUESTS_QUEUE_NAME', 'default'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Polaris PAPI
+    |--------------------------------------------------------------------------
+    | Staff authentication for Polaris PAPI (barcode check, patron lookup).
+    | Set PAPI_DOMAIN, PAPI_STAFF, PAPI_PASSWORD in .env.
+    */
+    'polaris' => [
+        'domain'   => env('PAPI_DOMAIN', ''),
+        'staff'    => env('PAPI_STAFF', ''),
+        'password' => env('PAPI_PASSWORD', ''),
+    ],
+
 ];

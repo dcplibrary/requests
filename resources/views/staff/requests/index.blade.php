@@ -6,27 +6,27 @@
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold text-gray-900">
         @if($currentKind === 'ill')
-            Interlibrary Loan Requests
+            {{ request_form_name('ill') }} Requests
         @elseif($currentKind === 'sfp')
-            Purchase Requests
+            {{ request_form_name('sfp') }} Requests
         @else
-            Suggestions for Purchase
+            Requests
         @endif
     </h1>
     <div class="flex items-center gap-3">
         <span class="text-sm text-gray-500">{{ $requests->total() }} total</span>
         @if($currentKind === 'ill' && ($hasIllAccess ?? false))
             <a href="{{ route('request.ill.form') }}" target="_blank"
-               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New ILL Request</a>
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New {{ request_form_name('ill') }} Request</a>
         @elseif($currentKind === 'sfp')
             <a href="{{ route('request.form') }}" target="_blank"
-               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New SFP Request</a>
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New {{ request_form_name('sfp') }} Request</a>
         @else
             <a href="{{ route('request.form') }}" target="_blank"
-               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New SFP Request</a>
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New {{ request_form_name('sfp') }} Request</a>
             @if($hasIllAccess ?? false)
             <a href="{{ route('request.ill.form') }}" target="_blank"
-               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New ILL Request</a>
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New {{ request_form_name('ill') }} Request</a>
             @endif
         @endif
     </div>

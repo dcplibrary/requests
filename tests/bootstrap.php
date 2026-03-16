@@ -24,6 +24,9 @@ if (! trait_exists(\Illuminate\Foundation\Auth\Access\AuthorizesRequests::class)
     require_once __DIR__ . '/stubs/AuthorizesRequestsStub.php';
 }
 
+// Package helpers (request_form_name) so views and tests can use them.
+require_once __DIR__ . '/../src/helpers.php';
+
 // Global helpers for controller tests (abort, route, redirect).
 require_once __DIR__ . '/stubs/global_helpers.php';
 

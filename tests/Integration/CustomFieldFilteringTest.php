@@ -55,6 +55,7 @@ class CustomFieldFilteringTest extends TestCase
             $table->string('type')->default('select');
             $table->integer('sort_order')->default(0);
             $table->boolean('active')->default(true);
+            $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });
 
@@ -157,5 +158,41 @@ class CustomFieldFilteringTest extends TestCase
         $this->assertSame([$rBook->id], $visible);
         $this->assertNotContains($rDvd->id, $visible);
         $this->assertNotContains($rSfp->id, $visible);
+    }
+
+    /**
+     * Filter by material_type using PatronRequest::scopeWhereFieldValue (kind null).
+     *
+     * Verifies the scope produces the same result as the manual whereExists used above.
+     */
+    #[Test]
+    public function where_field_value_scope_filters_requests_by_material_type(): void
+    {
+        $this->bootDatabase();
+        Cache::flush();
+
+        Capsule::table('request_field_values')->delete();
+        Capsule::table('requests')->delete();
+
+        $now = date('Y-m-d H:i:s');
+
+        $rBook = PatronRequest::create(['request_kind' => 'ill']);
+        $rDvd  = PatronRequest::create(['request_kind' => 'ill']);
+        $rSfp  = PatronRequest::create(['request_kind' => 'sfp']);
+
+        Capsule::table('request_field_values')->insert([
+            ['request_id' => $rBook->id, 'field_id' => self::$mtFieldId, 'value' => 'book', 'created_at' => $now, 'updated_at' => $now],
+            ['request_id' => $rDvd->id,  'field_id' => self::$mtFieldId, 'value' => 'dvd',  'created_at' => $now, 'updated_at' => $now],
+            ['request_id' => $rSfp->id,  'field_id' => self::$mtFieldId, 'value' => 'book', 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        $visible = PatronRequest::query()
+            ->where('request_kind', 'ill')
+            ->whereFieldValue('material_type', 'book', null)
+            ->orderBy('id')
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([$rBook->id], $visible);
     }
 }

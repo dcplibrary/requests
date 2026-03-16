@@ -29,7 +29,10 @@
         "psr-4": {
             "Dcplibrary\\Requests\\": "src/",
             "Dcplibrary\\Requests\\Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     },
     "extra": {
         "laravel": {

@@ -8,13 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A patron's Suggest for Purchase request.
+ * A patron's Suggest for Purchase or Interlibrary Loan request.
  *
- * Tracks the full lifecycle of a suggestion: submitted data, catalog and ISBNdb
- * search outcomes, duplicate detection, and status workflow. Both the raw
- * patron-entered values (`submitted_*`) and the resolved material record
- * (`material_id`) are stored so staff can compare what was submitted versus
- * what was matched.
+ * Tracks the full lifecycle: submitted data, catalog and ISBNdb search outcomes,
+ * duplicate detection, and status workflow. Both the raw patron-entered values
+ * (`submitted_*`) and the resolved material record (`material_id`) are stored
+ * so staff can compare what was submitted versus what was matched.
+ *
+ * Request kind is one of KIND_SFP or KIND_ILL. Use kinds() for a list of valid kinds.
  *
  * @property int              $id
  * @property int              $patron_id
@@ -42,6 +43,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class PatronRequest extends Model
 {
+    /** Request kind: Suggest for Purchase. */
+    public const KIND_SFP = 'sfp';
+
+    /** Request kind: Interlibrary Loan. */
+    public const KIND_ILL = 'ill';
+
     protected $table = 'requests';
 
     protected $fillable = [
@@ -80,9 +87,62 @@ class PatronRequest extends Model
         'assigned_at' => 'datetime',
     ];
 
+    /**
+     * All valid request kind slugs.
+     *
+     * @return array<int, string>  List of kind slugs (e.g. for validation or iteration).
+     */
+    public static function kinds(): array
+    {
+        return [self::KIND_SFP, self::KIND_ILL];
+    }
+
+    /**
+     * Scope: filter by request kind.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $kind  One of {@see PatronRequest::KIND_SFP} or {@see PatronRequest::KIND_ILL}.
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeKind(\Illuminate\Database\Eloquent\Builder $query, string $kind): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('request_kind', $kind);
+    }
+
+    /**
+     * Scope: only requests that have a given value for a field (by field key).
+     *
+     * Used for staff index filters (material_type, audience, custom filter).
+     * When $kind is provided, only fields applicable to that kind are considered.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $fieldKey  Field key (e.g. 'material_type', 'audience').
+     * @param  string  $value    Stored value (e.g. option slug).
+     * @param  string|null  $kind  Optional request kind to restrict the field lookup ({@see PatronRequest::KIND_SFP}, {@see PatronRequest::KIND_ILL}).
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWhereFieldValue(
+        \Illuminate\Database\Eloquent\Builder $query,
+        string $fieldKey,
+        string $value,
+        ?string $kind = null
+    ): \Illuminate\Database\Eloquent\Builder {
+        $fieldId = Field::query()
+            ->where('key', $fieldKey)
+            ->when($kind, fn ($q) => $q->forKind($kind))
+            ->value('id');
+
+        if (! $fieldId) {
+            return $query;
+        }
+
+        return $query->whereExists(function ($sub) use ($fieldId, $value) {
+            $sub->selectRaw('1')
+                ->from('request_field_values')
+                ->whereColumn('request_field_values.request_id', 'requests.id')
+                ->where('request_field_values.field_id', $fieldId)
+                ->where('request_field_values.value', $value);
+        });
     }
 
     public function patron(): BelongsTo
@@ -262,7 +322,7 @@ class PatronRequest extends Model
         $query->where(function ($q) use ($staffUser, $illGroupId) {
             // ILL: only members of the ILL group.
             $q->where(function ($ill) use ($staffUser, $illGroupId) {
-                $ill->where('request_kind', 'ill');
+                $ill->where('request_kind', self::KIND_ILL);
                 if ($illGroupId > 0) {
                     $ill->whereExists(function ($sub) use ($staffUser, $illGroupId) {
                         $sub->selectRaw('1')
@@ -276,7 +336,7 @@ class PatronRequest extends Model
             })
             // SFP: optionally strict selector-group pairing via field options.
             ->orWhere(function ($sfp) use ($staffUser) {
-                $sfp->where('request_kind', 'sfp');
+                $sfp->where('request_kind', self::KIND_SFP);
 
                 if (! Setting::get('requests_visibility_strict_groups', true)) {
                     return;

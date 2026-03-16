@@ -3,6 +3,7 @@
 namespace Dcplibrary\Requests\Livewire\Admin;
 
 use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Models\PatronRequest;
 use Livewire\Component;
 
 class CustomFieldEdit extends Component
@@ -13,7 +14,7 @@ class CustomFieldEdit extends Component
     public string $key = '';
     public string $type = 'text';
     public int $step = 2;
-    public string $requestKind = 'sfp';
+    public string $requestKind = PatronRequest::KIND_SFP;
 
     public bool $required = false;
     public bool $active = true;

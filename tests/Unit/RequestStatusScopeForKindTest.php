@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Tests\Unit;
 
+use Dcplibrary\Requests\Models\PatronRequest;
 use Dcplibrary\Requests\Models\RequestStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Mockery;
@@ -11,6 +12,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for RequestStatus::scopeForKind().
+ *
+ * Uses PatronRequest::KIND_SFP and KIND_ILL so the tests document that
+ * these constants are the kind values expected by the scope.
  */
 class RequestStatusScopeForKindTest extends TestCase
 {
@@ -31,7 +35,7 @@ class RequestStatusScopeForKindTest extends TestCase
         $builder = $this->mockBuilder();
         $builder->shouldReceive('where')->once()->with('applies_to_sfp', true)->andReturnSelf();
 
-        $result = (new RequestStatus())->scopeForKind($builder, 'sfp');
+        $result = (new RequestStatus())->scopeForKind($builder, PatronRequest::KIND_SFP);
 
         $this->assertSame($builder, $result);
     }
@@ -42,7 +46,7 @@ class RequestStatusScopeForKindTest extends TestCase
         $builder = $this->mockBuilder();
         $builder->shouldReceive('where')->once()->with('applies_to_ill', true)->andReturnSelf();
 
-        $result = (new RequestStatus())->scopeForKind($builder, 'ill');
+        $result = (new RequestStatus())->scopeForKind($builder, PatronRequest::KIND_ILL);
 
         $this->assertSame($builder, $result);
     }

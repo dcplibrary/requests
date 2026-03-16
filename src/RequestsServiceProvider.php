@@ -54,6 +54,9 @@ class RequestsServiceProvider extends ServiceProvider
             __DIR__ . '/../config/requests.php',
             'requests'
         );
+
+        // Load helpers so request_form_name() is available in views and app code.
+        require_once __DIR__ . '/helpers.php';
     }
 
     public function boot(): void
