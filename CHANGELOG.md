@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.4.0](https://github.com/dcplibrary/requests/compare/v4.3.1...v4.4.0) (2026-03-16)
+
+
+### Features
+
+* add status color presets for common tailwind colors ([67d2cb4](https://github.com/dcplibrary/requests/commit/67d2cb4df22f58083064238920102cf5f5676781))
+
 ## [4.3.1](https://github.com/dcplibrary/requests/compare/v4.3.0...v4.3.1) (2026-03-14)
 
 
