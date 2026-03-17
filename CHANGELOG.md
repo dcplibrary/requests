@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.12.1](https://github.com/dcplibrary/requests/compare/v4.12.0...v4.12.1) (2026-03-17)
+
+
+### Bug Fixes
+
+* make staff email button visible by running npm run build:css in package ([050cae0](https://github.com/dcplibrary/requests/commit/050cae011adec2278a06332ebd715d1eb5f76239))
+
 # [4.12.0](https://github.com/dcplibrary/requests/compare/v4.11.0...v4.12.0) (2026-03-17)
 
 
