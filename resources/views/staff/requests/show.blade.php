@@ -322,6 +322,17 @@
 
                         <div x-show="open" x-cloak x-transition
                              class="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                            @if($patronRequest->assigned_to_user_id)
+                            <form method="POST" action="{{ route('request.staff.requests.assign', $patronRequest) }}">
+                                @csrf
+                                <input type="hidden" name="assigned_to_user_id" value="">
+                                <button type="submit" class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z"/></svg>
+                                    Unclaim
+                                </button>
+                            </form>
+                            <div class="border-t border-gray-100"></div>
+                            @endif
                             @if($selectorGroups->isNotEmpty())
                             <div class="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">Groups</div>
                             @foreach($selectorGroups as $sg)
