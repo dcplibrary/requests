@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.13.3](https://github.com/dcplibrary/requests/compare/v4.13.2...v4.13.3) (2026-03-17)
+
+
+### Bug Fixes
+
+* set both ill and sfp email preferences to notify_by_email and set token ([303a2da](https://github.com/dcplibrary/requests/commit/303a2dafa2a64133123c8ece96fae2246d26f388))
+
 ## [4.13.2](https://github.com/dcplibrary/requests/compare/v4.13.1...v4.13.2) (2026-03-17)
 
 
