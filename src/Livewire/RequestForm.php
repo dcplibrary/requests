@@ -27,6 +27,9 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
+/**
+ * Multi-step Suggest for Purchase patron submission form (catalog, ISBNdb, material, submit).
+ */
 #[Layout('requests::layouts.requests')]
 class RequestForm extends Component
 {
@@ -634,7 +637,7 @@ class RequestForm extends Component
             }
         }
 
-        // 6. Save request (no match found, or duplicate case)
+        // 6. No match found — save request directly.
         $this->saveRequest($patron);
     }
 
@@ -668,6 +671,7 @@ class RequestForm extends Component
             }
         }
 
+        // No ISBNdb results either — save request directly.
         $patron = app(PatronService::class)->findOrCreate([
             'barcode'    => $this->barcode,
             'name_first' => $this->name_first,
@@ -789,10 +793,14 @@ class RequestForm extends Component
         $this->savePatronToSession();
 
         session()->put('request.ill_prefill', [
-            'title'        => $this->title,
-            'author'       => $this->author,
-            'publish_date' => $this->publish_date,
+            'title'            => $this->title,
+            'author'           => $this->author,
+            'publish_date'     => $this->publish_date,
+            'material_type_id' => $this->material_type_id,
         ]);
+
+        // Signal the ILL form to skip step 1 — patron data is already in session.
+        session()->put('request.ill_skip_patron', true);
 
         $this->redirect(route('request.ill.form'));
     }

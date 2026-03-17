@@ -6,6 +6,9 @@ use Dcplibrary\Requests\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
+/**
+ * Renders in-app help pages (patron and staff documentation from package markdown).
+ */
 class HelpController extends Controller
 {
     public function show(Request $request, ?string $page = null)

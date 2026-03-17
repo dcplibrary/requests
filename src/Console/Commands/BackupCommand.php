@@ -12,11 +12,12 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use ZipArchive;
 
+/**
+ * Exports package config JSON, full-database SQL dump, and/or storage zip to disk (CLI).
+ * Options: --config, --db, --storage, --prune, --path, --all.
+ */
 class BackupCommand extends Command
 {
-    /**
-     * php artisan requests:backup --config --db --storage --prune --path=/var/backups/requests
-     */
     protected $signature = 'requests:backup
         {--config   : Export configuration as JSON}
         {--db       : Export database as SQL dump}

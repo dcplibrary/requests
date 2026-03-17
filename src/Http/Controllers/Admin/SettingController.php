@@ -14,6 +14,9 @@ use Dcplibrary\Requests\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
+/**
+ * General package settings, notification templates, and form-field notification rules.
+ */
 class SettingController extends Controller
 {
     use ProvidesEmailTokens;

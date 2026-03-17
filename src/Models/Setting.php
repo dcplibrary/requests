@@ -5,6 +5,18 @@ namespace Dcplibrary\Requests\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * Key/value package settings with typed values, grouping, and cache-backed reads.
+ *
+ * @property int         $id
+ * @property string      $key
+ * @property string|null $value
+ * @property string|null $label
+ * @property string|null $type
+ * @property string|null $group
+ * @property string|null $description
+ * @property array|null  $tokens
+ */
 class Setting extends Model
 {
     protected $fillable = ['key', 'value', 'label', 'type', 'group', 'description', 'tokens'];

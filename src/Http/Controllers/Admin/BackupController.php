@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use ZipArchive;
 
+/**
+ * Configuration and database backup/export, server-side backup files, retention, and wipe.
+ */
 class BackupController extends Controller
 {
     /** Directory where artisan requests:backup writes files. */

@@ -8,6 +8,9 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 
+/**
+ * Base controller for package HTTP endpoints; resolves staff users for auth and auditing.
+ */
 abstract class Controller extends BaseController
 {
     use AuthorizesRequests;

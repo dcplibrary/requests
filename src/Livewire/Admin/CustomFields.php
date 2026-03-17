@@ -5,6 +5,9 @@ namespace Dcplibrary\Requests\Livewire\Admin;
 use Dcplibrary\Requests\Models\Field;
 use Livewire\Component;
 
+/**
+ * Legacy admin list of field definitions (replaced by unified form-fields UI in most installs).
+ */
 class CustomFields extends Component
 {
     /** @var array<int, array<string, mixed>> */

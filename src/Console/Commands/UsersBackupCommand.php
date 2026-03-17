@@ -5,6 +5,9 @@ namespace Dcplibrary\Requests\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Exports staff_users, selector_groups, and pivot tables to a JSON backup file (CLI).
+ */
 class UsersBackupCommand extends Command
 {
     protected $signature = 'requests:users-backup

@@ -465,22 +465,22 @@
 
         {{-- ILL suggestion prompt (item is older than the ILL age threshold) --}}
         @elseif($suggestIll)
-        <div class="p-5 bg-amber-50 border border-amber-300 rounded-lg">
+        <div class="p-5 bg-amber-50 border border-amber-200 rounded-lg">
             <div class="flex items-start gap-3">
-                <svg class="h-5 w-5 text-amber-600 mt-0.5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/>
+                <svg class="h-5 w-5 text-amber-500 mt-0.5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd"/>
                 </svg>
                 <div class="flex-1">
-                    <h3 class="text-sm font-semibold text-amber-900 mb-1">This item may qualify for Interlibrary Loan</h3>
-                    <p class="text-sm text-amber-800 mb-3">This item's publish date exceeds our threshold for Suggest for Purchase requests. You can submit it as an Interlibrary Loan (ILL) request instead, or continue as a purchase suggestion.</p>
+                    <h3 class="text-base font-semibold text-gray-900 mb-1">This looks like an older item</h3>
+                    <p class="text-sm text-gray-700 mb-4">This item may be a good candidate for an <strong>Interlibrary Loan (ILL)</strong> — we can borrow it from another library on your behalf. Would you like to request an ILL instead?</p>
                     <div class="flex flex-wrap gap-2">
                         <button type="button" wire:click="redirectToIll"
-                                class="px-4 py-2 bg-amber-700 text-white text-sm font-semibold rounded hover:bg-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-600">
-                            Submit as Interlibrary Loan
+                                class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Yes, request an ILL
                         </button>
                         <button type="button" wire:click="proceedAsSfp"
-                                class="px-4 py-2 bg-white text-amber-800 border border-amber-400 text-sm font-medium rounded hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-400">
-                            Continue as purchase suggestion
+                                class="px-4 py-2 bg-white text-gray-700 border border-gray-300 text-sm font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                            No, continue as a purchase suggestion
                         </button>
                     </div>
                 </div>

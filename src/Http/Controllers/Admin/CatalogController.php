@@ -7,6 +7,9 @@ use Dcplibrary\Requests\Models\CatalogFormatLabel;
 use Dcplibrary\Requests\Models\Setting;
 use Illuminate\Http\Request;
 
+/**
+ * Catalog integration settings (Bibliocommons, Syndetics, ISBNdb) and format code labels.
+ */
 class CatalogController extends Controller
 {
     public function index()

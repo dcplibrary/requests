@@ -8,6 +8,9 @@ use Dcplibrary\Requests\Models\RequestFieldValue;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
+/**
+ * Legacy admin CRUD for select/radio options on a field (slugs, names, sort order).
+ */
 class CustomFieldOptionsManager extends Component
 {
     public int $fieldId;

@@ -9,6 +9,9 @@ use Dcplibrary\Requests\Models\RequestStatusHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Staff user accounts (admin/selector roles) and selector group membership.
+ */
 class UserController extends Controller
 {
     /**

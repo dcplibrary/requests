@@ -6,6 +6,9 @@ use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\PatronRequest;
 use Livewire\Component;
 
+/**
+ * Legacy admin editor for a single field definition (label, type, options).
+ */
 class CustomFieldEdit extends Component
 {
     public int $fieldId;

@@ -7,6 +7,9 @@ use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Component;
 
+/**
+ * Patron barcode + PIN login against Polaris PAPI (rate-limited).
+ */
 class PatronPinLogin extends Component
 {
     public string $barcode = '';

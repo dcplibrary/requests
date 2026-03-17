@@ -7,6 +7,9 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Restores the database from a package SQL dump file; splits statements per driver (CLI).
+ */
 class RestoreDbCommand extends Command
 {
     protected $signature = 'requests:restore-db

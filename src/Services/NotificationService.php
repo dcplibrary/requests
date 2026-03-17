@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
+/**
+ * Staff routing and patron-facing emails for requests (placeholders, templates, mail send).
+ */
 class NotificationService
 {
     // ── Public notification methods ───────────────────────────────────────────

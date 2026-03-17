@@ -9,6 +9,9 @@ use Dcplibrary\Requests\Models\PatronRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Staff catalog of materials (titles) with search, bulk status, and merge.
+ */
 class TitleController extends Controller
 {
     // -------------------------------------------------------------------------

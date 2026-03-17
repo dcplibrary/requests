@@ -18,6 +18,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
+/**
+ * Staff queue for SFP/ILL patron requests: list, show, status, assignment, catalog, email.
+ */
 class RequestController extends Controller
 {
     public function index(Request $request)

@@ -9,6 +9,9 @@ use Dcplibrary\Requests\Models\PatronRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Staff patron list, merge, Polaris lookup, and duplicate-flag management.
+ */
 class PatronController extends Controller
 {
     // -------------------------------------------------------------------------

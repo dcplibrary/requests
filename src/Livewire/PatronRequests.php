@@ -9,6 +9,9 @@ use Dcplibrary\Requests\Services\NotificationService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+/**
+ * Patron-facing list of the signed-in patron's submitted requests (session barcode).
+ */
 #[Layout('requests::layouts.requests')]
 class PatronRequests extends Component
 {

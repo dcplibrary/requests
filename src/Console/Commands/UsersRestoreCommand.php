@@ -5,6 +5,9 @@ namespace Dcplibrary\Requests\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Restores staff_users, selector_groups, and pivot tables from a JSON backup (CLI).
+ */
 class UsersRestoreCommand extends Command
 {
     protected $signature = 'requests:users-restore

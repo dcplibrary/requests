@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+/**
+ * CRUD for workflow request statuses (colors, icons, SFP/ILL applicability, patron email).
+ */
 class RequestStatusController extends Controller
 {
     /**

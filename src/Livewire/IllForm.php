@@ -26,6 +26,9 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
+/**
+ * Multi-step Interlibrary Loan patron submission form (catalog, ISBNdb, material, submit).
+ */
 #[Layout('requests::layouts.requests')]
 class IllForm extends Component
 {
@@ -57,6 +60,12 @@ class IllForm extends Component
 
     /** @var array<string, mixed> */
     public array $custom = [];
+
+    // Set when arriving via redirect from the SFP form — enables compact step-2 view.
+    public bool $fromSfp = false;
+
+    /** Keys of custom fields that were pre-filled from the SFP redirect. */
+    public array $sfpPrefillKeys = [];
 
     /** Catalog resolution (Step 3) */
     public array $catalogResults = [];
@@ -93,11 +102,25 @@ class IllForm extends Component
         // Pre-fill material fields when redirected from the SFP form.
         $prefill = session()->pull('request.ill_prefill');
         if (is_array($prefill)) {
+            // Pull out material_type_id separately — it's not a custom field.
+            if (!empty($prefill['material_type_id'])) {
+                $this->material_type_id = (int) $prefill['material_type_id'];
+            }
+            unset($prefill['material_type_id']);
+
             foreach ($prefill as $key => $value) {
                 if ($value !== '' && $value !== null) {
                     $this->custom[$key] = (string) $value;
+                    $this->sfpPrefillKeys[] = $key;
                 }
             }
+        }
+
+        // Skip patron step when arriving from the SFP form redirect
+        // (patron data is already hydrated from session above).
+        if (session()->pull('request.ill_skip_patron', false)) {
+            $this->step = 2;
+            $this->fromSfp = ! empty($this->sfpPrefillKeys);
         }
 
         $allowed = $this->getAllowedMaterialTypeIds();

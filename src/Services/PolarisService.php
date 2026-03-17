@@ -5,6 +5,9 @@ namespace Dcplibrary\Requests\Services;
 use Blashbrook\PAPIClient\PAPIClient;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Polaris PAPI staff auth and patron barcode existence checks for patron forms.
+ */
 class PolarisService
 {
     /**
