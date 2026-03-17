@@ -2,6 +2,18 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.9.0](https://github.com/dcplibrary/requests/compare/v4.8.1...v4.9.0) (2026-03-17)
+
+
+### Bug Fixes
+
+* add details for phpdocumentor.  sfp to ill conversions now only ask for additional information ([9e8ccd1](https://github.com/dcplibrary/requests/commit/9e8ccd17cbded3c523ba4586b929b4a462fcd892))
+
+
+### Features
+
+* add ill option to isbndb items that are past the ill threshold ([895b599](https://github.com/dcplibrary/requests/commit/895b599cef853cd3dc4d94fa4fa4a861e3faf323))
+
 ## [4.8.1](https://github.com/dcplibrary/requests/compare/v4.8.0...v4.8.1) (2026-03-17)
 
 
