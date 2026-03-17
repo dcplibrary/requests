@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.10.0](https://github.com/dcplibrary/requests/compare/v4.9.0...v4.10.0) (2026-03-17)
+
+
+### Features
+
+* add status update ([effefeb](https://github.com/dcplibrary/requests/commit/effefebe312035181ae360b12440ca3b2311f2d9))
+
 # [4.9.0](https://github.com/dcplibrary/requests/compare/v4.8.1...v4.9.0) (2026-03-17)
 
 
