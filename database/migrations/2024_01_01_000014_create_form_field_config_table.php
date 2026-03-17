@@ -12,6 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('form_field_config');
+
         Schema::create('form_field_config', function (Blueprint $table) {
             $table->id();
             $table->foreignId('form_id')->constrained('forms')->cascadeOnDelete();

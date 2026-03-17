@@ -7,6 +7,14 @@
     <h1 class="text-xl font-bold text-gray-900">Edit staff routing email</h1>
 </div>
 
+<div class="mb-4 flex flex-wrap items-center gap-3">
+    <a href="{{ route('request.staff.staff-routing-templates.create') }}"
+       class="inline-flex items-center px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-md hover:bg-slate-900">
+        + Staff template
+    </a>
+    <span class="text-xs text-gray-500">Per–selector-group email for new requests (ILL, adult selectors, etc.)</span>
+</div>
+
 @if(session('success'))
 <div class="mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">{{ session('success') }}</div>
 @endif

@@ -51,13 +51,26 @@
              x-data="{ previewEnabled: {{ (int)(bool)($settingsByTab['general'] ?? collect())->firstWhere('key','email_preview_enabled')?->value }} }"
              @endif>
             <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
-                <h2 class="text-sm font-semibold text-gray-700">
-                    {{ $tabId === 'general' ? 'General' : 'Emails' }}
-                </h2>
-                @if($tabId === 'general')
-                    <p class="text-xs text-gray-400 mt-0.5">Master switch and footer used for all notification emails.</p>
+                @if($tabId === 'emails')
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-700">Emails</h2>
+                        <p class="text-xs text-gray-400 mt-0.5 max-w-xl">Default staff routing, patron templates, and per–selector-group staff emails (new requests only).</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 shrink-0">
+                        <a href="{{ route('request.staff.staff-routing-templates.create') }}"
+                           class="inline-flex items-center px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-md shadow-sm hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                            + Staff template
+                        </a>
+                        <a href="{{ route('request.staff.patron-status-templates.create') }}"
+                           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            + Patron template
+                        </a>
+                    </div>
+                </div>
                 @else
-                    <p class="text-xs text-gray-400 mt-0.5">Staff and patron email templates. Edit each row or add patron templates.</p>
+                <h2 class="text-sm font-semibold text-gray-700">General</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Master switch and footer used for all notification emails.</p>
                 @endif
             </div>
             @if($items->isNotEmpty())
@@ -214,13 +227,7 @@
 
             @if($tabId === 'emails')
             <div class="px-5 py-4 border-t border-gray-200">
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <h3 class="text-sm font-semibold text-gray-800">Email templates</h3>
-                    <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('request.staff.staff-routing-templates.create') }}" class="px-4 py-2 bg-slate-700 text-white text-sm rounded hover:bg-slate-800">+ Staff template</a>
-                        <a href="{{ route('request.staff.patron-status-templates.create') }}" class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ Patron template</a>
-                    </div>
-                </div>
+                <h3 class="text-sm font-semibold text-gray-800 mb-3">Email templates</h3>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">
