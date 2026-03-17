@@ -812,14 +812,8 @@ class RequestController extends Controller
             // Staff saw the preview and chose to skip sending — do nothing.
         } else {
             // Preview was never shown (disabled or no email would fire) — use standard path.
-            $sent = app(NotificationService::class)->notifyPatronStatusChange($patronRequest);
-            if ($sent) {
-                $patronRequest->statusHistory()->create([
-                    'request_status_id' => $patronRequest->request_status_id,
-                    'user_id'           => $staffUserId,
-                    'note'              => 'Notification sent.',
-                ]);
-            }
+            // Successful sends are logged in activity history by NotificationService.
+            app(NotificationService::class)->notifyPatronStatusChange($patronRequest);
         }
 
         return back()->with('success', 'Status updated.');

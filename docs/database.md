@@ -217,15 +217,16 @@ The core table — one row per patron suggestion.
 
 ## request_status_history
 
-Audit trail for request status transitions.
+Audit trail for request status transitions and sent email notifications.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | bigint PK | |
 | `request_id` | bigint FK | → requests, cascade delete |
-| `request_status_id` | bigint FK | → request_statuses |
+| `request_status_id` | bigint FK | → request_statuses (context at log time) |
 | `user_id` | bigint FK | Nullable → sfp_users; null = system |
-| `note` | text | Nullable |
+| `note` | text | Nullable; for notifications, describes recipients/subject |
+| `activity_type` | string | Nullable; when set, row is an email log (`staff_routing`, `patron_email`, `staff_assignee`, `staff_workflow`) |
 | `timestamps` | | |
 
 **Index:** `request_id`

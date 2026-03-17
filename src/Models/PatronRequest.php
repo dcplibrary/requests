@@ -244,6 +244,21 @@ class PatronRequest extends Model
     }
 
     /**
+     * Append an activity row for a sent email (staff routing, patron status, etc.).
+     *
+     * @param  string  $activityType  One of {@see RequestStatusHistory} ACTIVITY_* constants
+     */
+    public function logNotificationActivity(string $activityType, string $note, ?int $userId = null): void
+    {
+        $this->statusHistory()->create([
+            'request_status_id' => $this->request_status_id,
+            'user_id'           => $userId,
+            'note'              => $note,
+            'activity_type'     => $activityType,
+        ]);
+    }
+
+    /**
      * Scope: only requests the given user is authorized to see based on group membership.
      *
      * Accepts any authenticated user object (host app model or package model), or null

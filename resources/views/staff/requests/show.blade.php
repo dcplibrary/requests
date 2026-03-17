@@ -214,12 +214,22 @@
                 @else
                     <div class="space-y-3 pt-2">
                         @foreach($patronRequest->statusHistory as $entry)
+                        @php
+                            $isNotification = filled($entry->activity_type);
+                            $dotColor = $isNotification ? '#6366f1' : ($entry->status?->color ?? '#d1d5db');
+                            $headline = $isNotification
+                                ? \Dcplibrary\Requests\Models\RequestStatusHistory::activityTypeLabel($entry->activity_type)
+                                : ($entry->status?->name ?? 'Unknown');
+                        @endphp
                         <div class="flex gap-3 text-sm">
                             <div class="flex-shrink-0 w-2 h-2 rounded-full mt-1.5"
-                                 style="background-color: {{ $entry->status?->color ?? '#d1d5db' }};"></div>
+                                 style="background-color: {{ $dotColor }};"></div>
                             <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="font-medium text-gray-900">{{ $entry->status?->name ?? 'Unknown' }}</span>
+                                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-1">
+                                    <span class="font-medium text-gray-900">{{ $headline }}</span>
+                                    @if($isNotification)
+                                        <span class="text-xs font-medium text-indigo-600 bg-indigo-50 px-1.5 py-0 rounded">Email</span>
+                                    @endif
                                     @if($entry->user)
                                         <span class="text-gray-500">by {{ $entry->user->name ?? $entry->user->email }}</span>
                                     @endif

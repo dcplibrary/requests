@@ -11,8 +11,10 @@ use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Models\PatronRequest;
+use Dcplibrary\Requests\Models\RequestStatusHistory;
 use Dcplibrary\Requests\Models\User;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
@@ -69,9 +71,11 @@ class NotificationService
             $subject = $this->replacePlaceholders($subjectTpl, $request);
             $body = $this->finalizeStaffRoutingBody($bodyTpl, $request);
 
+            $sentTo = [];
             foreach ($recipients as $email) {
                 try {
                     Mail::to($email)->send(new RequestMail($subject, $body));
+                    $sentTo[] = $email;
                 } catch (\Throwable $e) {
                     Log::error('Staff routing email failed', [
                         'to'         => $email,
@@ -80,6 +84,14 @@ class NotificationService
                         'error'      => $e->getMessage(),
                     ]);
                 }
+            }
+            if ($sentTo !== []) {
+                $this->logNotificationHistory(
+                    $request,
+                    RequestStatusHistory::ACTIVITY_STAFF_ROUTING,
+                    'Staff routing email to ' . implode(', ', $sentTo)
+                        . ' (group: ' . ($group->name ?? '—') . '). Subject: ' . Str::limit($subject, 140)
+                );
             }
         }
     }
@@ -115,6 +127,9 @@ class NotificationService
             ->ordered()
             ->get();
 
+        $statusName = $request->status?->name ?? 'Unknown';
+        $sentCount  = 0;
+
         if ($templates->isEmpty()) {
             // Backward compat: no templates configured — use single setting
             $subject = $this->replacePlaceholders(
@@ -125,6 +140,7 @@ class NotificationService
             $body = $this->replacePlaceholders($bodyTemplate, $request);
             try {
                 Mail::to($patronEmail)->send(new RequestMail($subject, $body));
+                $sentCount = 1;
             } catch (\Throwable $e) {
                 Log::error('Patron status email failed', [
                     'patron_id'  => $request->patron_id,
@@ -132,7 +148,15 @@ class NotificationService
                     'error'      => $e->getMessage(),
                 ]);
             }
-            return true;
+            if ($sentCount > 0) {
+                $this->logNotificationHistory(
+                    $request,
+                    RequestStatusHistory::ACTIVITY_PATRON_EMAIL,
+                    'Patron notification sent to ' . $patronEmail . ' for status “' . $statusName . '”. Subject: ' . Str::limit($subject, 120)
+                );
+            }
+
+            return $sentCount > 0;
         }
 
         foreach ($templates as $template) {
@@ -140,6 +164,7 @@ class NotificationService
                 $subject = $this->replacePlaceholders($template->subject, $request);
                 $body = $this->replacePlaceholders((string) $template->body, $request);
                 Mail::to($patronEmail)->send(new RequestMail($subject, $body));
+                $sentCount++;
             } catch (\Throwable $e) {
                 Log::error('Patron status email failed', [
                     'patron_id'  => $request->patron_id,
@@ -150,7 +175,17 @@ class NotificationService
             }
         }
 
-        return true;
+        if ($sentCount > 0) {
+            $this->logNotificationHistory(
+                $request,
+                RequestStatusHistory::ACTIVITY_PATRON_EMAIL,
+                $sentCount === 1
+                    ? 'Patron notification sent to ' . $patronEmail . ' for status “' . $statusName . '”.'
+                    : "Patron notification: {$sentCount} emails sent to {$patronEmail} for status “{$statusName}”."
+            );
+        }
+
+        return $sentCount > 0;
     }
 
     /**
@@ -239,6 +274,11 @@ class NotificationService
 
         try {
             Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
+            $this->logNotificationHistory(
+                $request,
+                RequestStatusHistory::ACTIVITY_STAFF_ASSIGNEE,
+                'Assignee notification sent to ' . $email . '. Subject: ' . Str::limit($subject, 120)
+            );
         } catch (\Throwable $e) {
             Log::error('Assignee notification failed', [
                 'to'         => $email,
@@ -282,9 +322,11 @@ class NotificationService
         $subject = $this->replacePlaceholders($this->defaultStaffRoutingSubject(), $request);
         $body = $header . $this->finalizeStaffRoutingBody($this->defaultStaffRoutingBodyTemplate(), $request);
 
+        $sentTo = [];
         foreach ($recipients as $email) {
             try {
                 Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
+                $sentTo[] = $email;
             } catch (\Throwable $e) {
                 Log::error('Staff workflow notification failed', [
                     'to'         => $email,
@@ -292,6 +334,34 @@ class NotificationService
                     'error'      => $e->getMessage(),
                 ]);
             }
+        }
+        if ($sentTo !== []) {
+            $this->logNotificationHistory(
+                $request,
+                RequestStatusHistory::ACTIVITY_STAFF_WORKFLOW,
+                'Workflow notification (“' . $action . '”) sent to: ' . implode(', ', $sentTo)
+            );
+        }
+    }
+
+    /**
+     * Record a successful notification in request activity history (best-effort).
+     */
+    private function logNotificationHistory(PatronRequest $request, string $activityType, string $note): void
+    {
+        if (! $request->getKey()) {
+            return;
+        }
+        try {
+            $req = $request->fresh();
+            if ($req) {
+                $req->logNotificationActivity($activityType, $note);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Could not log notification to activity history', [
+                'request_id' => $request->id,
+                'error'      => $e->getMessage(),
+            ]);
         }
     }
 
