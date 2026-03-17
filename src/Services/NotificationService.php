@@ -505,17 +505,19 @@ class NotificationService
      */
     private function buildEmailActionButtons(PatronRequest $request, bool $standalone = true): string
     {
-        $currentId = (int) $request->request_status_id;
+        $currentId      = (int) $request->request_status_id;
+        $currentStatus  = RequestStatus::find($currentId, ['sort_order']);
+        $currentSort    = $currentStatus ? (int) $currentStatus->sort_order : 0;
 
-        $candidates = RequestStatus::query()
+        // Show all active statuses for this kind that come after the current
+        // one in sort order. Label falls back to status name when action_label
+        // is not set — no filtering based on label presence or terminal state.
+        $buttons = RequestStatus::query()
             ->where('active', true)
             ->forKind($request->request_kind)
-            ->where('id', '!=', $currentId)
+            ->where('sort_order', '>', $currentSort)
             ->orderBy('sort_order')
             ->get(['id', 'name', 'action_label', 'color']);
-
-        $labeled = $candidates->filter(fn (RequestStatus $s) => trim((string) $s->action_label) !== '');
-        $buttons = $labeled->isNotEmpty() ? $labeled : $candidates;
 
         if ($buttons->isEmpty()) {
             return '';
