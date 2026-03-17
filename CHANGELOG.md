@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.15.0](https://github.com/dcplibrary/requests/compare/v4.14.1...v4.15.0) (2026-03-17)
+
+
+### Features
+
+* add unclaim button for requests ([da943a7](https://github.com/dcplibrary/requests/commit/da943a733e6d0f481587af4d5b684f4136e64f21))
+
 ## [4.14.1](https://github.com/dcplibrary/requests/compare/v4.14.0...v4.14.1) (2026-03-17)
 
 
