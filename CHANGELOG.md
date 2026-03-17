@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.12.2](https://github.com/dcplibrary/requests/compare/v4.12.1...v4.12.2) (2026-03-17)
+
+
+### Bug Fixes
+
+* email status buttons will appear even if no action label is present ([4e8002d](https://github.com/dcplibrary/requests/commit/4e8002d243a91d85255492c77d4506f55d88ff5c))
+
 ## [4.12.1](https://github.com/dcplibrary/requests/compare/v4.12.0...v4.12.1) (2026-03-17)
 
 
