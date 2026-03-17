@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Tests\Unit;
 
+use Dcplibrary\Requests\Livewire\IllForm;
 use Dcplibrary\Requests\Livewire\RequestForm;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -29,5 +30,15 @@ class RequestFormNotifyByEmailPropertyTest extends TestCase
         $form->notify_by_email = true;
 
         $this->assertTrue($form->notify_by_email);
+    }
+
+    #[Test]
+    public function ill_form_has_notify_by_email_property(): void
+    {
+        $form = new IllForm();
+
+        $this->assertObjectHasProperty('notify_by_email', $form);
+        $this->assertFalse($form->notify_by_email);
+        $this->assertIsBool($form->notify_by_email);
     }
 }

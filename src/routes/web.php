@@ -107,6 +107,7 @@ Route::group([
             Route::get('/settings',                  [SettingController::class, 'index'])->name('settings.index');
             Route::get('/settings/notifications',                      [SettingController::class, 'notifications'])->name('settings.notifications');
             Route::get('/settings/notifications/staff-email',           [SettingController::class, 'staffEmailForm'])->name('settings.notifications.staff-email');
+            Route::get('/settings/notifications/staff-email-ill',     [SettingController::class, 'staffEmailIllForm'])->name('settings.notifications.staff-email-ill');
             Route::get('/settings/notifications/default-patron-email', [SettingController::class, 'defaultPatronEmailForm'])->name('settings.notifications.default-patron-email');
             Route::get('/settings/notifications/preview/{type}',    [SettingController::class, 'previewEmail'])->name('settings.notifications.preview');
             Route::post('/settings/notifications/test',             [SettingController::class, 'sendTestEmail'])->name('settings.notifications.test');

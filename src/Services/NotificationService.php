@@ -39,12 +39,8 @@ class NotificationService
 
         $request->loadMissing(['patron', 'fieldValues.field', 'status']);
 
-        $subject = $this->replacePlaceholders(
-            (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}'),
-            $request
-        );
-        $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
-        $body = $this->finalizeStaffRoutingBody($bodyTemplate, $request);
+        $subject = $this->replacePlaceholders($this->staffRoutingSubjectSetting($request), $request);
+        $body = $this->finalizeStaffRoutingBody($this->staffRoutingBodyTemplate($request), $request);
 
         foreach ($recipients as $email) {
             try {
@@ -209,12 +205,8 @@ class NotificationService
 
         $header = $this->buildWorkflowHeader('Reassigned', $actor, $note);
 
-        $subject = $this->replacePlaceholders(
-            (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}'),
-            $request
-        );
-        $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
-        $body = $header . $this->finalizeStaffRoutingBody($bodyTemplate, $request);
+        $subject = $this->replacePlaceholders($this->staffRoutingSubjectSetting($request), $request);
+        $body = $header . $this->finalizeStaffRoutingBody($this->staffRoutingBodyTemplate($request), $request);
 
         try {
             Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
@@ -258,12 +250,8 @@ class NotificationService
 
         $header = $this->buildWorkflowHeader($action, $actor, $note, $changes);
 
-        $subject = $this->replacePlaceholders(
-            (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}'),
-            $request
-        );
-        $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
-        $body = $header . $this->finalizeStaffRoutingBody($bodyTemplate, $request);
+        $subject = $this->replacePlaceholders($this->staffRoutingSubjectSetting($request), $request);
+        $body = $header . $this->finalizeStaffRoutingBody($this->staffRoutingBodyTemplate($request), $request);
 
         foreach ($recipients as $email) {
             try {
@@ -279,6 +267,28 @@ class NotificationService
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    private function staffRoutingSubjectSetting(PatronRequest $request): string
+    {
+        if ($request->request_kind === PatronRequest::KIND_ILL) {
+            return (string) Setting::get('staff_routing_ill_subject', 'New ILL request: {title}');
+        }
+
+        return (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}');
+    }
+
+    private function staffRoutingBodyTemplate(PatronRequest $request): string
+    {
+        if ($request->request_kind === PatronRequest::KIND_ILL) {
+            $tpl = (string) Setting::get('staff_routing_ill_template', '');
+
+            return $tpl !== '' ? $tpl : $this->defaultStaffIllTemplate();
+        }
+
+        $tpl = (string) Setting::get('staff_routing_template', '');
+
+        return $tpl !== '' ? $tpl : $this->defaultStaffTemplate();
+    }
 
     /**
      * Return unique, valid email addresses for staff routing: selectors who are
@@ -635,6 +645,50 @@ class NotificationService
     {
         return <<<'HTML'
 <h2 style="font-size:17px;font-weight:bold;margin:0 0 16px;color:#111827;">New Purchase Suggestion</h2>
+<table role="presentation" style="font-size:14px;border-collapse:collapse;width:100%;">
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Title</td>
+    <td style="padding:5px 0;font-weight:bold;">{title}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Author</td>
+    <td style="padding:5px 0;">{author}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Type</td>
+    <td style="padding:5px 0;">{material_type}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Audience</td>
+    <td style="padding:5px 0;">{audience}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Patron</td>
+    <td style="padding:5px 0;">{patron_name}</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Submitted</td>
+    <td style="padding:5px 0;">{submitted_date}</td>
+  </tr>
+</table>
+<p style="margin:20px 0 0;">
+  <a href="{request_url}"
+     style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#ffffff;
+            text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;">
+    View Request →
+  </a>
+</p>
+{action_buttons}
+HTML;
+    }
+
+    /**
+     * Default HTML body when staff_routing_ill_template is empty.
+     */
+    public function defaultStaffIllTemplate(): string
+    {
+        return <<<'HTML'
+<h2 style="font-size:17px;font-weight:bold;margin:0 0 16px;color:#111827;">New Interlibrary Loan Request</h2>
 <table role="presentation" style="font-size:14px;border-collapse:collapse;width:100%;">
   <tr>
     <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Title</td>

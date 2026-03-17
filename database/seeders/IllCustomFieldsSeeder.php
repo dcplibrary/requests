@@ -47,19 +47,6 @@ class IllCustomFieldsSeeder extends Seeder
                 'condition' => null,
             ],
             [
-                'key' => 'prefer_email',
-                'label' => 'I prefer to be contacted by email',
-                'type' => 'checkbox',
-                'step' => 2,
-                'request_kind' => 'ill',
-                'sort_order' => 4,
-                'active' => true,
-                'required' => false,
-                'include_as_token' => true,
-                'filterable' => false,
-                'condition' => null,
-            ],
-            [
                 'key' => 'other_specify',
                 'label' => 'Details (please describe what you need)',
                 'type' => 'textarea',
@@ -230,6 +217,8 @@ class IllCustomFieldsSeeder extends Seeder
 
         // ILL now uses material_types (MaterialType model); remove borrow_type custom field
         DB::table('custom_fields')->where('key', 'borrow_type')->delete();
+
+        DB::table('custom_fields')->where('key', 'prefer_email')->delete();
     }
 }
 

@@ -96,7 +96,7 @@ trait ProvidesEmailTokens
     protected function subjectExcludedTokens(): array
     {
         return [
-            '{will_pay_up_to}', '{ill_requested}', '{prefer_email}', '{prefer_mail}', '{other_specify}',
+            '{will_pay_up_to}', '{ill_requested}', '{prefer_mail}', '{other_specify}',
             '{publisher}', '{periodical_title}', '{article_author}', '{article_title}', '{volume_number}',
             '{page_number}', '{director}', '{cast}', '{comments}', '{request_url}', '{genre}', '{isbn}',
             '{publish_date}', '{where_heard}', '{date_needed_by}', '{console}',

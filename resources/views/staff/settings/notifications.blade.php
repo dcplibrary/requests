@@ -235,14 +235,26 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr>
                                 <td class="px-4 py-2 text-gray-900">{{ $staffTitle ?? 'Staff routing' }}</td>
-                                <td class="px-4 py-2 text-gray-600">Staff routing</td>
+                                <td class="px-4 py-2 text-gray-600">Staff routing (SFP)</td>
                                 <td class="px-4 py-2 text-gray-600">{{ $staffSubject->value ?? '' }}</td>
-                                <td class="px-4 py-2 text-gray-600">New request</td>
+                                <td class="px-4 py-2 text-gray-600">New SFP request</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2">{{ $staffEnabled ? 'Yes' : 'No' }}</td>
                                 <td class="px-4 py-2 text-right">
                                     <x-requests::icon-btn :href="route('request.staff.settings.notifications.staff-email')" variant="edit" label="Edit" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2 text-gray-900">{{ $staffIllTitle ?? 'ILL staff routing' }}</td>
+                                <td class="px-4 py-2 text-gray-600">Staff routing (ILL)</td>
+                                <td class="px-4 py-2 text-gray-600">{{ optional($staffIllSubject)->value ?? '' }}</td>
+                                <td class="px-4 py-2 text-gray-600">New ILL request</td>
+                                <td class="px-4 py-2 text-gray-400">—</td>
+                                <td class="px-4 py-2 text-gray-400">—</td>
+                                <td class="px-4 py-2">{{ $staffEnabled ? 'Yes' : 'No' }}</td>
+                                <td class="px-4 py-2 text-right">
+                                    <x-requests::icon-btn :href="route('request.staff.settings.notifications.staff-email-ill')" variant="edit" label="Edit" />
                                 </td>
                             </tr>
                             <tr>

@@ -7,6 +7,8 @@ use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldConfig;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Seeds the unified fields, field_options, and form_field_config tables.
@@ -26,6 +28,12 @@ class FieldsAndOptionsSeeder extends Seeder
      */
     public function run(): void
     {
+        // Retired: ILL patrons use notify_by_email on patron step (same as SFP).
+        DB::table('fields')->where('key', 'prefer_email')->update(['active' => false, 'updated_at' => now()]);
+        if (Schema::hasTable('custom_fields')) {
+            DB::table('custom_fields')->where('key', 'prefer_email')->delete();
+        }
+
         $this->seedForms();
         $this->seedFields();
         $this->seedFieldOptions();
@@ -112,7 +120,6 @@ class FieldsAndOptionsSeeder extends Seeder
             // ILL-only custom fields
             ['key' => 'date_needed_by',   'label' => 'Date needed by',                                   'type' => 'date',     'step' => 2, 'scope' => 'ill',  'sort_order' => 200, 'active' => true,  'required' => false, 'include_as_token' => true,  'filterable' => false, 'condition' => null],
             ['key' => 'will_pay_up_to',   'label' => 'Will pay charges up to',                           'type' => 'number',   'step' => 2, 'scope' => 'ill',  'sort_order' => 210, 'active' => true,  'required' => false, 'include_as_token' => true,  'filterable' => false, 'condition' => null],
-            ['key' => 'prefer_email',     'label' => 'I prefer to be contacted by email',                'type' => 'checkbox', 'step' => 2, 'scope' => 'ill',  'sort_order' => 220, 'active' => true,  'required' => false, 'include_as_token' => true,  'filterable' => false, 'condition' => null],
             ['key' => 'other_specify',    'label' => 'Details (please describe what you need)',           'type' => 'textarea', 'step' => 2, 'scope' => 'ill',  'sort_order' => 230, 'active' => true,  'required' => false, 'include_as_token' => true,  'filterable' => false, 'condition' => $otherCondition],
             ['key' => 'publisher',        'label' => 'Publisher',                                        'type' => 'text',     'step' => 2, 'scope' => 'ill',  'sort_order' => 240, 'active' => true,  'required' => false, 'include_as_token' => true,  'filterable' => false, 'condition' => $bookCondition],
             ['key' => 'periodical_title', 'label' => 'Periodical/Newspaper Title',                       'type' => 'text',     'step' => 2, 'scope' => 'ill',  'sort_order' => 250, 'active' => true,  'required' => false, 'include_as_token' => true,  'filterable' => false, 'condition' => $periodicalCondition],

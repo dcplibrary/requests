@@ -55,6 +55,8 @@ class IllForm extends Component
     #[Validate('nullable|email|max:255')]
     public string $email = '';
 
+    public bool $notify_by_email = false;
+
     // Step 2: material type (FieldOption ID) + dynamic field answers
     public ?int $material_type_id = null;
 
@@ -280,6 +282,12 @@ class IllForm extends Component
 
             $path = "custom.{$field->key}";
 
+            if ($field->key === 'publish_date' && $field->type === 'date') {
+                $rules[$path] = $required ? 'required|string|max:200' : 'nullable|string|max:200';
+
+                continue;
+            }
+
             $rules[$path] = match ($field->type) {
                 'radio', 'select' => $this->selectOrRadioRule($field->field, $required, $formId),
                 'text'            => $required ? 'required|string|max:500' : 'nullable|string|max:500',
@@ -474,6 +482,7 @@ class IllForm extends Component
             'submitted_author'        => $submittedAuthor ?: '—',
             'submitted_publish_date'  => $submittedPublishDate,
             'other_material_text'     => $materialSlug === 'other' ? $otherSpecify : null,
+            'notify_by_email'         => $this->notify_by_email,
             'ill_requested'           => true,
             'catalog_searched'        => $this->catalogSearched,
             'catalog_result_count'    => is_array($this->catalogResults) ? count($this->catalogResults) : null,

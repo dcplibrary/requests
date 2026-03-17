@@ -15,7 +15,7 @@
     <x-requests::patron-step
         :title="request_form_name('ill') . ' Request'"
         subtitle="Request items the library doesn't own from other libraries."
-        :show-notify-by-email="false"
+        :show-notify-by-email="true"
     />
 
         <div class="mt-6 flex justify-end">
@@ -85,6 +85,9 @@
                             <x-requests::select-field :name="$field->key" :wire-model="'custom.' . $field->key" :options="$optionsByFieldId[$field->id] ?? []" />
                         @elseif($field->type === 'textarea')
                             <textarea wire:model="custom.{{ $field->key }}" rows="4" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"></textarea>
+                        @elseif($field->key === 'publish_date')
+                            <input type="text" wire:model="custom.{{ $field->key }}" placeholder="e.g. 2024, Spring 2025, or unknown"
+                                   class="w-full max-w-xl rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @elseif($field->type === 'date')
                             <input type="date" wire:model="custom.{{ $field->key }}" class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @elseif($field->type === 'number')
@@ -182,6 +185,9 @@
                             <textarea wire:model="custom.{{ $field->key }}" rows="4"
                                       class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
                                       placeholder="{{ $field->key === 'other_specify' ? 'Please describe what you need...' : '' }}"></textarea>
+                        @elseif($field->key === 'publish_date')
+                            <input type="text" wire:model="custom.{{ $field->key }}" placeholder="e.g. 2024, Spring 2025, or unknown"
+                                   class="w-full max-w-xl rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @elseif($field->type === 'date')
                             <input type="date" wire:model="custom.{{ $field->key }}"
                                    class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />

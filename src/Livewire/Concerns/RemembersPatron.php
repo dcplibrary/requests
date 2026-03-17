@@ -7,6 +7,7 @@ namespace Dcplibrary\Requests\Livewire\Concerns;
  *
  * Expects the consuming component to declare public properties:
  *   string $barcode, $name_first, $name_last, $phone, $email
+ * Optional: bool $notify_by_email (RequestForm, IllForm)
  */
 trait RemembersPatron
 {
@@ -24,6 +25,9 @@ trait RemembersPatron
             $this->name_last  = (string) ($remembered['name_last'] ?? $this->name_last);
             $this->phone      = (string) ($remembered['phone'] ?? $this->phone);
             $this->email      = (string) ($remembered['email'] ?? $this->email);
+            if (property_exists($this, 'notify_by_email')) {
+                $this->notify_by_email = (bool) ($remembered['notify_by_email'] ?? false);
+            }
         }
     }
 
@@ -34,13 +38,17 @@ trait RemembersPatron
      */
     protected function savePatronToSession(): void
     {
-        session()->put('request.patron', [
+        $data = [
             'barcode'    => $this->barcode,
             'name_first' => $this->name_first,
             'name_last'  => $this->name_last,
             'phone'      => $this->phone,
             'email'      => $this->email,
-        ]);
+        ];
+        if (property_exists($this, 'notify_by_email')) {
+            $data['notify_by_email'] = $this->notify_by_email;
+        }
+        session()->put('request.patron', $data);
     }
 
     /**
@@ -50,12 +58,17 @@ trait RemembersPatron
      */
     protected function patronValidationRules(): array
     {
-        return [
+        $rules = [
             'barcode'    => 'required|min:5|max:20',
             'name_first' => 'required|min:1|max:100',
             'name_last'  => 'required|min:1|max:100',
             'phone'      => 'required|min:7|max:20',
             'email'      => 'nullable|email|max:255',
         ];
+        if (property_exists($this, 'notify_by_email')) {
+            $rules['notify_by_email'] = 'boolean';
+        }
+
+        return $rules;
     }
 }
