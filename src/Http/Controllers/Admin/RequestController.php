@@ -410,11 +410,26 @@ class RequestController extends Controller
             }
         }
 
-        // After unassign, redirect with noclaim so auto-claim doesn't immediately re-grab it.
+        // After unassign: reset to the first active status for this kind, then
+        // redirect with noclaim so auto-claim doesn't immediately re-grab it.
         if (! $newAssigneeId) {
+            $initialStatus = RequestStatus::query()
+                ->where('active', true)
+                ->forKind($patronRequest->request_kind)
+                ->orderBy('sort_order')
+                ->first();
+
+            if ($initialStatus && $initialStatus->id !== $patronRequest->request_status_id) {
+                $patronRequest->transitionStatus(
+                    $initialStatus->id,
+                    $actor?->id,
+                    'Status reset to ' . $initialStatus->name . ' on unclaim.'
+                );
+            }
+
             return redirect()
                 ->to(route('request.staff.requests.show', $patronRequest) . '?noclaim=1')
-                ->with('success', 'Assignment updated.');
+                ->with('success', 'Request unclaimed and status reset to ' . ($initialStatus?->name ?? 'initial') . '.');
         }
 
         return back()->with('success', 'Assignment updated.');
