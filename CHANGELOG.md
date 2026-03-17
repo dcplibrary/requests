@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.14.0](https://github.com/dcplibrary/requests/compare/v4.13.4...v4.14.0) (2026-03-17)
+
+
+### Features
+
+* add notifications to activity history ([7328703](https://github.com/dcplibrary/requests/commit/7328703242f82a575711d29df1fbb08e985a11fe))
+
 ## [4.13.4](https://github.com/dcplibrary/requests/compare/v4.13.3...v4.13.4) (2026-03-17)
 
 
