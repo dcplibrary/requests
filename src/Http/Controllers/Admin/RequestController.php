@@ -44,6 +44,17 @@ class RequestController extends Controller
         } else {
             $kind = null;
         }
+
+        // Hide terminal/completed requests by default unless explicitly requested.
+        // If the user picks a specific status to filter by, that overrides the hide.
+        $showCompleted = $request->boolean('show_completed', false);
+        if (!$showCompleted && !$request->filled('status')) {
+            $query->where(function ($q) {
+                $q->whereDoesntHave('status')
+                  ->orWhereHas('status', fn ($sq) => $sq->where('is_terminal', false));
+            });
+        }
+
         if ($request->filled('status')) {
             $query->whereHas('status', fn ($q) => $q->where('slug', $request->status));
         }
@@ -138,10 +149,11 @@ class RequestController extends Controller
         return view('requests::staff.requests.index', [
             'requests'           => $requests,
             'currentStaffUser'   => $staffUser,
-            'statuses'           => RequestStatus::active()->get(),
+            'statuses'           => RequestStatus::active()->forKind($kind)->get(),
             'materialTypes'  => $mtField ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->get() : collect(),
             'audiences'      => $audField ? FieldOption::where('field_id', $audField->id)->active()->ordered()->get() : collect(),
             'filters'        => $request->only(['kind', 'status', 'material_type', 'audience', 'search', 'cf', 'cf_value', 'assigned']),
+            'showCompleted'  => $showCompleted,
             'currentKind'    => $kind,
             'customFilterFields'  => $customFilterFields,
             'customFilterOptions' => $customFilterOptions,

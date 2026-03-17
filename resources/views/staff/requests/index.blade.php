@@ -33,49 +33,13 @@
 </div>
 
 {{-- Filters --}}
-<form method="GET" class="bg-white rounded-lg border border-gray-200 p-4 mb-6 flex flex-wrap gap-3 items-end">
-    @if($currentKind)
-        <input type="hidden" name="kind" value="{{ $currentKind }}">
-    @endif
-
-    @if($assignmentEnabled ?? false)
-    <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Assigned</label>
-        <select name="assigned" class="text-sm border border-gray-300 rounded px-2 py-1.5">
-            <option value="">Any</option>
-            <option value="me" {{ ($filters['assigned'] ?? '') === 'me' ? 'selected' : '' }}>Me</option>
-            <option value="unassigned" {{ ($filters['assigned'] ?? '') === 'unassigned' ? 'selected' : '' }}>Unassigned</option>
-        </select>
-    </div>
-    @endif
-
-    <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
-        <select name="status" class="text-sm border border-gray-300 rounded px-2 py-1.5">
-            <option value="">All statuses</option>
-            @foreach($statuses as $s)
-                <option value="{{ $s->slug }}" {{ ($filters['status'] ?? '') === $s->slug ? 'selected' : '' }}>
-                    {{ $s->name }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-
-    <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Search</label>
-        <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
-               placeholder="Title, author, barcode…"
-               class="text-sm border border-gray-300 rounded px-2 py-1.5 w-48">
-    </div>
-
-    <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">Filter</button>
-    @if(array_filter($filters))
-        @php
-            $clearParams = $currentKind ? ['kind' => $currentKind] : [];
-        @endphp
-        <a href="{{ route('request.staff.requests.index', $clearParams) }}" class="px-4 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">Clear</a>
-    @endif
-</form>
+<x-requests::request-filters
+    :current-kind="$currentKind"
+    :filters="$filters"
+    :statuses="$statuses"
+    :assignment-enabled="$assignmentEnabled ?? false"
+    :show-completed="$showCompleted ?? false"
+/>
 
 {{-- Bulk action bar (visible when checkboxes selected) --}}
 <div id="bulk-bar" class="hidden mb-3 flex items-center gap-3 flex-wrap">
