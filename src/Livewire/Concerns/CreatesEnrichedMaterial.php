@@ -80,7 +80,7 @@ trait CreatesEnrichedMaterial
             'overview'      => $data['overview'] ?? null,
             'title_long'    => $data['title_long'] ?? null,
             'synopsis'      => $data['synopsis'] ?? null,
-            'subjects'      => ! empty($data['subjects']) ? json_encode($data['subjects']) : null,
+            'subjects'      => ! empty($data['subjects']) ? $data['subjects'] : null,
             'dewey_decimal' => $data['dewey_decimal'] ?? null,
             'pages'         => $data['pages'] ?? null,
             'language'      => $data['language'] ?? null,
