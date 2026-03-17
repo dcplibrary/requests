@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.13.4](https://github.com/dcplibrary/requests/compare/v4.13.3...v4.13.4) (2026-03-17)
+
+
+### Bug Fixes
+
+* set email action buttons for sfp and ill in sort order ([67ddce5](https://github.com/dcplibrary/requests/commit/67ddce5580883d173813d4c219bc7cf03912a530))
+
 ## [4.13.3](https://github.com/dcplibrary/requests/compare/v4.13.2...v4.13.3) (2026-03-17)
 
 
