@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.15.1](https://github.com/dcplibrary/requests/compare/v4.15.0...v4.15.1) (2026-03-17)
+
+
+### Bug Fixes
+
+* set status back to new when setting request to unclaimed ([7e7b1e2](https://github.com/dcplibrary/requests/commit/7e7b1e299a4ec29842fc8e83df0b61c0a73727d7))
+
 # [4.15.0](https://github.com/dcplibrary/requests/compare/v4.14.1...v4.15.0) (2026-03-17)
 
 
