@@ -62,7 +62,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Email Action Label</label>
-                <p class="text-xs text-gray-500 mb-1">Optional. A short verb shown as a one-click button in staff routing emails (e.g. <em>Review</em>, <em>Purchase</em>, <em>Deny</em>). Leave blank to omit a button for this status.</p>
+                <p class="text-xs text-gray-500 mb-1">Optional short label for the staff routing email button. If blank, non-terminal statuses still get a button using the status name above. Terminal statuses only appear when this field is set (e.g. <em>Deny</em>).</p>
                 <input type="text" name="action_label" value="{{ old('action_label', $status->action_label ?? '') }}"
                        class="w-48 border border-gray-300 rounded px-3 py-2 text-sm"
                        placeholder="e.g. Review">

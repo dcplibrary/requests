@@ -40,7 +40,7 @@ trait ProvidesEmailTokens
     {
         $tokens = [
             '{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}',
-            '{status}', '{submitted_date}', '{request_url}',
+            '{status}', '{status_name}', '{submitted_date}', '{request_url}',
         ];
 
         if ($includeStatusDescription) {
@@ -100,7 +100,7 @@ trait ProvidesEmailTokens
             '{publisher}', '{periodical_title}', '{article_author}', '{article_title}', '{volume_number}',
             '{page_number}', '{director}', '{cast}', '{comments}', '{request_url}', '{genre}', '{isbn}',
             '{publish_date}', '{where_heard}', '{date_needed_by}', '{console}',
-            '{patron_email}', '{patron_phone}', '{audience}',
+            '{patron_email}', '{patron_phone}', '{audience}', '{action_buttons}',
         ];
     }
 }

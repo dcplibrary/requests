@@ -44,8 +44,7 @@ class NotificationService
             $request
         );
         $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
-        $body = $this->replacePlaceholders($bodyTemplate, $request);
-        $body .= $this->buildEmailActionButtons($request);
+        $body = $this->finalizeStaffRoutingBody($bodyTemplate, $request);
 
         foreach ($recipients as $email) {
             try {
@@ -215,8 +214,7 @@ class NotificationService
             $request
         );
         $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
-        $body = $header . $this->replacePlaceholders($bodyTemplate, $request);
-        $body .= $this->buildEmailActionButtons($request);
+        $body = $header . $this->finalizeStaffRoutingBody($bodyTemplate, $request);
 
         try {
             Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
@@ -265,7 +263,7 @@ class NotificationService
             $request
         );
         $bodyTemplate = (string) Setting::get('staff_routing_template', $this->defaultStaffTemplate());
-        $body = $header . $this->replacePlaceholders($bodyTemplate, $request);
+        $body = $header . $this->finalizeStaffRoutingBody($bodyTemplate, $request);
 
         foreach ($recipients as $email) {
             try {
@@ -437,32 +435,58 @@ class NotificationService
     }
 
     /**
+     * Marker replaced after placeholder expansion so {action_buttons} is not stripped.
+     */
+    private const STAFF_ACTION_BUTTONS_MARKER = '<!--REQUESTS_ACTION_BUTTONS-->';
+
+    /**
+     * Expand staff routing body: optional {action_buttons} slot; otherwise append buttons at end.
+     */
+    private function finalizeStaffRoutingBody(string $template, PatronRequest $request): string
+    {
+        $hasSlot = str_contains($template, '{action_buttons}');
+        if ($hasSlot) {
+            $template = str_replace('{action_buttons}', self::STAFF_ACTION_BUTTONS_MARKER, $template);
+        }
+        $body = $this->replacePlaceholders($template, $request);
+        $buttons = $this->buildEmailActionButtons($request, standalone: ! $hasSlot);
+        if ($hasSlot) {
+            return str_replace(self::STAFF_ACTION_BUTTONS_MARKER, $buttons, $body);
+        }
+
+        return $body . $buttons;
+    }
+
+    /**
      * Build an HTML block of one-click action buttons for staff routing emails.
      *
-     * Renders a button for every active, non-terminal RequestStatus that has an
-     * `action_label` set. Each button is a signed, expiring URL that, when
-     * clicked, transitions the request to that status without requiring login.
+     * Only statuses with a non-empty {@see RequestStatus::$action_label} are included (excluding
+     * the request's current status). Button text is the action label.
      *
-     * Returns an empty string when no statuses have action labels configured.
+     * @param  bool  $standalone  When true (appended block): top border and spacing. When false
+     *                           ({action_buttons} in body): compact block for mid-template use.
      */
-    private function buildEmailActionButtons(PatronRequest $request): string
+    private function buildEmailActionButtons(PatronRequest $request, bool $standalone = true): string
     {
-        $statuses = RequestStatus::where('active', true)
-            ->whereNotNull('action_label')
-            ->where('action_label', '!=', '')
-            ->forKind($request->request_kind)
-            ->orderBy('sort_order')
-            ->get(['id', 'action_label', 'color']);
+        $currentId = (int) $request->request_status_id;
 
-        if ($statuses->isEmpty()) {
+        $buttons = RequestStatus::query()
+            ->where('active', true)
+            ->forKind($request->request_kind)
+            ->where('id', '!=', $currentId)
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'action_label', 'color'])
+            ->filter(fn (RequestStatus $s) => trim((string) $s->action_label) !== '');
+
+        if ($buttons->isEmpty()) {
             return '';
         }
 
-        $html  = '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;">';
-        $html .= '<p style="margin:0 0 10px;font-size:12px;color:#6b7280;font-style:italic;">Quick actions — click to update status directly from this email:</p>';
-        $html .= '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+        $intro = '<p style="margin:0 0 12px;font-size:12px;color:#6b7280;font-style:italic;">'
+            . 'Quick actions — click to update status directly from this email:</p>';
+        $table = '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>';
 
-        foreach ($statuses as $status) {
+        foreach ($buttons as $status) {
             $url = URL::temporarySignedRoute(
                 'request.email-action',
                 now()->addDays(14),
@@ -470,19 +494,26 @@ class NotificationService
             );
 
             $color = $status->color ?: '#4b5563';
-            $label = e($status->action_label);
+            $text  = e(trim((string) $status->action_label));
 
-            $html .= '<a href="' . $url . '" '
+            $table .= '<td style="padding:0 12px 8px 0;vertical-align:middle;">';
+            $table .= '<a href="' . $url . '" '
                 . 'style="display:inline-block;padding:8px 18px;background:' . e($color) . ';color:#ffffff;'
                 . 'text-decoration:none;border-radius:6px;font-size:13px;font-weight:bold;'
-                . 'font-family:sans-serif;line-height:1;">'
-                . $label
+                . 'font-family:Arial,Helvetica,sans-serif;line-height:1.2;">'
+                . $text
                 . '</a>';
+            $table .= '</td>';
         }
 
-        $html .= '</div></div>';
+        $table .= '</tr></table>';
 
-        return $html;
+        if ($standalone) {
+            return '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;">'
+                . $intro . $table . '</div>';
+        }
+
+        return '<div style="margin:16px 0;">' . $intro . $table . '</div>';
     }
 
     /**
@@ -497,7 +528,8 @@ class NotificationService
      *   {patron_phone}      — patron canonical phone number
      *   {material_type}     — material type name
      *   {audience}          — audience name
-     *   {status}            — current status name
+     *   {status}            — current status action_label if set, else status name
+     *   {status_name}       — current status name (internal label)
      *   {status_description} — description text for the current status (for patron emails)
      *   {submitted_date}    — submission date (e.g. January 5, 2026)
      *   {request_url}       — full URL to the request in the staff dashboard
@@ -516,6 +548,11 @@ class NotificationService
         $patron     = $request->patron;
         $patronName = trim(($patron?->name_first ?? '') . ' ' . ($patron?->name_last ?? ''));
 
+        $st = $request->status;
+        $statusName   = $st?->name ?? '';
+        $actionLabel  = trim((string) ($st?->action_label ?? ''));
+        $statusDisplay = $actionLabel !== '' ? $actionLabel : $statusName;
+
         $map = [
             '{title}'             => $request->submitted_title  ?? '',
             '{author}'            => $request->submitted_author ?? '',
@@ -525,7 +562,8 @@ class NotificationService
             '{patron_phone}'      => $patron?->effective_phone  ?? '',
             '{material_type}'     => $request->fieldValueLabel('material_type') ?? '',
             '{audience}'          => $request->fieldValueLabel('audience')       ?? '',
-            '{status}'            => $request->status?->name       ?? '',
+            '{status}'            => $statusDisplay,
+            '{status_name}'       => $statusName,
             '{status_description}' => $request->status?->description ?? '',
             '{submitted_date}'    => $request->created_at?->format('F j, Y') ?? '',
             '{request_url}'       => route('request.staff.requests.show', $request),
@@ -630,6 +668,7 @@ class NotificationService
     View Request →
   </a>
 </p>
+{action_buttons}
 HTML;
     }
 

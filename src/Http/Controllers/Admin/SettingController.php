@@ -103,7 +103,10 @@ class SettingController extends Controller
         $staffMaterialTypeIdsSetting = $notifications->get('staff_routing_material_type_ids');
         $staffStatusIdsSetting = $notifications->get('staff_routing_status_ids');
 
-        $availableTokens       = $this->availableTokens();
+        $availableTokens = array_values(array_unique(array_merge(
+            $this->availableTokens(),
+            ['{action_buttons}'],
+        )));
         $subjectExcludedTokens = $this->subjectExcludedTokens();
 
         $mtField = Field::where('key', 'material_type')->first();
@@ -240,8 +243,10 @@ class SettingController extends Controller
             '{patron_phone}'      => '(270) 555-0123',
             '{material_type}'     => 'Book',
             '{audience}'          => 'Adult',
-            '{status}'            => 'On Order',
+            '{status}'            => 'Ordered',
+            '{status_name}'       => 'On Order',
             '{status_description}' => 'Your request has been ordered and is on its way.',
+            '{action_buttons}'    => '<div style="margin:16px 0;"><p style="margin:0 0 12px;font-size:12px;color:#6b7280;font-style:italic;">Quick actions — click to update status directly from this email:</p><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="padding:0 12px 8px 0;"><span style="display:inline-block;padding:8px 18px;background:#4b5563;color:#ffffff;border-radius:6px;font-size:13px;font-weight:bold;">Approve</span></td><td style="padding:0 12px 8px 0;"><span style="display:inline-block;padding:8px 18px;background:#b91c1c;color:#ffffff;border-radius:6px;font-size:13px;font-weight:bold;">Deny</span></td></tr></table></div>',
             '{submitted_date}'    => now()->format('F j, Y'),
             '{request_url}'       => url('/request/staff/requests/1'),
             '{genre}'             => 'Fiction',

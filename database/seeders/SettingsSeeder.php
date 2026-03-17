@@ -323,8 +323,8 @@ class SettingsSeeder extends Seeder
                 'label'       => 'Staff Routing — Email Body',
                 'type'        => 'html',
                 'group'       => 'notifications',
-                'description' => 'HTML body for staff routing emails. Leave blank to use the built-in default.',
-                'tokens'      => json_encode(['{title}', '{author}', '{isbn}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{submitted_date}', '{request_url}']),
+                'description' => 'HTML body for staff routing emails. Leave blank to use the built-in default. Use {action_buttons} to place quick-action links in the body; if omitted, they are appended after the template.',
+                'tokens'      => json_encode(['{title}', '{author}', '{isbn}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{status_name}', '{action_buttons}', '{submitted_date}', '{request_url}']),
             ],
             [
                 'key'         => 'staff_routing_title',

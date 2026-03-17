@@ -104,7 +104,7 @@
             <div class="px-5 py-4 flex items-start gap-6">
                 <div class="w-64 flex-shrink-0">
                     <label class="block text-sm font-medium text-gray-800">Email body</label>
-                    <p class="text-xs text-gray-400 mt-0.5">HTML body for the staff notification. Use the Insert tokens below.</p>
+                    <p class="text-xs text-gray-400 mt-0.5">HTML body for the staff notification. Use Insert tokens below. <code class="text-gray-500">{action_buttons}</code> places quick-action status links; if you omit it, they are appended after the body. Buttons only appear for statuses that have an <strong>Action label</strong> set.</p>
                 </div>
                 <div class="flex-1 min-w-0">
                     <input type="hidden" name="settings[2][key]" value="staff_routing_template">
