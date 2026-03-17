@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.12.0](https://github.com/dcplibrary/requests/compare/v4.11.0...v4.12.0) (2026-03-17)
+
+
+### Features
+
+* add separate button for staff notifications ([94dfb88](https://github.com/dcplibrary/requests/commit/94dfb88ec55f4582759fc8440a0db27492ed611a))
+
 # [4.11.0](https://github.com/dcplibrary/requests/compare/v4.10.0...v4.11.0) (2026-03-17)
 
 
