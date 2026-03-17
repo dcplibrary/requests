@@ -73,8 +73,8 @@
 
                         @if($synopsis)
                         <div class="text-sm text-gray-600 leading-relaxed mb-3">
-                            <p class="line-clamp-4">{{ Str::limit($synopsis, 280) }}</p>
-                            @if(strlen($synopsis) > 280)
+                            <p class="line-clamp-4">{{ Str::limit(strip_tags($synopsis), 280) }}</p>
+                            @if(strlen(strip_tags($synopsis)) > 280)
                                 <button type="button" x-data @click="$dispatch('open-modal', 'synopsis')" class="text-blue-600 hover:text-blue-700 hover:underline text-sm font-normal mt-1">more</button>
                             @endif
                         </div>
@@ -390,9 +390,9 @@
 {{-- ════════════════════════════════════════════════════════════════════════ --}}
 
 {{-- Synopsis modal --}}
-@if($synopsis && strlen($synopsis) > 280)
+@if($synopsis && strlen(strip_tags($synopsis)) > 280)
 <x-requests::action-modal name="synopsis" title="Synopsis" max-width="lg">
-    <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $synopsis }}</p>
+    <div class="text-sm text-gray-700 leading-relaxed [&_p]:mb-2 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic">{!! $synopsis !!}</div>
 </x-requests::action-modal>
 @endif
 

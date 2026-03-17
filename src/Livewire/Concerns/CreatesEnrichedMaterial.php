@@ -105,13 +105,20 @@ trait CreatesEnrichedMaterial
     /**
      * Normalize a material payload so each value is safe for PDO binding.
      *
+     * Fields listed in $castHandled are managed by Eloquent's 'array' / 'json'
+     * casts on Material, so they must stay as raw PHP arrays — json_encode'ing
+     * them here would cause double-encoding when the cast runs.
+     *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
     private static function normalizeMaterialPayload(array $payload): array
     {
+        // Fields with Eloquent array/json casts — let the model handle encoding.
+        static $castHandled = ['subjects'];
+
         foreach ($payload as $key => $value) {
-            if (is_array($value)) {
+            if (is_array($value) && ! in_array($key, $castHandled, true)) {
                 $payload[$key] = json_encode(
                     $value,
                     JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE

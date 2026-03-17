@@ -116,14 +116,14 @@
     @if($material->overview)
     <div class="col-span-2">
         <dt class="text-xs text-gray-500 mb-0.5">Overview</dt>
-        <dd class="text-gray-600 text-xs leading-relaxed">{{ $material->overview }}</dd>
+        <dd class="text-gray-600 text-xs leading-relaxed [&_p]:mb-1 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic">{!! $material->overview !!}</dd>
     </div>
     @endif
 
     @if($material->synopsis)
     <div class="col-span-2">
         <dt class="text-xs text-gray-500 mb-0.5">Synopsis</dt>
-        <dd class="text-gray-600 text-xs leading-relaxed">{{ $material->synopsis }}</dd>
+        <dd class="text-gray-600 text-xs leading-relaxed [&_p]:mb-1 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic">{!! $material->synopsis !!}</dd>
     </div>
     @endif
 </dl>

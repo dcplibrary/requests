@@ -15,6 +15,7 @@ Settings are editable under **Settings → General** and **Settings → Catalog*
 ## Queue / background jobs
 - Polaris patron lookups run via the queue (`LookupPatronInPolaris`).
 - Ensure a queue worker is running in production.
+- See [Scheduler & Queue Setup](scheduler.md) for Docker container configuration, scheduled tasks, and timezone troubleshooting.
 
 ## Data cleanup
 - **Requests → Request detail**: Admins can delete an individual request.
