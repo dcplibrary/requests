@@ -90,6 +90,16 @@ class IllForm extends Component
     {
         $this->hydratePatronFromSession();
 
+        // Pre-fill material fields when redirected from the SFP form.
+        $prefill = session()->pull('request.ill_prefill');
+        if (is_array($prefill)) {
+            foreach ($prefill as $key => $value) {
+                if ($value !== '' && $value !== null) {
+                    $this->custom[$key] = (string) $value;
+                }
+            }
+        }
+
         $allowed = $this->getAllowedMaterialTypeIds();
         if (! empty($allowed)) {
             $this->material_type_id = in_array($this->material_type_id, $allowed, true) ? $this->material_type_id : $allowed[0];

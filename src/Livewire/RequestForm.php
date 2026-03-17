@@ -123,6 +123,10 @@ class RequestForm extends Component
     public bool $autoOrderExcluded = false;
     public string $autoOrderExcludedMessage = '';
 
+    // ILL suggestion (item exceeds age threshold — offer to submit as ILL instead)
+    public bool $suggestIll = false;
+    public ?int $pendingIsbndbIndex = null;
+
     public function mount(): void
     {
         $this->hydratePatronFromSession();
@@ -224,6 +228,8 @@ class RequestForm extends Component
             'processing',
             'processingStep',
             'createdRequestId',
+            'suggestIll',
+            'pendingIsbndbIndex',
         ]);
 
         $this->resetValidation();
@@ -675,10 +681,24 @@ class RequestForm extends Component
 
     public function acceptIsbndbMatch(int $index): void
     {
+        $isbndbData = $this->isbndbResults[$index] ?? null;
+
+        // If the selected item exceeds the ILL age threshold, prompt the patron
+        // to consider submitting as an ILL instead — don't save the request yet.
+        if (is_array($isbndbData)) {
+            $publishDate = (string) ($isbndbData['publish_date'] ?? '');
+            // Extract a 4-digit year from strings like "2018", "2018-05-10", "May 2018"
+            preg_match('/\b(19|20)\d{2}\b/', $publishDate, $yearMatches);
+            $year = $yearMatches[0] ?? '';
+            if ($year !== '' && Material::yearExceedsIllThreshold($year)) {
+                $this->suggestIll          = true;
+                $this->pendingIsbndbIndex  = $index;
+                return;
+            }
+        }
+
         $this->isbndbMatchAccepted = true;
         $this->selectedIsbndbIndex = $index;
-
-        $isbndbData = $this->isbndbResults[$index] ?? null;
 
         // If ISBNdb can provide an unambiguous future publish date, honor the
         // auto-order exclusion list before creating a request.
@@ -717,6 +737,64 @@ class RequestForm extends Component
         ])['patron'];
 
         $this->saveRequest($patron);
+    }
+
+    /**
+     * Patron chose to continue as an SFP suggestion despite the ILL age threshold.
+     * Resume the normal acceptIsbndbMatch flow using the stored pending index.
+     */
+    public function proceedAsSfp(): void
+    {
+        $this->suggestIll = false;
+        $index = $this->pendingIsbndbIndex;
+        $this->pendingIsbndbIndex = null;
+
+        if ($index === null) {
+            return;
+        }
+
+        $this->isbndbMatchAccepted = true;
+        $this->selectedIsbndbIndex = $index;
+
+        $isbndbData = $this->isbndbResults[$index] ?? null;
+
+        if (is_array($isbndbData) && $this->shouldAutoOrderExclude($this->author, (string) ($isbndbData['publish_date'] ?? ''))) {
+            $this->autoOrderExcluded = true;
+            $this->autoOrderExcludedMessage = (string) Setting::get(
+                'auto_order_author_exclusion_message',
+                '<p><strong>Good news:</strong> the library automatically orders new releases from this author. Please check the catalog closer to the release date to place a hold.</p>'
+            );
+            $this->processing = false;
+            $this->step = 4;
+            return;
+        }
+
+        $patron = app(PatronService::class)->findOrCreate([
+            'barcode'    => $this->barcode,
+            'name_first' => $this->name_first,
+            'name_last'  => $this->name_last,
+            'phone'      => $this->phone,
+            'email'      => $this->email ?: null,
+        ])['patron'];
+
+        $this->saveRequest($patron, $isbndbData);
+    }
+
+    /**
+     * Save patron session data and material prefill, then redirect to the ILL form.
+     * Used when the patron wants to submit as an ILL instead of SFP.
+     */
+    public function redirectToIll(): void
+    {
+        $this->savePatronToSession();
+
+        session()->put('request.ill_prefill', [
+            'title'        => $this->title,
+            'author'       => $this->author,
+            'publish_date' => $this->publish_date,
+        ]);
+
+        $this->redirect(route('request.ill.form'));
     }
 
     private function checkPatronLimit(): void

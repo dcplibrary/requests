@@ -266,6 +266,12 @@
                         <strong>Note:</strong> {!! $illWarningMessage !!}
                         <a href="https://www.dcplibrary.org/interlibrary-loan/" target="_blank" rel="noopener" class="underline font-medium">Learn more about ILL</a>.
                     </p>
+                    <div class="mt-2">
+                        <button type="button" wire:click="redirectToIll"
+                                class="px-3 py-1.5 bg-amber-700 text-white text-xs font-semibold rounded hover:bg-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-600">
+                            Submit as Interlibrary Loan instead
+                        </button>
+                    </div>
                 </div>
                 @endif
             </div>
@@ -454,6 +460,30 @@
                     wire:click="skipCatalogMatch"
                     class="text-sm text-gray-500 underline hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
                 >None of these are the exact item — continue to submit my suggestion</button>
+            </div>
+        </div>
+
+        {{-- ILL suggestion prompt (item is older than the ILL age threshold) --}}
+        @elseif($suggestIll)
+        <div class="p-5 bg-amber-50 border border-amber-300 rounded-lg">
+            <div class="flex items-start gap-3">
+                <svg class="h-5 w-5 text-amber-600 mt-0.5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-amber-900 mb-1">This item may qualify for Interlibrary Loan</h3>
+                    <p class="text-sm text-amber-800 mb-3">This item's publish date exceeds our threshold for Suggest for Purchase requests. You can submit it as an Interlibrary Loan (ILL) request instead, or continue as a purchase suggestion.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" wire:click="redirectToIll"
+                                class="px-4 py-2 bg-amber-700 text-white text-sm font-semibold rounded hover:bg-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-600">
+                            Submit as Interlibrary Loan
+                        </button>
+                        <button type="button" wire:click="proceedAsSfp"
+                                class="px-4 py-2 bg-white text-amber-800 border border-amber-400 text-sm font-medium rounded hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                            Continue as purchase suggestion
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 

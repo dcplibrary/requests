@@ -49,7 +49,8 @@
                         <template x-if="detailItem.cover_url">
                             <img :src="detailItem.cover_url"
                                  :alt="'Cover of ' + detailItem.title"
-                                 class="w-24 h-auto object-contain rounded shrink-0 shadow-sm" />
+                                 class="w-24 h-auto object-contain rounded shrink-0 shadow-sm"
+                                 x-on:error="var f=detailItem.image;if(f&&f!==detailItem.cover_url){$el.onerror=null;$el.src=f;}else{$el.style.display='none';}" />
                         </template>
                         <div class="min-w-0">
                             {{-- Full title (title_long when available) --}}
@@ -71,7 +72,14 @@
                                     <p class="font-mono">ISBN <span x-text="detailItem.isbn13"></span></p>
                                 </template>
                                 <template x-if="detailItem.binding">
-                                    <p x-text="detailItem.binding"></p>
+                                    <p>
+                                        <span
+                                            :class="detailItem.binding && detailItem.binding.toLowerCase().includes('large print')
+                                                ? 'inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-300'
+                                                : 'inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600'"
+                                            x-text="detailItem.binding">
+                                        </span>
+                                    </p>
                                 </template>
                                 <template x-if="detailItem.pages">
                                     <p><span x-text="detailItem.pages"></span> pages</p>
@@ -84,8 +92,8 @@
                     <template x-if="detailItem.synopsis || detailItem.overview">
                         <div>
                             <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Description</h3>
-                            <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line"
-                               x-text="detailItem.synopsis || detailItem.overview"></p>
+                            <div class="text-sm text-gray-700 leading-relaxed [&_p]:mb-2 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic"
+                               x-html="detailItem.synopsis || detailItem.overview"></div>
                         </div>
                     </template>
                 </div>
