@@ -473,10 +473,18 @@ class NotificationService
      */
     private function finalizeStaffRoutingBody(string $template, PatronRequest $request): string
     {
-        $hasSlot = str_contains($template, '{action_buttons}');
-        if ($hasSlot) {
-            $template = str_replace('{action_buttons}', self::STAFF_ACTION_BUTTONS_MARKER, $template);
-        }
+        // Match {action_buttons} case-insensitively with optional spaces (rich text / paste variants).
+        // Must run before replacePlaceholders(), which strips unknown {tokens} including a mistyped slot.
+        $slotCount = 0;
+        $template = (string) preg_replace(
+            '/\{\s*action_buttons\s*\}/iu',
+            self::STAFF_ACTION_BUTTONS_MARKER,
+            $template,
+            -1,
+            $slotCount
+        );
+        $hasSlot = $slotCount > 0;
+
         $body = $this->replacePlaceholders($template, $request);
         $buttons = $this->buildEmailActionButtons($request, standalone: ! $hasSlot);
         if ($hasSlot) {
@@ -489,8 +497,8 @@ class NotificationService
     /**
      * Build an HTML block of one-click action buttons for staff routing emails.
      *
-     * Only statuses with a non-empty {@see RequestStatus::$action_label} are included (excluding
-     * the request's current status). Button text is the action label.
+     * Statuses with {@see RequestStatus::$action_label} are preferred; if none are set for this
+     * kind, falls back to every other active status (button text = status name). Excludes current.
      *
      * @param  bool  $standalone  When true (appended block): top border and spacing. When false
      *                           ({action_buttons} in body): compact block for mid-template use.
@@ -499,13 +507,15 @@ class NotificationService
     {
         $currentId = (int) $request->request_status_id;
 
-        $buttons = RequestStatus::query()
+        $candidates = RequestStatus::query()
             ->where('active', true)
             ->forKind($request->request_kind)
             ->where('id', '!=', $currentId)
             ->orderBy('sort_order')
-            ->get(['id', 'name', 'action_label', 'color'])
-            ->filter(fn (RequestStatus $s) => trim((string) $s->action_label) !== '');
+            ->get(['id', 'name', 'action_label', 'color']);
+
+        $labeled = $candidates->filter(fn (RequestStatus $s) => trim((string) $s->action_label) !== '');
+        $buttons = $labeled->isNotEmpty() ? $labeled : $candidates;
 
         if ($buttons->isEmpty()) {
             return '';
@@ -523,7 +533,8 @@ class NotificationService
             );
 
             $color = $status->color ?: '#4b5563';
-            $text  = e(trim((string) $status->action_label));
+            $label = trim((string) $status->action_label);
+            $text  = e($label !== '' ? $label : (string) $status->name);
 
             $table .= '<td style="padding:0 12px 8px 0;vertical-align:middle;">';
             $table .= '<a href="' . $url . '" '

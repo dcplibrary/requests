@@ -1,6 +1,22 @@
 <div class="max-w-3xl mx-auto px-4 py-8">
 
-    {{-- Processing overlay --}}
+    {{-- Shows as soon as Livewire sends the request (catalog/ISBNdb run before any server-rendered overlay) --}}
+    <div wire:loading.flex wire:target="submit"
+         class="fixed inset-0 z-[60] items-center justify-center bg-white/85 backdrop-blur-sm"
+         role="status"
+         aria-live="polite"
+         aria-busy="true">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-xl px-8 py-6 max-w-md mx-4 text-center">
+            <svg class="animate-spin h-9 w-9 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-base font-semibold text-gray-900">Working on your request…</p>
+            <p class="text-sm text-gray-600 mt-2 leading-relaxed">We may search our catalog and other sources. That can take 30 seconds or more — please keep this page open.</p>
+        </div>
+    </div>
+
+    {{-- Processing overlay (second phase after first response, e.g. saving) --}}
     @if($processing)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-white/70">
             <div class="bg-white rounded-lg border border-gray-200 shadow-sm px-6 py-5 max-w-md w-full mx-4">
@@ -110,9 +126,13 @@
         </div>
 
         <div class="mt-6 flex justify-end">
-            <button type="button" wire:click="submit"
-                    class="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700">
-                Submit ILL Request
+            <button type="button" wire:click="submit" wire:loading.attr="disabled" wire:target="submit"
+                    class="inline-flex items-center justify-center gap-2 min-w-[10rem] px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed">
+                <span wire:loading.remove wire:target="submit">Submit ILL Request</span>
+                <span wire:loading wire:target="submit" class="inline-flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    Please wait…
+                </span>
             </button>
         </div>
 
@@ -219,9 +239,13 @@
                     class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
                 Back
             </button>
-            <button type="button" wire:click="submit"
-                    class="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700">
-                Submit Request
+            <button type="button" wire:click="submit" wire:loading.attr="disabled" wire:target="submit"
+                    class="inline-flex items-center justify-center gap-2 min-w-[10rem] px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed">
+                <span wire:loading.remove wire:target="submit">Submit Request</span>
+                <span wire:loading wire:target="submit" class="inline-flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    Please wait…
+                </span>
             </button>
         </div>
 
