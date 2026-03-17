@@ -1,5 +1,22 @@
 <div class="max-w-2xl mx-auto px-4 py-8" x-data>
 
+    {{-- Immediate feedback: submit/catalog/ISBNdb run in one Livewire round-trip before $processing renders --}}
+    <div wire:loading.flex
+         wire:target="submit,skipCatalogMatch,skipIsbndbMatch,acceptIsbndbMatch,proceedAsSfp"
+         class="fixed inset-0 z-[60] items-center justify-center bg-white/85 backdrop-blur-sm"
+         role="status"
+         aria-live="polite"
+         aria-busy="true">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-xl px-8 py-6 max-w-md mx-4 text-center">
+            <svg class="animate-spin h-9 w-9 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+            </svg>
+            <p class="text-base font-semibold text-gray-900">Working on your suggestion…</p>
+            <p class="text-sm text-gray-600 mt-2 leading-relaxed">We may search our catalog and other sources. That can take 30 seconds or more — please keep this page open.</p>
+        </div>
+    </div>
+
     {{-- Step progress indicator --}}
     @if($step < 4)
     <nav aria-label="Form progress" class="mb-8">
@@ -396,10 +413,14 @@
                 type="button"
                 wire:click="submit"
                 wire:loading.attr="disabled"
-                class="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+                wire:target="submit"
+                class="inline-flex items-center justify-center gap-2 min-w-[10rem] px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
                 <span wire:loading.remove wire:target="submit">Submit Request</span>
-                <span wire:loading wire:target="submit">Searching...</span>
+                <span wire:loading wire:target="submit" class="inline-flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    Please wait…
+                </span>
             </button>
         </div>
         @endif
@@ -458,7 +479,9 @@
                 <button
                     type="button"
                     wire:click="skipCatalogMatch"
-                    class="text-sm text-gray-500 underline hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                    wire:loading.attr="disabled"
+                    wire:target="skipCatalogMatch"
+                    class="text-sm text-gray-500 underline hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded disabled:opacity-50"
                 >None of these are the exact item — continue to submit my suggestion</button>
             </div>
         </div>
@@ -479,7 +502,9 @@
                             Yes, request an ILL
                         </button>
                         <button type="button" wire:click="proceedAsSfp"
-                                class="px-4 py-2 bg-white text-gray-700 border border-gray-300 text-sm font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                                wire:loading.attr="disabled"
+                                wire:target="proceedAsSfp"
+                                class="px-4 py-2 bg-white text-gray-700 border border-gray-300 text-sm font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50">
                             No, continue as a purchase suggestion
                         </button>
                     </div>
@@ -502,7 +527,9 @@
                 <button
                     type="button"
                     wire:click="skipIsbndbMatch"
-                    class="text-sm text-gray-500 underline hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                    wire:loading.attr="disabled"
+                    wire:target="skipIsbndbMatch"
+                    class="text-sm text-gray-500 underline hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded disabled:opacity-50"
                 >None of these match — submit anyway</button>
             </div>
 
@@ -517,8 +544,16 @@
         <button
             type="button"
             wire:click="skipIsbndbMatch"
-            class="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >{{ $isDuplicate ? 'Submit Anyway' : 'Submit My Request' }}</button>
+            wire:loading.attr="disabled"
+            wire:target="skipIsbndbMatch"
+            class="inline-flex items-center justify-center gap-2 min-w-[10rem] px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60"
+        >
+            <span wire:loading.remove wire:target="skipIsbndbMatch">{{ $isDuplicate ? 'Submit Anyway' : 'Submit My Request' }}</span>
+            <span wire:loading wire:target="skipIsbndbMatch" class="inline-flex items-center gap-2">
+                <svg class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                Please wait…
+            </span>
+        </button>
         @endif
     </section>
 

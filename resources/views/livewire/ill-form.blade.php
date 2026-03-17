@@ -32,6 +32,7 @@
         :title="request_form_name('ill') . ' Request'"
         subtitle="Request items the library doesn't own from other libraries."
         :show-notify-by-email="true"
+        notify-wire-model="custom.prefer_email"
     />
 
         <div class="mt-6 flex justify-end">
@@ -171,6 +172,7 @@
                     $isVisible = $visibleFields[$field->key] ?? false;
                     $displayLabel = $displayLabels[$field->key] ?? $field->label;
                 @endphp
+                @if(in_array($field->key, $step1CustomKeys ?? [], true)) @continue @endif
                 <div wire:key="field-{{ $field->key }}" @if(! $isVisible) hidden @endif>
                 @if($isVisible)
                     <div>
