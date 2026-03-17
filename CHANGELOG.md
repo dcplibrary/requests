@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.13.0](https://github.com/dcplibrary/requests/compare/v4.12.4...v4.13.0) (2026-03-17)
+
+
+### Features
+
+* add waiting modal for spf and ill submissions ([7f62622](https://github.com/dcplibrary/requests/commit/7f62622ee181c48cb8b1e02f3888b6a34449dd52))
+
 ## [4.12.4](https://github.com/dcplibrary/requests/compare/v4.12.3...v4.12.4) (2026-03-17)
 
 
