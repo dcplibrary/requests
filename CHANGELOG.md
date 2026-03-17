@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.11.0](https://github.com/dcplibrary/requests/compare/v4.10.0...v4.11.0) (2026-03-17)
+
+
+### Features
+
+* add separate ill staff email ([aa5a4d3](https://github.com/dcplibrary/requests/commit/aa5a4d30850d0dc9ad5b4ff4962e67ce7ba9b769))
+
 # [4.10.0](https://github.com/dcplibrary/requests/compare/v4.9.0...v4.10.0) (2026-03-17)
 
 
