@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.8.0](https://github.com/dcplibrary/requests/compare/v4.7.2...v4.8.0) (2026-03-17)
+
+
+### Features
+
+* add show completed button to lists.  scope status dropdown for request type in list view ([5cf02e0](https://github.com/dcplibrary/requests/commit/5cf02e00333196f339272fa99f0030317f780f4c))
+
 ## [4.7.2](https://github.com/dcplibrary/requests/compare/v4.7.1...v4.7.2) (2026-03-17)
 
 
