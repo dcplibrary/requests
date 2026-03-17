@@ -48,6 +48,9 @@ return new class extends Migration
             $table->boolean('is_duplicate')->default(false); // matched an existing request
             $table->foreignId('duplicate_of_request_id')->nullable()->constrained('requests')->nullOnDelete();
 
+            // --- Patron notification opt-in ---
+            $table->boolean('notify_by_email')->default(false);
+
             $table->timestamps();
 
             $table->index('patron_id');

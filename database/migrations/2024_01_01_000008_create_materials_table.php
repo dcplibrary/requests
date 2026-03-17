@@ -23,6 +23,15 @@ return new class extends Migration
             $table->date('exact_publish_date')->nullable(); // resolved from ISBNdb
             $table->string('edition')->nullable();
             $table->text('overview')->nullable(); // ISBNdb description if available
+            $table->string('title_long')->nullable();
+            $table->text('synopsis')->nullable();
+            $table->json('subjects')->nullable();
+            $table->string('dewey_decimal')->nullable();
+            $table->unsignedInteger('pages')->nullable();
+            $table->string('language')->nullable();
+            $table->decimal('msrp', 8, 2)->nullable();
+            $table->string('binding')->nullable();
+            $table->string('dimensions')->nullable();
 
             // Source of enrichment
             $table->enum('source', ['submitted', 'isbndb', 'polaris'])->default('submitted');
