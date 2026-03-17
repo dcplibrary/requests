@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.14.1](https://github.com/dcplibrary/requests/compare/v4.14.0...v4.14.1) (2026-03-17)
+
+
+### Bug Fixes
+
+* display isbndb data as html.  add tests ([eea37cb](https://github.com/dcplibrary/requests/commit/eea37cbd4064c673dd741a0439ad4e109896902c))
+
 # [4.14.0](https://github.com/dcplibrary/requests/compare/v4.13.4...v4.14.0) (2026-03-17)
 
 
