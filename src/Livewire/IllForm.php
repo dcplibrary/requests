@@ -693,7 +693,7 @@ class IllForm extends Component
 
         return view('requests::livewire.ill-form', [
             'orderedFields'       => $fields,
-            'step1CustomKeys'     => ['prefer_email'], // collected in patron step, skip in step 2
+            'step1CustomKeys'     => [], // no custom fields are collected in patron step
             'visibleFields'       => $this->visibleCustomFields,
             'optionsByFieldId'    => $options,
             'audienceOptions'     => $audienceId ? ($options[$audienceId] ?? []) : [],

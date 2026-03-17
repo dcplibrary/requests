@@ -18,7 +18,6 @@
         :title="request_form_name('ill') . ' Request'"
         subtitle="Request items the library doesn't own from other libraries."
         :show-notify-by-email="true"
-        notify-wire-model="custom.prefer_email"
     />
 
         <div class="mt-6 flex justify-end">
