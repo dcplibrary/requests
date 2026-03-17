@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.8.1](https://github.com/dcplibrary/requests/compare/v4.8.0...v4.8.1) (2026-03-17)
+
+
+### Bug Fixes
+
+* merge alter migrations into original create table migrations ([0767d76](https://github.com/dcplibrary/requests/commit/0767d76cfaf334b0d46424dbe04efc651f63ec9f))
+
 # [4.8.0](https://github.com/dcplibrary/requests/compare/v4.7.2...v4.8.0) (2026-03-17)
 
 
