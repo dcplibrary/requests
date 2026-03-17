@@ -46,7 +46,7 @@ trait CreatesEnrichedMaterial
                 $enrichment['title']  = $isbndbData['title'] ?? $material->title;
                 $enrichment['author'] = $isbndbData['author_string'] ?? $material->author;
 
-                $material->update($enrichment);
+                $material->update(self::normalizeMaterialPayload($enrichment));
             }
 
             return $material;
@@ -61,7 +61,7 @@ trait CreatesEnrichedMaterial
             'source'                  => $isbndbData ? 'isbndb' : 'submitted',
         ];
 
-        return Material::create(array_merge($createData, $enrichment));
+        return Material::create(self::normalizeMaterialPayload(array_merge($createData, $enrichment)));
     }
 
     /**
@@ -100,5 +100,30 @@ trait CreatesEnrichedMaterial
         }
 
         return $mapped;
+    }
+
+    /**
+     * Normalize a material payload so each value is safe for PDO binding.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private static function normalizeMaterialPayload(array $payload): array
+    {
+        foreach ($payload as $key => $value) {
+            if (is_array($value)) {
+                $payload[$key] = json_encode(
+                    $value,
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+                );
+                continue;
+            }
+
+            if ($value instanceof \Stringable) {
+                $payload[$key] = (string) $value;
+            }
+        }
+
+        return $payload;
     }
 }
