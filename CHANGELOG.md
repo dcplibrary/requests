@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.7.2](https://github.com/dcplibrary/requests/compare/v4.7.1...v4.7.2) (2026-03-17)
+
+
+### Bug Fixes
+
+* trigger release ([94ecf4a](https://github.com/dcplibrary/requests/commit/94ecf4a12084bddc18d519278d4528833c9735d3))
+
 ## [4.7.1](https://github.com/dcplibrary/requests/compare/v4.7.0...v4.7.1) (2026-03-16)
 
 # [4.7.0](https://github.com/dcplibrary/requests/compare/v4.6.7...v4.7.0) (2026-03-16)
