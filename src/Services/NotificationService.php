@@ -6,6 +6,7 @@ use Dcplibrary\Requests\Mail\RequestMail;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\PatronStatusTemplate;
+use Dcplibrary\Requests\Models\StaffRoutingTemplate;
 use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
@@ -27,30 +28,58 @@ class NotificationService
      *
      * Recipients are looked up by finding active SelectorGroups whose
      * material type AND audience scope both match the request, and which
-     * have a notification_emails value set.
+     * Each matching selector group receives its own send (custom template if configured).
      */
     public function notifyStaffNewRequest(PatronRequest $request): void
     {
         if (! Setting::get('notifications_enabled', true)) return;
         if (! Setting::get('staff_routing_enabled', true)) return;
 
-        $recipients = $this->getStaffRecipients($request);
-        if (empty($recipients)) return;
+        $groups = $this->getStaffRecipientGroups($request);
+        if ($groups->isEmpty()) return;
 
         $request->loadMissing(['patron', 'fieldValues.field', 'status']);
 
-        $subject = $this->replacePlaceholders($this->staffRoutingSubjectSetting($request), $request);
-        $body = $this->finalizeStaffRoutingBody($this->staffRoutingBodyTemplate($request), $request);
+        $templatesByGroup = StaffRoutingTemplate::query()
+            ->whereIn('selector_group_id', $groups->pluck('id'))
+            ->where('enabled', true)
+            ->get()
+            ->keyBy('selector_group_id');
 
-        foreach ($recipients as $email) {
-            try {
-                Mail::to($email)->send(new RequestMail($subject, $body));
-            } catch (\Throwable $e) {
-                Log::error('Staff routing email failed', [
-                    'to'         => $email,
-                    'request_id' => $request->id,
-                    'error'      => $e->getMessage(),
-                ]);
+        $defaultSubject = (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}');
+        $globalBody = (string) Setting::get('staff_routing_template', '');
+        $defaultBodyTpl = $globalBody !== '' ? $globalBody : $this->defaultStaffTemplate();
+
+        foreach ($groups as $group) {
+            $emails = [];
+            $this->collectEmailsFromGroup($group, $emails);
+            $recipients = array_values(array_unique(array_filter($emails)));
+            if ($recipients === []) {
+                continue;
+            }
+
+            $tpl = $templatesByGroup->get($group->id);
+            $subjectTpl = $tpl && trim((string) $tpl->subject) !== ''
+                ? (string) $tpl->subject
+                : $defaultSubject;
+            $bodyTpl = $tpl && trim((string) ($tpl->body ?? '')) !== ''
+                ? (string) $tpl->body
+                : $defaultBodyTpl;
+
+            $subject = $this->replacePlaceholders($subjectTpl, $request);
+            $body = $this->finalizeStaffRoutingBody($bodyTpl, $request);
+
+            foreach ($recipients as $email) {
+                try {
+                    Mail::to($email)->send(new RequestMail($subject, $body));
+                } catch (\Throwable $e) {
+                    Log::error('Staff routing email failed', [
+                        'to'         => $email,
+                        'request_id' => $request->id,
+                        'group_id'   => $group->id,
+                        'error'      => $e->getMessage(),
+                    ]);
+                }
             }
         }
     }
@@ -205,8 +234,8 @@ class NotificationService
 
         $header = $this->buildWorkflowHeader('Reassigned', $actor, $note);
 
-        $subject = $this->replacePlaceholders($this->staffRoutingSubjectSetting($request), $request);
-        $body = $header . $this->finalizeStaffRoutingBody($this->staffRoutingBodyTemplate($request), $request);
+        $subject = $this->replacePlaceholders($this->defaultStaffRoutingSubject(), $request);
+        $body = $header . $this->finalizeStaffRoutingBody($this->defaultStaffRoutingBodyTemplate(), $request);
 
         try {
             Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
@@ -250,8 +279,8 @@ class NotificationService
 
         $header = $this->buildWorkflowHeader($action, $actor, $note, $changes);
 
-        $subject = $this->replacePlaceholders($this->staffRoutingSubjectSetting($request), $request);
-        $body = $header . $this->finalizeStaffRoutingBody($this->staffRoutingBodyTemplate($request), $request);
+        $subject = $this->replacePlaceholders($this->defaultStaffRoutingSubject(), $request);
+        $body = $header . $this->finalizeStaffRoutingBody($this->defaultStaffRoutingBodyTemplate(), $request);
 
         foreach ($recipients as $email) {
             try {
@@ -268,23 +297,13 @@ class NotificationService
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    private function staffRoutingSubjectSetting(PatronRequest $request): string
+    private function defaultStaffRoutingSubject(): string
     {
-        if ($request->request_kind === PatronRequest::KIND_ILL) {
-            return (string) Setting::get('staff_routing_ill_subject', 'New ILL request: {title}');
-        }
-
         return (string) Setting::get('staff_routing_subject', 'New Purchase Suggestion: {title}');
     }
 
-    private function staffRoutingBodyTemplate(PatronRequest $request): string
+    private function defaultStaffRoutingBodyTemplate(): string
     {
-        if ($request->request_kind === PatronRequest::KIND_ILL) {
-            $tpl = (string) Setting::get('staff_routing_ill_template', '');
-
-            return $tpl !== '' ? $tpl : $this->defaultStaffIllTemplate();
-        }
-
         $tpl = (string) Setting::get('staff_routing_template', '');
 
         return $tpl !== '' ? $tpl : $this->defaultStaffTemplate();
@@ -645,50 +664,6 @@ class NotificationService
     {
         return <<<'HTML'
 <h2 style="font-size:17px;font-weight:bold;margin:0 0 16px;color:#111827;">New Purchase Suggestion</h2>
-<table role="presentation" style="font-size:14px;border-collapse:collapse;width:100%;">
-  <tr>
-    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Title</td>
-    <td style="padding:5px 0;font-weight:bold;">{title}</td>
-  </tr>
-  <tr>
-    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Author</td>
-    <td style="padding:5px 0;">{author}</td>
-  </tr>
-  <tr>
-    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Type</td>
-    <td style="padding:5px 0;">{material_type}</td>
-  </tr>
-  <tr>
-    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Audience</td>
-    <td style="padding:5px 0;">{audience}</td>
-  </tr>
-  <tr>
-    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Patron</td>
-    <td style="padding:5px 0;">{patron_name}</td>
-  </tr>
-  <tr>
-    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Submitted</td>
-    <td style="padding:5px 0;">{submitted_date}</td>
-  </tr>
-</table>
-<p style="margin:20px 0 0;">
-  <a href="{request_url}"
-     style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#ffffff;
-            text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;">
-    View Request →
-  </a>
-</p>
-{action_buttons}
-HTML;
-    }
-
-    /**
-     * Default HTML body when staff_routing_ill_template is empty.
-     */
-    public function defaultStaffIllTemplate(): string
-    {
-        return <<<'HTML'
-<h2 style="font-size:17px;font-weight:bold;margin:0 0 16px;color:#111827;">New Interlibrary Loan Request</h2>
 <table role="presentation" style="font-size:14px;border-collapse:collapse;width:100%;">
   <tr>
     <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Title</td>

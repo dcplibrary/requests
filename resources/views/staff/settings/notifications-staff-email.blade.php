@@ -66,7 +66,7 @@
             <div class="px-5 py-4 flex items-start gap-6">
                 <div class="w-64 flex-shrink-0">
                     <label class="block text-sm font-medium text-gray-800">Enable staff routing email</label>
-                    <p class="text-xs text-gray-400 mt-0.5">Send an email to staff when a new request is submitted.</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Send email when a new request is submitted. Each selector group can have its own template via <strong>+ Staff template</strong> on the Emails tab.</p>
                 </div>
                 <div class="flex-1 min-w-0 flex items-center gap-2">
                     <input type="hidden" name="settings[0][key]" value="staff_routing_enabled">
@@ -82,7 +82,7 @@
             <div class="px-5 py-4 flex items-start gap-6">
                 <div class="w-64 flex-shrink-0">
                     <label class="block text-sm font-medium text-gray-800">Subject</label>
-                    <p class="text-xs text-gray-400 mt-0.5">Subject line for the staff notification.</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Default subject when a group has no staff template, and for assignee/workflow emails.</p>
                 </div>
                 <div class="flex-1 min-w-0">
                     <input type="hidden" name="settings[1][key]" value="staff_routing_subject">
@@ -104,7 +104,7 @@
             <div class="px-5 py-4 flex items-start gap-6">
                 <div class="w-64 flex-shrink-0">
                     <label class="block text-sm font-medium text-gray-800">Email body</label>
-                    <p class="text-xs text-gray-400 mt-0.5">HTML body for the staff notification. Use Insert tokens below. <code class="text-gray-500">{action_buttons}</code> places quick-action status links; if you omit it, they are appended after the body. Buttons only appear for statuses that have an <strong>Action label</strong> set.</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Default HTML when a group has no per-group staff template (or empty body there). Per-group: <strong>+ Staff template</strong>. <code class="text-gray-500">{action_buttons}</code> for quick-action links.</p>
                 </div>
                 <div class="flex-1 min-w-0">
                     <input type="hidden" name="settings[2][key]" value="staff_routing_template">

@@ -6,6 +6,7 @@ use Dcplibrary\Requests\Http\Controllers\Admin\HelpController;
 use Dcplibrary\Requests\Http\Controllers\Admin\TitleController;
 use Dcplibrary\Requests\Http\Controllers\Admin\PatronController;
 use Dcplibrary\Requests\Http\Controllers\Admin\PatronStatusTemplateController;
+use Dcplibrary\Requests\Http\Controllers\Admin\StaffRoutingTemplateController;
 use Dcplibrary\Requests\Http\Controllers\Admin\RequestController;
 use Dcplibrary\Requests\Http\Controllers\Admin\RequestStatusController;
 use Dcplibrary\Requests\Http\Controllers\Admin\SelectorGroupController;
@@ -107,7 +108,6 @@ Route::group([
             Route::get('/settings',                  [SettingController::class, 'index'])->name('settings.index');
             Route::get('/settings/notifications',                      [SettingController::class, 'notifications'])->name('settings.notifications');
             Route::get('/settings/notifications/staff-email',           [SettingController::class, 'staffEmailForm'])->name('settings.notifications.staff-email');
-            Route::get('/settings/notifications/staff-email-ill',     [SettingController::class, 'staffEmailIllForm'])->name('settings.notifications.staff-email-ill');
             Route::get('/settings/notifications/default-patron-email', [SettingController::class, 'defaultPatronEmailForm'])->name('settings.notifications.default-patron-email');
             Route::get('/settings/notifications/preview/{type}',    [SettingController::class, 'previewEmail'])->name('settings.notifications.preview');
             Route::post('/settings/notifications/test',             [SettingController::class, 'sendTestEmail'])->name('settings.notifications.test');
@@ -156,6 +156,18 @@ Route::group([
                     'destroy' => 'patron-status-templates.destroy',
                 ])
                 ->except(['show']);
+
+            Route::get('staff-routing-templates/{staff_routing_template}/delete', [StaffRoutingTemplateController::class, 'confirmDelete'])
+                ->name('staff-routing-templates.delete');
+            Route::resource('staff-routing-templates', StaffRoutingTemplateController::class)
+                ->names([
+                    'create'  => 'staff-routing-templates.create',
+                    'store'   => 'staff-routing-templates.store',
+                    'edit'    => 'staff-routing-templates.edit',
+                    'update'  => 'staff-routing-templates.update',
+                    'destroy' => 'staff-routing-templates.destroy',
+                ])
+                ->only(['create', 'store', 'edit', 'update', 'destroy']);
 
             Route::get('statuses/{status}/delete', [RequestStatusController::class, 'confirmDelete'])
                 ->name('statuses.delete');

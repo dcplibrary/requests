@@ -214,9 +214,12 @@
 
             @if($tabId === 'emails')
             <div class="px-5 py-4 border-t border-gray-200">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <h3 class="text-sm font-semibold text-gray-800">Email templates</h3>
-                    <a href="{{ route('request.staff.patron-status-templates.create') }}" class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ Add template</a>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ route('request.staff.staff-routing-templates.create') }}" class="px-4 py-2 bg-slate-700 text-white text-sm rounded hover:bg-slate-800">+ Staff template</a>
+                        <a href="{{ route('request.staff.patron-status-templates.create') }}" class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ Patron template</a>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -234,10 +237,10 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr>
-                                <td class="px-4 py-2 text-gray-900">{{ $staffTitle ?? 'Staff routing' }}</td>
-                                <td class="px-4 py-2 text-gray-600">Staff routing (SFP)</td>
+                                <td class="px-4 py-2 text-gray-900">{{ $staffTitle ?? 'Default staff routing' }}</td>
+                                <td class="px-4 py-2 text-gray-600">Staff routing (default)</td>
                                 <td class="px-4 py-2 text-gray-600">{{ $staffSubject->value ?? '' }}</td>
-                                <td class="px-4 py-2 text-gray-600">New SFP request</td>
+                                <td class="px-4 py-2 text-gray-600">New request — groups without their own staff template; assignee &amp; workflow emails</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2">{{ $staffEnabled ? 'Yes' : 'No' }}</td>
@@ -245,18 +248,21 @@
                                     <x-requests::icon-btn :href="route('request.staff.settings.notifications.staff-email')" variant="edit" label="Edit" />
                                 </td>
                             </tr>
+                            @foreach($staffRoutingTemplates ?? [] as $srt)
                             <tr>
-                                <td class="px-4 py-2 text-gray-900">{{ $staffIllTitle ?? 'ILL staff routing' }}</td>
-                                <td class="px-4 py-2 text-gray-600">Staff routing (ILL)</td>
-                                <td class="px-4 py-2 text-gray-600">{{ optional($staffIllSubject)->value ?? '' }}</td>
-                                <td class="px-4 py-2 text-gray-600">New ILL request</td>
+                                <td class="px-4 py-2 text-gray-900">{{ $srt->name }}</td>
+                                <td class="px-4 py-2 text-gray-600">Staff routing</td>
+                                <td class="px-4 py-2 text-gray-600">{{ \Illuminate\Support\Str::limit($srt->subject, 40) }}</td>
+                                <td class="px-4 py-2 text-gray-600">New request → {{ $srt->selectorGroup->name ?? '—' }}</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
-                                <td class="px-4 py-2">{{ $staffEnabled ? 'Yes' : 'No' }}</td>
-                                <td class="px-4 py-2 text-right">
-                                    <x-requests::icon-btn :href="route('request.staff.settings.notifications.staff-email-ill')" variant="edit" label="Edit" />
+                                <td class="px-4 py-2">{{ $srt->enabled ? 'Yes' : 'No' }}</td>
+                                <td class="px-4 py-2 text-right flex items-center justify-end gap-1">
+                                    <x-requests::icon-btn :href="route('request.staff.staff-routing-templates.edit', $srt)" variant="edit" label="Edit" />
+                                    <x-requests::icon-btn :href="route('request.staff.staff-routing-templates.delete', $srt)" variant="delete" label="Delete" />
                                 </td>
                             </tr>
+                            @endforeach
                             <tr>
                                 <td class="px-4 py-2 text-gray-900">Default patron</td>
                                 <td class="px-4 py-2 text-gray-600">Default patron</td>

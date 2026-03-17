@@ -8,6 +8,7 @@ use Dcplibrary\Requests\Mail\RequestMail;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\PatronStatusTemplate;
+use Dcplibrary\Requests\Models\StaffRoutingTemplate;
 use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Services\NotificationService;
@@ -63,8 +64,6 @@ class SettingController extends Controller
         $staffSubject = $notifications->firstWhere('key', 'staff_routing_subject');
         $staffEnabled = $notifications->firstWhere('key', 'staff_routing_enabled');
         $staffTitle = $notifications->firstWhere('key', 'staff_routing_title');
-        $staffIllSubject = $notifications->firstWhere('key', 'staff_routing_ill_subject');
-        $staffIllTitle = $notifications->firstWhere('key', 'staff_routing_ill_title');
         $patronSubject = $notifications->firstWhere('key', 'patron_status_subject');
         $patronEnabled = $notifications->firstWhere('key', 'patron_status_notification_enabled');
 
@@ -75,6 +74,7 @@ class SettingController extends Controller
             ? FieldOption::where('field_id', $mtField->id)->active()->ordered()->get()
             : collect();
         $patronStatusTemplates = PatronStatusTemplate::with(['requestStatuses', 'fieldOptions'])->ordered()->get();
+        $staffRoutingTemplates = StaffRoutingTemplate::with('selectorGroup')->orderBy('name')->get();
 
         return view('requests::staff.settings.notifications', [
             'settingsByTab'         => $settingsByTab,
@@ -84,6 +84,7 @@ class SettingController extends Controller
             'subjectExcludedTokens' => $subjectExcludedTokens,
             'materialTypes'         => $materialTypes,
             'patronStatusTemplates' => $patronStatusTemplates,
+            'staffRoutingTemplates' => $staffRoutingTemplates,
             'staffSubject'          => $staffSubject,
             'staffEnabled'          => (bool) ($staffEnabled->value ?? false),
             'staffTitle'            => optional($staffTitle)->value ?? 'Staff routing',
@@ -135,31 +136,6 @@ class SettingController extends Controller
     }
 
     /**
-     * Edit ILL staff routing email (subject + body). Shares enable toggle with SFP staff routing.
-     */
-    public function staffEmailIllForm()
-    {
-        $notifications = Setting::where('group', 'notifications')->get()->keyBy('key');
-        $staffIllSubject = $notifications->get('staff_routing_ill_subject');
-        $staffIllTemplate = $notifications->get('staff_routing_ill_template');
-        $staffIllTitleSetting = $notifications->get('staff_routing_ill_title');
-
-        $availableTokens = array_values(array_unique(array_merge(
-            $this->availableTokens(),
-            ['{action_buttons}'],
-        )));
-        $subjectExcludedTokens = $this->subjectExcludedTokens();
-
-        return view('requests::staff.settings.notifications-staff-email-ill', [
-            'staffIllSubjectValue'  => optional($staffIllSubject)->value ?? '',
-            'staffIllTemplateValue' => optional($staffIllTemplate)->value ?? '',
-            'staffIllTitleValue'    => optional($staffIllTitleSetting)->value ?? 'ILL staff routing',
-            'availableTokens'       => $availableTokens,
-            'subjectExcludedTokens' => $subjectExcludedTokens,
-        ]);
-    }
-
-    /**
      * Edit default patron email (one fallback template). Form posts to settings.update.
      */
     public function defaultPatronEmailForm()
@@ -188,23 +164,19 @@ class SettingController extends Controller
      */
     public function previewEmail(string $type)
     {
-        abort_unless(in_array($type, ['staff', 'staff_ill', 'patron'], true), 404);
+        abort_unless(in_array($type, ['staff', 'patron'], true), 404);
 
         $ns = app(NotificationService::class);
 
-        $templateKey = match ($type) {
-            'staff' => 'staff_routing_template',
-            'staff_ill' => 'staff_routing_ill_template',
-            default => 'patron_status_template',
-        };
+        $templateKey = $type === 'staff'
+            ? 'staff_routing_template'
+            : 'patron_status_template';
 
         $template = Setting::get($templateKey, '');
         if (! $template) {
-            $template = match ($type) {
-                'staff' => $ns->defaultStaffTemplate(),
-                'staff_ill' => $ns->defaultStaffIllTemplate(),
-                default => $ns->defaultPatronTemplate(),
-            };
+            $template = $type === 'staff'
+                ? $ns->defaultStaffTemplate()
+                : $ns->defaultPatronTemplate();
         }
 
         $body = str_replace(
@@ -223,24 +195,20 @@ class SettingController extends Controller
     {
         $data = $request->validate([
             'email' => 'required|email',
-            'type'  => 'required|in:staff,staff_ill,patron',
+            'type'  => 'required|in:staff,patron',
         ]);
 
         $ns = app(NotificationService::class);
 
-        [$templateKey, $subjectKey] = match ($data['type']) {
-            'staff' => ['staff_routing_template', 'staff_routing_subject'],
-            'staff_ill' => ['staff_routing_ill_template', 'staff_routing_ill_subject'],
-            default => ['patron_status_template', 'patron_status_subject'],
-        };
+        [$templateKey, $subjectKey] = $data['type'] === 'staff'
+            ? ['staff_routing_template', 'staff_routing_subject']
+            : ['patron_status_template', 'patron_status_subject'];
 
         $template = Setting::get($templateKey, '');
         if (! $template) {
-            $template = match ($data['type']) {
-                'staff' => $ns->defaultStaffTemplate(),
-                'staff_ill' => $ns->defaultStaffIllTemplate(),
-                default => $ns->defaultPatronTemplate(),
-            };
+            $template = $data['type'] === 'staff'
+                ? $ns->defaultStaffTemplate()
+                : $ns->defaultPatronTemplate();
         }
 
         $subject = str_replace(
@@ -308,7 +276,7 @@ class SettingController extends Controller
             'patron_templates.*.status_ids' => 'nullable|array',
             'patron_templates.*.status_ids.*' => 'integer|exists:request_statuses,id',
             'patron_templates.*.remove'  => 'nullable|boolean',
-            'return_to'                 => 'nullable|string|in:notifications_emails,staff_email_ill',
+            'return_to'                 => 'nullable|string|in:notifications_emails',
         ]);
 
         foreach ($data['settings'] as $item) {
@@ -330,9 +298,6 @@ class SettingController extends Controller
 
         if (isset($data['return_to']) && $data['return_to'] === 'notifications_emails') {
             return redirect()->route('request.staff.settings.notifications', ['tab' => 'emails'])->with('success', 'Settings saved.');
-        }
-        if (isset($data['return_to']) && $data['return_to'] === 'staff_email_ill') {
-            return redirect()->route('request.staff.settings.notifications.staff-email-ill')->with('success', 'Settings saved.');
         }
 
         return back()->with('success', 'Settings saved.');
