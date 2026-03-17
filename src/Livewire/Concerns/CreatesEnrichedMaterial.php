@@ -86,7 +86,9 @@ trait CreatesEnrichedMaterial
             'language'      => $data['language'] ?? null,
             'msrp'          => $data['msrp'] ?? null,
             'binding'       => $data['binding'] ?? null,
-            'dimensions'    => $data['dimensions'] ?? null,
+            'dimensions'    => isset($data['dimensions'])
+                                   ? (is_array($data['dimensions']) ? implode(', ', $data['dimensions']) : $data['dimensions'])
+                                   : null,
             'source'        => 'isbndb',
         ];
 

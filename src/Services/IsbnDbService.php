@@ -187,7 +187,9 @@ class IsbnDbService
             'pages'         => isset($book['pages']) ? (int) $book['pages'] : null,
             'language'      => $book['language'] ?? null,
             'msrp'          => isset($book['msrp']) ? (float) $book['msrp'] : null,
-            'dimensions'    => $book['dimensions'] ?? null,
+            'dimensions'    => isset($book['dimensions'])
+                                   ? (is_array($book['dimensions']) ? implode(', ', $book['dimensions']) : $book['dimensions'])
+                                   : null,
         ];
     }
 }
