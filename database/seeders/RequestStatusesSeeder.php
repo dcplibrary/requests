@@ -35,11 +35,6 @@ class RequestStatusesSeeder extends Seeder
                 'sort_order' => 5, 'active' => true, 'is_terminal' => true, 'notify_patron' => true,
                 'description' => "Denied means that alternative items in the library cover this topic, or the request does not fulfill the library's collection development policies. Please consider requesting an Interlibrary Loan.",
             ],
-            [
-                'name' => 'ILL Referred', 'slug' => 'ill-referred', 'color' => '#6b7280',
-                'sort_order' => 6, 'active' => true, 'is_terminal' => true, 'notify_patron' => true,
-                'description' => 'ILL Referred means that the library will attempt to borrow your request from another library. If the item can be borrowed, we will notify you when it is ready for pickup.',
-            ],
         ];
 
         foreach ($statuses as $status) {

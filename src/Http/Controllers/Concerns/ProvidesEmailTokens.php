@@ -101,6 +101,7 @@ trait ProvidesEmailTokens
             '{page_number}', '{director}', '{cast}', '{comments}', '{request_url}', '{genre}', '{isbn}',
             '{publish_date}', '{where_heard}', '{date_needed_by}', '{console}',
             '{patron_email}', '{patron_phone}', '{audience}', '{action_buttons}',
+            '{convert_to_ill_url}', '{convert_to_ill_link}',
         ];
     }
 }

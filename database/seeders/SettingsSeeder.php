@@ -324,7 +324,7 @@ class SettingsSeeder extends Seeder
                 'type'        => 'html',
                 'group'       => 'notifications',
                 'description' => 'Default HTML for new-request emails when a selector group has no staff template (body); assignee/workflow emails use this too. Per-group templates: Notifications → + Staff template.',
-                'tokens'      => json_encode(['{title}', '{author}', '{isbn}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{status_name}', '{action_buttons}', '{submitted_date}', '{request_url}']),
+                'tokens'      => json_encode(['{title}', '{author}', '{isbn}', '{patron_name}', '{patron_first_name}', '{material_type}', '{audience}', '{status}', '{status_name}', '{action_buttons}', '{convert_to_ill_link}', '{convert_to_ill_url}', '{submitted_date}', '{request_url}']),
             ],
             [
                 'key'         => 'staff_routing_title',

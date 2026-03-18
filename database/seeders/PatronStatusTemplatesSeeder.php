@@ -79,29 +79,6 @@ HTML,
 <p>We encourage you to continue submitting suggestions. Thank you for helping us build our collection!</p>
 HTML,
             ],
-            [
-                'slug'       => 'ill-referred',
-                'name'       => 'ILL Referred',
-                'enabled'    => true,
-                'is_default' => false,
-                'sort_order' => 4,
-                'subject'    => 'Interlibrary loan referral: {title}',
-                'body'       => <<<'HTML'
-<p>Hi {patron_first_name},</p>
-<p>Your purchase suggestion has been reviewed. While we are not adding this item to our collection, we have referred your request to our Interlibrary Loan service so you may be able to borrow it from another library.</p>
-<table role="presentation" style="font-size:14px;border-collapse:collapse;width:100%;margin:16px 0;">
-  <tr>
-    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Title</td>
-    <td style="padding:5px 0;font-weight:bold;">{title}</td>
-  </tr>
-  <tr>
-    <td style="padding:5px 14px 5px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Author</td>
-    <td style="padding:5px 0;">{author}</td>
-  </tr>
-</table>
-<p>Thank you for your suggestion!</p>
-HTML,
-            ],
         ];
 
         foreach ($templates as $template) {

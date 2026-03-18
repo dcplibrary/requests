@@ -726,6 +726,46 @@ class RequestController extends Controller
     }
 
     /**
+     * One-click SFP → ILL from a signed link in staff routing email (patron must have opted in).
+     */
+    public function convertToIllFromSignedEmail(\Illuminate\Http\Request $httpRequest, PatronRequest $patronRequest)
+    {
+        if (! $httpRequest->hasValidSignature()) {
+            abort(403, 'This link has expired or is invalid.');
+        }
+
+        if ($patronRequest->request_kind === PatronRequest::KIND_ILL) {
+            return redirect()
+                ->route('request.staff.requests.show', $patronRequest)
+                ->with('info', 'This request is already in the ILL workflow.');
+        }
+
+        if (($patronRequest->request_kind ?: PatronRequest::KIND_SFP) !== PatronRequest::KIND_SFP || ! $patronRequest->ill_requested) {
+            return redirect()
+                ->route('request.staff.requests.show', $patronRequest)
+                ->with('error', 'This link only applies when the patron opted into ILL on their suggestion.');
+        }
+
+        $from = PatronRequest::KIND_SFP;
+        $to = PatronRequest::KIND_ILL;
+
+        $patronRequest->update([
+            'request_kind' => $to,
+            'ill_requested' => true,
+        ]);
+
+        $patronRequest->statusHistory()->create([
+            'request_status_id' => $patronRequest->request_status_id,
+            'user_id' => null,
+            'note' => "Converted workflow: {$from} → {$to} (signed link from staff routing email).",
+        ]);
+
+        return redirect()
+            ->route('request.staff.requests.index', ['kind' => PatronRequest::KIND_ILL])
+            ->with('success', "Request #{$patronRequest->id} converted to ILL.");
+    }
+
+    /**
      * Return a JSON preview of the patron email that would be sent for the
      * given status change, without actually sending anything.
      */

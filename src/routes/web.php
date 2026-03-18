@@ -32,6 +32,11 @@ Route::get(
     [RequestController::class, 'emailAction']
 )->name('request.email-action')->middleware($middleware);
 
+Route::get(
+    $prefix . '/email-action/convert-to-ill/{patronRequest}',
+    [RequestController::class, 'convertToIllFromSignedEmail']
+)->name('request.email-convert-to-ill')->middleware($middleware);
+
 Route::group([
     'prefix'     => $prefix,
     'middleware' => $middleware,

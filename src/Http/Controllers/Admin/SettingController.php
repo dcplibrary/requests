@@ -108,7 +108,7 @@ class SettingController extends Controller
 
         $availableTokens = array_values(array_unique(array_merge(
             $this->availableTokens(),
-            ['{action_buttons}'],
+            ['{action_buttons}', '{convert_to_ill_url}', '{convert_to_ill_link}'],
         )));
         $subjectExcludedTokens = $this->subjectExcludedTokens();
 

@@ -567,36 +567,44 @@ class NotificationService
     /**
      * Build an HTML block of one-click action buttons for staff routing emails.
      *
-     * Statuses with {@see RequestStatus::$action_label} are preferred; if none are set for this
-     * kind, falls back to every other active status (button text = status name). Excludes current.
+     * When the request is still SFP and the patron opted into ILL, a **Convert to ILL**
+     * button (signed link, 30-day) is prepended in the same row as status shortcuts.
+     * Status buttons use {@see RequestStatus::$action_label} or name; excludes current
+     * and earlier sort_order.
      *
      * @param  bool  $standalone  When true (appended block): top border and spacing. When false
      *                           ({action_buttons} in body): compact block for mid-template use.
      */
     private function buildEmailActionButtons(PatronRequest $request, bool $standalone = true): string
     {
-        $currentId      = (int) $request->request_status_id;
-        $currentStatus  = RequestStatus::find($currentId, ['sort_order']);
-        $currentSort    = $currentStatus ? (int) $currentStatus->sort_order : 0;
+        $kind = $request->request_kind ?: PatronRequest::KIND_SFP;
+        $currentId = (int) $request->request_status_id;
+        $currentStatus = RequestStatus::find($currentId, ['sort_order']);
+        $currentSort = $currentStatus ? (int) $currentStatus->sort_order : 0;
 
-        // Show all active statuses for this kind that come after the current
-        // one in sort order. Label falls back to status name when action_label
-        // is not set — no filtering based on label presence or terminal state.
         $buttons = RequestStatus::query()
             ->where('active', true)
-            ->forKind($request->request_kind)
+            ->forKind($request->request_kind ?: PatronRequest::KIND_SFP)
             ->where('sort_order', '>', $currentSort)
             ->orderBy('sort_order')
             ->get(['id', 'name', 'action_label', 'color']);
 
-        if ($buttons->isEmpty()) {
-            return '';
+        $convertCell = '';
+        if ($kind === PatronRequest::KIND_SFP && $request->ill_requested) {
+            $convertUrl = URL::temporarySignedRoute(
+                'request.email-convert-to-ill',
+                now()->addDays(30),
+                ['patronRequest' => $request->getKey()]
+            );
+            $convertCell = '<td style="padding:0 12px 8px 0;vertical-align:middle;">'
+                . '<a href="' . e($convertUrl) . '" '
+                . 'style="display:inline-block;padding:8px 18px;background:#4338ca;color:#ffffff;'
+                . 'text-decoration:none;border-radius:6px;font-size:13px;font-weight:bold;'
+                . 'font-family:Arial,Helvetica,sans-serif;line-height:1.2;">'
+                . 'Convert to ILL</a></td>';
         }
 
-        $intro = '<p style="margin:0 0 12px;font-size:12px;color:#6b7280;font-style:italic;">'
-            . 'Quick actions — click to update status directly from this email:</p>';
-        $table = '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>';
-
+        $statusCells = '';
         foreach ($buttons as $status) {
             $url = URL::temporarySignedRoute(
                 'request.email-action',
@@ -606,19 +614,34 @@ class NotificationService
 
             $color = $status->color ?: '#4b5563';
             $label = trim((string) $status->action_label);
-            $text  = e($label !== '' ? $label : (string) $status->name);
+            $text = e($label !== '' ? $label : (string) $status->name);
 
-            $table .= '<td style="padding:0 12px 8px 0;vertical-align:middle;">';
-            $table .= '<a href="' . $url . '" '
+            $statusCells .= '<td style="padding:0 12px 8px 0;vertical-align:middle;">';
+            $statusCells .= '<a href="' . e($url) . '" '
                 . 'style="display:inline-block;padding:8px 18px;background:' . e($color) . ';color:#ffffff;'
                 . 'text-decoration:none;border-radius:6px;font-size:13px;font-weight:bold;'
                 . 'font-family:Arial,Helvetica,sans-serif;line-height:1.2;">'
                 . $text
-                . '</a>';
-            $table .= '</td>';
+                . '</a></td>';
         }
 
-        $table .= '</tr></table>';
+        if ($convertCell === '' && $statusCells === '') {
+            return '';
+        }
+
+        if ($convertCell !== '' && $statusCells !== '') {
+            $intro = '<p style="margin:0 0 12px;font-size:12px;color:#6b7280;font-style:italic;">'
+                . 'Quick actions — <strong style="color:#374151;">Convert to ILL</strong> (patron opted in) or set status:</p>';
+        } elseif ($convertCell !== '') {
+            $intro = '<p style="margin:0 0 12px;font-size:12px;color:#6b7280;font-style:italic;">'
+                . 'Patron asked to try interlibrary loan if not purchased — convert to the ILL workflow:</p>';
+        } else {
+            $intro = '<p style="margin:0 0 12px;font-size:12px;color:#6b7280;font-style:italic;">'
+                . 'Quick actions — click to update status directly from this email:</p>';
+        }
+
+        $table = '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>'
+            . $convertCell . $statusCells . '</tr></table>';
 
         if ($standalone) {
             return '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;">'
@@ -645,6 +668,9 @@ class NotificationService
      *   {status_description} — description text for the current status (for patron emails)
      *   {submitted_date}    — submission date (e.g. January 5, 2026)
      *   {request_url}       — full URL to the request in the staff dashboard
+     *   {convert_to_ill_url} — signed convert URL (empty if not SFP+ill_requested). Same action as the
+     *                          indigo **Convert to ILL** button in {action_buttons}; omit if you use that block.
+     *   {convert_to_ill_link} — standalone button block; duplicates {action_buttons} if both are used.
      *
      * Dynamic placeholders (form fields with include_as_token = true):
      *   {isbn}              — ISBN from matched material
@@ -714,10 +740,42 @@ class NotificationService
             }
         }
 
+        $map = array_merge($map, $this->convertToIllMailTokens($request));
+
         $result = str_replace(array_keys($map), array_values($map), $template);
 
         // Strip any remaining unrecognised {tokens} so they never appear literally.
         return preg_replace('/\{[a-z0-9_]+\}/i', '', $result);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function convertToIllMailTokens(PatronRequest $request): array
+    {
+        if (
+            ($request->request_kind ?: PatronRequest::KIND_SFP) !== PatronRequest::KIND_SFP
+            || ! $request->ill_requested
+        ) {
+            return [
+                '{convert_to_ill_url}' => '',
+                '{convert_to_ill_link}' => '',
+            ];
+        }
+
+        $url = URL::temporarySignedRoute(
+            'request.email-convert-to-ill',
+            now()->addDays(30),
+            ['patronRequest' => $request->getKey()]
+        );
+
+        $safe = e($url);
+
+        return [
+            '{convert_to_ill_url}' => $url,
+            '{convert_to_ill_link}' => '<p style="margin:16px 0;"><a href="'.$safe.'" style="display:inline-block;padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Convert to ILL</a></p>'
+                .'<p style="font-size:12px;color:#6b7280;margin:0;">Patron asked to try interlibrary loan if not purchased. Use when you are ready to move this into the ILL workflow.</p>',
+        ];
     }
 
     /**
