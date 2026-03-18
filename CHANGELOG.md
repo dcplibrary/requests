@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.16.1](https://github.com/dcplibrary/requests/compare/v4.16.0...v4.16.1) (2026-03-18)
+
+
+### Bug Fixes
+
+* add all settings to config backup and update the settings help file ([0286b9a](https://github.com/dcplibrary/requests/commit/0286b9ac9ddcc8b884ff3fea39410f180f5a63b9))
+
 # [4.16.0](https://github.com/dcplibrary/requests/compare/v4.15.4...v4.16.0) (2026-03-18)
 
 
