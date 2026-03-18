@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.16.0](https://github.com/dcplibrary/requests/compare/v4.15.4...v4.16.0) (2026-03-18)
+
+
+### Features
+
+* create backup for notifications and add information tooltips to backup types ([b6b941b](https://github.com/dcplibrary/requests/commit/b6b941bab4a02a70eab59470f5020a929e3e719c))
+
 ## [4.15.4](https://github.com/dcplibrary/requests/compare/v4.15.3...v4.15.4) (2026-03-18)
 
 
