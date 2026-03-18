@@ -57,7 +57,9 @@ class BackupController extends Controller
                     ->all(),
 
                 'request_statuses' => RequestStatus::orderBy('sort_order')
-                    ->get(['slug', 'name', 'color', 'is_terminal', 'sort_order', 'active'])
+                    ->get(['slug', 'name', 'color', 'icon', 'sort_order', 'active', 'is_terminal',
+                           'notify_patron', 'action_label', 'advance_on_claim', 'applies_to_sfp',
+                           'applies_to_ill', 'description'])
                     ->toArray(),
 
                 'material_types' => $this->exportFieldOptions('material_type'),
@@ -453,7 +455,9 @@ class BackupController extends Controller
                             ->map(fn ($s) => ['key' => $s->key, 'value' => $s->value])
                             ->all(),
                         'request_statuses' => RequestStatus::orderBy('sort_order')
-                            ->get(['slug', 'name', 'color', 'is_terminal', 'sort_order', 'active'])
+                            ->get(['slug', 'name', 'color', 'icon', 'sort_order', 'active', 'is_terminal',
+                                   'notify_patron', 'action_label', 'advance_on_claim', 'applies_to_sfp',
+                                   'applies_to_ill', 'description'])
                             ->toArray(),
                         'material_types' => $this->exportFieldOptions('material_type'),
                         'audiences' => $this->exportFieldOptions('audience'),
@@ -647,11 +651,18 @@ class BackupController extends Controller
                     RequestStatus::updateOrCreate(
                         ['slug' => $slug],
                         [
-                            'name'        => $row['name'],
-                            'color'       => $row['color'],
-                            'is_terminal' => (bool) ($row['is_terminal'] ?? false),
-                            'sort_order'  => (int)  ($row['sort_order'] ?? 0),
-                            'active'      => (bool) ($row['active'] ?? true),
+                            'name'            => $row['name'],
+                            'color'           => $row['color'],
+                            'icon'            => $row['icon'] ?? null,
+                            'sort_order'      => (int)  ($row['sort_order'] ?? 0),
+                            'active'          => (bool) ($row['active'] ?? true),
+                            'is_terminal'     => (bool) ($row['is_terminal'] ?? false),
+                            'notify_patron'   => (bool) ($row['notify_patron'] ?? false),
+                            'action_label'    => $row['action_label'] ?? null,
+                            'advance_on_claim'=> (bool) ($row['advance_on_claim'] ?? false),
+                            'applies_to_sfp'  => (bool) ($row['applies_to_sfp'] ?? true),
+                            'applies_to_ill'  => (bool) ($row['applies_to_ill'] ?? true),
+                            'description'     => $row['description'] ?? null,
                         ]
                     );
                     $upserted++;
