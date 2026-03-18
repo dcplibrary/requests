@@ -57,8 +57,10 @@ class FormCustomFieldOptionsManager extends Component
             return;
         }
 
-        FormFieldOptionOverride::updateOrInsert(
-            ['form_id' => $this->formId, 'field_id' => $this->fieldId, 'option_slug' => $opt->slug],
+        FormFieldOptionOverride::upsertForForm(
+            $this->formId,
+            $this->fieldId,
+            $opt->slug,
             ['visible' => ! $current['visible']]
         );
 
@@ -140,8 +142,10 @@ class FormCustomFieldOptionsManager extends Component
         $rows = array_values($this->items);
         foreach ($rows as $i => $item) {
             $order = $i + 1;
-            FormFieldOptionOverride::updateOrInsert(
-                ['form_id' => $this->formId, 'field_id' => $this->fieldId, 'option_slug' => $item['slug']],
+            FormFieldOptionOverride::upsertForForm(
+                $this->formId,
+                $this->fieldId,
+                $item['slug'],
                 ['sort_order' => $order]
             );
             $this->items[$i]['sort_order'] = $order;

@@ -82,15 +82,13 @@ class FormFormFieldOptionEdit extends Component
 
         $labelOverride = trim($this->labelOverride);
 
-        FormFieldOptionOverride::updateOrInsert(
-            [
-                'form_id'     => $formModel->id,
-                'field_id'    => $this->fieldId,
-                'option_slug' => $this->optionSlug,
-            ],
+        FormFieldOptionOverride::upsertForForm(
+            $formModel->id,
+            $this->fieldId,
+            $this->optionSlug,
             [
                 'label_override' => $labelOverride !== '' ? $labelOverride : null,
-                'visible'        => $this->visible,
+                'visible' => $this->visible,
             ]
         );
 

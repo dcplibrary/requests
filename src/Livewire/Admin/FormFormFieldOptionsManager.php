@@ -56,9 +56,14 @@ class FormFormFieldOptionsManager extends Component
             return;
         }
 
-        FormFieldOptionOverride::updateOrInsert(
-            ['form_id' => $this->formId, 'field_id' => $this->fieldId, 'option_slug' => $slug],
-            ['visible' => ! $current['visible'], 'sort_order' => $current['sort_order']]
+        FormFieldOptionOverride::upsertForForm(
+            $this->formId,
+            $this->fieldId,
+            $slug,
+            [
+                'visible' => ! $current['visible'],
+                'sort_order' => $current['sort_order'],
+            ]
         );
 
         $this->loadItems();
