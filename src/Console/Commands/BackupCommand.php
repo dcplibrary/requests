@@ -5,9 +5,11 @@ namespace Dcplibrary\Requests\Console\Commands;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\CatalogFormatLabel;
+use Dcplibrary\Requests\Models\PatronStatusTemplate;
 use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
+use Dcplibrary\Requests\Models\StaffRoutingTemplate;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use ZipArchive;
@@ -86,6 +88,35 @@ class BackupCommand extends Command
                     'catalog_format_labels' => CatalogFormatLabel::orderBy('id')
                         ->get(['format_code', 'label'])
                         ->toArray(),
+
+                    'staff_routing_templates' => StaffRoutingTemplate::with('selectorGroup')
+                        ->get()
+                        ->map(fn (StaffRoutingTemplate $t) => [
+                            'selector_group_name' => $t->selectorGroup?->name,
+                            'name'                => $t->name,
+                            'enabled'             => $t->enabled,
+                            'subject'             => $t->subject,
+                            'body'                => $t->body,
+                        ])
+                        ->all(),
+
+                    'patron_status_templates' => PatronStatusTemplate::with(['requestStatuses', 'fieldOptions.field'])
+                        ->orderBy('sort_order')
+                        ->get()
+                        ->map(fn (PatronStatusTemplate $t) => [
+                            'name'                 => $t->name,
+                            'enabled'              => $t->enabled,
+                            'subject'              => $t->subject,
+                            'body'                 => $t->body,
+                            'sort_order'           => $t->sort_order,
+                            'is_default'           => $t->is_default,
+                            'request_status_slugs' => $t->requestStatuses->pluck('slug')->all(),
+                            'field_option_slugs'   => $t->fieldOptions->map(fn ($o) => [
+                                'field_key' => $o->field?->key,
+                                'slug'      => $o->slug,
+                            ])->all(),
+                        ])
+                        ->all(),
                 ],
             ];
 

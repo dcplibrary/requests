@@ -14,7 +14,30 @@
         'archive'   => '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>',
         'warning'   => '<svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>',
         'trash'     => '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>',
+    'question'  => '<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/></svg>',
     ];
+
+    /**
+     * Render a question-mark icon that shows a tooltip on hover listing backup contents.
+     * $items: array of strings (each becomes a bullet point).
+     */
+    $infoTooltip = function (array $items) use (&$infoTooltip): string {
+        $bullets = implode('', array_map(
+            fn ($item) => '<li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0 text-blue-400">•</span><span>' . e($item) . '</span></li>',
+            $items
+        ));
+        $iconSvg = '<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/></svg>';
+        return '<span class="relative inline-flex items-center" x-data="{ show: false }" @mouseenter="show = true" @mouseleave="show = false">'
+            . '<button type="button" class="text-gray-400 hover:text-blue-500 transition-colors focus:outline-none">'
+            . $iconSvg
+            . '</button>'
+            . '<span x-show="show" x-cloak x-transition.opacity'
+            . '      class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64 rounded-lg bg-gray-900 px-3 py-2.5 text-xs text-gray-100 shadow-lg pointer-events-none">'
+            . '<ul class="space-y-1">' . $bullets . '</ul>'
+            . '<span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></span>'
+            . '</span>'
+            . '</span>';
+    };
 @endphp
 
 <div class="flex items-center justify-between mb-6">
@@ -47,7 +70,18 @@
 
         {{-- Export config --}}
         <div class="p-5">
-            <h3 class="text-sm font-semibold text-gray-700 mb-1">Export</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                Export
+                {!! $infoTooltip([
+                    'Settings — all application configuration key/value pairs',
+                    'Request statuses — name, color, icon, action label, SFP/ILL scope, terminal state, patron notifications, sort order, description',
+                    'Field options — material types and audiences with metadata',
+                    'Selector groups — name, description, and linked field options',
+                    'Catalog format labels',
+                    'Staff routing templates — per-group email subject and body',
+                    'Patron status templates — subject, body, linked statuses and field options',
+                ]) !!}
+            </h3>
             <p class="text-sm text-gray-500 mb-4">
                 Download a JSON snapshot of all configuration — statuses, material types, audiences,
                 selector groups, catalog format labels, and settings. Request data is not included.
@@ -103,7 +137,18 @@
 
         {{-- DB Export --}}
         <div class="p-5">
-            <h3 class="text-sm font-semibold text-gray-700 mb-1">Export Database</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                Export Database
+                {!! $infoTooltip([
+                    'Full SQL dump of all database tables',
+                    'Requests, patrons, and materials',
+                    'Request history and status transitions',
+                    'Settings, request statuses, and field definitions',
+                    'Staff users and assignments',
+                    'Notification templates and pivot tables',
+                    'Can be used to fully restore the database',
+                ]) !!}
+            </h3>
             <p class="text-sm text-gray-500 mb-4">
                 Download a full SQL dump of the database. Includes all tables and data —
                 requests, patrons, titles, and configuration.
@@ -150,7 +195,14 @@
 
         {{-- Storage Export --}}
         <div class="p-5">
-            <h3 class="text-sm font-semibold text-gray-700 mb-1">Export Storage</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                Export Storage
+                {!! $infoTooltip([
+                    'Zip archive of the storage/app directory',
+                    'Uploaded attachments and stored assets',
+                    'Must be extracted manually to restore',
+                ]) !!}
+            </h3>
             <p class="text-sm text-gray-500 mb-4">
                 Download a zip archive of <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">storage/app</code>.
                 Useful for backing up uploaded files and other stored assets.
@@ -183,11 +235,21 @@
                         <input type="checkbox" name="types[]" value="config" checked
                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         Configuration (JSON)
+                        {!! $infoTooltip([
+                            'Settings, request statuses, field options',
+                            'Selector groups, catalog format labels',
+                            'Staff routing and patron status templates',
+                        ]) !!}
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                         <input type="checkbox" name="types[]" value="db" checked
                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         Database (SQL)
+                        {!! $infoTooltip([
+                            'Full SQL dump of all tables',
+                            'Requests, patrons, materials, history',
+                            'All configuration and template data',
+                        ]) !!}
                     </label>
                 </div>
                 <button type="submit"

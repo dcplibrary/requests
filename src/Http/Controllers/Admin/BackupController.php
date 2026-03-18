@@ -7,9 +7,11 @@ use Dcplibrary\Requests\Jobs\PruneBackupsJob;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\CatalogFormatLabel;
+use Dcplibrary\Requests\Models\PatronStatusTemplate;
 use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
+use Dcplibrary\Requests\Models\StaffRoutingTemplate;
 use Dcplibrary\Requests\Services\SqlStatementSplitter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -81,6 +83,10 @@ class BackupController extends Controller
                 'catalog_format_labels' => CatalogFormatLabel::orderBy('id')
                     ->get(['format_code', 'label'])
                     ->toArray(),
+
+                'staff_routing_templates' => $this->exportStaffRoutingTemplates(),
+
+                'patron_status_templates' => $this->exportPatronStatusTemplates(),
             ],
         ];
 
@@ -472,6 +478,10 @@ class BackupController extends Controller
                             ])->all(),
                         'catalog_format_labels' => CatalogFormatLabel::orderBy('id')
                             ->get(['format_code', 'label'])->toArray(),
+
+                        'staff_routing_templates' => $this->exportStaffRoutingTemplates(),
+
+                        'patron_status_templates' => $this->exportPatronStatusTemplates(),
                     ],
                 ];
 
@@ -729,6 +739,68 @@ class BackupController extends Controller
                 }
                 $results[] = "{$upserted} catalog format label(s) restored";
             }
+
+            // Staff Routing Templates
+            if (! empty($data['staff_routing_templates'])) {
+                $upserted = 0;
+                foreach ($data['staff_routing_templates'] as $row) {
+                    $group = SelectorGroup::where('name', $row['selector_group_name'] ?? '')->first();
+                    if (! $group) {
+                        continue;
+                    }
+                    StaffRoutingTemplate::updateOrCreate(
+                        ['selector_group_id' => $group->id],
+                        [
+                            'name'    => $row['name'],
+                            'enabled' => (bool) ($row['enabled'] ?? true),
+                            'subject' => $row['subject'],
+                            'body'    => $row['body'] ?? null,
+                        ]
+                    );
+                    $upserted++;
+                }
+                $results[] = "{$upserted} staff routing template(s) restored";
+            }
+
+            // Patron Status Templates
+            if (! empty($data['patron_status_templates'])) {
+                $upserted = 0;
+                foreach ($data['patron_status_templates'] as $row) {
+                    $template = PatronStatusTemplate::updateOrCreate(
+                        ['name' => $row['name']],
+                        [
+                            'enabled'    => (bool) ($row['enabled'] ?? true),
+                            'subject'    => $row['subject'],
+                            'body'       => $row['body'] ?? null,
+                            'sort_order' => (int) ($row['sort_order'] ?? 0),
+                            'is_default' => (bool) ($row['is_default'] ?? false),
+                        ]
+                    );
+
+                    // Re-link request statuses by slug.
+                    if (! empty($row['request_status_slugs'])) {
+                        $statusIds = RequestStatus::whereIn('slug', $row['request_status_slugs'])->pluck('id');
+                        $template->requestStatuses()->sync($statusIds);
+                    }
+
+                    // Re-link field options by field key + slug.
+                    if (! empty($row['field_option_slugs'])) {
+                        $optionIds = collect();
+                        foreach ($row['field_option_slugs'] as $entry) {
+                            $id = FieldOption::whereHas('field', fn ($q) => $q->where('key', $entry['field_key']))
+                                ->where('slug', $entry['slug'])
+                                ->value('id');
+                            if ($id) {
+                                $optionIds->push($id);
+                            }
+                        }
+                        $template->fieldOptions()->sync($optionIds->all());
+                    }
+
+                    $upserted++;
+                }
+                $results[] = "{$upserted} patron status template(s) restored";
+            }
         });
 
         return implode(', ', $results) ?: 'Nothing to restore.';
@@ -835,6 +907,52 @@ class BackupController extends Controller
     /**
      * Export field options for a given field key in the legacy backup format.
      *
+    /**
+     * Export staff routing templates, keyed to their selector group by name.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function exportStaffRoutingTemplates(): array
+    {
+        return StaffRoutingTemplate::with('selectorGroup')
+            ->get()
+            ->map(fn (StaffRoutingTemplate $t) => [
+                'selector_group_name' => $t->selectorGroup?->name,
+                'name'                => $t->name,
+                'enabled'             => $t->enabled,
+                'subject'             => $t->subject,
+                'body'                => $t->body,
+            ])
+            ->all();
+    }
+
+    /**
+     * Export patron status templates with their linked status slugs and field option slugs.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function exportPatronStatusTemplates(): array
+    {
+        return PatronStatusTemplate::with(['requestStatuses', 'fieldOptions.field'])
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (PatronStatusTemplate $t) => [
+                'name'                  => $t->name,
+                'enabled'               => $t->enabled,
+                'subject'               => $t->subject,
+                'body'                  => $t->body,
+                'sort_order'            => $t->sort_order,
+                'is_default'            => $t->is_default,
+                'request_status_slugs'  => $t->requestStatuses->pluck('slug')->all(),
+                'field_option_slugs'    => $t->fieldOptions->map(fn ($o) => [
+                    'field_key' => $o->field?->key,
+                    'slug'      => $o->slug,
+                ])->all(),
+            ])
+            ->all();
+    }
+
+    /**
      * @param  string  $fieldKey  e.g. 'material_type', 'audience'
      * @return list<array<string, mixed>>
      */
