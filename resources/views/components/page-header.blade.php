@@ -27,9 +27,9 @@
 ])
 
 <div class="mb-6 flex items-center gap-3">
-    <a href="{{ $backUrl }}" class="text-sm text-blue-600 hover:underline">&larr; {{ $backLabel }}</a>
+    <a href="{{ $backUrl }}" class="text-sm hover:underline" style="color: #0075A3;">&larr; {{ $backLabel }}</a>
     <span class="text-gray-300">/</span>
-    <h1 class="text-xl font-bold text-gray-900">{{ $title }}</h1>
+    <h1 class="text-xl font-semibold" style="color: #4d6375;">{{ $title }}</h1>
     @if($id)
         <span class="text-sm text-gray-400 font-mono">#{{ $id }}</span>
     @endif

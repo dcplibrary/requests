@@ -8,7 +8,19 @@ export default {
     ],
 
     theme: {
-        extend: {},
+        extend: {
+            colors: {
+                'dcpl-blue':   '#0075A3',
+                'dcpl-orange': '#F47920',
+                'dcpl-green':  '#8BC53F',
+                'dcpl-purple': '#8B5CF6',
+                'dcpl-gold':   '#F4B942',
+                'dcpl-text':   '#4d6375',
+            },
+            fontFamily: {
+                outfit: ['Outfit', 'sans-serif'],
+            },
+        },
     },
 
     plugins: [],

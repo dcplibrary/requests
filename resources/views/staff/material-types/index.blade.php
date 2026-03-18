@@ -7,7 +7,7 @@
        class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New Type</a>
 </div>
 
-<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+<div class="bg-white rounded-lg border border-gray-200 overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>

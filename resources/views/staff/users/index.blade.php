@@ -6,7 +6,7 @@
     <p class="text-sm text-gray-500">Users are created automatically on first Entra login.</p>
 </div>
 
-<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+<div class="bg-white rounded-lg border border-gray-200 overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>

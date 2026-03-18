@@ -8,7 +8,7 @@
     {{-- Catalog + ISBNdb + Syndetics settings --}}
     @php $i = 0; @endphp
     @forelse($settings as $group => $items)
-    <div class="bg-white rounded-lg border border-gray-200 mb-6 overflow-hidden">
+    <div class="bg-white rounded-lg border border-gray-200 mb-6 overflow-x-auto">
         <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 class="text-sm font-semibold text-gray-700">{{ ucfirst($group) }}</h2>
         </div>
@@ -61,7 +61,7 @@
     @endforelse
 
     {{-- Format Labels --}}
-    <div class="bg-white rounded-lg border border-gray-200 mb-6 overflow-hidden">
+    <div class="bg-white rounded-lg border border-gray-200 mb-6 overflow-x-auto">
         <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
             <div>
                 <h2 class="text-sm font-semibold text-gray-700">BiblioCommons Format Labels</h2>

@@ -29,9 +29,10 @@
 @endphp
 
 <div {{ $attributes->class([
-    'flex items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white font-semibold',
+    'flex items-center justify-center rounded-full text-white font-semibold',
     $sizeClasses,
 ]) }}
+     style="background-color: #0075A3;"
      title="{{ $name }}">
     {{ $initials ?: 'U' }}
 </div>
