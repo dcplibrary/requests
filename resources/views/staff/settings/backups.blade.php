@@ -21,20 +21,28 @@
      * Render a question-mark icon that shows a tooltip on hover listing backup contents.
      * $items: array of strings (each becomes a bullet point).
      */
-    $infoTooltip = function (array $items) use (&$infoTooltip): string {
+    $infoTooltip = function (array $items, string $direction = 'up') use (&$infoTooltip): string {
         $bullets = implode('', array_map(
             fn ($item) => '<li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0 text-blue-400">•</span><span>' . e($item) . '</span></li>',
             $items
         ));
         $iconSvg = '<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/></svg>';
+        if ($direction === 'down') {
+            $bubblePos = 'top-full left-1/2 -translate-x-1/2 mt-2';
+            $caret     = '<span class="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></span>';
+        } else {
+            $bubblePos = 'bottom-full left-1/2 -translate-x-1/2 mb-2';
+            $caret     = '<span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></span>';
+        }
+
         return '<span class="relative inline-flex items-center" x-data="{ show: false }" @mouseenter="show = true" @mouseleave="show = false">'
             . '<button type="button" class="text-gray-400 hover:text-blue-500 transition-colors focus:outline-none">'
             . $iconSvg
             . '</button>'
             . '<span x-show="show" x-cloak x-transition.opacity'
-            . '      class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64 rounded-lg bg-gray-900 px-3 py-2.5 text-xs text-gray-100 shadow-lg pointer-events-none">'
+            . '      class="absolute ' . $bubblePos . ' z-50 w-64 rounded-lg bg-gray-900 px-3 py-2.5 text-xs text-gray-100 shadow-lg pointer-events-none">'
             . '<ul class="space-y-1">' . $bullets . '</ul>'
-            . '<span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></span>'
+            . $caret
             . '</span>'
             . '</span>';
     };
@@ -74,13 +82,15 @@
                 Export
                 {!! $infoTooltip([
                     'Settings — all application configuration key/value pairs',
-                    'Request statuses — name, color, icon, action label, SFP/ILL scope, terminal state, patron notifications, sort order, description',
-                    'Field options — material types and audiences with metadata',
+                    'Request statuses — name, color, icon, action label, SFP/ILL scope, terminal state, notifications, sort order',
+                    'Forms — SFP and ILL form definitions',
+                    'Fields — all form field definitions (label, type, scope, required, conditional logic) with options',
+                    'Form field config — per-form field visibility, order, required, and step overrides',
                     'Selector groups — name, description, and linked field options',
                     'Catalog format labels',
                     'Staff routing templates — per-group email subject and body',
                     'Patron status templates — subject, body, linked statuses and field options',
-                ]) !!}
+                ], 'down') !!}
             </h3>
             <p class="text-sm text-gray-500 mb-4">
                 Download a JSON snapshot of all configuration — statuses, material types, audiences,
@@ -236,7 +246,8 @@
                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         Configuration (JSON)
                         {!! $infoTooltip([
-                            'Settings, request statuses, field options',
+                            'Settings and request statuses',
+                            'Forms, fields, form field config',
                             'Selector groups, catalog format labels',
                             'Staff routing and patron status templates',
                         ]) !!}
@@ -244,9 +255,9 @@
                     <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                         <input type="checkbox" name="types[]" value="db" checked
                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        Database (SQL)
+                        Database (JSON)
                         {!! $infoTooltip([
-                            'Full SQL dump of all tables',
+                            'Full JSON dump of all tables — database agnostic',
                             'Requests, patrons, materials, history',
                             'All configuration and template data',
                         ]) !!}

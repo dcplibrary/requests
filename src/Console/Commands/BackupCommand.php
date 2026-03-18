@@ -2,9 +2,12 @@
 
 namespace Dcplibrary\Requests\Console\Commands;
 
+use Dcplibrary\Requests\Models\CatalogFormatLabel;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
-use Dcplibrary\Requests\Models\CatalogFormatLabel;
+use Dcplibrary\Requests\Models\Form;
+use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Models\FormFieldOptionOverride;
 use Dcplibrary\Requests\Models\PatronStatusTemplate;
 use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\SelectorGroup;
@@ -69,19 +72,23 @@ class BackupCommand extends Command
                                'applies_to_ill', 'description'])
                         ->toArray(),
 
-                    'field_options' => $this->exportFieldOptions(),
+                    'forms' => Form::orderBy('slug')->get(['slug', 'name'])->toArray(),
+
+                    'fields' => $this->exportFields(),
+
+                    'form_field_config' => $this->exportFormFieldConfig(),
+
+                    'form_field_option_overrides' => $this->exportFormFieldOptionOverrides(),
 
                     'selector_groups' => SelectorGroup::with('fieldOptions.field')
                         ->orderBy('name')
                         ->get()
                         ->map(fn ($g) => [
-                            'name'               => $g->name,
+                            'name'                => $g->name,
                             'description'         => $g->description,
                             'active'              => $g->active,
-                            'field_option_slugs'  => $g->fieldOptions->map(fn ($o) => [
-                                'field_key' => $o->field->key ?? null,
-                                'slug'      => $o->slug,
-                            ])->all(),
+                            'material_type_slugs' => $g->fieldOptions->filter(fn ($o) => $o->field?->key === 'material_type')->pluck('slug')->all(),
+                            'audience_slugs'      => $g->fieldOptions->filter(fn ($o) => $o->field?->key === 'audience')->pluck('slug')->all(),
                         ])
                         ->all(),
 
@@ -126,49 +133,21 @@ class BackupCommand extends Command
             $this->line("  ✔ Config  → {$file}");
         }
 
-        // ── Database SQL ──────────────────────────────────────────────────────
+        // ── Database JSON (database-agnostic) ────────────────────────────────
         if ($doDb) {
-            $pdo    = DB::connection()->getPdo();
-            $dbName = DB::connection()->getDatabaseName();
-            $tables = $this->listTables();
-            $q      = $this->qi(...);
-
-            $sql  = "-- Requests Database Backup\n";
-            $sql .= "-- Exported:  " . now()->toIso8601String() . "\n";
-            $sql .= "-- Database:  {$dbName}\n";
-            $sql .= "-- Generator: dcplibrary/requests artisan requests:backup\n\n";
-            $sql .= $this->fkOff() . ";\n\n";
-
+            $tables  = $this->listTables();
+            $payload = [
+                'version'     => 1,
+                'exported_at' => now()->toIso8601String(),
+                'app'         => 'dcplibrary/requests',
+                'tables'      => [],
+            ];
             foreach ($tables as $table) {
-                $createSql = $this->showCreateTable($table);
-
-                $sql .= "-- --------------------------------------------------------\n";
-                $sql .= "-- Table: {$q($table)}\n";
-                $sql .= "-- --------------------------------------------------------\n\n";
-                $sql .= "DROP TABLE IF EXISTS {$q($table)};\n";
-                $sql .= $createSql . ";\n\n";
-
                 $rows = DB::table($table)->get();
-                if ($rows->isNotEmpty()) {
-                    $columns = array_keys((array) $rows->first());
-                    $colList = implode(', ', array_map($q, $columns));
-                    $sql .= "INSERT INTO {$q($table)} ({$colList}) VALUES\n";
-
-                    $allValues = $rows->map(function ($row) use ($pdo) {
-                        $vals = array_map(function ($v) use ($pdo) {
-                            return $v === null ? 'NULL' : $pdo->quote((string) $v);
-                        }, (array) $row);
-                        return '  (' . implode(', ', $vals) . ')';
-                    })->implode(",\n");
-
-                    $sql .= $allValues . ";\n\n";
-                }
+                $payload['tables'][$table] = $rows->map(fn ($row) => (array) $row)->all();
             }
-
-            $sql .= $this->fkOn() . ";\n";
-
-            $file = "{$outputDir}/requests-database-{$timestamp}.sql";
-            file_put_contents($file, $sql);
+            $file = "{$outputDir}/requests-database-{$timestamp}.json";
+            file_put_contents($file, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             $written[] = $file;
             $this->line("  ✔ DB      → {$file}");
         }
@@ -230,29 +209,88 @@ class BackupCommand extends Command
     }
 
     /**
-     * Export all field options grouped by field key for the config backup.
+     * Export all field definitions with nested options.
      *
-     * @return array<string, array<int, array<string, mixed>>>
+     * @return list<array<string, mixed>>
      */
-    private function exportFieldOptions(): array
+    private function exportFields(): array
     {
-        return Field::with(['options' => fn ($q) => $q->withTrashed()->orderBy('sort_order')])
+        return Field::withTrashed()
+            ->with(['options' => fn ($q) => $q->orderBy('sort_order')])
             ->ordered()
             ->get()
-            ->mapWithKeys(fn (Field $f) => [
-                $f->key => $f->options->map(fn (FieldOption $o) => [
+            ->map(fn (Field $f) => [
+                'key'              => $f->key,
+                'label'            => $f->label,
+                'label_overrides'  => $f->label_overrides,
+                'type'             => $f->type,
+                'step'             => $f->step,
+                'scope'            => $f->scope,
+                'sort_order'       => $f->sort_order,
+                'active'           => $f->active,
+                'required'         => $f->required,
+                'include_as_token' => $f->include_as_token,
+                'filterable'       => $f->filterable,
+                'condition'        => $f->condition,
+                'deleted_at'       => $f->deleted_at?->toIso8601String(),
+                'options'          => $f->options->map(fn (FieldOption $o) => [
                     'slug'       => $o->slug,
                     'name'       => $o->name,
-                    'metadata'   => $o->metadata,
                     'sort_order' => $o->sort_order,
                     'active'     => $o->active,
+                    'metadata'   => is_string($o->metadata) ? json_decode($o->metadata, true) : $o->metadata,
                 ])->all(),
             ])
             ->all();
     }
 
-    // ── Driver-aware helpers ──────────────────────────────────────────────────
+    /**
+     * Export per-form field configuration rows.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function exportFormFieldConfig(): array
+    {
+        return FormFieldConfig::with(['form', 'field'])
+            ->get()
+            ->map(fn (FormFieldConfig $c) => [
+                'form_slug'         => $c->form?->slug,
+                'field_key'         => $c->field?->key,
+                'label_override'    => $c->label_override,
+                'sort_order'        => $c->sort_order,
+                'required'          => $c->required,
+                'visible'           => $c->visible,
+                'step'              => $c->step,
+                'conditional_logic' => $c->conditional_logic,
+            ])
+            ->filter(fn ($row) => $row['form_slug'] && $row['field_key'])
+            ->values()
+            ->all();
+    }
 
+    /**
+     * Export per-form field option overrides.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function exportFormFieldOptionOverrides(): array
+    {
+        return FormFieldOptionOverride::with(['form', 'field'])
+            ->get()
+            ->map(fn (FormFieldOptionOverride $o) => [
+                'form_slug'      => $o->form?->slug,
+                'field_key'      => $o->field?->key,
+                'option_slug'    => $o->option_slug,
+                'label_override' => $o->label_override,
+                'sort_order'     => $o->sort_order,
+                'visible'        => $o->visible,
+            ])
+            ->filter(fn ($row) => $row['form_slug'] && $row['field_key'])
+            ->values()
+            ->all();
+    }
+
+    /** Return the list of user-defined table names for the current connection. */
     private function listTables(): array
     {
         if (DB::connection()->getDriverName() === 'sqlite') {
@@ -264,41 +302,7 @@ class BackupCommand extends Command
 
         $dbName = DB::connection()->getDatabaseName();
         $col    = 'Tables_in_' . $dbName;
+
         return array_column(DB::select('SHOW TABLES'), $col);
-    }
-
-    private function showCreateTable(string $table): string
-    {
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            $row = DB::selectOne(
-                "SELECT sql FROM sqlite_master WHERE type='table' AND name = ?",
-                [$table]
-            );
-            return $row->sql ?? '';
-        }
-
-        $rows = DB::select("SHOW CREATE TABLE `{$table}`");
-        return $rows[0]->{'Create Table'};
-    }
-
-    private function fkOff(): string
-    {
-        return DB::connection()->getDriverName() === 'sqlite'
-            ? 'PRAGMA foreign_keys = OFF'
-            : 'SET FOREIGN_KEY_CHECKS=0';
-    }
-
-    private function fkOn(): string
-    {
-        return DB::connection()->getDriverName() === 'sqlite'
-            ? 'PRAGMA foreign_keys = ON'
-            : 'SET FOREIGN_KEY_CHECKS=1';
-    }
-
-    private function qi(string $name): string
-    {
-        return DB::connection()->getDriverName() === 'sqlite'
-            ? '"' . $name . '"'
-            : '`' . $name . '`';
     }
 }

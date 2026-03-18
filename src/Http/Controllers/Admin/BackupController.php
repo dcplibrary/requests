@@ -4,9 +4,12 @@ namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
 use Dcplibrary\Requests\Http\Controllers\Controller;
 use Dcplibrary\Requests\Jobs\PruneBackupsJob;
+use Dcplibrary\Requests\Models\CatalogFormatLabel;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
-use Dcplibrary\Requests\Models\CatalogFormatLabel;
+use Dcplibrary\Requests\Models\Form;
+use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Models\FormFieldOptionOverride;
 use Dcplibrary\Requests\Models\PatronStatusTemplate;
 use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\SelectorGroup;
@@ -21,6 +24,31 @@ use ZipArchive;
 
 /**
  * Configuration and database backup/export, server-side backup files, retention, and wipe.
+ *
+ * ## Config export
+ * Covers all non-transient data needed to fully restore the application on a fresh install
+ * (after migrations and seeding have run):
+ *   - settings (all key/value pairs)
+ *   - request_statuses (slug, name, color, icon, sort order, SFP/ILL scope, terminal, patron
+ *     notification, action label, advance-on-claim, description)
+ *   - forms (sfp / ill — used as FK parents for field config)
+ *   - fields (all field definitions — type, label, scope, sort order, required, token, filterable,
+ *     conditional logic) with field_options nested per field (slug, name, sort order, metadata)
+ *   - form_field_config (per-form visibility, sort order, required, step, label override,
+ *     conditional logic — keyed by form slug + field key)
+ *   - form_field_option_overrides (per-form option label/visibility/order overrides)
+ *   - selector_groups (name, description, active, linked material type and audience slugs)
+ *   - catalog_format_labels (BiblioCommons format code → display label mappings)
+ *   - staff_routing_templates (per-selector-group email subject and body)
+ *   - patron_status_templates (patron notification templates with linked statuses and field options)
+ *
+ * Old backup files that use the legacy material_types / audiences keys are still importable
+ * via the backward-compat path in applyConfigPayload().
+ *
+ * ## Database export
+ * saveToServer() and the artisan command produce a driver-agnostic JSON dump of all tables
+ * (including transient data: requests, patrons, materials, and history). A MySQL-specific SQL
+ * dump is still available via exportDatabase() for direct server restores.
  */
 class BackupController extends Controller
 {
@@ -64,9 +92,13 @@ class BackupController extends Controller
                            'applies_to_ill', 'description'])
                     ->toArray(),
 
-                'material_types' => $this->exportFieldOptions('material_type'),
+                'forms' => Form::orderBy('slug')->get(['slug', 'name'])->toArray(),
 
-                'audiences' => $this->exportFieldOptions('audience'),
+                'fields' => $this->exportFields(),
+
+                'form_field_config' => $this->exportFormFieldConfig(),
+
+                'form_field_option_overrides' => $this->exportFormFieldOptionOverrides(),
 
                 'selector_groups' => SelectorGroup::with('fieldOptions.field')
                     ->orderBy('name')
@@ -465,8 +497,10 @@ class BackupController extends Controller
                                    'notify_patron', 'action_label', 'advance_on_claim', 'applies_to_sfp',
                                    'applies_to_ill', 'description'])
                             ->toArray(),
-                        'material_types' => $this->exportFieldOptions('material_type'),
-                        'audiences' => $this->exportFieldOptions('audience'),
+                        'forms'                       => Form::orderBy('slug')->get(['slug', 'name'])->toArray(),
+                        'fields'                      => $this->exportFields(),
+                        'form_field_config'           => $this->exportFormFieldConfig(),
+                        'form_field_option_overrides' => $this->exportFormFieldOptionOverrides(),
                         'selector_groups' => SelectorGroup::with('fieldOptions.field')
                             ->orderBy('name')->get()
                             ->map(fn ($g) => [
@@ -478,10 +512,8 @@ class BackupController extends Controller
                             ])->all(),
                         'catalog_format_labels' => CatalogFormatLabel::orderBy('id')
                             ->get(['format_code', 'label'])->toArray(),
-
-                        'staff_routing_templates' => $this->exportStaffRoutingTemplates(),
-
-                        'patron_status_templates' => $this->exportPatronStatusTemplates(),
+                        'staff_routing_templates'     => $this->exportStaffRoutingTemplates(),
+                        'patron_status_templates'     => $this->exportPatronStatusTemplates(),
                     ],
                 ];
 
@@ -493,55 +525,10 @@ class BackupController extends Controller
             }
         }
 
-        // ── Database SQL ──────────────────────────────────────────────────────
-        if (in_array('db', $types)) {
+        // ── Database JSON (database-agnostic) ────────────────────────────────
+        if (in_array('db', $types) || in_array('db-json', $types)) {
             try {
-                $pdo    = DB::connection()->getPdo();
-                $dbName = DB::connection()->getDatabaseName();
-                $tables = $this->listTables();
-                $q      = $this->qi(...);
-
-                $sql  = "-- Requests Database Backup\n";
-                $sql .= "-- Exported:  " . now()->toIso8601String() . "\n";
-                $sql .= "-- Database:  {$dbName}\n";
-                $sql .= "-- Generator: dcplibrary/requests (manual)\n\n";
-                $sql .= $this->fkOff() . ";\n\n";
-
-                foreach ($tables as $table) {
-                    $createSql = $this->showCreateTable($table);
-                    $sql .= "-- --------------------------------------------------------\n";
-                    $sql .= "-- Table: {$q($table)}\n";
-                    $sql .= "-- --------------------------------------------------------\n\n";
-                    $sql .= "DROP TABLE IF EXISTS {$q($table)};\n";
-                    $sql .= $createSql . ";\n\n";
-
-                    $rows = DB::table($table)->get();
-                    if ($rows->isNotEmpty()) {
-                        $columns = array_keys((array) $rows->first());
-                        $colList = implode(', ', array_map($q, $columns));
-                        $sql .= "INSERT INTO {$q($table)} ({$colList}) VALUES\n";
-                        $allValues = $rows->map(function ($row) use ($pdo) {
-                            $vals = array_map(fn ($v) => $v === null ? 'NULL' : $pdo->quote((string) $v), (array) $row);
-                            return '  (' . implode(', ', $vals) . ')';
-                        })->implode(",\n");
-                        $sql .= $allValues . ";\n\n";
-                    }
-                }
-
-                $sql .= $this->fkOn() . ";\n";
-
-                $file = $this->backupDir . DIRECTORY_SEPARATOR . "requests-database-{$timestamp}.sql";
-                file_put_contents($file, $sql);
-                $written[] = "requests-database-{$timestamp}.sql";
-            } catch (\Throwable $e) {
-                $errors[] = "Database backup failed: {$e->getMessage()}";
-            }
-        }
-
-        // ── Database JSON ─────────────────────────────────────────────────────
-        if (in_array('db-json', $types)) {
-            try {
-                $tables = $this->listTables();
+                $tables  = $this->listTables();
                 $payload = [
                     'version'     => 1,
                     'exported_at' => now()->toIso8601String(),
@@ -680,14 +667,106 @@ class BackupController extends Controller
                 $results[] = "{$upserted} request status(es) restored";
             }
 
-            // Material Types (field_options for 'material_type')
+            // Forms (ensure core forms exist; not user-customisable but required as FK parents)
+            if (! empty($data['forms'])) {
+                foreach ($data['forms'] as $row) {
+                    Form::firstOrCreate(['slug' => $row['slug']], ['name' => $row['name']]);
+                }
+            }
+
+            // Fields (unified field definitions + nested options)
+            if (! empty($data['fields'])) {
+                $fieldCount = 0;
+                foreach ($data['fields'] as $row) {
+                    $field = Field::withTrashed()->updateOrCreate(
+                        ['key' => $row['key']],
+                        [
+                            'label'            => $row['label'],
+                            'label_overrides'  => $row['label_overrides'] ?? null,
+                            'type'             => $row['type'],
+                            'step'             => (int)  ($row['step'] ?? 2),
+                            'scope'            => $row['scope'] ?? 'both',
+                            'sort_order'       => (int)  ($row['sort_order'] ?? 0),
+                            'active'           => (bool) ($row['active'] ?? true),
+                            'required'         => (bool) ($row['required'] ?? false),
+                            'include_as_token' => (bool) ($row['include_as_token'] ?? false),
+                            'filterable'       => (bool) ($row['filterable'] ?? false),
+                            'condition'        => $row['condition'] ?? null,
+                            'deleted_at'       => $row['deleted_at'] ?? null,
+                        ]
+                    );
+
+                    foreach ($row['options'] ?? [] as $opt) {
+                        $meta = $opt['metadata'] ?? null;
+                        FieldOption::updateOrCreate(
+                            ['field_id' => $field->id, 'slug' => $opt['slug']],
+                            [
+                                'name'       => $opt['name'],
+                                'sort_order' => (int)  ($opt['sort_order'] ?? 0),
+                                'active'     => (bool) ($opt['active'] ?? true),
+                                'metadata'   => is_array($meta) ? json_encode($meta) : $meta,
+                            ]
+                        );
+                    }
+
+                    $fieldCount++;
+                }
+                $results[] = "{$fieldCount} field(s) restored";
+            }
+
+            // Backward-compat: old exports used separate material_types / audiences keys
             if (! empty($data['material_types'])) {
                 $results[] = $this->importFieldOptions('material_type', $data['material_types']) . ' material type(s) restored';
             }
-
-            // Audiences (field_options for 'audience')
             if (! empty($data['audiences'])) {
                 $results[] = $this->importFieldOptions('audience', $data['audiences']) . ' audience(s) restored';
+            }
+
+            // Form field config (per-form field settings)
+            if (! empty($data['form_field_config'])) {
+                $upserted = 0;
+                foreach ($data['form_field_config'] as $row) {
+                    $form  = Form::where('slug', $row['form_slug'] ?? '')->first();
+                    $field = Field::withTrashed()->where('key', $row['field_key'] ?? '')->first();
+                    if (! $form || ! $field) {
+                        continue;
+                    }
+                    FormFieldConfig::updateOrCreate(
+                        ['form_id' => $form->id, 'field_id' => $field->id],
+                        [
+                            'label_override'    => $row['label_override'] ?? null,
+                            'sort_order'        => (int)  ($row['sort_order'] ?? 0),
+                            'required'          => (bool) ($row['required'] ?? false),
+                            'visible'           => (bool) ($row['visible'] ?? true),
+                            'step'              => (int)  ($row['step'] ?? 2),
+                            'conditional_logic' => $row['conditional_logic'] ?? null,
+                        ]
+                    );
+                    $upserted++;
+                }
+                $results[] = "{$upserted} form field config(s) restored";
+            }
+
+            // Form field option overrides
+            if (! empty($data['form_field_option_overrides'])) {
+                $upserted = 0;
+                foreach ($data['form_field_option_overrides'] as $row) {
+                    $form  = Form::where('slug', $row['form_slug'] ?? '')->first();
+                    $field = Field::withTrashed()->where('key', $row['field_key'] ?? '')->first();
+                    if (! $form || ! $field) {
+                        continue;
+                    }
+                    FormFieldOptionOverride::updateOrCreate(
+                        ['form_id' => $form->id, 'field_id' => $field->id, 'option_slug' => $row['option_slug']],
+                        [
+                            'label_override' => $row['label_override'] ?? null,
+                            'sort_order'     => (int)  ($row['sort_order'] ?? 0),
+                            'visible'        => (bool) ($row['visible'] ?? true),
+                        ]
+                    );
+                    $upserted++;
+                }
+                $results[] = "{$upserted} form field option override(s) restored";
             }
 
             // Selector Groups
@@ -907,6 +986,88 @@ class BackupController extends Controller
     /**
      * Export field options for a given field key in the legacy backup format.
      *
+    /**
+     * Export all field definitions with nested options.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function exportFields(): array
+    {
+        return Field::withTrashed()
+            ->with(['options' => fn ($q) => $q->orderBy('sort_order')])
+            ->ordered()
+            ->get()
+            ->map(fn (Field $f) => [
+                'key'              => $f->key,
+                'label'            => $f->label,
+                'label_overrides'  => $f->label_overrides,
+                'type'             => $f->type,
+                'step'             => $f->step,
+                'scope'            => $f->scope,
+                'sort_order'       => $f->sort_order,
+                'active'           => $f->active,
+                'required'         => $f->required,
+                'include_as_token' => $f->include_as_token,
+                'filterable'       => $f->filterable,
+                'condition'        => $f->condition,
+                'deleted_at'       => $f->deleted_at?->toIso8601String(),
+                'options'          => $f->options->map(fn (FieldOption $o) => [
+                    'slug'       => $o->slug,
+                    'name'       => $o->name,
+                    'sort_order' => $o->sort_order,
+                    'active'     => $o->active,
+                    'metadata'   => is_string($o->metadata) ? json_decode($o->metadata, true) : $o->metadata,
+                ])->all(),
+            ])
+            ->all();
+    }
+
+    /**
+     * Export per-form field configuration rows, using slugs/keys as portable references.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function exportFormFieldConfig(): array
+    {
+        return FormFieldConfig::with(['form', 'field'])
+            ->get()
+            ->map(fn (FormFieldConfig $c) => [
+                'form_slug'         => $c->form?->slug,
+                'field_key'         => $c->field?->key,
+                'label_override'    => $c->label_override,
+                'sort_order'        => $c->sort_order,
+                'required'          => $c->required,
+                'visible'           => $c->visible,
+                'step'              => $c->step,
+                'conditional_logic' => $c->conditional_logic,
+            ])
+            ->filter(fn ($row) => $row['form_slug'] && $row['field_key'])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Export per-form field option overrides, using slugs/keys as portable references.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function exportFormFieldOptionOverrides(): array
+    {
+        return FormFieldOptionOverride::with(['form', 'field'])
+            ->get()
+            ->map(fn (FormFieldOptionOverride $o) => [
+                'form_slug'      => $o->form?->slug,
+                'field_key'      => $o->field?->key,
+                'option_slug'    => $o->option_slug,
+                'label_override' => $o->label_override,
+                'sort_order'     => $o->sort_order,
+                'visible'        => $o->visible,
+            ])
+            ->filter(fn ($row) => $row['form_slug'] && $row['field_key'])
+            ->values()
+            ->all();
+    }
+
     /**
      * Export staff routing templates, keyed to their selector group by name.
      *

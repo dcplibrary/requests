@@ -565,36 +565,65 @@
     <!-- ══ BACKUPS ══ -->
     <section id="backups">
       <h2>Backups</h2>
-      <p>The Backups page provides tools for exporting, importing, and restoring SFP data. It is divided into three areas: Configuration, Database &amp; Storage, and Backup Schedule.</p>
+      <p>The Backups page provides tools for exporting, importing, and restoring data. It is divided into four areas: Configuration, Database &amp; Storage, Server Backups, and Schedule &amp; Retention.</p>
 
       <h3>Configuration</h3>
-      <p>Export or import a JSON snapshot of all SFP settings, statuses, material types, audiences, selector groups, and catalog format labels. Use this to clone a configuration to another environment or to recover after accidental changes.</p>
+      <p>Export or import a JSON snapshot of all non-transient configuration — everything needed to restore a fresh install to the same state, without including patron requests, patrons, or titles. Use this to clone a configuration to another environment or to recover after accidental changes.</p>
+      <p>The configuration export includes:</p>
       <table class="field-table">
+        <thead><tr><th>What's included</th><th>Details</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Settings</td><td>All application key/value configuration pairs.</td></tr>
+          <tr><td class="field-name">Request statuses</td><td>Name, color, icon, sort order, action label, SFP/ILL scope, terminal state, patron notification flag, advance-on-claim, and description.</td></tr>
+          <tr><td class="field-name">Forms</td><td>The SFP and ILL form definitions (used as reference points for field configuration).</td></tr>
+          <tr><td class="field-name">Fields</td><td>All form field definitions — type, label, scope (SFP/ILL/both), sort order, required, token inclusion, filterable, and conditional visibility rules. Options for select and radio fields (e.g. material types, audiences, genre, console) are included inline.</td></tr>
+          <tr><td class="field-name">Form field config</td><td>Per-form overrides for each field — visibility, sort order, required state, step assignment, label override, and conditional logic.</td></tr>
+          <tr><td class="field-name">Form field option overrides</td><td>Per-form label, visibility, and order overrides for individual field options.</td></tr>
+          <tr><td class="field-name">Selector groups</td><td>Name, description, active state, and linked material type and audience slugs.</td></tr>
+          <tr><td class="field-name">Catalog format labels</td><td>BiblioCommons format code → display label mappings.</td></tr>
+          <tr><td class="field-name">Staff routing templates</td><td>Per-selector-group email subject and body.</td></tr>
+          <tr><td class="field-name">Patron status templates</td><td>Subject, body, linked statuses, and linked field options (material types) for patron notification emails.</td></tr>
+        </tbody>
+      </table>
+      <table class="field-table" style="margin-top: 16px;">
         <thead><tr><th>Action</th><th>What it does</th></tr></thead>
         <tbody>
-          <tr><td class="field-name">Export Config</td><td>Downloads a <code>.json</code> file containing all current settings and lookup table data.</td></tr>
-          <tr><td class="field-name">Import Config</td><td>Upload a previously exported JSON file to restore or overwrite configuration. Existing records are upserted — nothing is deleted.</td></tr>
+          <tr><td class="field-name">Export Config</td><td>Downloads the full configuration as a <code>.json</code> file.</td></tr>
+          <tr><td class="field-name">Import Config</td><td>Upload a previously exported JSON file. Existing records are upserted by slug or name — nothing is deleted. Old backup files that used a legacy format are still supported.</td></tr>
         </tbody>
       </table>
 
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>On a fresh install, run migrations and the seeder first, then import a config backup. The import will update seeded defaults with your saved values rather than creating duplicates.</div>
+      </div>
+
       <h3>Database &amp; Storage</h3>
-      <p>Full data export and restore tools. Use with caution — these operate on the entire SFP database.</p>
+      <p>Full data export and restore tools. These include transient data — requests, patrons, and titles — and should be used for full disaster recovery.</p>
       <table class="field-table">
         <thead><tr><th>Action</th><th>What it does</th></tr></thead>
         <tbody>
-          <tr><td class="field-name">Export Database</td><td>Downloads a full SQL dump of all SFP tables, including requests, patrons, and titles.</td></tr>
-          <tr><td class="field-name">Export Storage</td><td>Downloads a ZIP of the <code>storage/app</code> directory.</td></tr>
-          <tr><td class="field-name">Import Database</td><td>Restore the database from an uploaded SQL file. Replaces all existing data.</td></tr>
+          <tr><td class="field-name">Export Database</td><td>Downloads a full SQL dump of all tables. MySQL-specific — useful for direct server restores on the same database engine.</td></tr>
+          <tr><td class="field-name">Export Storage</td><td>Downloads a ZIP of the <code>storage/app</code> directory — uploaded files and stored assets. Must be extracted manually to restore.</td></tr>
+          <tr><td class="field-name">Import Database</td><td>Restore the database from an uploaded <code>.sql</code> file. Replaces all existing data.</td></tr>
         </tbody>
       </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Scheduled and server-saved database backups use a database-agnostic JSON format that can be restored on any supported driver (MySQL, SQLite, etc.). The <strong>Export Database</strong> button still produces SQL for direct server-level restores.</div>
+      </div>
 
       <div class="callout warn">
         <span class="callout-icon">⚠️</span>
-        <div>The <strong>Wipe All Data</strong> option permanently truncates all SFP tables. You must type <strong>WIPE</strong> to confirm. This cannot be undone — export first.</div>
+        <div>The <strong>Wipe Everything</strong> option permanently truncates all tables. You must type <strong>WIPE</strong> to confirm. This cannot be undone — export a backup first.</div>
       </div>
 
-      <h3>Backup Schedule</h3>
-      <p>Configure an automated backup cron job — choose frequency, what to include (config, database, storage), and where to save files. The schedule runs via Laravel's task scheduler; ensure a cron entry is set up on the server for <code>php artisan schedule:run</code>.</p>
+      <h3>Server Backups</h3>
+      <p>Use <strong>Save to Server Now</strong> to write a config JSON and/or database JSON backup directly to <code>storage/app/requests-backups</code> on the server — no browser download required. Files saved here appear in the Server Backups list below, where you can download, restore, or delete them. Server-saved database backups are in JSON format (database-agnostic).</p>
+
+      <h3>Schedule &amp; Retention</h3>
+      <p>Set how many days to keep server-side backups before pruning, and use the cron schedule builder to generate a command you can add to your server's crontab. The artisan command <code>php artisan requests:backup</code> accepts <code>--config</code>, <code>--db</code>, <code>--storage</code>, <code>--prune</code>, and <code>--all</code> flags. Database backups written by the command are JSON.</p>
     </section>
 
   </main>
