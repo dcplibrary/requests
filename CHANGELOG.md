@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.15.2](https://github.com/dcplibrary/requests/compare/v4.15.1...v4.15.2) (2026-03-18)
+
+
+### Bug Fixes
+
+* remove referred to ill action.  add convert to ill email button if patron requests ill for sfp ([2628ce1](https://github.com/dcplibrary/requests/commit/2628ce199719a63d8a971012577e558b318abe67))
+
 ## [4.15.1](https://github.com/dcplibrary/requests/compare/v4.15.0...v4.15.1) (2026-03-17)
 
 
