@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.16.3](https://github.com/dcplibrary/requests/compare/v4.16.2...v4.16.3) (2026-03-18)
+
+
+### Bug Fixes
+
+* enable material types to be enabled/disabled per form ([fd07169](https://github.com/dcplibrary/requests/commit/fd071694b2308e7efcbb1531396f5f66bd13e79c))
+
 ## [4.16.2](https://github.com/dcplibrary/requests/compare/v4.16.1...v4.16.2) (2026-03-18)
 
 
