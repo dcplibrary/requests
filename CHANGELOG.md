@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.17.1](https://github.com/dcplibrary/requests/compare/v4.17.0...v4.17.1) (2026-03-19)
+
+
+### Bug Fixes
+
+* add extra icons to icon selector ([868b61a](https://github.com/dcplibrary/requests/commit/868b61a28d1705ddb6b22ecd7a4704e625b531c5))
+
 # [4.17.0](https://github.com/dcplibrary/requests/compare/v4.16.3...v4.17.0) (2026-03-18)
 
 
