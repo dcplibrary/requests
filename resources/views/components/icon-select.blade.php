@@ -1,5 +1,5 @@
 {{--
-    Icon selector — a dropdown grid of solid Heroicons with a live preview.
+    Icon selector — solid and outline Heroicons (outline names end with -outline).
 
     Usage:
         <x-requests::icon-select name="icon" :value="$model->icon" />
@@ -11,7 +11,7 @@
 @props(['name' => 'icon', 'value' => null])
 
 @php
-    $iconNames = [
+    $iconNamesSolid = [
         'clock'                   => 'Clock',
         'check-circle'            => 'Check Circle',
         'x-circle'                => 'X Circle',
@@ -24,6 +24,9 @@
         'stop-circle'             => 'Stop',
         'magnifying-glass'        => 'Search',
         'eye'                     => 'Eye',
+        'eye-slash'               => 'Eye Slash',
+        'sparkles'                => 'Sparkles',
+        'shopping-bag'            => 'Shopping Bag',
         'shopping-cart'           => 'Shopping Cart',
         'truck'                   => 'Truck',
         'envelope'                => 'Envelope',
@@ -37,9 +40,15 @@
         'hand-thumb-up'           => 'Thumb Up',
         'hand-thumb-down'         => 'Thumb Down',
         'bookmark'                => 'Bookmark',
-        'paper-airplane'          => 'Send',
+        'paper-airplane'          => 'Paper Airplane',
         'document-check'          => 'Doc Check',
         'clipboard-document-list' => 'Clipboard',
+        'cog-6-tooth'             => 'Settings',
+        'document-text'           => 'Document',
+        'book-open'               => 'Book Open',
+        'user-group'              => 'User Group',
+        'users'                   => 'Users',
+        'circle-stack'            => 'Database',
         'barcode'                 => 'Barcode',
         'arrow-up'                => 'Arrow Up',
         'arrow-down'              => 'Arrow Down',
@@ -62,6 +71,10 @@
         'arrows-right-left'       => 'Arrows Left Right',
         'arrows-up-down'          => 'Arrows Up Down',
     ];
+    $iconNames = $iconNamesSolid;
+    foreach ($iconNamesSolid as $key => $label) {
+        $iconNames[$key.'-outline'] = $label.' (outline)';
+    }
 @endphp
 
 <div x-data="{ open: false, selected: '{{ old($name, $value ?? '') }}' }" @click.away="open = false" class="relative">
@@ -106,8 +119,8 @@
             None
         </button>
 
-        {{-- Icon grid --}}
-        <div class="grid grid-cols-6 gap-1">
+        {{-- Icon grid (solids first, then outline variants) --}}
+        <div class="grid grid-cols-6 gap-1 max-h-72 overflow-y-auto">
             @foreach($iconNames as $key => $label)
                 <button type="button"
                         @click="selected = '{{ $key }}'; open = false"

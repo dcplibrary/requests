@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $name
  * @property string $slug
  * @property string $color        Hex color code for status badge (e.g. '#72bf44')
- * @property string|null $icon     Heroicon outline name (e.g. 'clock', 'check-circle')
+ * @property string|null $icon     Heroicon name: solid (e.g. 'clock') or outline suffix '-outline'
  * @property string|null $action_label Short verb for email action buttons (e.g. 'Review', 'Purchase')
  * @property bool   $advance_on_claim When true, claiming a request on this status auto-advances it to the next status by sort_order
  * @property bool   $applies_to_sfp  Whether this status is available for Suggest for Purchase requests

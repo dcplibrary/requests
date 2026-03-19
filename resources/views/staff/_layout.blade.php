@@ -165,20 +165,18 @@
         ];
     @endphp
 
-    {{-- Desktop nav --}}
-    <nav class="hidden md:block" style="background-color: #0075A3;">
-        <div class="px-6 flex items-stretch">
-            @foreach($navItems as $item)
-                @if($item['visible'])
-                    <a href="{{ $item['href'] }}"
-                       class="whitespace-nowrap text-white text-[15px] font-semibold tracking-wide
-                              px-6 py-3 border-b-[5px] transition-all
-                              {{ $item['active']
-                                  ? 'border-dcpl-orange bg-black/20'
-                                  : 'border-transparent hover:bg-black/10 hover:border-white/30' }}">
-                        {{ $item['label'] }}
-                    </a>
-                @endif
+    {{-- Desktop nav: full-width row so first tab sits flush to the left edge of the page --}}
+    @php
+        $visibleNav = collect($navItems)->filter(fn ($i) => $i['visible'])->values();
+    @endphp
+    <nav class="hidden md:block w-full" style="background-color: #0075A3;">
+        <div class="flex w-full flex-wrap items-stretch">
+            @foreach($visibleNav as $item)
+                <x-requests::staff-nav-tab
+                    :href="$item['href']"
+                    :label="$item['label']"
+                    :active="$item['active']"
+                />
             @endforeach
         </div>
     </nav>
