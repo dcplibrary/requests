@@ -252,7 +252,7 @@
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2">{{ $staffEnabled ? 'Yes' : 'No' }}</td>
                                 <td class="px-4 py-2 text-right">
-                                    <x-requests::icon-btn :href="route('request.staff.settings.notifications.staff-email')" variant="edit" label="Edit" />
+                                    <x-dcpl::icon-btn :href="route('request.staff.settings.notifications.staff-email')" variant="edit" label="Edit" />
                                 </td>
                             </tr>
                             @foreach($staffRoutingTemplates ?? [] as $srt)
@@ -265,8 +265,8 @@
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2">{{ $srt->enabled ? 'Yes' : 'No' }}</td>
                                 <td class="px-4 py-2 text-right flex items-center justify-end gap-1">
-                                    <x-requests::icon-btn :href="route('request.staff.staff-routing-templates.edit', $srt)" variant="edit" label="Edit" />
-                                    <x-requests::icon-btn :href="route('request.staff.staff-routing-templates.delete', $srt)" variant="delete" label="Delete" />
+                                    <x-dcpl::icon-btn :href="route('request.staff.staff-routing-templates.edit', $srt)" variant="edit" label="Edit" />
+                                    <x-dcpl::icon-btn :href="route('request.staff.staff-routing-templates.delete', $srt)" variant="delete" label="Delete" />
                                 </td>
                             </tr>
                             @endforeach
@@ -279,7 +279,7 @@
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2">{{ $patronEnabled ? 'Yes' : 'No' }}</td>
                                 <td class="px-4 py-2 text-right">
-                                    <x-requests::icon-btn :href="route('request.staff.settings.notifications.default-patron-email')" variant="edit" label="Edit" />
+                                    <x-dcpl::icon-btn :href="route('request.staff.settings.notifications.default-patron-email')" variant="edit" label="Edit" />
                                 </td>
                             </tr>
                             @foreach($patronStatusTemplates ?? [] as $tpl)
@@ -292,8 +292,8 @@
                                 <td class="px-4 py-2">{{ $tpl->is_default ? 'Yes' : '—' }}</td>
                                 <td class="px-4 py-2">{{ $tpl->enabled ? 'Yes' : 'No' }}</td>
                                 <td class="px-4 py-2 text-right flex items-center justify-end gap-1">
-                                    <x-requests::icon-btn :href="route('request.staff.patron-status-templates.edit', $tpl)" variant="edit" label="Edit" />
-                                    <x-requests::icon-btn :href="route('request.staff.patron-status-templates.delete', $tpl)" variant="delete" label="Delete" />
+                                    <x-dcpl::icon-btn :href="route('request.staff.patron-status-templates.edit', $tpl)" variant="edit" label="Edit" />
+                                    <x-dcpl::icon-btn :href="route('request.staff.patron-status-templates.delete', $tpl)" variant="delete" label="Delete" />
                                 </td>
                             </tr>
                             @endforeach

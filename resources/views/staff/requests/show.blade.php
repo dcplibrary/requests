@@ -30,15 +30,15 @@
 </a>
 
 {{-- Info bar --}}
-<x-requests::info-bar>
-    <x-requests::info-bar-item icon="clock" label="Submitted" :value="$patronRequest->created_at->format('M j, Y g:ia')" />
-    <x-requests::info-bar-item
+<x-dcpl::info-bar>
+    <x-dcpl::info-bar-item icon="clock" label="Submitted" :value="$patronRequest->created_at->format('M j, Y g:ia')" />
+    <x-dcpl::info-bar-item
         :dot-color="$patronRequest->status?->color ?? '#9ca3af'"
         label="Status"
         :value="$patronRequest->status?->name ?? '—'" />
-    <x-requests::info-bar-item icon="user" label="Assigned to"
+    <x-dcpl::info-bar-item icon="user" label="Assigned to"
         :value="$patronRequest->assignedTo?->name ?: ($patronRequest->assignedTo?->email ?? 'Unassigned')" />
-</x-requests::info-bar>
+</x-dcpl::info-bar>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -46,7 +46,7 @@
     <div class="lg:col-span-2 space-y-6">
 
         {{-- ── Material card (design layout) ── --}}
-        <x-requests::card>
+        <x-dcpl::card>
             <div class="space-y-6">
                 {{-- Title / Author / Synopsis row --}}
                 <div class="flex gap-6">
@@ -82,13 +82,13 @@
 
                         <div class="flex items-center gap-2 mt-auto">
                             @if($patronRequest->fieldValueLabel('material_type'))
-                                <x-requests::badge variant="outline">{{ $patronRequest->fieldValueLabel('material_type') }}</x-requests::badge>
+                                <x-dcpl::badge variant="outline">{{ $patronRequest->fieldValueLabel('material_type') }}</x-dcpl::badge>
                             @endif
                             @if($patronRequest->fieldValueLabel('audience'))
-                                <x-requests::badge variant="purple">{{ $patronRequest->fieldValueLabel('audience') }}</x-requests::badge>
+                                <x-dcpl::badge variant="purple">{{ $patronRequest->fieldValueLabel('audience') }}</x-dcpl::badge>
                             @endif
                             @if($patronRequest->fieldValueLabel('genre'))
-                                <x-requests::badge variant="blue">{{ $patronRequest->fieldValueLabel('genre') }}</x-requests::badge>
+                                <x-dcpl::badge variant="blue">{{ $patronRequest->fieldValueLabel('genre') }}</x-dcpl::badge>
                             @endif
                         </div>
                     </div>
@@ -119,13 +119,13 @@
 
                 {{-- Catalog & Editions stat cards --}}
                 <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                    <x-requests::stat-card
+                    <x-dcpl::stat-card
                         icon="search"
                         label="Catalog"
                         :value="($patronRequest->catalog_result_count ?? 0) . ' found'"
                         :subtitle="$patronRequest->catalog_match_accepted ? 'Patron accepted' : ($patronRequest->catalog_searched ? 'Patron rejected' : 'Not searched')"
                         color="blue" />
-                    <x-requests::stat-card
+                    <x-dcpl::stat-card
                         icon="book"
                         label="Editions"
                         :value="($patronRequest->isbndb_result_count ?? 0) . ' found'"
@@ -134,11 +134,11 @@
                         :href="$material ? route('request.staff.titles.show', $material) : null" />
                 </div>
             </div>
-        </x-requests::card>
+        </x-dcpl::card>
 
         {{-- ── Requested By card ── --}}
         @if($patron)
-        <x-requests::card>
+        <x-dcpl::card>
             <div x-data="{ showDetails: false }">
                 <div class="flex items-start gap-2 mb-4">
                     <svg class="h-5 w-5 text-gray-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
@@ -151,7 +151,7 @@
                 </div>
 
                 <div class="flex items-start gap-4">
-                    <x-requests::avatar :name="$patron->name_first . ' ' . $patron->name_last" size="lg" />
+                    <x-dcpl::avatar :name="$patron->name_first . ' ' . $patron->name_last" size="lg" />
                     <div class="flex-1">
                         <p class="font-medium text-gray-900">
                             <a href="{{ route('request.staff.patrons.show', $patron) }}" class="hover:text-blue-600 hover:underline">
@@ -203,11 +203,11 @@
                     </div>
                 </div>
             </div>
-        </x-requests::card>
+        </x-dcpl::card>
         @endif
 
         {{-- ── Activity History card ── --}}
-        <x-requests::card>
+        <x-dcpl::card>
             <x-requests::collapsible title="Activity History" icon="clock" show-label="Show history" hide-label="Hide">
                 @if($patronRequest->statusHistory->isEmpty())
                     <p class="text-sm text-gray-400">No status history.</p>
@@ -244,14 +244,14 @@
                     </div>
                 @endif
             </x-requests::collapsible>
-        </x-requests::card>
+        </x-dcpl::card>
     </div>
 
     {{-- ══ Right column (1/3) ══ --}}
     <div class="space-y-4">
 
         {{-- ── Update Status ── --}}
-        <x-requests::card padding="p-5" x-data="statusUpdateForm('{{ route('request.staff.requests.preview-email', $patronRequest) }}')">
+        <x-dcpl::card padding="p-5" x-data="statusUpdateForm('{{ route('request.staff.requests.preview-email', $patronRequest) }}')">
             <h3 class="text-sm font-medium text-gray-700 uppercase tracking-wide mb-3">Update Status</h3>
 
             <form method="POST"
@@ -297,17 +297,17 @@
             </div>
 
             @include('requests::staff.requests._email-preview-modal')
-        </x-requests::card>
+        </x-dcpl::card>
 
         {{-- ── Quick Actions ── --}}
-        <x-requests::card padding="p-5">
+        <x-dcpl::card padding="p-5">
             <h3 class="text-sm font-medium text-gray-700 uppercase tracking-wide mb-3">Quick Actions</h3>
             <div class="space-y-2">
                 @if($assignmentEnabled ?? false)
                     @if(! $patronRequest->assigned_to_user_id)
                         <form method="POST" action="{{ route('request.staff.requests.claim', $patronRequest) }}">
                             @csrf
-                            <x-requests::sidebar-btn icon="user" label="Claim" onclick="this.closest('form').submit()" />
+                            <x-dcpl::sidebar-btn icon="user" label="Claim" onclick="this.closest('form').submit()" />
                         </form>
                     @endif
 
@@ -366,33 +366,33 @@
 
                 <form method="POST" action="{{ route('request.staff.requests.catalog-recheck', $patronRequest) }}">
                     @csrf
-                    <x-requests::sidebar-btn icon="search" label="Re-check Catalog"
+                    <x-dcpl::sidebar-btn icon="search" label="Re-check Catalog"
                         onclick="if(!confirm('Re-run catalog search for this request?')) return; this.closest('form').submit()" />
                 </form>
 
                 @if($material?->isbn)
                     @if($patronRequest->request_kind === 'ill' && ($illIsbnLookupUrl ?? null))
                         @php $isbnUrl = str_replace('{isbn}', $isbn, $illIsbnLookupUrl); @endphp
-                        <x-requests::sidebar-btn icon="external-link" label="View on WorldCat" :href="$isbnUrl" />
+                        <x-dcpl::sidebar-btn icon="external-link" label="View on WorldCat" :href="$isbnUrl" />
                     @elseif($sfpIsbnLookupUrl ?? null)
                         @php $isbnUrl = str_replace('{isbn}', $isbn, $sfpIsbnLookupUrl); @endphp
-                        <x-requests::sidebar-btn icon="external-link" label="View on Amazon" :href="$isbnUrl" />
+                        <x-dcpl::sidebar-btn icon="external-link" label="View on Amazon" :href="$isbnUrl" />
                     @endif
                 @endif
 
 
                 @if($showConvertToIll)
-                    <x-requests::sidebar-btn icon="arrow-right-left" label="Convert to ILL" @click="$dispatch('open-modal', 'convert-ill')" />
+                    <x-dcpl::sidebar-btn icon="arrow-right-left" label="Convert to ILL" @click="$dispatch('open-modal', 'convert-ill')" />
                 @endif
 
                 <form method="POST" action="{{ route('request.staff.requests.destroy', $patronRequest) }}">
                     @csrf
                     @method('DELETE')
-                    <x-requests::sidebar-btn icon="trash" label="Delete" variant="danger"
+                    <x-dcpl::sidebar-btn icon="trash" label="Delete" variant="danger"
                         onclick="if(!confirm('Delete Request #{{ $patronRequest->id }}? This cannot be undone.')) return; this.closest('form').submit()" />
                 </form>
             </div>
-        </x-requests::card>
+        </x-dcpl::card>
     </div>
 </div>
 

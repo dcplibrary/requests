@@ -45,7 +45,7 @@
                     @forelse($suggestFields as $index => $field)
                     <tr wire:key="suggest-{{ $index }}" class="hover:bg-gray-50 {{ $field['active'] ? '' : 'opacity-60' }}">
                         <td class="px-3 py-3">
-                            <x-requests::sort-btns :value="$index" up="moveUpSuggest" down="moveDownSuggest"
+                            <x-dcpl::sort-btns :value="$index" up="moveUpSuggest" down="moveDownSuggest"
                                 :first="$index === 0" :last="$index === count($suggestFields) - 1" size="md" />
                         </td>
                         <td class="px-3 py-3 font-medium text-gray-900">{{ $field['label'] }}</td>
@@ -65,14 +65,14 @@
                             @endif
                         </td>
                         <td class="px-3 py-3">
-                            <x-requests::status-pill :active="$field['required']" active-label="Required" :show-inactive="false" />
+                            <x-dcpl::status-pill :active="$field['required']" active-label="Required" :show-inactive="false" />
                         </td>
                         <td class="px-3 py-3">
-                            <x-requests::status-pill :active="$field['active']" />
+                            <x-dcpl::status-pill :active="$field['active']" />
                         </td>
                         <td class="px-3 py-3 text-right whitespace-nowrap">
-                            <x-requests::icon-btn :href="$field['edit_url']" variant="edit" label="Edit" />
-                            <x-requests::icon-btn variant="delete" label="Delete" x-on:click="if(confirm('Delete \u201c{{ $field['label'] }}\u201d? This cannot be undone.')) $wire.deleteField({{ $field['id'] }})" />
+                            <x-dcpl::icon-btn :href="$field['edit_url']" variant="edit" label="Edit" />
+                            <x-dcpl::icon-btn variant="delete" label="Delete" x-on:click="if(confirm('Delete \u201c{{ $field['label'] }}\u201d? This cannot be undone.')) $wire.deleteField({{ $field['id'] }})" />
                         </td>
                     </tr>
                     @empty
@@ -112,7 +112,7 @@
                     @forelse($illFields as $index => $field)
                     <tr wire:key="ill-{{ $index }}" class="hover:bg-gray-50 {{ $field['active'] ? '' : 'opacity-60' }}">
                         <td class="px-4 py-3">
-                            <x-requests::sort-btns :value="$index" up="moveUpIll" down="moveDownIll"
+                            <x-dcpl::sort-btns :value="$index" up="moveUpIll" down="moveDownIll"
                                 :first="$index === 0" :last="$index === count($illFields) - 1" size="md" />
                         </td>
                         <td class="px-4 py-3 font-medium text-gray-900">{{ $field['label'] }}</td>
@@ -132,14 +132,14 @@
                             @endif
                         </td>
                         <td class="px-4 py-3">
-                            <x-requests::status-pill :active="$field['required']" active-label="Required" :show-inactive="false" />
+                            <x-dcpl::status-pill :active="$field['required']" active-label="Required" :show-inactive="false" />
                         </td>
                         <td class="px-4 py-3">
-                            <x-requests::status-pill :active="$field['active']" />
+                            <x-dcpl::status-pill :active="$field['active']" />
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                            <x-requests::icon-btn :href="$field['edit_url']" variant="edit" label="Edit" />
-                            <x-requests::icon-btn variant="delete" label="Delete" x-on:click="if(confirm('Delete \u201c{{ $field['label'] }}\u201d? This cannot be undone.')) $wire.deleteField({{ $field['id'] }})" />
+                            <x-dcpl::icon-btn :href="$field['edit_url']" variant="edit" label="Edit" />
+                            <x-dcpl::icon-btn variant="delete" label="Delete" x-on:click="if(confirm('Delete \u201c{{ $field['label'] }}\u201d? This cannot be undone.')) $wire.deleteField({{ $field['id'] }})" />
                         </td>
                     </tr>
                     @empty

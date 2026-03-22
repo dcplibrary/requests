@@ -3,8 +3,8 @@
 
     Usage:
         <x-requests::info-bar>
-            <x-requests::info-bar-item icon="clock" label="Submitted" value="Mar 12, 2026" />
-            <x-requests::info-bar-item icon="circle" label="Status" value="Pending" dot-color="orange" />
+            <x-dcpl::info-bar-item icon="clock" label="Submitted" value="Mar 12, 2026" />
+            <x-dcpl::info-bar-item icon="circle" label="Status" value="Pending" dot-color="orange" />
         </x-requests::info-bar>
 --}}
 @props([])

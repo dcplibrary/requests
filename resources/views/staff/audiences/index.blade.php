@@ -30,8 +30,8 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-requests::icon-btn :href="route('request.staff.audiences.edit', $audience)" variant="edit" label="Edit" />
-                    <x-requests::icon-btn :href="route('request.staff.audiences.delete', $audience)" variant="delete" label="Delete" />
+                    <x-dcpl::icon-btn :href="route('request.staff.audiences.edit', $audience)" variant="edit" label="Edit" />
+                    <x-dcpl::icon-btn :href="route('request.staff.audiences.delete', $audience)" variant="delete" label="Delete" />
                 </td>
             </tr>
             @empty

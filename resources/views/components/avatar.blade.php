@@ -2,8 +2,8 @@
     Circle avatar with computed initials and gradient background.
 
     Usage:
-        <x-requests::avatar name="Brian Lashbrook" />
-        <x-requests::avatar name="Jane Doe" size="lg" />
+        <x-dcpl::avatar name="Brian Lashbrook" />
+        <x-dcpl::avatar name="Jane Doe" size="lg" />
 
     Props:
         name — string      — full name; initials are derived automatically

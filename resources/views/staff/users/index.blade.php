@@ -34,14 +34,14 @@
                     {{ $user->selectorGroups->pluck('name')->join(', ') ?: '—' }}
                 </td>
                 <td class="px-4 py-3">
-                    <x-requests::status-pill :active="$user->active" />
+                    <x-dcpl::status-pill :active="$user->active" />
                 </td>
                 <td class="px-4 py-3 text-gray-500 text-xs">
                     {{ $user->last_login_at?->diffForHumans() ?? '—' }}
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-requests::icon-btn :href="route('request.staff.users.edit', $user)" variant="edit" label="Edit" />
-                    <x-requests::icon-btn :href="route('request.staff.users.remove', $user)" variant="remove" label="Remove" />
+                    <x-dcpl::icon-btn :href="route('request.staff.users.edit', $user)" variant="edit" label="Edit" />
+                    <x-dcpl::icon-btn :href="route('request.staff.users.remove', $user)" variant="remove" label="Remove" />
                 </td>
             </tr>
             @empty

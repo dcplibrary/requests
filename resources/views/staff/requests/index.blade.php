@@ -111,7 +111,7 @@
 </form>
 
 {{-- Table --}}
-<x-requests::card padding="p-0" class="overflow-hidden">
+<x-dcpl::card padding="p-0" class="overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
@@ -153,7 +153,7 @@
                         <div class="text-gray-400 text-xs">{{ $req->material?->isbn13 ?? $req->material?->isbn }}</div>
                     @endif
                     @if($req->is_duplicate)
-                        <x-requests::badge variant="yellow">Duplicate</x-requests::badge>
+                        <x-dcpl::badge variant="yellow">Duplicate</x-dcpl::badge>
                     @endif
                 </td>
                 @if($currentKind)
@@ -212,7 +212,7 @@
             @endforelse
         </tbody>
     </table>
-</x-requests::card>
+</x-dcpl::card>
 
 <div class="mt-4">
     {{ $requests->links() }}

@@ -38,7 +38,7 @@
 @endif
 
 {{-- Table --}}
-<x-requests::card padding="p-0" class="overflow-hidden">
+<x-dcpl::card padding="p-0" class="overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
@@ -47,15 +47,21 @@
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Email / Phone</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Polaris</th>
                 <x-requests::sortable-th column="requests_count" label="Requests" />
-                <th class="px-4 py-3"></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
             @forelse($patrons as $patron)
             @php
                 $neverLooked = ! $patron->polaris_lookup_attempted;
+                $patronShowUrl = route('request.staff.patrons.show', $patron);
             @endphp
-            <tr class="hover:bg-gray-50">
+            <tr class="hover:bg-gray-50 cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500"
+                tabindex="0"
+                role="link"
+                aria-label="View patron {{ $patron->full_name }}"
+                data-row-href="{{ $patronShowUrl }}"
+                onclick="window.location.assign(this.dataset.rowHref)"
+                onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); window.location.assign(this.dataset.rowHref); }">
                 <td class="px-4 py-3">
                     <div class="font-medium text-gray-900">{{ $patron->name_last }}, {{ $patron->name_first }}</div>
                     <div class="text-xs text-gray-400">#{{ $patron->id }}</div>
@@ -71,28 +77,25 @@
                 </td>
                 <td class="px-4 py-3">
                     @if($neverLooked)
-                        <x-requests::badge variant="gray">Pending</x-requests::badge>
+                        <x-dcpl::badge variant="gray">Pending</x-dcpl::badge>
                     @elseif($patron->found_in_polaris)
-                        <x-requests::badge variant="green">Found</x-requests::badge>
+                        <x-dcpl::badge variant="green">Found</x-dcpl::badge>
                     @else
-                        <x-requests::badge variant="red">Not found</x-requests::badge>
+                        <x-dcpl::badge variant="red">Not found</x-dcpl::badge>
                     @endif
                 </td>
                 <td class="px-4 py-3 text-gray-600">{{ $patron->requests_count }}</td>
-                <td class="px-4 py-3 text-right">
-                    <x-requests::icon-btn :href="route('request.staff.patrons.show', $patron)" variant="view" label="View" />
-                </td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" class="px-4 py-10 text-center text-gray-400">
+                <td colspan="5" class="px-4 py-10 text-center text-gray-400">
                     {{ $showAll ? 'No patrons found.' : 'No flagged patrons — everything looks good.' }}
                 </td>
             </tr>
             @endforelse
         </tbody>
     </table>
-</x-requests::card>
+</x-dcpl::card>
 
 <div class="mt-4">
     {{ $patrons->links() }}

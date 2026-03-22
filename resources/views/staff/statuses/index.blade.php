@@ -39,14 +39,14 @@
                 <td class="px-4 py-3 text-gray-600">{{ $status->is_terminal ? 'Yes' : 'No' }}</td>
                 <td class="px-4 py-3 text-gray-600">{{ $status->sort_order }}</td>
                 <td class="px-4 py-3">
-                    <x-requests::status-pill :active="$status->notify_patron" active-label="On" inactive-label="Off" />
+                    <x-dcpl::status-pill :active="$status->notify_patron" active-label="On" inactive-label="Off" />
                 </td>
                 <td class="px-4 py-3">
-                    <x-requests::status-pill :active="$status->active" />
+                    <x-dcpl::status-pill :active="$status->active" />
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-requests::icon-btn :href="route('request.staff.statuses.edit', $status)" variant="edit" label="Edit" />
-                    <x-requests::icon-btn :href="route('request.staff.statuses.delete', $status)" variant="delete" label="Delete" />
+                    <x-dcpl::icon-btn :href="route('request.staff.statuses.edit', $status)" variant="edit" label="Edit" />
+                    <x-dcpl::icon-btn :href="route('request.staff.statuses.delete', $status)" variant="delete" label="Delete" />
                 </td>
             </tr>
             @empty

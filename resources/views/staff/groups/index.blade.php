@@ -36,10 +36,10 @@
                 @endforeach
                 <td class="px-4 py-3 text-gray-600">{{ $group->users->count() }}</td>
                 <td class="px-4 py-3">
-                    <x-requests::status-pill :active="$group->active" />
+                    <x-dcpl::status-pill :active="$group->active" />
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-1">
-                    <x-requests::icon-btn :href="route('request.staff.groups.edit', $group)" variant="edit" label="Edit" />
+                    <x-dcpl::icon-btn :href="route('request.staff.groups.edit', $group)" variant="edit" label="Edit" />
                     <x-requests::icon-form-btn :action="route('request.staff.groups.destroy', $group)" label="Delete" confirm="Delete this group?" />
                 </td>
             </tr>

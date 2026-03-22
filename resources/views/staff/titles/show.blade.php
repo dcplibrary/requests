@@ -3,7 +3,7 @@
 @section('title', $material->title)
 
 @section('content')
-<x-requests::page-header
+<x-dcpl::page-header
     :back-url="route('request.staff.titles.index')"
     back-label="Titles"
     :title="$material->title"
@@ -52,27 +52,27 @@
     <div class="lg:col-span-2 space-y-6">
 
         {{-- Title details --}}
-        <x-requests::card padding="p-5">
+        <x-dcpl::card padding="p-5">
             <div class="flex items-center justify-between mb-4">
-                <x-requests::section-heading class="mb-0">Title Details</x-requests::section-heading>
+                <x-dcpl::section-heading class="mb-0">Title Details</x-dcpl::section-heading>
                 <div class="flex items-center gap-2">
                     @if($material->source === 'isbndb')
-                        <x-requests::badge variant="blue">ISBNdb</x-requests::badge>
+                        <x-dcpl::badge variant="blue">ISBNdb</x-dcpl::badge>
                     @elseif($material->source === 'polaris')
-                        <x-requests::badge variant="green">Polaris</x-requests::badge>
+                        <x-dcpl::badge variant="green">Polaris</x-dcpl::badge>
                     @else
-                        <x-requests::badge variant="gray">Submitted</x-requests::badge>
+                        <x-dcpl::badge variant="gray">Submitted</x-dcpl::badge>
                     @endif
                 </div>
             </div>
             <x-requests::material-details :material="$material" />
-        </x-requests::card>
+        </x-dcpl::card>
 
         {{-- Requests --}}
-        <x-requests::card padding="p-5">
-            <x-requests::section-heading class="mb-4">
+        <x-dcpl::card padding="p-5">
+            <x-dcpl::section-heading class="mb-4">
                 Requests ({{ $material->requests->count() }})
-            </x-requests::section-heading>
+            </x-dcpl::section-heading>
             @if($material->requests->isEmpty())
                 <p class="text-sm text-gray-400">No requests linked to this title.</p>
             @else
@@ -117,14 +117,14 @@
                             {{ $req->created_at->format('M j, Y') }}
                         </td>
                         <td class="px-3 py-2 text-right">
-                            <x-requests::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
+                            <x-dcpl::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
                         </td>
                     </tr>
                     @endforeach
                 </tbody>
             </table>
             @endif
-        </x-requests::card>
+        </x-dcpl::card>
 
     </div>
 
@@ -133,10 +133,10 @@
 
         {{-- Bulk status update --}}
         @if($material->requests->isNotEmpty())
-        <x-requests::card padding="p-5">
-            <x-requests::section-heading>
+        <x-dcpl::card padding="p-5">
+            <x-dcpl::section-heading>
                 Bulk Status Update
-            </x-requests::section-heading>
+            </x-dcpl::section-heading>
             <p class="text-xs text-gray-500 mb-3">
                 Apply a status to all {{ $material->requests->count() }} request{{ $material->requests->count() !== 1 ? 's' : '' }} for this title at once.
             </p>
@@ -164,12 +164,12 @@
                     Apply to All Requests
                 </button>
             </form>
-        </x-requests::card>
+        </x-dcpl::card>
         @endif
 
         {{-- Meta --}}
-        <x-requests::card padding="p-5">
-            <x-requests::section-heading>Meta</x-requests::section-heading>
+        <x-dcpl::card padding="p-5">
+            <x-dcpl::section-heading>Meta</x-dcpl::section-heading>
             <dl class="space-y-2 text-sm">
                 <div>
                     <dt class="text-xs text-gray-500">Material ID</dt>
@@ -184,11 +184,11 @@
                     <dd class="text-gray-700">{{ $material->updated_at->format('M j, Y g:ia') }}</dd>
                 </div>
             </dl>
-        </x-requests::card>
+        </x-dcpl::card>
 
         {{-- Manual merge --}}
-        <x-requests::card padding="p-5">
-            <x-requests::section-heading class="mb-2">Manual Merge</x-requests::section-heading>
+        <x-dcpl::card padding="p-5">
+            <x-dcpl::section-heading class="mb-2">Manual Merge</x-dcpl::section-heading>
             <p class="text-xs text-gray-500 mb-3">
                 Move all requests from another title record into this one, then delete that record.
             </p>
@@ -208,7 +208,7 @@
                     Merge into this →
                 </button>
             </form>
-        </x-requests::card>
+        </x-dcpl::card>
 
     </div>
 </div>

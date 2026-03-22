@@ -3,7 +3,7 @@
 @section('title', 'Patron: ' . $patron->full_name)
 
 @section('content')
-<x-requests::page-header
+<x-dcpl::page-header
     :back-url="route('request.staff.patrons.index')"
     back-label="Patrons"
     :title="$patron->full_name"
@@ -258,10 +258,10 @@
     <div class="lg:col-span-2 space-y-6">
 
         {{-- Submitted data --}}
-        <x-requests::card padding="p-5">
+        <x-dcpl::card padding="p-5">
             <div class="flex items-center justify-between mb-4">
-                <x-requests::section-heading class="mb-0">Submitted Data</x-requests::section-heading>
-                <x-requests::icon-btn :href="route('request.staff.patrons.edit', $patron)" variant="edit" label="Edit" />
+                <x-dcpl::section-heading class="mb-0">Submitted Data</x-dcpl::section-heading>
+                <x-dcpl::icon-btn :href="route('request.staff.patrons.edit', $patron)" variant="edit" label="Edit" />
             </div>
             <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <div>
@@ -281,12 +281,12 @@
                     <dd>{{ $patron->email ?: '—' }}</dd>
                 </div>
             </dl>
-        </x-requests::card>
+        </x-dcpl::card>
 
         {{-- Polaris lookup & comparison --}}
-        <x-requests::card padding="p-5">
+        <x-dcpl::card padding="p-5">
             <div class="flex items-center justify-between mb-3">
-                <x-requests::section-heading class="mb-0">Polaris Lookup</x-requests::section-heading>
+                <x-dcpl::section-heading class="mb-0">Polaris Lookup</x-dcpl::section-heading>
                 <form method="POST" action="{{ route('request.staff.patrons.retrigger-polaris', $patron) }}">
                     @csrf
                     <button type="submit"
@@ -299,14 +299,14 @@
 
             <div class="mb-4">
                 @if(! $patron->polaris_lookup_attempted)
-                    <x-requests::badge variant="gray">Lookup pending</x-requests::badge>
+                    <x-dcpl::badge variant="gray">Lookup pending</x-dcpl::badge>
                 @elseif($patron->found_in_polaris)
-                    <x-requests::badge variant="green">Found in Polaris</x-requests::badge>
+                    <x-dcpl::badge variant="green">Found in Polaris</x-dcpl::badge>
                     @if($patron->polaris_lookup_at)
                         <span class="text-xs text-gray-400 ml-2">{{ $patron->polaris_lookup_at->format('M j, Y g:ia') }}</span>
                     @endif
                 @else
-                    <x-requests::badge variant="red">Not found in Polaris</x-requests::badge>
+                    <x-dcpl::badge variant="red">Not found in Polaris</x-dcpl::badge>
                     @if($patron->polaris_lookup_at)
                         <span class="text-xs text-gray-400 ml-2">Last checked {{ $patron->polaris_lookup_at->format('M j, Y g:ia') }}</span>
                     @endif
@@ -351,13 +351,13 @@
             <p class="mt-2 text-xs text-gray-400">Polaris Patron ID: {{ $patron->polaris_patron_id }}</p>
             @endif
             @endif
-        </x-requests::card>
+        </x-dcpl::card>
 
         {{-- Request history --}}
-        <x-requests::card padding="p-5">
-            <x-requests::section-heading class="mb-4">
+        <x-dcpl::card padding="p-5">
+            <x-dcpl::section-heading class="mb-4">
                 Requests ({{ $patron->requests->count() }})
-            </x-requests::section-heading>
+            </x-dcpl::section-heading>
             @if($patron->requests->isEmpty())
                 <p class="text-sm text-gray-400">No requests.</p>
             @else
@@ -380,7 +380,7 @@
                         <td class="px-3 py-2 text-gray-900 max-w-xs truncate">
                             {{ $req->submitted_title }}
                     @if($req->is_duplicate)
-                                <x-requests::badge variant="yellow" class="ml-1">Dup</x-requests::badge>
+                                <x-dcpl::badge variant="yellow" class="ml-1">Dup</x-dcpl::badge>
                             @endif
                         </td>
                         <td class="px-3 py-2">
@@ -392,14 +392,14 @@
                         </td>
                         <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">{{ $req->created_at->format('M j, Y') }}</td>
                         <td class="px-3 py-2 text-right">
-                            <x-requests::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
+                            <x-dcpl::icon-btn :href="route('request.staff.requests.show', $req)" variant="view" label="View" />
                         </td>
                     </tr>
                     @endforeach
                 </tbody>
             </table>
             @endif
-        </x-requests::card>
+        </x-dcpl::card>
 
     </div>
 
@@ -407,8 +407,8 @@
     <div class="space-y-6">
 
         {{-- Meta --}}
-        <x-requests::card padding="p-5">
-            <x-requests::section-heading>Meta</x-requests::section-heading>
+        <x-dcpl::card padding="p-5">
+            <x-dcpl::section-heading>Meta</x-dcpl::section-heading>
             <dl class="space-y-2 text-sm">
                 <div>
                     <dt class="text-xs text-gray-500">First seen</dt>
@@ -425,11 +425,11 @@
                 </div>
                 @endif
             </dl>
-        </x-requests::card>
+        </x-dcpl::card>
 
         {{-- Manual merge fallback --}}
-        <x-requests::card padding="p-5">
-            <x-requests::section-heading class="mb-2">Manual Merge</x-requests::section-heading>
+        <x-dcpl::card padding="p-5">
+            <x-dcpl::section-heading class="mb-2">Manual Merge</x-dcpl::section-heading>
             <p class="text-xs text-gray-500 mb-3">
                 Enter another patron's ID to review a merge. This record will be treated as the one to delete.
             </p>
@@ -445,7 +445,7 @@
                     Review Merge →
                 </button>
             </form>
-        </x-requests::card>
+        </x-dcpl::card>
 
     </div>
 </div>

@@ -5,6 +5,7 @@ export default {
     content: [
         './resources/views/**/*.blade.php',
         './src/**/*.php',
+        './vendor/dcplibrary/ui/resources/views/**/*.blade.php', // ← add this
     ],
 
     theme: {

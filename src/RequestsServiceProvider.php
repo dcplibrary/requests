@@ -127,6 +127,34 @@ class RequestsServiceProvider extends ServiceProvider
         })->name('request.assets.selector-help');
 
         $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
+
+        // Register the dcpl.ui.css route if UiServiceProvider hasn't done it yet
+        // (i.e. dcplibrary/ui is not installed via Composer, only as a local sibling).
+        $this->registerDcplUiCssRoute();
+    }
+
+    protected function registerDcplUiCssRoute(): void
+    {
+        if (Route::has('dcpl.ui.css')) {
+            return;
+        }
+
+        $candidates = [
+            base_path('vendor/dcplibrary/ui/resources/dist/dcpl.css'),
+            __DIR__ . '/../../dcplibrary-ui/resources/dist/dcpl.css',
+        ];
+
+        foreach ($candidates as $css) {
+            if (file_exists($css)) {
+                Route::get('dcpl/ui/css', static function () use ($css) {
+                    return response()->file($css, [
+                        'Content-Type'  => 'text/css',
+                        'Cache-Control' => 'public, max-age=31536000',
+                    ]);
+                })->name('dcpl.ui.css');
+                return;
+            }
+        }
     }
 
     protected function registerViews(): void
@@ -134,6 +162,34 @@ class RequestsServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'requests');
 
         Blade::anonymousComponentNamespace('requests::components', 'requests');
+
+        // Register the shared dcpl:: component namespace.
+        // When dcplibrary/ui is installed via Composer its UiServiceProvider handles
+        // this automatically. The fallback covers local development where the
+        // package lives as a sibling directory and isn't Composer-installed yet.
+        // Safe to register twice — last registration wins and points to the same path.
+        $dcplUiViews = $this->resolveDcplUiViewsPath();
+        if ($dcplUiViews) {
+            $this->loadViewsFrom($dcplUiViews, 'dcpl');
+            Blade::anonymousComponentNamespace('dcpl::components', 'dcpl');
+        }
+    }
+
+    protected function resolveDcplUiViewsPath(): ?string
+    {
+        // Check composer-installed location first, then local dev sibling directory.
+        $candidates = [
+            base_path('vendor/dcplibrary/ui/resources/views'),
+            __DIR__ . '/../../dcplibrary-ui/resources/views',
+        ];
+
+        foreach ($candidates as $path) {
+            if (is_dir($path)) {
+                return realpath($path);
+            }
+        }
+
+        return null;
     }
 
     protected function registerBlaze(): void

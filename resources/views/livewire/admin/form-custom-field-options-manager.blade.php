@@ -15,7 +15,7 @@
 
                 {{-- Sort buttons --}}
                 <td class="px-3 py-2">
-                    <x-requests::sort-btns :value="$index" :first="$index === 0" :last="$index === count($items) - 1" size="md" />
+                    <x-dcpl::sort-btns :value="$index" :first="$index === 0" :last="$index === count($items) - 1" size="md" />
                 </td>
 
                 {{-- Option name --}}

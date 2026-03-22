@@ -41,16 +41,20 @@
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Type</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Kind</th>
                 <x-requests::sortable-th column="requests_count" label="Requests" />
-                <th class="px-4 py-3"></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
             @forelse($materials as $material)
             @php
-                $isDuplicate = in_array($material->id, $duplicateMaterialIds);
-                $statusCounts = $material->requests->groupBy('request_status_id');
+                $titleShowUrl = route('request.staff.titles.show', $material);
             @endphp
-            <tr class="hover:bg-gray-50">
+            <tr class="hover:bg-gray-50 cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500"
+                tabindex="0"
+                role="link"
+                aria-label="View title {{ $material->title }}"
+                data-row-href="{{ $titleShowUrl }}"
+                onclick="window.location.assign(this.dataset.rowHref)"
+                onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); window.location.assign(this.dataset.rowHref); }">
                 <td class="px-4 py-3">
                     <div class="font-medium text-gray-900 max-w-xs truncate" title="{{ $material->title }}">
                         {{ $material->title }}
@@ -96,13 +100,10 @@
                         @endif
                     </div>
                 </td>
-                <td class="px-4 py-3 text-right">
-                    <x-requests::icon-btn :href="route('request.staff.titles.show', $material)" variant="view" label="View" />
-                </td>
             </tr>
             @empty
             <tr>
-                <td colspan="7" class="px-4 py-10 text-center text-gray-400">No titles found.</td>
+                <td colspan="6" class="px-4 py-10 text-center text-gray-400">No titles found.</td>
             </tr>
             @endforelse
         </tbody>
