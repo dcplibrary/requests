@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.18.0](https://github.com/dcplibrary/requests/compare/v4.17.1...v4.18.0) (2026-03-22)
+
+
+### Features
+
+* move ui to separate dcplibrary/ui package ([9b12825](https://github.com/dcplibrary/requests/commit/9b12825c51ab6733d6cd7a4f54e6c23261bc569b))
+
 ## [4.17.1](https://github.com/dcplibrary/requests/compare/v4.17.0...v4.17.1) (2026-03-19)
 
 
