@@ -253,6 +253,8 @@
       <path value="$PROJECT_DIR$/.claude/worktrees/crazy-mcclintock/vendor/nette/utils" />
       <path value="$PROJECT_DIR$/.claude/worktrees/crazy-mcclintock/vendor/phar-io/version" />
       <path value="$PROJECT_DIR$/.claude/worktrees/crazy-mcclintock/vendor/phar-io/manifest" />
+      <path value="$PROJECT_DIR$/vendor/livewire/livewire_compare" />
+      <path value="$PROJECT_DIR$/vendor/dcplibrary/ui" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.4" />

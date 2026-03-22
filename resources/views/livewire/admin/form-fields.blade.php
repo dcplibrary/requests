@@ -1,23 +1,13 @@
 <div>
     {{-- Tabs --}}
-    <div class="bg-white rounded-lg border border-gray-200 mb-4 overflow-hidden">
-        <nav class="flex border-b border-gray-200" role="tablist" aria-label="Form type">
-            <button type="button"
-                    role="tab"
-                    wire:click="$set('activeFormTab', 'sfp')"
-                    class="px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors
-                           {{ $activeFormTab === 'sfp' ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50' }}">
-                {{ request_form_name('sfp') }}
-            </button>
-            <button type="button"
-                    role="tab"
-                    wire:click="$set('activeFormTab', 'ill')"
-                    class="px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors
-                           {{ $activeFormTab === 'ill' ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50' }}">
-                {{ request_form_name('ill') }}
-            </button>
-        </nav>
-    </div>
+    <x-dcpl::sub-tab-nav label="Form type">
+        <x-dcpl::sub-tab label="{{ request_form_name('sfp') }}"
+                         :active="$activeFormTab === 'sfp'"
+                         wire:click="$set('activeFormTab', 'sfp')" />
+        <x-dcpl::sub-tab label="{{ request_form_name('ill') }}"
+                         :active="$activeFormTab === 'ill'"
+                         wire:click="$set('activeFormTab', 'ill')" />
+    </x-dcpl::sub-tab-nav>
 
     {{-- Suggest for Purchase panel --}}
     @if($activeFormTab === 'sfp')
