@@ -103,10 +103,12 @@
         <h2 id="material-heading" class="text-2xl font-bold text-gray-900 mb-6">Material Details</h2>
 
         @if($limitReached)
+            <div dusk="sfp-limit-reached-banner">
             <x-requests::limit-reached
                 :count="(int) \Dcplibrary\Requests\Models\Setting::get('sfp_limit_count', 5)"
                 :until="$limitUntil ? \Illuminate\Support\Carbon::parse($limitUntil) : null"
             />
+            </div>
         @else
         {{--
             Fields are rendered in the order defined in sfp_form_fields (sort_order).
@@ -119,7 +121,7 @@
 
         {{-- ── material_type ─────────────────────────────────── --}}
         @if($field->key === 'material_type' && $isVisible)
-            <fieldset>
+            <fieldset dusk="sfp-material-type-group">
                 <legend class="block text-sm font-medium text-gray-700 mb-2">
                     {{ $field->label }}
                     @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif

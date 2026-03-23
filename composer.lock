@@ -260,16 +260,16 @@
         },
         {
             "name": "dcplibrary/ui",
-            "version": "v1.0.0",
+            "version": "v1.1.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:dcplibrary/ui.git",
-                "reference": "b8b2c8199ffa83100a5f5704022318b7b14ef672"
+                "reference": "571d1b6eee22516791f017a11eedce3060d682f3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dcplibrary/ui/zipball/b8b2c8199ffa83100a5f5704022318b7b14ef672",
-                "reference": "b8b2c8199ffa83100a5f5704022318b7b14ef672",
+                "url": "https://api.github.com/repos/dcplibrary/ui/zipball/571d1b6eee22516791f017a11eedce3060d682f3",
+                "reference": "571d1b6eee22516791f017a11eedce3060d682f3",
                 "shasum": ""
             },
             "require": {
@@ -302,10 +302,10 @@
             ],
             "description": "DCPL shared UI design system — Blade components, Tailwind config, and CSS for the Daviess County Public Library app suite.",
             "support": {
-                "source": "https://github.com/dcplibrary/ui/tree/v1.0.0",
+                "source": "https://github.com/dcplibrary/ui/tree/v1.1.0",
                 "issues": "https://github.com/dcplibrary/ui/issues"
             },
-            "time": "2026-03-22T04:12:45+00:00"
+            "time": "2026-03-22T19:22:14+00:00"
         },
         {
             "name": "dflydev/dot-access-data",

@@ -16,6 +16,7 @@ use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Models\StaffRoutingTemplate;
 use Dcplibrary\Requests\Services\SqlStatementSplitter;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -618,6 +619,142 @@ class BackupController extends Controller
     // ── Shared config import logic ────────────────────────────────────────────
 
     /**
+     * Upsert a form row from config import.
+     *
+     * SQLite: if `forms` predates the package migration, `id` may be NOT NULL without
+     * AUTOINCREMENT, so Eloquent create/firstOrCreate inserts fail. Assign the next id explicitly.
+     */
+    private function importFormRow(array $row): void
+    {
+        $slug = (string) ($row['slug'] ?? '');
+        if ($slug === '') {
+            return;
+        }
+        $name = (string) ($row['name'] ?? $slug);
+
+        $existing = Form::where('slug', $slug)->first();
+        if ($existing) {
+            if ($existing->name !== $name) {
+                $existing->update(['name' => $name]);
+            }
+
+            return;
+        }
+
+        if ($this->importUsesSqliteExplicitIds()) {
+            $nextId = $this->sqliteNextId('forms');
+            DB::table('forms')->insert([
+                'id'         => $nextId,
+                'slug'       => $slug,
+                'name'       => $name,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return;
+        }
+
+        Form::create(['slug' => $slug, 'name' => $name]);
+    }
+
+    /**
+     * SQLite tables that predate package migrations often have NOT NULL `id` without AUTOINCREMENT.
+     */
+    private function importUsesSqliteExplicitIds(): bool
+    {
+        return DB::getDriverName() === 'sqlite';
+    }
+
+    private function sqliteNextId(string $table): int
+    {
+        return ((int) DB::table($table)->max('id')) + 1;
+    }
+
+    /**
+     * Prepare row for DB::table()->insert on SQLite (booleans as 0/1, JSON casts encoded).
+     *
+     * @return array<string, mixed>
+     */
+    private function configImportAttributesForSqlite(Model $model, int $id): array
+    {
+        $table   = $model->getTable();
+        $columns = array_flip($model->getConnection()->getSchemaBuilder()->getColumnListing($table));
+
+        $attrs = array_merge(['id' => $id], $model->getAttributes());
+
+        foreach ($model->getCasts() as $key => $cast) {
+            if (! array_key_exists($key, $attrs) || $attrs[$key] === null) {
+                continue;
+            }
+            $val = $attrs[$key];
+            if (in_array($cast, ['bool', 'boolean'], true)) {
+                $attrs[$key] = $val ? 1 : 0;
+            } elseif (str_starts_with((string) $cast, 'array')
+                || str_starts_with((string) $cast, 'json')
+                || $cast === 'object') {
+                $attrs[$key] = is_string($val) ? $val : json_encode($val);
+            }
+        }
+
+        foreach ($attrs as $key => $value) {
+            if ($value instanceof \DateTimeInterface) {
+                $attrs[$key] = $model->fromDateTime($value);
+            }
+        }
+
+        return array_intersect_key($attrs, $columns);
+    }
+
+    /**
+     * Upsert used by config import: update if unique key(s) match, else insert.
+     * On SQLite, inserts use an explicit primary key when autoincrement is missing.
+     *
+     * @param  class-string<Model>  $modelClass
+     */
+    private function configImportUpdateOrCreate(string $modelClass, array $unique, array $values, bool $withTrashed = false): Model
+    {
+        $query = $withTrashed ? $modelClass::withTrashed() : $modelClass::query();
+        foreach ($unique as $column => $value) {
+            $query->where($column, $value);
+        }
+        $existing = $query->first();
+        if ($existing) {
+            $existing->fill($values);
+            $existing->save();
+
+            return $existing->fresh();
+        }
+
+        /** @var Model $model */
+        $model = new $modelClass();
+        $model->forceFill(array_merge($unique, $values));
+
+        if (in_array('created_by', $model->getFillable(), true)
+            && $model->getAttribute('created_by') === null
+            && auth()->check()) {
+            $model->setAttribute('created_by', (string) auth()->id());
+        }
+
+        if (! $this->importUsesSqliteExplicitIds()) {
+            $model->save();
+
+            return $model->fresh();
+        }
+
+        $table = $model->getTable();
+        if ($model->usesTimestamps()) {
+            $model->updateTimestamps();
+        }
+
+        $id = $this->sqliteNextId($table);
+        DB::table($table)->insert($this->configImportAttributesForSqlite($model, $id));
+
+        return $withTrashed
+            ? $modelClass::withTrashed()->findOrFail($id)
+            : $modelClass::query()->findOrFail($id);
+    }
+
+    /**
      * Apply a decoded config payload array to the database.
      * Returns a human-readable summary string.
      */
@@ -645,21 +782,22 @@ class BackupController extends Controller
                 $upserted = 0;
                 foreach ($data['request_statuses'] as $row) {
                     $slug = $row['slug'] ?? Str::slug($row['name']);
-                    RequestStatus::updateOrCreate(
+                    $this->configImportUpdateOrCreate(
+                        RequestStatus::class,
                         ['slug' => $slug],
                         [
-                            'name'            => $row['name'],
-                            'color'           => $row['color'],
-                            'icon'            => $row['icon'] ?? null,
-                            'sort_order'      => (int)  ($row['sort_order'] ?? 0),
-                            'active'          => (bool) ($row['active'] ?? true),
-                            'is_terminal'     => (bool) ($row['is_terminal'] ?? false),
-                            'notify_patron'   => (bool) ($row['notify_patron'] ?? false),
-                            'action_label'    => $row['action_label'] ?? null,
-                            'advance_on_claim'=> (bool) ($row['advance_on_claim'] ?? false),
-                            'applies_to_sfp'  => (bool) ($row['applies_to_sfp'] ?? true),
-                            'applies_to_ill'  => (bool) ($row['applies_to_ill'] ?? true),
-                            'description'     => $row['description'] ?? null,
+                            'name'             => $row['name'],
+                            'color'            => $row['color'],
+                            'icon'             => $row['icon'] ?? null,
+                            'sort_order'       => (int)  ($row['sort_order'] ?? 0),
+                            'active'           => (bool) ($row['active'] ?? true),
+                            'is_terminal'      => (bool) ($row['is_terminal'] ?? false),
+                            'notify_patron'    => (bool) ($row['notify_patron'] ?? false),
+                            'action_label'     => $row['action_label'] ?? null,
+                            'advance_on_claim' => (bool) ($row['advance_on_claim'] ?? false),
+                            'applies_to_sfp'   => (bool) ($row['applies_to_sfp'] ?? true),
+                            'applies_to_ill'   => (bool) ($row['applies_to_ill'] ?? true),
+                            'description'      => $row['description'] ?? null,
                         ]
                     );
                     $upserted++;
@@ -670,7 +808,7 @@ class BackupController extends Controller
             // Forms (ensure core forms exist; not user-customisable but required as FK parents)
             if (! empty($data['forms'])) {
                 foreach ($data['forms'] as $row) {
-                    Form::firstOrCreate(['slug' => $row['slug']], ['name' => $row['name']]);
+                    $this->importFormRow($row);
                 }
             }
 
@@ -678,7 +816,8 @@ class BackupController extends Controller
             if (! empty($data['fields'])) {
                 $fieldCount = 0;
                 foreach ($data['fields'] as $row) {
-                    $field = Field::withTrashed()->updateOrCreate(
+                    $field = $this->configImportUpdateOrCreate(
+                        Field::class,
                         ['key' => $row['key']],
                         [
                             'label'            => $row['label'],
@@ -693,19 +832,24 @@ class BackupController extends Controller
                             'filterable'       => (bool) ($row['filterable'] ?? false),
                             'condition'        => $row['condition'] ?? null,
                             'deleted_at'       => $row['deleted_at'] ?? null,
-                        ]
+                        ],
+                        true
                     );
 
                     foreach ($row['options'] ?? [] as $opt) {
                         $meta = $opt['metadata'] ?? null;
-                        FieldOption::updateOrCreate(
+                        $this->configImportUpdateOrCreate(
+                            FieldOption::class,
                             ['field_id' => $field->id, 'slug' => $opt['slug']],
                             [
                                 'name'       => $opt['name'],
                                 'sort_order' => (int)  ($opt['sort_order'] ?? 0),
                                 'active'     => (bool) ($opt['active'] ?? true),
-                                'metadata'   => is_array($meta) ? json_encode($meta) : $meta,
-                            ]
+                                'metadata'   => is_array($meta)
+                                    ? $meta
+                                    : (is_string($meta) && $meta !== '' ? json_decode($meta, true) : $meta),
+                            ],
+                            true
                         );
                     }
 
@@ -731,7 +875,8 @@ class BackupController extends Controller
                     if (! $form || ! $field) {
                         continue;
                     }
-                    FormFieldConfig::updateOrCreate(
+                    $this->configImportUpdateOrCreate(
+                        FormFieldConfig::class,
                         ['form_id' => $form->id, 'field_id' => $field->id],
                         [
                             'label_override'    => $row['label_override'] ?? null,
@@ -756,8 +901,13 @@ class BackupController extends Controller
                     if (! $form || ! $field) {
                         continue;
                     }
-                    FormFieldOptionOverride::updateOrCreate(
-                        ['form_id' => $form->id, 'field_id' => $field->id, 'option_slug' => $row['option_slug']],
+                    $this->configImportUpdateOrCreate(
+                        FormFieldOptionOverride::class,
+                        [
+                            'form_id'       => $form->id,
+                            'field_id'      => $field->id,
+                            'option_slug'   => $row['option_slug'],
+                        ],
                         [
                             'label_override' => $row['label_override'] ?? null,
                             'sort_order'     => (int)  ($row['sort_order'] ?? 0),
@@ -773,7 +923,8 @@ class BackupController extends Controller
             if (! empty($data['selector_groups'])) {
                 $upserted = 0;
                 foreach ($data['selector_groups'] as $row) {
-                    $group = SelectorGroup::updateOrCreate(
+                    $group = $this->configImportUpdateOrCreate(
+                        SelectorGroup::class,
                         ['name' => $row['name']],
                         [
                             'description' => $row['description'] ?? null,
@@ -810,9 +961,10 @@ class BackupController extends Controller
                     if (empty($row['format_code'])) {
                         continue;
                     }
-                    CatalogFormatLabel::updateOrCreate(
+                    $this->configImportUpdateOrCreate(
+                        CatalogFormatLabel::class,
                         ['format_code' => $row['format_code']],
-                        ['label'       => $row['label']]
+                        ['label' => $row['label']]
                     );
                     $upserted++;
                 }
@@ -827,7 +979,8 @@ class BackupController extends Controller
                     if (! $group) {
                         continue;
                     }
-                    StaffRoutingTemplate::updateOrCreate(
+                    $this->configImportUpdateOrCreate(
+                        StaffRoutingTemplate::class,
                         ['selector_group_id' => $group->id],
                         [
                             'name'    => $row['name'],
@@ -845,7 +998,8 @@ class BackupController extends Controller
             if (! empty($data['patron_status_templates'])) {
                 $upserted = 0;
                 foreach ($data['patron_status_templates'] as $row) {
-                    $template = PatronStatusTemplate::updateOrCreate(
+                    $template = $this->configImportUpdateOrCreate(
+                        PatronStatusTemplate::class,
                         ['name' => $row['name']],
                         [
                             'enabled'    => (bool) ($row['enabled'] ?? true),
@@ -1170,14 +1324,16 @@ class BackupController extends Controller
                 fn ($v) => $v !== null
             );
 
-            FieldOption::updateOrCreate(
+            $this->configImportUpdateOrCreate(
+                FieldOption::class,
                 ['field_id' => $field->id, 'slug' => $slug],
                 [
                     'name'       => $row['name'],
                     'metadata'   => $metadata ?: null,
                     'sort_order' => (int)  ($row['sort_order'] ?? 0),
                     'active'     => (bool) ($row['active'] ?? true),
-                ]
+                ],
+                true
             );
             $upserted++;
         }

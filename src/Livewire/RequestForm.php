@@ -343,7 +343,7 @@ class RequestForm extends Component
             }
 
             if ($fields->isNotEmpty()) {
-                return $fields->values();
+                return $this->ensureCoreSfpFieldsPresent($fields);
             }
         }
 
@@ -353,6 +353,39 @@ class RequestForm extends Component
             ->active()
             ->ordered()
             ->get();
+    }
+
+    /**
+     * When staff form config omits rows, step 2 can show "Material Details" with no
+     * material type / audience controls. Always merge these active SFP fields in.
+     *
+     * @param  \Illuminate\Support\Collection<int, \Dcplibrary\Requests\Models\Field>  $fields
+     * @return \Illuminate\Support\Collection<int, \Dcplibrary\Requests\Models\Field>
+     */
+    private function ensureCoreSfpFieldsPresent(\Illuminate\Support\Collection $fields): \Illuminate\Support\Collection
+    {
+        $requiredKeys = ['material_type', 'audience'];
+        $present      = $fields->pluck('key')->all();
+        $missing      = collect();
+
+        foreach ($requiredKeys as $key) {
+            if (in_array($key, $present, true)) {
+                continue;
+            }
+            $field = Field::forKind(PatronRequest::KIND_SFP)
+                ->where('key', $key)
+                ->active()
+                ->first();
+            if ($field) {
+                $missing->push($field);
+            }
+        }
+
+        if ($missing->isEmpty()) {
+            return $fields->values();
+        }
+
+        return $missing->concat($fields)->values();
     }
 
     /**
