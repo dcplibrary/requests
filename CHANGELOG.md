@@ -2,6 +2,18 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.19.0](https://github.com/dcplibrary/requests/compare/v4.18.0...v4.19.0) (2026-03-23)
+
+
+### Bug Fixes
+
+* allow config back to be imported into sqlite ([879d767](https://github.com/dcplibrary/requests/commit/879d7679591a7ebf98a5480f278900b0644f8e2b))
+
+
+### Features
+
+* move ui to separate dcplibrary/ui package ([4a452b1](https://github.com/dcplibrary/requests/commit/4a452b15641a76949b12454e96745f8cc71c5323))
+
 # [4.18.0](https://github.com/dcplibrary/requests/compare/v4.17.1...v4.18.0) (2026-03-22)
 
 
