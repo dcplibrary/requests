@@ -331,12 +331,12 @@ class IllForm extends Component
             return;
         }
 
-        // Lightweight “already owned” check for book/audiobook/dvd material types.
+        // Lightweight "already owned" check for book/audiobook/dvd material types.
         $materialSlug = $this->materialTypeSlug();
         $title = (string) ($this->custom['title'] ?? '');
         $author = (string) ($this->custom['author'] ?? '');
 
-        if (in_array($materialSlug, ['book', 'audiobook', 'dvd'], true) && $title !== '') {
+        if (Setting::get('catalog_search_enabled', true) && in_array($materialSlug, ['book', 'audiobook', 'dvd'], true) && $title !== '') {
             $this->processingStep = 'Checking our catalog...';
             $result = app(BibliocommonsService::class)->search($title, $author, 'adult', null);
             $this->catalogSearched = true;
