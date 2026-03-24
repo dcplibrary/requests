@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.19.7](https://github.com/dcplibrary/requests/compare/v4.19.6...v4.19.7) (2026-03-24)
+
+
+### Bug Fixes
+
+* make optional cast and director fields display when dvd or bluray are selected ([be35703](https://github.com/dcplibrary/requests/commit/be35703ebfebdb33786fb65dc6778cf9cfb8555a))
+
 ## [4.19.6](https://github.com/dcplibrary/requests/compare/v4.19.5...v4.19.6) (2026-03-24)
 
 
