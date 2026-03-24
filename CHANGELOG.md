@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.19.3](https://github.com/dcplibrary/requests/compare/v4.19.2...v4.19.3) (2026-03-24)
+
+
+### Bug Fixes
+
+* make disabled fields unavailable as tokens. add notify_by_email token ([0113991](https://github.com/dcplibrary/requests/commit/01139917f5aa5f61761fa1ce12ee76387e0601d5))
+
 ## [4.19.2](https://github.com/dcplibrary/requests/compare/v4.19.1...v4.19.2) (2026-03-24)
 
 
