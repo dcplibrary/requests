@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.19.2](https://github.com/dcplibrary/requests/compare/v4.19.1...v4.19.2) (2026-03-24)
+
+
+### Bug Fixes
+
+* add catalog search enabled for ill setting ([f0343a6](https://github.com/dcplibrary/requests/commit/f0343a62ab4c0f646f24ec77b873e6eee684805d))
+
 ## [4.19.1](https://github.com/dcplibrary/requests/compare/v4.19.0...v4.19.1) (2026-03-24)
 
 
