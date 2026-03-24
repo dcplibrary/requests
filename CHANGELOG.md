@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.19.1](https://github.com/dcplibrary/requests/compare/v4.19.0...v4.19.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* allow enabling of staff routing email ([988241a](https://github.com/dcplibrary/requests/commit/988241a805da56564eecc8d833ef74d981a31f23))
+
 # [4.19.0](https://github.com/dcplibrary/requests/compare/v4.18.0...v4.19.0) (2026-03-23)
 
 
