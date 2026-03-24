@@ -86,20 +86,20 @@
                         @elseif(in_array($field->type, ['select'], true))
                             <x-requests::select-field :name="$field->key" :wire-model="'custom.' . $field->key" :options="$optionsByFieldId[$field->id] ?? []" />
                         @elseif($field->type === 'textarea')
-                            <textarea wire:model="custom.{{ $field->key }}" rows="4" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"></textarea>
+                            <textarea id="ill-custom-{{ $field->key }}" wire:model="custom.{{ $field->key }}" rows="4" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"></textarea>
                         @elseif($field->key === 'publish_date')
-                            <input type="text" wire:model="custom.{{ $field->key }}" placeholder="e.g. 2024, Spring 2025, or unknown"
+                            <input id="ill-custom-{{ $field->key }}" type="text" wire:model="custom.{{ $field->key }}" placeholder="e.g. 2024, Spring 2025, or unknown"
                                    class="w-full max-w-xl rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @elseif($field->type === 'date')
-                            <input type="date" wire:model="custom.{{ $field->key }}" class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                            <input id="ill-custom-{{ $field->key }}" type="date" wire:model="custom.{{ $field->key }}" class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @elseif($field->type === 'number')
-                            <input type="number" step="0.01" wire:model="custom.{{ $field->key }}" class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                            <input id="ill-custom-{{ $field->key }}" type="number" step="0.01" wire:model="custom.{{ $field->key }}" class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @elseif($field->type === 'checkbox')
                             <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" wire:model="custom.{{ $field->key }}" class="rounded text-blue-600 focus:ring-blue-500" /> Yes
+                                <input id="ill-custom-{{ $field->key }}" type="checkbox" wire:model="custom.{{ $field->key }}" class="rounded text-blue-600 focus:ring-blue-500" /> Yes
                             </label>
                         @else
-                            <input type="text" wire:model="custom.{{ $field->key }}" class="w-full max-w-xl rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                            <input id="ill-custom-{{ $field->key }}" type="text" wire:model="custom.{{ $field->key }}" class="w-full max-w-xl rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @endif
                         @error('custom.' . $field->key)
                             <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
@@ -189,26 +189,26 @@
                                 :options="$optionsByFieldId[$field->id] ?? []"
                             />
                         @elseif($field->type === 'textarea')
-                            <textarea wire:model="custom.{{ $field->key }}" rows="4"
+                            <textarea id="ill-custom-{{ $field->key }}" wire:model="custom.{{ $field->key }}" rows="4"
                                       class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
                                       placeholder="{{ $field->key === 'other_specify' ? 'Please describe what you need...' : '' }}"></textarea>
                         @elseif($field->key === 'publish_date')
-                            <input type="text" wire:model="custom.{{ $field->key }}" placeholder="e.g. 2024, Spring 2025, or unknown"
+                            <input id="ill-custom-{{ $field->key }}" type="text" wire:model="custom.{{ $field->key }}" placeholder="e.g. 2024, Spring 2025, or unknown"
                                    class="w-full max-w-xl rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @elseif($field->type === 'date')
-                            <input type="date" wire:model="custom.{{ $field->key }}"
+                            <input id="ill-custom-{{ $field->key }}" type="date" wire:model="custom.{{ $field->key }}"
                                    class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @elseif($field->type === 'number')
-                            <input type="number" step="0.01" wire:model="custom.{{ $field->key }}"
+                            <input id="ill-custom-{{ $field->key }}" type="number" step="0.01" wire:model="custom.{{ $field->key }}"
                                    class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @elseif($field->type === 'checkbox')
                             <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" wire:model="custom.{{ $field->key }}"
+                                <input id="ill-custom-{{ $field->key }}" type="checkbox" wire:model="custom.{{ $field->key }}"
                                        class="rounded text-blue-600 focus:ring-blue-500" />
                                 Yes
                             </label>
                         @else
-                            <input type="text" wire:model="custom.{{ $field->key }}"
+                            <input id="ill-custom-{{ $field->key }}" type="text" wire:model="custom.{{ $field->key }}"
                                    class="w-full max-w-xl rounded-md border border-gray-300 px-3 py-2 text-sm" />
                         @endif
 

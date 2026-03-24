@@ -107,10 +107,10 @@ class FieldsAndOptionsSeeder extends Seeder
 
         //                                                                                                           token  filter
         $fields = [
-            // Core form fields (scope=both → appear on SFP and ILL)
+            // Shared core fields (SFP + ILL). Audience/genre are SFP-only — ILL does not collect them.
             ['key' => 'material_type',    'label' => 'Type of Material',                                 'type' => 'select',   'step' => 2, 'scope' => 'both', 'sort_order' => 10,  'active' => true,  'required' => true,  'include_as_token' => false, 'filterable' => true,  'condition' => null],
-            ['key' => 'audience',         'label' => 'Audience',                                         'type' => 'radio',    'step' => 2, 'scope' => 'both', 'sort_order' => 20,  'active' => true,  'required' => true,  'include_as_token' => false, 'filterable' => true,  'condition' => null],
-            ['key' => 'genre',            'label' => 'Genre',                                            'type' => 'radio',    'step' => 2, 'scope' => 'both', 'sort_order' => 30,  'active' => true,  'required' => true,  'include_as_token' => true,  'filterable' => false, 'condition' => $genreCondition],
+            ['key' => 'audience',         'label' => 'Audience',                                         'type' => 'radio',    'step' => 2, 'scope' => 'sfp',  'sort_order' => 20,  'active' => true,  'required' => true,  'include_as_token' => false, 'filterable' => true,  'condition' => null],
+            ['key' => 'genre',            'label' => 'Genre',                                            'type' => 'radio',    'step' => 2, 'scope' => 'sfp',  'sort_order' => 30,  'active' => true,  'required' => true,  'include_as_token' => true,  'filterable' => false, 'condition' => $genreCondition],
             ['key' => 'title',            'label' => 'Title',                                            'type' => 'text',     'step' => 2, 'scope' => 'both', 'sort_order' => 40,  'active' => true,  'required' => true,  'include_as_token' => false, 'filterable' => false, 'condition' => null],
             ['key' => 'author',           'label' => 'Author / Creator',                                 'type' => 'text',     'step' => 2, 'scope' => 'both', 'sort_order' => 50,  'active' => true,  'required' => true,  'include_as_token' => false, 'filterable' => false, 'condition' => null],
             ['key' => 'isbn',             'label' => 'ISBN',                                             'type' => 'text',     'step' => 2, 'scope' => 'both', 'sort_order' => 60,  'active' => false, 'required' => false, 'include_as_token' => true,  'filterable' => false, 'condition' => null],
@@ -247,6 +247,13 @@ class FieldsAndOptionsSeeder extends Seeder
                     ]
                 );
             }
+        }
+
+        // Legacy installs: audience/genre were scope=both and had ILL pivots; they are SFP-only now.
+        $illOnlyDetachKeys = ['audience', 'genre'];
+        $detachIds = Field::whereIn('key', $illOnlyDetachKeys)->pluck('id');
+        if ($illForm && $detachIds->isNotEmpty()) {
+            FormFieldConfig::where('form_id', $illForm->id)->whereIn('field_id', $detachIds)->delete();
         }
     }
 }
