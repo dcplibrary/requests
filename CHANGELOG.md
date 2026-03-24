@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.19.6](https://github.com/dcplibrary/requests/compare/v4.19.5...v4.19.6) (2026-03-24)
+
+
+### Bug Fixes
+
+* scope audience genre sfp only and detach from ill form ([5d12382](https://github.com/dcplibrary/requests/commit/5d12382d55d09a4bdf300e6a5a9098f5563c83a4))
+
 ## [4.19.5](https://github.com/dcplibrary/requests/compare/v4.19.4...v4.19.5) (2026-03-24)
 
 
