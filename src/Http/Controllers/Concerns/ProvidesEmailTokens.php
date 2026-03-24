@@ -18,6 +18,14 @@ use Dcplibrary\Requests\Models\Field;
 trait ProvidesEmailTokens
 {
     /**
+     * Legacy / retired field keys that must never appear in the token picker
+     * (e.g. replaced by notify_by_email on the request).
+     *
+     * @var list<string>
+     */
+    private const EXCLUDED_FIELD_TOKEN_KEYS = ['prefer_email'];
+
+    /**
      * Core request tokens that are not stored in the fields table.
      * Title, author, material_type, and audience come from dedicated
      * columns / EAV rows but have `include_as_token = false` in the DB.
@@ -40,7 +48,7 @@ trait ProvidesEmailTokens
     {
         $tokens = [
             '{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}',
-            '{status}', '{status_name}', '{submitted_date}', '{request_url}',
+            '{notify_by_email}', '{status}', '{status_name}', '{submitted_date}', '{request_url}',
         ];
 
         if ($includeStatusDescription) {
@@ -62,6 +70,7 @@ trait ProvidesEmailTokens
         try {
             return Field::query()
                 ->where('include_as_token', true)
+                ->whereNotIn('key', self::EXCLUDED_FIELD_TOKEN_KEYS)
                 ->ordered()
                 ->pluck('key')
                 ->map(fn (string $k) => "{{$k}}")
@@ -96,7 +105,7 @@ trait ProvidesEmailTokens
     protected function subjectExcludedTokens(): array
     {
         return [
-            '{will_pay_up_to}', '{ill_requested}', '{prefer_mail}', '{other_specify}',
+            '{will_pay_up_to}', '{ill_requested}', '{other_specify}',
             '{publisher}', '{periodical_title}', '{article_author}', '{article_title}', '{volume_number}',
             '{page_number}', '{director}', '{cast}', '{comments}', '{request_url}', '{genre}', '{isbn}',
             '{publish_date}', '{where_heard}', '{date_needed_by}', '{console}',

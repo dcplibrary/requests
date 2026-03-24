@@ -243,6 +243,7 @@ class SettingController extends Controller
             '{patron_first_name}' => 'Jane',
             '{patron_email}'      => 'jane.doe@example.com',
             '{patron_phone}'      => '(270) 555-0123',
+            '{notify_by_email}'   => 'Yes',
             '{material_type}'     => 'Book',
             '{audience}'          => 'Adult',
             '{status}'            => 'Ordered',

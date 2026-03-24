@@ -679,6 +679,7 @@ class NotificationService
      *   {console}           — console name (resolved from slug)
      *   {where_heard}       — patron's answer to "where did you hear about this?"
      *   {ill_requested}     — "Yes" or "No"
+     *   {notify_by_email}   — "Yes" or "No" (patron opted in at submission to status-update emails)
      *   {<key>}             — any other active form field value stored on the request
      */
     private function replacePlaceholders(string $template, PatronRequest $request): string
@@ -705,6 +706,7 @@ class NotificationService
             '{status_description}' => $request->status?->description ?? '',
             '{submitted_date}'    => $request->created_at?->format('F j, Y') ?? '',
             '{request_url}'       => route('request.staff.requests.show', $request),
+            '{notify_by_email}'   => $request->notify_by_email ? 'Yes' : 'No',
         ];
 
         // Extend with dynamic field tokens from the unified fields table.

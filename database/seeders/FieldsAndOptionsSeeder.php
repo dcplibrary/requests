@@ -29,7 +29,11 @@ class FieldsAndOptionsSeeder extends Seeder
     public function run(): void
     {
         // Retired: ILL patrons use notify_by_email on patron step (same as SFP).
-        DB::table('fields')->where('key', 'prefer_email')->update(['active' => false, 'updated_at' => now()]);
+        DB::table('fields')->where('key', 'prefer_email')->update([
+            'active' => false,
+            'include_as_token' => false,
+            'updated_at' => now(),
+        ]);
         if (Schema::hasTable('custom_fields')) {
             DB::table('custom_fields')->where('key', 'prefer_email')->delete();
         }

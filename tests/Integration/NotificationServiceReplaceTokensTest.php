@@ -74,6 +74,7 @@ class NotificationServiceReplaceTokensTest extends TestCase
             $table->string('request_kind', 20)->default('sfp');
             $table->string('submitted_title');
             $table->string('submitted_author');
+            $table->boolean('notify_by_email')->default(false);
             $table->timestamps();
         });
 
@@ -133,7 +134,7 @@ class NotificationServiceReplaceTokensTest extends TestCase
         return Patron::findOrFail($id);
     }
 
-    private function createRequest(int $patronId, string $title = 'Test Book', string $author = 'Test Author', ?int $materialId = null): PatronRequest
+    private function createRequest(int $patronId, string $title = 'Test Book', string $author = 'Test Author', ?int $materialId = null, bool $notifyByEmail = false): PatronRequest
     {
         $now = date('Y-m-d H:i:s');
         Capsule::table('requests')->insert([
@@ -143,6 +144,7 @@ class NotificationServiceReplaceTokensTest extends TestCase
             'request_kind'     => 'sfp',
             'submitted_title'  => $title,
             'submitted_author' => $author,
+            'notify_by_email'  => $notifyByEmail ? 1 : 0,
             'created_at'       => $now,
             'updated_at'       => $now,
         ]);
@@ -252,6 +254,24 @@ class NotificationServiceReplaceTokensTest extends TestCase
 
         $this->assertStringContainsString('0123456789', $result);
         $this->assertStringNotContainsString('{isbn}', $result);
+    }
+
+    #[Test]
+    public function notify_by_email_token_is_yes_or_no(): void
+    {
+        $this->createPatron(1);
+        $on = $this->createRequest(1, 'T', 'A', null, true);
+        $off = $this->createRequest(1, 'T2', 'A2', null, false);
+
+        $this->assertStringContainsString(
+            'Yes',
+            $this->invokeReplacePlaceholders('Pref: {notify_by_email}', $on->fresh())
+        );
+        $this->assertStringContainsString(
+            'No',
+            $this->invokeReplacePlaceholders('Pref: {notify_by_email}', $off->fresh())
+        );
+        $this->assertStringNotContainsString('{notify_by_email}', $this->invokeReplacePlaceholders('{notify_by_email}', $on->fresh()));
     }
 
     #[Test]
