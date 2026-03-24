@@ -173,6 +173,10 @@ Route::group([
                     'destroy' => 'staff-routing-templates.destroy',
                 ])
                 ->only(['create', 'store', 'edit', 'update', 'destroy']);
+            Route::get('staff-routing-templates/{staffRoutingTemplate}/preview', [StaffRoutingTemplateController::class, 'preview'])
+                ->name('staff-routing-templates.preview');
+            Route::post('staff-routing-templates/{staffRoutingTemplate}/test', [StaffRoutingTemplateController::class, 'sendTest'])
+                ->name('staff-routing-templates.test');
 
             Route::get('statuses/{status}/delete', [RequestStatusController::class, 'confirmDelete'])
                 ->name('statuses.delete');

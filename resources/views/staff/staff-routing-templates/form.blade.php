@@ -1,11 +1,37 @@
 @extends('requests::staff.settings._layout')
 @section('title', $template->exists ? 'Edit staff routing template' : 'New staff routing template')
 @section('settings-content')
-<div class="mb-6 flex items-center gap-3">
-    <a href="{{ route('request.staff.settings.notifications', ['tab' => 'emails']) }}" class="text-sm text-blue-600 hover:underline">&larr; Emails</a>
-    <span class="text-gray-300">/</span>
-    <h1 class="text-xl font-bold text-gray-900">{{ $template->exists ? 'Edit staff routing template' : 'New staff routing template' }}</h1>
+<div class="mb-6 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+        <a href="{{ route('request.staff.settings.notifications', ['tab' => 'emails']) }}" class="text-sm text-blue-600 hover:underline">&larr; Emails</a>
+        <span class="text-gray-300">/</span>
+        <h1 class="text-xl font-bold text-gray-900">{{ $template->exists ? 'Edit staff routing template' : 'New staff routing template' }}</h1>
+    </div>
+    @if($template->exists)
+    <div class="flex items-center gap-2">
+        <a href="{{ route('request.staff.staff-routing-templates.preview', $template) }}"
+           class="whitespace-nowrap inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-700"
+           onclick="try { window.open(this.href, 'sfpStaffTemplatePreview', 'width=680,height=620,scrollbars=yes'); return false; } catch (e) { return true; }">
+            <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+            </svg>
+            Preview in browser
+        </a>
+        <form method="POST" action="{{ route('request.staff.staff-routing-templates.test', $template) }}" class="flex items-center gap-2">
+            @csrf
+            <span class="text-xs font-medium text-gray-600">Send test to</span>
+            <input type="email" name="email"
+                   placeholder="you@example.com"
+                   value="{{ old('email', auth()->user()?->email) }}"
+                   class="border border-gray-300 rounded px-3 py-1.5 text-sm w-52 @error('email') border-red-400 @enderror">
+            <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 whitespace-nowrap">
+                Send Test
+            </button>
+        </form>
+    </div>
+    @endif
 </div>
+@error('email')<p class="mb-4 text-sm text-red-600">{{ $message }}</p>@enderror
 
 @php
     $subjectTokens = array_values(array_diff($availableTokens ?? [], $subjectExcludedTokens ?? []));

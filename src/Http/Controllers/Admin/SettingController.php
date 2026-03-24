@@ -251,7 +251,7 @@ class SettingController extends Controller
             '{status_description}' => 'Your request has been ordered and is on its way.',
             '{action_buttons}'    => '<div style="margin:16px 0;"><p style="margin:0 0 12px;font-size:12px;color:#6b7280;font-style:italic;">Quick actions — click to update status directly from this email:</p><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="padding:0 12px 8px 0;"><span style="display:inline-block;padding:8px 18px;background:#4b5563;color:#ffffff;border-radius:6px;font-size:13px;font-weight:bold;">Approve</span></td><td style="padding:0 12px 8px 0;"><span style="display:inline-block;padding:8px 18px;background:#b91c1c;color:#ffffff;border-radius:6px;font-size:13px;font-weight:bold;">Deny</span></td></tr></table></div>',
             '{submitted_date}'    => now()->format('F j, Y'),
-            '{request_url}'       => url('/request/staff/requests/1'),
+            '{request_url}'       => '<a href="' . e(url('/request/staff/requests/1')) . '" style="display:inline-block;padding:8px 18px;background:#1d4ed8;color:#ffffff;text-decoration:none;border-radius:6px;font-size:13px;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.2;">View Request</a>',
             '{genre}'             => 'Fiction',
             '{console}'           => 'PlayStation 5',
             '{isbn}'              => '978-0-7432-7356-5',

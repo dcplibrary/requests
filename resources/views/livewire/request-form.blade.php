@@ -323,10 +323,9 @@
         @endif
         @endforeach
 
-        {{-- SFP custom fields (where_heard textarea, console select, etc.) --}}
-        @foreach($stepTwoCustomFields as $field)
-            @if(!$this->customFieldVisible($field->key)) @continue @endif
-            <div>
+        {{-- SFP custom fields (where_heard textarea, console select, etc.) — filtered in render() to avoid Livewire/Blade clashing on $visibleCustomFields --}}
+        @foreach($visibleStepTwoCustomFields as $field)
+            <div wire:key="sfp-custom-field-{{ $field->id }}">
                 <label for="custom_{{ $field->key }}" class="block text-sm font-medium text-gray-700 mb-1">
                     {{ $field->label }}
                     @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif

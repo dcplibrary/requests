@@ -98,6 +98,24 @@ class NotificationService
     }
 
     /**
+     * Render a staff email template (subject + body) using the same pipeline as runtime sends.
+     *
+     * Useful for browser preview / test-email flows that need accurate {action_buttons},
+     * {request_url}, and token behavior.
+     *
+     * @return array{subject: string, body: string}
+     */
+    public function renderStaffTemplate(string $subjectTemplate, string $bodyTemplate, PatronRequest $request): array
+    {
+        $request->loadMissing(['patron', 'material', 'fieldValues.field', 'status']);
+
+        return [
+            'subject' => $this->replacePlaceholders($subjectTemplate, $request),
+            'body'    => $this->finalizeStaffRoutingBody($bodyTemplate, $request),
+        ];
+    }
+
+    /**
      * Send the patron a status-change email when a request transitions status.
      *
      * Only fires when:
@@ -658,7 +676,7 @@ class NotificationService
 
         if ($convertCell !== '' && $statusCells !== '') {
             $intro = '<p style="margin:0 0 12px;font-size:12px;color:#6b7280;font-style:italic;">'
-                . 'Quick actions — <strong style="color:#374151;">Convert to ILL</strong> (patron opted in) or set status:</p>';
+                . 'Quick actions — set status, or <strong style="color:#374151;">Convert to ILL</strong> (patron opted in):</p>';
         } elseif ($convertCell !== '') {
             $intro = '<p style="margin:0 0 12px;font-size:12px;color:#6b7280;font-style:italic;">'
                 . 'Patron asked to try interlibrary loan if not purchased — convert to the ILL workflow:</p>';
@@ -667,8 +685,9 @@ class NotificationService
                 . 'Quick actions — click to update status directly from this email:</p>';
         }
 
+        // Keep Convert-to-ILL last so status transitions appear first in left-to-right order.
         $table = '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>'
-            . $convertCell . $statusCells . '</tr></table>';
+            . $statusCells . $convertCell . '</tr></table>';
 
         if ($standalone) {
             return '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;">'
@@ -694,7 +713,7 @@ class NotificationService
      *   {status_name}       — current status name (internal label)
      *   {status_description} — description text for the current status (for patron emails)
      *   {submitted_date}    — submission date (e.g. January 5, 2026)
-     *   {request_url}       — full URL to the request in the staff dashboard
+     *   {request_url}       — "View Request" button linking to the staff request page
      *   {convert_to_ill_url} — signed convert URL (empty if not SFP+ill_requested). Same action as the
      *                          indigo **Convert to ILL** button in {action_buttons}; omit if you use that block.
      *   {convert_to_ill_link} — standalone button block; duplicates {action_buttons} if both are used.
@@ -719,6 +738,13 @@ class NotificationService
         $actionLabel  = trim((string) ($st?->action_label ?? ''));
         $statusDisplay = $actionLabel !== '' ? $actionLabel : $statusName;
 
+        $requestUrl = route('request.staff.requests.show', $request);
+        $requestUrlButton = '<a href="' . e($requestUrl) . '" '
+            . 'style="display:inline-block;padding:8px 18px;background:#1d4ed8;color:#ffffff;'
+            . 'text-decoration:none;border-radius:6px;font-size:13px;font-weight:bold;'
+            . 'font-family:Arial,Helvetica,sans-serif;line-height:1.2;">'
+            . 'View Request</a>';
+
         $map = [
             '{title}'             => $request->submitted_title  ?? '',
             '{author}'            => $request->submitted_author ?? '',
@@ -732,7 +758,7 @@ class NotificationService
             '{status_name}'       => $statusName,
             '{status_description}' => $request->status?->description ?? '',
             '{submitted_date}'    => $request->created_at?->format('F j, Y') ?? '',
-            '{request_url}'       => route('request.staff.requests.show', $request),
+            '{request_url}'       => $requestUrlButton,
             '{notify_by_email}'   => $request->notify_by_email ? 'Yes' : 'No',
         ];
 
@@ -860,13 +886,7 @@ class NotificationService
     <td style="padding:5px 0;">{submitted_date}</td>
   </tr>
 </table>
-<p style="margin:20px 0 0;">
-  <a href="{request_url}"
-     style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#ffffff;
-            text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;">
-    View Request →
-  </a>
-</p>
+<p style="margin:20px 0 0;">{request_url}</p>
 {action_buttons}
 HTML;
     }

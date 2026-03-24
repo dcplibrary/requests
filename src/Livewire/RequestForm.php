@@ -996,13 +996,18 @@ class RequestForm extends Component
             }
         }
 
+        $customFieldVisibility = $this->buildVisibilityMap($this->stepTwoCustomFields);
+        $visibleStepTwoCustomFields = $this->stepTwoCustomFields
+            ->filter(fn ($field) => $customFieldVisibility[$field->key] ?? false)
+            ->values();
+
         return view('requests::livewire.request-form', [
             'materialTypes'         => $mtField ? $this->formFilteredOptions($mtField->id, $sfpFormId) : collect(),
             'audiences'             => $audField ? $this->formFilteredOptions($audField->id, $sfpFormId) : collect(),
             'genres'                => $genreField ? $this->formFilteredOptions($genreField->id, $sfpFormId) : collect(),
             'coreFieldOptions'      => $coreFieldOptions,
             'orderedFields'         => $this->formFields,
-            'stepTwoCustomFields'   => $this->stepTwoCustomFields,
+            'visibleStepTwoCustomFields' => $visibleStepTwoCustomFields,
             'customFieldOptionsByFieldId' => $customFieldOptions,
             'visibleFields'     => $visible,             // ['genre' => true/false, ...]
             'illWarningMessage' => Setting::get('ill_warning_message', ''),
