@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.19.4](https://github.com/dcplibrary/requests/compare/v4.19.3...v4.19.4) (2026-03-24)
+
+
+### Bug Fixes
+
+* allow ill statuses to be included in notificatino action buttons ([92cf6fe](https://github.com/dcplibrary/requests/commit/92cf6fee80f12959c4e6e85dfbcda69896b1d83d))
+
 ## [4.19.3](https://github.com/dcplibrary/requests/compare/v4.19.2...v4.19.3) (2026-03-24)
 
 
