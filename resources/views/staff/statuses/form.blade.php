@@ -92,6 +92,16 @@
                     </label>
                 </div>
             </div>
+            <div class="flex items-start gap-2">
+                <input type="hidden" name="staff_email_quick_action" value="0">
+                <input type="checkbox" name="staff_email_quick_action" id="staff_email_quick_action" value="1"
+                       {{ old('staff_email_quick_action', $status->staff_email_quick_action ?? true) ? 'checked' : '' }}
+                       class="w-4 h-4 mt-0.5 rounded border-gray-300 text-blue-600">
+                <div>
+                    <label for="staff_email_quick_action" class="text-sm font-medium text-gray-700">Show one-click button in {{ request_form_name('ill') }} staff routing emails</label>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ request_form_name('sfp') }} emails always list every valid next-step button (Review, Purchase, Deny, etc.) plus Convert to ILL when the patron opted in. Uncheck here only to hide this status from {{ request_form_name('ill') }} new-request routing mail <code class="text-xs bg-gray-100 px-1 rounded">{action_buttons}</code> while keeping it in the {{ request_form_name('ill') }} workflow in the app.</p>
+                </div>
+            </div>
             <div class="flex items-center gap-2">
                 <input type="hidden" name="is_terminal" value="0">
                 <input type="checkbox" name="is_terminal" id="is_terminal" value="1"

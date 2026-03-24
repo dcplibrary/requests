@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool   $advance_on_claim When true, claiming a request on this status auto-advances it to the next status by sort_order
  * @property bool   $applies_to_sfp  Whether this status is available for Suggest for Purchase requests
  * @property bool   $applies_to_ill  Whether this status is available for Interlibrary Loan requests
+ * @property bool   $staff_email_quick_action When false, omitted from {action_buttons} on ILL staff routing emails only (SFP is unchanged)
  * @property int    $sort_order
  * @property bool   $active
  * @property bool   $is_terminal  True for resolved statuses (Purchased, Denied, etc.)
@@ -31,7 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class RequestStatus extends Model
 {
-    protected $fillable = ['name', 'slug', 'color', 'icon', 'action_label', 'advance_on_claim', 'applies_to_sfp', 'applies_to_ill', 'sort_order', 'active', 'is_terminal', 'notify_patron', 'description'];
+    protected $fillable = ['name', 'slug', 'color', 'icon', 'action_label', 'advance_on_claim', 'applies_to_sfp', 'applies_to_ill', 'staff_email_quick_action', 'sort_order', 'active', 'is_terminal', 'notify_patron', 'description'];
 
     protected $casts = [
         'active'          => 'boolean',
@@ -40,6 +41,7 @@ class RequestStatus extends Model
         'advance_on_claim' => 'boolean',
         'applies_to_sfp'  => 'boolean',
         'applies_to_ill'  => 'boolean',
+        'staff_email_quick_action' => 'boolean',
     ];
 
     /** Requests currently in this status. */

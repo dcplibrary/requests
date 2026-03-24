@@ -60,6 +60,7 @@ class RequestControllerEmailActionTest extends TestCase
             $table->boolean('notify_patron')->default(false);
             $table->boolean('applies_to_sfp')->default(true);
             $table->boolean('applies_to_ill')->default(true);
+            $table->boolean('staff_email_quick_action')->default(true);
             $table->text('description')->nullable();
             $table->timestamps();
         });

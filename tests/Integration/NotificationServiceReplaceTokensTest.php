@@ -45,6 +45,7 @@ class NotificationServiceReplaceTokensTest extends TestCase
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
+            $table->boolean('staff_email_quick_action')->default(true);
             $table->timestamps();
         });
 

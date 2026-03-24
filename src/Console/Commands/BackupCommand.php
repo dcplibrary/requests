@@ -69,7 +69,7 @@ class BackupCommand extends Command
                     'request_statuses' => RequestStatus::orderBy('sort_order')
                         ->get(['slug', 'name', 'color', 'icon', 'sort_order', 'active', 'is_terminal',
                                'notify_patron', 'action_label', 'advance_on_claim', 'applies_to_sfp',
-                               'applies_to_ill', 'description'])
+                               'applies_to_ill', 'staff_email_quick_action', 'description'])
                         ->toArray(),
 
                     'forms' => Form::orderBy('slug')->get(['slug', 'name'])->toArray(),

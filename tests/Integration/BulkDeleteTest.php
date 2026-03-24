@@ -55,6 +55,7 @@ class BulkDeleteTest extends TestCase
             $table->increments('id');
             $table->string('name');
             $table->string('slug')->unique();
+            $table->boolean('staff_email_quick_action')->default(true);
             $table->timestamps();
         });
 

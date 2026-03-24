@@ -75,6 +75,7 @@ class PatronRequestAssignmentTest extends TestCase
             $table->boolean('active')->default(true);
             $table->boolean('is_terminal')->default(false);
             $table->boolean('notify_patron')->default(false);
+            $table->boolean('staff_email_quick_action')->default(true);
             $table->text('description')->nullable();
             $table->timestamps();
         });

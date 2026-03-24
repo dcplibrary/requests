@@ -14,6 +14,7 @@ use Dcplibrary\Requests\Models\PatronRequest;
 use Dcplibrary\Requests\Models\RequestStatusHistory;
 use Dcplibrary\Requests\Models\User;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
@@ -569,8 +570,10 @@ class NotificationService
      *
      * When the request is still SFP and the patron opted into ILL, a **Convert to ILL**
      * button (signed link, 30-day) is prepended in the same row as status shortcuts.
-     * Status buttons use {@see RequestStatus::$action_label} or name; excludes current
-     * and earlier sort_order.
+     * Status buttons use {@see RequestStatus::$action_label} or name; successors are taken
+     * from the kind-specific workflow order. For {@see PatronRequest::KIND_ILL} only, rows with
+     * {@see RequestStatus::$staff_email_quick_action} false are omitted. SFP always shows all
+     * valid next steps plus Convert to ILL when the patron opted in.
      *
      * @param  bool  $standalone  When true (appended block): top border and spacing. When false
      *                           ({action_buttons} in body): compact block for mid-template use.
@@ -584,12 +587,20 @@ class NotificationService
         // Next actions must be successors in *this kind's* workflow only. Comparing raw
         // sort_order to the current row breaks when e.g. an ILL request still sits on an
         // SFP-only status after convert (parallel ILL statuses use their own sort_order scale).
+        $statusTable = (new RequestStatus)->getTable();
+        $hasQuickActionColumn = Schema::hasTable($statusTable)
+            && Schema::hasColumn($statusTable, 'staff_email_quick_action');
+
+        $columns = $hasQuickActionColumn
+            ? ['id', 'name', 'action_label', 'color', 'staff_email_quick_action']
+            : ['id', 'name', 'action_label', 'color'];
+
         $chain = RequestStatus::query()
             ->where('active', true)
             ->forKind($kind)
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get(['id', 'name', 'action_label', 'color']);
+            ->get($columns);
 
         $currentId = (int) $request->request_status_id;
         $idx = $chain->search(fn (RequestStatus $s) => (int) $s->id === $currentId);
@@ -597,6 +608,13 @@ class NotificationService
         $buttons = $idx === false
             ? $chain
             : $chain->slice($idx + 1)->values();
+
+        // ILL only: per-status toggle (Settings → Statuses) to hide e.g. Purchase/Deny from ILL
+        // routing email. SFP always keeps every successor button (Review, Purchase, Deny, …).
+        // Skip filtering until migration has run (avoids SQL errors and matches pre-column behavior).
+        if ($kind === PatronRequest::KIND_ILL && $hasQuickActionColumn) {
+            $buttons = $buttons->filter(fn (RequestStatus $s) => (bool) ($s->staff_email_quick_action ?? true))->values();
+        }
 
         $convertCell = '';
         if ($kind === PatronRequest::KIND_SFP && $request->ill_requested) {

@@ -30,7 +30,8 @@ use ZipArchive;
  * Covers all non-transient data needed to fully restore the application on a fresh install
  * (after migrations and seeding have run):
  *   - settings (all key/value pairs)
- *   - request_statuses (slug, name, color, icon, sort order, SFP/ILL scope, terminal, patron
+ *   - request_statuses (slug, name, color, icon, sort order, SFP/ILL scope, ILL email quick-action,
+ *     terminal, patron
  *     notification, action label, advance-on-claim, description)
  *   - forms (sfp / ill — used as FK parents for field config)
  *   - fields (all field definitions — type, label, scope, sort order, required, token, filterable,
@@ -496,7 +497,7 @@ class BackupController extends Controller
                         'request_statuses' => RequestStatus::orderBy('sort_order')
                             ->get(['slug', 'name', 'color', 'icon', 'sort_order', 'active', 'is_terminal',
                                    'notify_patron', 'action_label', 'advance_on_claim', 'applies_to_sfp',
-                                   'applies_to_ill', 'description'])
+                                   'applies_to_ill', 'staff_email_quick_action', 'description'])
                             ->toArray(),
                         'forms'                       => Form::orderBy('slug')->get(['slug', 'name'])->toArray(),
                         'fields'                      => $this->exportFields(),
@@ -797,6 +798,7 @@ class BackupController extends Controller
                             'advance_on_claim' => (bool) ($row['advance_on_claim'] ?? false),
                             'applies_to_sfp'   => (bool) ($row['applies_to_sfp'] ?? true),
                             'applies_to_ill'   => (bool) ($row['applies_to_ill'] ?? true),
+                            'staff_email_quick_action' => (bool) ($row['staff_email_quick_action'] ?? true),
                             'description'      => $row['description'] ?? null,
                         ]
                     );
