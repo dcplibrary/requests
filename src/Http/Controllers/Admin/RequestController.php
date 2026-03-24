@@ -904,6 +904,18 @@ class RequestController extends Controller
             abort(404, 'Status not found.');
         }
 
+        $kind = in_array((string) $patronRequest->request_kind, PatronRequest::kinds(), true)
+            ? (string) $patronRequest->request_kind
+            : PatronRequest::KIND_SFP;
+        $statusApplies = match ($kind) {
+            PatronRequest::KIND_SFP => $newStatus->applies_to_sfp,
+            PatronRequest::KIND_ILL => $newStatus->applies_to_ill,
+            default => false,
+        };
+        if (! $statusApplies) {
+            abort(403, 'This status is not part of the workflow for this request type.');
+        }
+
         // No-op if the request is already on this status (idempotent).
         if ($patronRequest->request_status_id !== $newStatus->id) {
             $patronRequest->transitionStatus(

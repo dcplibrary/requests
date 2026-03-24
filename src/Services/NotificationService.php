@@ -577,17 +577,26 @@ class NotificationService
      */
     private function buildEmailActionButtons(PatronRequest $request, bool $standalone = true): string
     {
-        $kind = $request->request_kind ?: PatronRequest::KIND_SFP;
-        $currentId = (int) $request->request_status_id;
-        $currentStatus = RequestStatus::find($currentId, ['sort_order']);
-        $currentSort = $currentStatus ? (int) $currentStatus->sort_order : 0;
+        $kind = in_array((string) $request->request_kind, PatronRequest::kinds(), true)
+            ? (string) $request->request_kind
+            : PatronRequest::KIND_SFP;
 
-        $buttons = RequestStatus::query()
+        // Next actions must be successors in *this kind's* workflow only. Comparing raw
+        // sort_order to the current row breaks when e.g. an ILL request still sits on an
+        // SFP-only status after convert (parallel ILL statuses use their own sort_order scale).
+        $chain = RequestStatus::query()
             ->where('active', true)
-            ->forKind($request->request_kind ?: PatronRequest::KIND_SFP)
-            ->where('sort_order', '>', $currentSort)
+            ->forKind($kind)
             ->orderBy('sort_order')
+            ->orderBy('id')
             ->get(['id', 'name', 'action_label', 'color']);
+
+        $currentId = (int) $request->request_status_id;
+        $idx = $chain->search(fn (RequestStatus $s) => (int) $s->id === $currentId);
+
+        $buttons = $idx === false
+            ? $chain
+            : $chain->slice($idx + 1)->values();
 
         $convertCell = '';
         if ($kind === PatronRequest::KIND_SFP && $request->ill_requested) {

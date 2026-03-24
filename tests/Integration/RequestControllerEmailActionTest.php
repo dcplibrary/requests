@@ -58,6 +58,8 @@ class RequestControllerEmailActionTest extends TestCase
             $table->boolean('active')->default(true);
             $table->boolean('is_terminal')->default(false);
             $table->boolean('notify_patron')->default(false);
+            $table->boolean('applies_to_sfp')->default(true);
+            $table->boolean('applies_to_ill')->default(true);
             $table->text('description')->nullable();
             $table->timestamps();
         });
@@ -93,8 +95,9 @@ class RequestControllerEmailActionTest extends TestCase
 
         $now = date('Y-m-d H:i:s');
         Capsule::table('request_statuses')->insert([
-            ['name' => 'Pending', 'slug' => 'pending', 'sort_order' => 1, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
-            ['name' => 'Under Review', 'slug' => 'under-review', 'sort_order' => 2, 'active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'Pending', 'slug' => 'pending', 'sort_order' => 1, 'active' => 1, 'applies_to_sfp' => 1, 'applies_to_ill' => 1, 'created_at' => $now, 'updated_at' => $now],
+            // SFP-only next step (typical split workflow — ILL email links must not target this).
+            ['name' => 'Under Review', 'slug' => 'under-review', 'sort_order' => 2, 'active' => 1, 'applies_to_sfp' => 1, 'applies_to_ill' => 0, 'created_at' => $now, 'updated_at' => $now],
         ]);
         self::$statusPendingId      = (int) Capsule::table('request_statuses')->where('slug', 'pending')->value('id');
         self::$statusUnderReviewId = (int) Capsule::table('request_statuses')->where('slug', 'under-review')->value('id');
@@ -126,13 +129,13 @@ class RequestControllerEmailActionTest extends TestCase
         return $id;
     }
 
-    private function createRequest(int $patronId, int $statusId): PatronRequest
+    private function createRequest(int $patronId, int $statusId, string $kind = 'sfp'): PatronRequest
     {
         $now = date('Y-m-d H:i:s');
         Capsule::table('requests')->insert([
             'patron_id'         => $patronId,
             'request_status_id' => $statusId,
-            'request_kind'      => 'sfp',
+            'request_kind'      => $kind,
             'submitted_title'   => 'Test Title',
             'submitted_author'  => 'Test Author',
             'created_at'        => $now,
@@ -188,6 +191,28 @@ class RequestControllerEmailActionTest extends TestCase
             $controller->emailAction($request, $patronRequest);
         } catch (HttpException $e) {
             $this->assertSame(400, $e->getStatusCode());
+            throw $e;
+        }
+    }
+
+    #[Test]
+    public function email_action_rejects_status_not_in_workflow_for_ill_requests(): void
+    {
+        $this->bootDatabase();
+        $this->resetData();
+        $this->createPatron(1);
+        $patronRequest = $this->createRequest(1, self::$statusPendingId, 'ill');
+
+        $request = $this->mockRequest(true, (string) self::$statusUnderReviewId);
+        $controller = new RequestController();
+
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage('not part of the workflow');
+
+        try {
+            $controller->emailAction($request, $patronRequest->fresh());
+        } catch (HttpException $e) {
+            $this->assertSame(403, $e->getStatusCode());
             throw $e;
         }
     }
