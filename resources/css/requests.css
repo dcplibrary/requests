@@ -3,3 +3,84 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Trix (rich text) — MUST stay outside @layer
+ * -------------------------------------------
+ * trix.css from unpkg is unlayered; these overrides stay unlayered so they apply.
+ *
+ * One toolbar row: nowrap + horizontal scroll only when the column is too narrow.
+ * (Wrapping groups looked broken — e.g. Undo/Redo alone on row 2 with empty space.)
+ *
+ * Trix inserts <trix-toolbar> before <trix-editor> in the light DOM.
+ */
+trix-toolbar {
+    @apply rounded-t-md border border-b-0 border-gray-300 bg-gray-50;
+    box-sizing: border-box;
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+/* Single row; scroll inside the row on small widths */
+trix-toolbar .trix-button-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: center;
+    column-gap: 0.25rem;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    padding: 0.375rem 0.5rem;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+trix-toolbar .trix-button-row::-webkit-scrollbar {
+    height: 6px;
+}
+
+trix-toolbar .trix-button-row::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background-color: #d1d5db;
+}
+
+trix-toolbar .trix-button-group {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    flex-shrink: 0;
+    align-items: center;
+    margin-bottom: 0 !important;
+    box-sizing: border-box;
+    border-color: #e5e7eb;
+}
+
+/* Trix default uses margin-left: 1.5vw between groups — override so column-gap controls spacing */
+trix-toolbar .trix-button-group:not(:first-child) {
+    margin-left: 0 !important;
+}
+
+/* Collapse flex spacer so tool sets aren’t pushed to opposite ends (space-between effect) */
+trix-toolbar .trix-button-group-spacer {
+    flex: 0 0 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* Single editor below toolbar */
+trix-toolbar + trix-editor {
+    @apply rounded-b-md border-x border-b border-gray-300 border-t border-gray-200 bg-white text-sm leading-relaxed text-gray-900;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+}

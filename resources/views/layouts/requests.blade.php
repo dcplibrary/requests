@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Suggest a Purchase — Daviess County Public Library</title>
+    {{-- Trix base before package CSS so requests.css can override toolbar wrap + borders --}}
+    <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css" crossorigin="anonymous">
     <link rel="stylesheet" href="{{ route('request.assets.css') }}?v={{ $requestsCssVersion ?? 'dev' }}">
     @livewireStyles
     @stack('head')

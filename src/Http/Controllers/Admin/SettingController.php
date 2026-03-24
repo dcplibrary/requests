@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Http\Controllers\Admin;
 
+use Dcplibrary\Requests\Database\Seeders\SettingsSeeder;
 use Dcplibrary\Requests\Http\Controllers\Concerns\ProvidesEmailTokens;
 use Dcplibrary\Requests\Http\Controllers\Controller;
 use Dcplibrary\Requests\Mail\RequestMail;
@@ -14,6 +15,7 @@ use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 
 /**
  * General package settings, notification templates, and form-field notification rules.
@@ -263,9 +265,18 @@ class SettingController extends Controller
 
     public function update(Request $request)
     {
+        // Allow keys from the package catalog plus any already in DB (custom/host rows).
+        // `exists:settings,key` alone fails when rows were never seeded (e.g. staff_routing_* missing).
+        $permittedKeys = collect(SettingsSeeder::defaultSettings(0))
+            ->pluck('key')
+            ->merge(Setting::query()->pluck('key'))
+            ->unique()
+            ->values()
+            ->all();
+
         $data = $request->validate([
             'settings'                   => 'required|array',
-            'settings.*.key'             => 'required|string|exists:settings,key',
+            'settings.*.key'             => ['required', 'string', Rule::in($permittedKeys)],
             'settings.*.value'          => 'nullable|string|max:65535',
             'patron_templates'           => 'nullable|array',
             'patron_templates.*.id'      => 'nullable|exists:patron_status_templates,id',

@@ -356,8 +356,7 @@
                 @elseif($field->type === 'html')
                     @once
                         @push('head')
-                            <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css">
-                            <script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js"></script>
+                            <script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js" crossorigin="anonymous"></script>
                         @endpush
                     @endonce
                     <input type="hidden"

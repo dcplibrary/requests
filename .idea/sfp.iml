@@ -258,10 +258,12 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/options-resolver" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-php81" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/stopwatch" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/_laravel_idea" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/dcplibrary/ui" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/livewire/livewire_compare" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="sfp-laravel" />
   </component>
 </module>

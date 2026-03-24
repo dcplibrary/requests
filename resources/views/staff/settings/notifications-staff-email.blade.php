@@ -31,7 +31,14 @@
     $staffMaterialTypeIds = old('staff_material_type_ids', $staffMaterialTypeIds ?? []);
     $staffStatusIds = old('staff_status_ids', $staffStatusIds ?? []);
 @endphp
-<style>.trix-toolbar { display: none !important; }</style>
+<style>
+    /* No rich-text toolbar for staff HTML; editor still has a hidden trix-toolbar sibling */
+    .trix-toolbar { display: none !important; }
+    trix-toolbar + trix-editor {
+        border-radius: 0.375rem !important;
+        border: 1px solid #d1d5db !important;
+    }
+</style>
 
 <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {{-- Send test (left) + Preview (right) on one line --}}

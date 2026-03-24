@@ -54,6 +54,8 @@
     :help-url="asset('requests-selector-help.html')"
 >
     <x-slot:package-css>
+        {{-- Trix base first; requests.css overrides toolbar wrap + colors. --}}
+        <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css" crossorigin="anonymous">
         <link rel="stylesheet" href="{{ route('request.assets.css') }}?v={{ $requestsCssVersion ?? 'dev' }}">
     </x-slot:package-css>
     <x-slot:nav>
@@ -68,4 +70,5 @@
 
     @yield('content')
 
+    <script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js" crossorigin="anonymous"></script>
 </x-dcpl::layouts.staff>
