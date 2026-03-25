@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.19.10](https://github.com/dcplibrary/requests/compare/v4.19.9...v4.19.10) (2026-03-25)
+
+
+### Bug Fixes
+
+* change help title from sfp to requests ([35e448d](https://github.com/dcplibrary/requests/commit/35e448d66b6c0b59586c27a6374d44b3390127db))
+
 ## [4.19.9](https://github.com/dcplibrary/requests/compare/v4.19.8...v4.19.9) (2026-03-25)
 
 
