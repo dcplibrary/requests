@@ -284,6 +284,26 @@
                         </div>
                         @endif
 
+                    @elseif($setting->key === 'ill_selector_group_id')
+                        @php
+                            $illGroupVal = (string) old("settings.{$i}.value", $setting->value ?? '');
+                            $illGroupIds = ($selectorGroupsForSettings ?? collect())->pluck('id')->map(fn ($id) => (string) $id);
+                        @endphp
+                        <select id="{{ $fieldId }}"
+                                name="settings[{{ $i }}][value]"
+                                class="max-w-md w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white">
+                            <option value="" @selected($illGroupVal === '')>— None (hide ILL for non-admins) —</option>
+                            @if($illGroupVal !== '' && ! $illGroupIds->contains($illGroupVal))
+                                <option value="{{ $illGroupVal }}" selected>ID {{ $illGroupVal }} (group not found — choose another or clear)</option>
+                            @endif
+                            @foreach($selectorGroupsForSettings ?? [] as $group)
+                                <option value="{{ $group->id }}" @selected((string) $group->id === $illGroupVal)>{{ $group->name }}</option>
+                            @endforeach
+                        </select>
+                        @if(($selectorGroupsForSettings ?? collect())->isEmpty())
+                            <p class="text-xs text-amber-700 mt-1">No selector groups exist yet. Create one under <span class="font-medium">Staff → Groups</span> first.</p>
+                        @endif
+
                     @elseif($setting->type === 'integer')
                         @php $isDays = str_ends_with($setting->key, '_days'); @endphp
                         <div class="flex items-center gap-2">

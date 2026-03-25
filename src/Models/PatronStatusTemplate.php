@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * A patron status email template. Each has its own subject and body and can be
  * linked to request statuses and optionally to material types. When a request
  * transitions to a status, matching templates (by status and optionally material
- * type) are sent. One template can be marked as default (fallback). Footer is universal.
+ * type) are sent. Templates may also fire when an SFP request is converted to ILL
+ * ({@see $trigger_on_ill_conversion}) because conversion does not change status id.
+ * One template can be marked as default (fallback). Footer is universal.
  *
  * @property int    $id
  * @property string $name
@@ -18,14 +20,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string|null $body
  * @property int    $sort_order
  * @property bool   $is_default
+ * @property bool   $trigger_on_ill_conversion  When true, send when SFP → ILL (staff convert or signed link), not only on status change
  */
 class PatronStatusTemplate extends Model
 {
-    protected $fillable = ['name', 'enabled', 'subject', 'body', 'sort_order', 'is_default'];
+    protected $fillable = ['name', 'enabled', 'subject', 'body', 'sort_order', 'is_default', 'trigger_on_ill_conversion'];
 
     protected $casts = [
         'enabled' => 'boolean',
         'is_default' => 'boolean',
+        'trigger_on_ill_conversion' => 'boolean',
     ];
 
     /** Request statuses that trigger this template. */

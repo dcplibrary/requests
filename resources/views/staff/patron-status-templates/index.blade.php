@@ -18,6 +18,7 @@
                 <x-requests::sortable-th column="name" label="Name" />
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Subject</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Statuses</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">ILL convert</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Material types</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Default</th>
                 <x-requests::sortable-th column="enabled" label="Enabled" />
@@ -36,6 +37,7 @@
                         {{ $tpl->requestStatuses->pluck('name')->join(', ') }}
                     @endif
                 </td>
+                <td class="px-4 py-3 text-gray-600">{{ ($tpl->trigger_on_ill_conversion ?? false) ? 'Yes' : '—' }}</td>
                 <td class="px-4 py-3 text-gray-600">
                     @if($tpl->fieldOptions->isEmpty())
                         <span class="text-gray-400">All</span>
@@ -61,11 +63,11 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="7" class="px-4 py-10 text-center text-gray-400">No templates yet. Create one to send different emails by status and material type.</td></tr>
+            <tr><td colspan="8" class="px-4 py-10 text-center text-gray-400">No templates yet. Create one to send different emails by status and material type.</td></tr>
             @endforelse
         </tbody>
     </table>
 </div>
 
-<p class="mt-4 text-xs text-gray-500">Each template is sent when a request’s status changes to one of its selected statuses (and matches material type if set). Leave material types empty for “all”. One template can be the default fallback. Only statuses with “Notify Patron” checked (in Statuses) will trigger email. The email footer is set in Notifications → General.</p>
+<p class="mt-4 text-xs text-gray-500">Each template is sent when a request’s status changes to one of its selected statuses (and matches material type if set). Use “Send when converted to interlibrary loan” for emails after SFP → ILL conversion (status does not change on convert). Leave material types empty for “all”. One template can be the default fallback. Only statuses with “Notify Patron” checked (in Statuses) will trigger status-based email. The email footer is set in Notifications → General.</p>
 @endsection

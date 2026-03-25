@@ -10,6 +10,8 @@ use Dcplibrary\Requests\Models\StaffRoutingTemplate;
 use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
+use Dcplibrary\Requests\Models\Material;
+use Dcplibrary\Requests\Models\Patron;
 use Dcplibrary\Requests\Models\PatronRequest;
 use Dcplibrary\Requests\Models\RequestStatusHistory;
 use Dcplibrary\Requests\Models\User;
@@ -208,6 +210,82 @@ class NotificationService
     }
 
     /**
+     * Send patron email(s) when an SFP request is converted to ILL (staff action or signed convert link).
+     *
+     * Conversion does not change {@see PatronRequest::$request_status_id}, so status-based templates
+     * never run; use {@see PatronStatusTemplate::$trigger_on_ill_conversion} instead.
+     *
+     * Same gates as {@see notifyPatronStatusChange()} except the current status's `notify_patron` flag
+     * is not required.
+     */
+    public function notifyPatronIllConversion(PatronRequest $request): bool
+    {
+        if (! Setting::get('notifications_enabled', true)) {
+            return false;
+        }
+        if (! Setting::get('patron_status_notification_enabled', true)) {
+            return false;
+        }
+
+        $kind = in_array((string) $request->request_kind, PatronRequest::kinds(), true)
+            ? (string) $request->request_kind
+            : PatronRequest::KIND_SFP;
+        if ($kind !== PatronRequest::KIND_ILL) {
+            return false;
+        }
+
+        $request->loadMissing(['patron', 'fieldValues.field', 'status']);
+
+        if (! $request->notify_by_email) {
+            return false;
+        }
+
+        $patronEmail = $request->patron?->effective_email ?? $request->patron?->email;
+        if (! $patronEmail) {
+            return false;
+        }
+
+        $templates = PatronStatusTemplate::query()
+            ->where('enabled', true)
+            ->where('trigger_on_ill_conversion', true)
+            ->ordered()
+            ->get();
+
+        if ($templates->isEmpty()) {
+            return false;
+        }
+
+        $sentCount = 0;
+        foreach ($templates as $template) {
+            try {
+                $subject = $this->replacePlaceholders($template->subject, $request);
+                $body    = $this->replacePlaceholders((string) $template->body, $request);
+                Mail::to($patronEmail)->send(new RequestMail($subject, $body));
+                $sentCount++;
+            } catch (\Throwable $e) {
+                Log::error('Patron ILL conversion email failed', [
+                    'patron_id'   => $request->patron_id,
+                    'request_id'  => $request->id,
+                    'template_id' => $template->id,
+                    'error'       => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if ($sentCount > 0) {
+            $this->logNotificationHistory(
+                $request,
+                RequestStatusHistory::ACTIVITY_PATRON_EMAIL,
+                $sentCount === 1
+                    ? 'Patron notification sent to ' . $patronEmail . ' (converted to interlibrary loan).'
+                    : "Patron notification: {$sentCount} emails sent to {$patronEmail} (converted to interlibrary loan)."
+            );
+        }
+
+        return $sentCount > 0;
+    }
+
+    /**
      * Render the patron status-change email for a given status without sending it.
      *
      * Runs the same gate checks as notifyPatronStatusChange(). Returns an
@@ -262,6 +340,100 @@ class NotificationService
             'body'    => $body,
             'to'      => $patronEmail,
         ];
+    }
+
+    /**
+     * Render patron status email subject + body using the same {@see replacePlaceholders()} pipeline as live sends.
+     *
+     * @return array{subject: string, body: string}
+     */
+    public function renderPatronEmailForPreview(
+        string $subjectTemplate,
+        string $bodyTemplate,
+        ?RequestStatus $previewStatus = null,
+        string $requestKind = PatronRequest::KIND_SFP,
+    ): array {
+        $request = $this->makeSamplePatronRequestForEmailPreview($previewStatus, $requestKind);
+
+        return [
+            'subject' => $this->replacePlaceholders($subjectTemplate, $request),
+            'body'    => $this->replacePlaceholders($bodyTemplate, $request),
+        ];
+    }
+
+    /**
+     * Render staff routing subject + body like a real send (action buttons, signed URLs, etc.).
+     *
+     * @return array{subject: string, body: string}
+     */
+    public function renderStaffTemplateForPreview(string $subjectTemplate, string $bodyTemplate, string $kind = PatronRequest::KIND_SFP): array
+    {
+        $request = $this->makeSamplePatronRequestForEmailPreview(null, $kind);
+
+        return $this->renderStaffTemplate($subjectTemplate, $bodyTemplate, $request);
+    }
+
+    /**
+     * In-memory request for email previews — uses a DB workflow status when possible.
+     */
+    private function makeSamplePatronRequestForEmailPreview(?RequestStatus $previewStatus = null, string $kind = PatronRequest::KIND_SFP): PatronRequest
+    {
+        $status = $previewStatus;
+        if ($status === null) {
+            $status = RequestStatus::query()
+                ->where('active', true)
+                ->forKind($kind)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->first();
+        }
+        if ($status === null) {
+            $status = new RequestStatus([
+                'name'            => 'On Order',
+                'slug'            => 'sample-on-order',
+                'action_label'    => 'Ordered',
+                'description'     => 'Your request has been ordered and is on its way.',
+                'notify_patron'   => true,
+                'applies_to_sfp'  => true,
+                'applies_to_ill'  => false,
+                'active'          => true,
+            ]);
+        }
+
+        $patron = new Patron([
+            'name_first'        => 'Jane',
+            'name_last'         => 'Doe',
+            'email'             => 'jane.doe@example.com',
+            'phone'             => '(270) 555-0123',
+            'preferred_email'   => 'submitted',
+            'preferred_phone'   => 'submitted',
+        ]);
+
+        $material = new Material([
+            'isbn13' => '9780743273565',
+            'isbn'   => '0743273567',
+            'title'  => 'The Great Gatsby',
+            'author' => 'F. Scott Fitzgerald',
+        ]);
+
+        $request = new PatronRequest([
+            'submitted_title'         => 'The Great Gatsby',
+            'submitted_author'        => 'F. Scott Fitzgerald',
+            'submitted_publish_date'  => '2025-06-15',
+            'request_kind'            => $kind,
+            'notify_by_email'         => true,
+            'ill_requested'           => false,
+            'request_status_id'       => (int) ($status->getKey() ?? 0),
+        ]);
+        $request->setAttribute($request->getKeyName(), 1);
+        $request->setRelation('patron', $patron);
+        $request->setRelation('status', $status);
+        $request->setRelation('material', $material);
+        $request->setRelation('fieldValues', collect());
+        $request->setAttribute('created_at', now());
+        $request->syncOriginal();
+
+        return $request;
     }
 
     /**

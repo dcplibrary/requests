@@ -5,8 +5,11 @@ namespace Dcplibrary\Requests\Http\Controllers\Admin;
 use Dcplibrary\Requests\Http\Controllers\Concerns\ProvidesEmailTokens;
 use Dcplibrary\Requests\Http\Controllers\Controller;
 use Dcplibrary\Requests\Models\SelectorGroup;
+use Dcplibrary\Requests\Mail\RequestMail;
 use Dcplibrary\Requests\Models\StaffRoutingTemplate;
+use Dcplibrary\Requests\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 /**
@@ -89,6 +92,36 @@ class StaffRoutingTemplateController extends Controller
 
         return redirect()->route('request.staff.settings.notifications', ['tab' => 'emails'])
             ->with('success', 'Staff routing template saved.');
+    }
+
+    public function preview(StaffRoutingTemplate $staffRoutingTemplate): \Illuminate\View\View
+    {
+        $rendered = app(NotificationService::class)->renderStaffTemplateForPreview(
+            $staffRoutingTemplate->subject,
+            (string) ($staffRoutingTemplate->body ?? '')
+        );
+
+        return view('requests::mail.notification', ['body' => $rendered['body']]);
+    }
+
+    public function sendTest(Request $request, StaffRoutingTemplate $staffRoutingTemplate): \Illuminate\Http\RedirectResponse
+    {
+        $data = $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $rendered = app(NotificationService::class)->renderStaffTemplateForPreview(
+            $staffRoutingTemplate->subject,
+            (string) ($staffRoutingTemplate->body ?? '')
+        );
+
+        try {
+            Mail::to($data['email'])->send(new RequestMail('[Test] ' . $rendered['subject'], $rendered['body']));
+
+            return back()->with('test_success', "Test email sent to {$data['email']}.");
+        } catch (\Throwable $e) {
+            return back()->with('test_error', 'Failed to send: ' . $e->getMessage());
+        }
     }
 
     public function confirmDelete(StaffRoutingTemplate $staffRoutingTemplate)

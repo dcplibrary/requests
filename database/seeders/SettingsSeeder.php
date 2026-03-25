@@ -295,10 +295,10 @@ class SettingsSeeder extends Seeder
             [
                 'key'         => 'ill_selector_group_id',
                 'value'       => $illGroupId ? (string) $illGroupId : '',
-                'label'       => 'ILL Access Group ID',
+                'label'       => 'ILL Access Group',
                 'type'        => 'integer',
                 'group'       => 'staff',
-                'description' => 'Internal ID of the selector group that grants staff access to ILL requests. This is set automatically by the seeder.',
+                'description' => 'Selector group whose members may view and work the ILL queue (in addition to admins). Leave unset to hide ILL from non-admins. The seeder picks a default group when first installed.',
             ],
             [
                 'key'         => 'staff_routing_enabled',

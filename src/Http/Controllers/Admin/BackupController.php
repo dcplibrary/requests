@@ -1009,6 +1009,7 @@ class BackupController extends Controller
                             'body'       => $row['body'] ?? null,
                             'sort_order' => (int) ($row['sort_order'] ?? 0),
                             'is_default' => (bool) ($row['is_default'] ?? false),
+                            'trigger_on_ill_conversion' => (bool) ($row['trigger_on_ill_conversion'] ?? false),
                         ]
                     );
 
@@ -1260,6 +1261,7 @@ class BackupController extends Controller
                 'body'                  => $t->body,
                 'sort_order'            => $t->sort_order,
                 'is_default'            => $t->is_default,
+                'trigger_on_ill_conversion' => (bool) ($t->trigger_on_ill_conversion ?? false),
                 'request_status_slugs'  => $t->requestStatuses->pluck('slug')->all(),
                 'field_option_slugs'    => $t->fieldOptions->map(fn ($o) => [
                     'field_key' => $o->field?->key,

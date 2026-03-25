@@ -17,7 +17,7 @@ Four database-stored settings (in the `settings` table) drive the behaviour:
 | `requests_visibility_open_access` | boolean | `0` | Bypass all scoping — every staff user sees every request |
 | `requests_visibility_strict_groups` | boolean | `1` | Require selector-group pairing for SFP requests |
 | `assignment_enabled` | boolean | `0` | Let assignees see their assigned requests even when scoping would block them |
-| `ill_selector_group_id` | integer | *(auto)* | ID of the selector group that grants ILL queue access |
+| `ill_selector_group_id` | integer | *(auto)* | ID of the selector group that grants ILL queue access (Staff → Settings shows a name dropdown; stored value is still the ID) |
 
 Settings are cached per-key for one hour (`Setting::get()` uses `Cache::remember`).
 Writes via `Setting::set()` bust the relevant cache key.

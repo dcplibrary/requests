@@ -151,6 +151,10 @@ Route::group([
 
             Route::get('patron-status-templates/{patron_status_template}/delete', [PatronStatusTemplateController::class, 'confirmDelete'])
                 ->name('patron-status-templates.delete');
+            Route::get('patron-status-templates/{patron_status_template}/preview', [PatronStatusTemplateController::class, 'preview'])
+                ->name('patron-status-templates.preview');
+            Route::post('patron-status-templates/{patron_status_template}/test', [PatronStatusTemplateController::class, 'sendTest'])
+                ->name('patron-status-templates.test');
             Route::resource('patron-status-templates', PatronStatusTemplateController::class)
                 ->names([
                     'index'   => 'patron-status-templates.index',

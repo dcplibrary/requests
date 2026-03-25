@@ -107,6 +107,7 @@ class NotifyByEmailIntegrationTest extends TestCase
             $table->text('body')->nullable();
             $table->integer('sort_order')->default(0);
             $table->boolean('is_default')->default(false);
+            $table->boolean('trigger_on_ill_conversion')->default(false);
             $table->timestamps();
         });
 

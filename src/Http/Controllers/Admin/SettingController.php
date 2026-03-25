@@ -11,6 +11,7 @@ use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\PatronStatusTemplate;
 use Dcplibrary\Requests\Models\StaffRoutingTemplate;
 use Dcplibrary\Requests\Models\RequestStatus;
+use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Services\NotificationService;
 use Illuminate\Http\Request;
@@ -30,6 +31,7 @@ class SettingController extends Controller
             // Notification settings live on the dedicated Notifications tab.
             'settings' => Setting::allGrouped()->except(['catalog', 'isbndb', 'syndetics', 'notifications', 'backup'])
                 ->sortKeys(),
+            'selectorGroupsForSettings' => SelectorGroup::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -170,24 +172,23 @@ class SettingController extends Controller
 
         $ns = app(NotificationService::class);
 
-        $templateKey = $type === 'staff'
-            ? 'staff_routing_template'
-            : 'patron_status_template';
-
-        $template = Setting::get($templateKey, '');
-        if (! $template) {
-            $template = $type === 'staff'
-                ? $ns->defaultStaffTemplate()
-                : $ns->defaultPatronTemplate();
+        if ($type === 'staff') {
+            $template = Setting::get('staff_routing_template', '');
+            if (! $template) {
+                $template = $ns->defaultStaffTemplate();
+            }
+            $subject = Setting::get('staff_routing_subject', 'New request: {title}');
+            $rendered = $ns->renderStaffTemplateForPreview((string) $subject, (string) $template);
+        } else {
+            $template = Setting::get('patron_status_template', '');
+            if (! $template) {
+                $template = $ns->defaultPatronTemplate();
+            }
+            $subject = Setting::get('patron_status_subject', 'Update on your suggestion: {title}');
+            $rendered = $ns->renderPatronEmailForPreview((string) $subject, (string) $template);
         }
 
-        $body = str_replace(
-            array_keys($this->samplePlaceholders()),
-            array_values($this->samplePlaceholders()),
-            $template
-        );
-
-        return view('requests::mail.notification', ['body' => $body]);
+        return view('requests::mail.notification', ['body' => $rendered['body']]);
     }
 
     /**
@@ -202,66 +203,28 @@ class SettingController extends Controller
 
         $ns = app(NotificationService::class);
 
-        [$templateKey, $subjectKey] = $data['type'] === 'staff'
-            ? ['staff_routing_template', 'staff_routing_subject']
-            : ['patron_status_template', 'patron_status_subject'];
-
-        $template = Setting::get($templateKey, '');
-        if (! $template) {
-            $template = $data['type'] === 'staff'
-                ? $ns->defaultStaffTemplate()
-                : $ns->defaultPatronTemplate();
+        if ($data['type'] === 'staff') {
+            $template = Setting::get('staff_routing_template', '');
+            if (! $template) {
+                $template = $ns->defaultStaffTemplate();
+            }
+            $subjectTpl = Setting::get('staff_routing_subject', 'New request: {title}');
+            $rendered = $ns->renderStaffTemplateForPreview((string) $subjectTpl, (string) $template);
+        } else {
+            $template = Setting::get('patron_status_template', '');
+            if (! $template) {
+                $template = $ns->defaultPatronTemplate();
+            }
+            $subjectTpl = Setting::get('patron_status_subject', 'Update on your suggestion: {title}');
+            $rendered = $ns->renderPatronEmailForPreview((string) $subjectTpl, (string) $template);
         }
 
-        $subject = str_replace(
-            array_keys($this->samplePlaceholders()),
-            array_values($this->samplePlaceholders()),
-            Setting::get($subjectKey, '[Test] Notification Preview')
-        );
-
-        $body = str_replace(
-            array_keys($this->samplePlaceholders()),
-            array_values($this->samplePlaceholders()),
-            $template
-        );
-
         try {
-            Mail::to($data['email'])->send(new RequestMail('[Test] ' . $subject, $body));
+            Mail::to($data['email'])->send(new RequestMail('[Test] ' . $rendered['subject'], $rendered['body']));
             return back()->with('test_success', "Test email sent to {$data['email']}.");
         } catch (\Throwable $e) {
             return back()->with('test_error', 'Failed to send: ' . $e->getMessage());
         }
-    }
-
-    /** Sample data used to populate tokens in preview and test emails. */
-    private function samplePlaceholders(): array
-    {
-        return [
-            '{title}'             => 'The Great Gatsby',
-            '{author}'            => 'F. Scott Fitzgerald',
-            '{patron_name}'       => 'Jane Doe',
-            '{patron_first_name}' => 'Jane',
-            '{patron_email}'      => 'jane.doe@example.com',
-            '{patron_phone}'      => '(270) 555-0123',
-            '{notify_by_email}'   => 'Yes',
-            '{material_type}'     => 'Book',
-            '{audience}'          => 'Adult',
-            '{status}'            => 'Ordered',
-            '{status_name}'       => 'On Order',
-            '{status_description}' => 'Your request has been ordered and is on its way.',
-            '{action_buttons}'    => '<div style="margin:16px 0;"><p style="margin:0 0 12px;font-size:12px;color:#6b7280;font-style:italic;">Quick actions — click to update status directly from this email:</p><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="padding:0 12px 8px 0;"><span style="display:inline-block;padding:8px 18px;background:#4b5563;color:#ffffff;border-radius:6px;font-size:13px;font-weight:bold;">Approve</span></td><td style="padding:0 12px 8px 0;"><span style="display:inline-block;padding:8px 18px;background:#b91c1c;color:#ffffff;border-radius:6px;font-size:13px;font-weight:bold;">Deny</span></td></tr></table></div>',
-            '{submitted_date}'    => now()->format('F j, Y'),
-            '{request_url}'       => '<a href="' . e(url('/request/staff/requests/1')) . '" style="display:inline-block;padding:8px 18px;background:#1d4ed8;color:#ffffff;text-decoration:none;border-radius:6px;font-size:13px;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.2;">View Request</a>',
-            '{genre}'             => 'Fiction',
-            '{console}'           => 'PlayStation 5',
-            '{isbn}'              => '978-0-7432-7356-5',
-            '{publish_date}'      => '2025-06-15',
-            '{where_heard}'       => 'Library staff recommendation',
-            '{ill_requested}'     => 'No',
-            '{material_type}'     => 'Book',
-            '{date_needed_by}'    => now()->addWeeks(3)->format('Y-m-d'),
-            '{will_pay_up_to}'    => '10.00',
-        ];
     }
 
     public function update(Request $request)

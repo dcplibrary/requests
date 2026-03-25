@@ -79,6 +79,11 @@
                     <input type="hidden" name="settings[{{ $i }}][key]" value="{{ $setting->key }}">
                     @php
                         $isEnableRow = ($tabId === 'emails' && in_array($setting->key, ['staff_routing_enabled', 'patron_status_notification_enabled']));
+                        $emailPreviewType = match ($setting->key) {
+                            'staff_routing_enabled' => 'staff',
+                            'patron_status_notification_enabled' => 'patron',
+                            default => null,
+                        };
                     @endphp
                     @php
                         $fieldId = 'notif-field-' . $i;
@@ -191,9 +196,9 @@
                                 @endif
                             @endif
                             </div>
-                            @if($isEnableRow)
+                            @if($isEnableRow && $emailPreviewType)
                             <div class="flex flex-col items-end gap-2 shrink-0">
-                                <a href="{{ route('request.staff.settings.notifications.preview', $tabId) }}"
+                                <a href="{{ route('request.staff.settings.notifications.preview', $emailPreviewType) }}"
                                    class="whitespace-nowrap inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-700"
                                    onclick="try { window.open(this.href, 'sfpNotifPreview', 'width=680,height=620,scrollbars=yes'); return false; } catch (e) { return true; }">
                                     <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
@@ -203,7 +208,7 @@
                                 </a>
                                 <form method="POST" action="{{ route('request.staff.settings.notifications.test') }}" class="flex flex-col items-end gap-1">
                                     @csrf
-                                    <input type="hidden" name="type" value="{{ $tabId }}">
+                                    <input type="hidden" name="type" value="{{ $emailPreviewType }}">
                                     <div class="flex items-center gap-2">
                                         <span class="text-xs font-medium text-gray-600">Send test to</span>
                                         <input type="email" name="email"
@@ -236,6 +241,7 @@
                                 <th class="px-4 py-2 text-left font-medium text-gray-700">Type</th>
                                 <th class="px-4 py-2 text-left font-medium text-gray-700">Subject</th>
                                 <th class="px-4 py-2 text-left font-medium text-gray-700">Triggered by</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-700">ILL convert</th>
                                 <th class="px-4 py-2 text-left font-medium text-gray-700">Material types</th>
                                 <th class="px-4 py-2 text-left font-medium text-gray-700">Default</th>
                                 <th class="px-4 py-2 text-left font-medium text-gray-700">Enabled</th>
@@ -250,6 +256,7 @@
                                 <td class="px-4 py-2 text-gray-600">New request — groups without their own staff template; assignee &amp; workflow emails</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
+                                <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2">{{ $staffEnabled ? 'Yes' : 'No' }}</td>
                                 <td class="px-4 py-2 text-right">
                                     <x-dcpl::icon-btn :href="route('request.staff.settings.notifications.staff-email')" variant="edit" label="Edit" />
@@ -261,6 +268,7 @@
                                 <td class="px-4 py-2 text-gray-600">Staff routing</td>
                                 <td class="px-4 py-2 text-gray-600">{{ \Illuminate\Support\Str::limit($srt->subject, 40) }}</td>
                                 <td class="px-4 py-2 text-gray-600">New request → {{ $srt->selectorGroup->name ?? '—' }}</td>
+                                <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2">{{ $srt->enabled ? 'Yes' : 'No' }}</td>
@@ -277,6 +285,7 @@
                                 <td class="px-4 py-2 text-gray-400">Fallback when no status template matches</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2 text-gray-400">—</td>
+                                <td class="px-4 py-2 text-gray-400">—</td>
                                 <td class="px-4 py-2">{{ $patronEnabled ? 'Yes' : 'No' }}</td>
                                 <td class="px-4 py-2 text-right">
                                     <x-dcpl::icon-btn :href="route('request.staff.settings.notifications.default-patron-email')" variant="edit" label="Edit" />
@@ -288,6 +297,7 @@
                                 <td class="px-4 py-2 text-gray-600">Patron status</td>
                                 <td class="px-4 py-2 text-gray-600">{{ Str::limit($tpl->subject, 40) }}</td>
                                 <td class="px-4 py-2 text-gray-600">{{ $tpl->requestStatuses->pluck('name')->join(', ') ?: '—' }}</td>
+                                <td class="px-4 py-2 text-gray-600">{{ ($tpl->trigger_on_ill_conversion ?? false) ? 'Yes' : '—' }}</td>
                                 <td class="px-4 py-2 text-gray-600">{{ $tpl->fieldOptions->isNotEmpty() ? $tpl->fieldOptions->pluck('name')->join(', ') : 'All' }}</td>
                                 <td class="px-4 py-2">{{ $tpl->is_default ? 'Yes' : '—' }}</td>
                                 <td class="px-4 py-2">{{ $tpl->enabled ? 'Yes' : 'No' }}</td>

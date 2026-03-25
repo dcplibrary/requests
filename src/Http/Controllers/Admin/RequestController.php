@@ -716,6 +716,7 @@ class RequestController extends Controller
                     $note ?: null
                 );
             }
+            app(NotificationService::class)->notifyPatronIllConversion($patronRequest->fresh());
             // Redirect to the list — the user may not have ILL access so back() could 403.
             return redirect()
                 ->route('request.staff.requests.index')
@@ -759,6 +760,8 @@ class RequestController extends Controller
             'user_id' => null,
             'note' => "Converted workflow: {$from} → {$to} (signed link from staff routing email).",
         ]);
+
+        app(NotificationService::class)->notifyPatronIllConversion($patronRequest->fresh());
 
         return redirect()
             ->route('request.staff.requests.index', ['kind' => PatronRequest::KIND_ILL])
