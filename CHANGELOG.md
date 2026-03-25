@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.19.9](https://github.com/dcplibrary/requests/compare/v4.19.8...v4.19.9) (2026-03-25)
+
+
+### Bug Fixes
+
+* add settings link to subheader and remove redudant help link ([d05ac92](https://github.com/dcplibrary/requests/commit/d05ac92906168c79b196b33a173addf4c83e70de))
+
 ## [4.19.8](https://github.com/dcplibrary/requests/compare/v4.19.7...v4.19.8) (2026-03-25)
 
 
