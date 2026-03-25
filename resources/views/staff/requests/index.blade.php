@@ -1,6 +1,6 @@
 @extends('requests::staff._layout')
 
-@section('title', ($currentKind === 'ill' ? 'ILL Requests' : ($currentKind === 'sfp' ? 'SFP Requests' : 'Requests')))
+@section('title', ($currentKind === 'ill' ? 'ILL Requests' : ($currentKind === 'sfp' ? 'Suggestions for Purchase' : 'Requests')))
 
 @section('content')
 <div class="flex items-center justify-between mb-6">
@@ -8,7 +8,7 @@
         @if($currentKind === 'ill')
             {{ request_form_name('ill') }} Requests
         @elseif($currentKind === 'sfp')
-            {{ request_form_name('sfp') }} Requests
+            Suggestions for Purchase
         @else
             Requests
         @endif
@@ -17,16 +17,16 @@
         <span class="text-sm text-gray-500">{{ $requests->total() }} total</span>
         @if($currentKind === 'ill' && ($hasIllAccess ?? false))
             <a href="{{ route('request.ill.form') }}" target="_blank"
-               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New {{ request_form_name('ill') }} Request</a>
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New Interlibrary Loan</a>
         @elseif($currentKind === 'sfp')
             <a href="{{ route('request.form') }}" target="_blank"
-               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New {{ request_form_name('sfp') }} Request</a>
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New Suggestion for Purchase</a>
         @else
             <a href="{{ route('request.form') }}" target="_blank"
-               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New {{ request_form_name('sfp') }} Request</a>
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New Suggestion for Purchase</a>
             @if($hasIllAccess ?? false)
             <a href="{{ route('request.ill.form') }}" target="_blank"
-               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New {{ request_form_name('ill') }} Request</a>
+               class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">+ New Interlibrary Loan</a>
             @endif
         @endif
     </div>
