@@ -304,20 +304,13 @@
                         @if(($selectorGroupsForSettings ?? collect())->isEmpty())
                             <p class="text-xs text-amber-700 mt-1">No selector groups exist yet. Create one under <span class="font-medium">Staff → Groups</span> first.</p>
                         @endif
-                        @if($illGroupVal !== '' && $illDiag && !($illDiag['group_missing'] ?? false) && (int) ($illDiag['total_option_mappings'] ?? 0) === 0)
-                            <p class="text-xs text-amber-700 mt-1">
-                                Warning: selected ILL group <span class="font-medium">{{ $illDiag['group_name'] ?? 'Unknown' }}</span> has no field-option mappings.
-                                Under strict group routing, this can behave like an unrestricted match and cause confusing SFP labels/routing.
-                            </p>
-                        @elseif($illGroupVal !== '' && $illDiag && !($illDiag['group_missing'] ?? false) && ((int) ($illDiag['material_type_mappings'] ?? 0) === 0 || (int) ($illDiag['audience_mappings'] ?? 0) === 0))
-                            <p class="text-xs text-amber-700 mt-1">
-                                Warning: selected ILL group <span class="font-medium">{{ $illDiag['group_name'] ?? 'Unknown' }}</span> is missing
-                                {{ (int) ($illDiag['material_type_mappings'] ?? 0) === 0 ? 'material type' : 'audience' }} mappings.
-                                This may broaden matching more than expected.
-                            </p>
-                        @elseif($illGroupVal !== '' && $illDiag && ($illDiag['group_missing'] ?? false))
+                        @if($illGroupVal !== '' && $illDiag && ($illDiag['group_missing'] ?? false))
                             <p class="text-xs text-amber-700 mt-1">
                                 Warning: configured ILL group was not found. Select a valid group or clear this setting.
+                            </p>
+                        @elseif($illGroupVal !== '')
+                            <p class="text-xs text-gray-500 mt-1">
+                                This group controls staff access to the ILL queue. SFP routing/group labels ignore this setting.
                             </p>
                         @endif
 
