@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.20.3](https://github.com/dcplibrary/requests/compare/v4.20.2...v4.20.3) (2026-03-26)
+
+
+### Bug Fixes
+
+* prevent ill sfp group overlap ([8175b46](https://github.com/dcplibrary/requests/commit/8175b46a5c60502fa75cef1039cccdd4e2c33320))
+
 ## [4.20.2](https://github.com/dcplibrary/requests/compare/v4.20.1...v4.20.2) (2026-03-26)
 
 
