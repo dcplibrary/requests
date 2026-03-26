@@ -32,12 +32,44 @@ class SettingController extends Controller
      */
     public function index()
     {
+        $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
+        $illSelectorGroupDiagnostics = null;
+
+        if ($illGroupId > 0) {
+            $illGroup = SelectorGroup::query()->find($illGroupId);
+            if (! $illGroup) {
+                $illSelectorGroupDiagnostics = [
+                    'group_missing' => true,
+                ];
+            } else {
+                $materialTypeFieldId = Field::query()->where('key', 'material_type')->value('id');
+                $audienceFieldId     = Field::query()->where('key', 'audience')->value('id');
+
+                $materialTypeCount = $materialTypeFieldId
+                    ? $illGroup->fieldOptions()->where('field_id', $materialTypeFieldId)->count()
+                    : 0;
+                $audienceCount = $audienceFieldId
+                    ? $illGroup->fieldOptions()->where('field_id', $audienceFieldId)->count()
+                    : 0;
+                $totalCount = $illGroup->fieldOptions()->count();
+
+                $illSelectorGroupDiagnostics = [
+                    'group_missing' => false,
+                    'group_name' => $illGroup->name,
+                    'total_option_mappings' => $totalCount,
+                    'material_type_mappings' => $materialTypeCount,
+                    'audience_mappings' => $audienceCount,
+                ];
+            }
+        }
+
         return view('requests::staff.settings.index', [
             // Catalog/ISBNdb/Syndetics settings live on the dedicated Catalog tab.
             // Notification settings live on the dedicated Notifications tab.
             'settings' => Setting::allGrouped()->except(['catalog', 'isbndb', 'syndetics', 'notifications', 'backup'])
                 ->sortKeys(),
             'selectorGroupsForSettings' => SelectorGroup::query()->orderBy('name')->get(['id', 'name']),
+            'illSelectorGroupDiagnostics' => $illSelectorGroupDiagnostics,
         ]);
     }
 

@@ -730,6 +730,7 @@ class NotificationService
             }
         } else {
             $request->loadMissing('fieldValues.field');
+            $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
 
             // Discover filterable fields that have group-assigned options.
             $scopingFields = Field::query()
@@ -758,6 +759,7 @@ class NotificationService
             }
 
             $candidates = SelectorGroup::active()
+                ->when($illGroupId > 0, fn ($q) => $q->whereKeyNot($illGroupId))
                 ->with(['fieldOptions', 'users'])
                 ->get();
 

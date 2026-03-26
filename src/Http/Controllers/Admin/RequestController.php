@@ -147,7 +147,12 @@ class RequestController extends Controller
             ->whereIn('type', ['select', 'radio'])
             ->where('active', true)
             ->get(['id', 'key']);
-        $selectorGroups = SelectorGroup::active()->with('fieldOptions')->orderBy('name')->get();
+        $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
+        $selectorGroups = SelectorGroup::active()
+            ->when($kind === PatronRequest::KIND_SFP && $illGroupId > 0, fn ($q) => $q->whereKeyNot($illGroupId))
+            ->with('fieldOptions')
+            ->orderBy('name')
+            ->get();
 
         /** @var array<int, string|null> */
         $groupNameByRequestId = [];
@@ -318,7 +323,9 @@ class RequestController extends Controller
         $selectorGroups = collect();
         $currentGroupName = null;
         if ($rerouteFields->isNotEmpty()) {
+            $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
             $selectorGroups = SelectorGroup::active()
+                ->when($patronRequest->request_kind === PatronRequest::KIND_SFP && $illGroupId > 0, fn ($q) => $q->whereKeyNot($illGroupId))
                 ->with('fieldOptions')
                 ->orderBy('name')
                 ->get();
