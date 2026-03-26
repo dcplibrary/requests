@@ -55,6 +55,8 @@ class IsbnDbService
                 $books = $this->fetchByAuthor($lastName, $searchTitle);
             }
 
+            $books = $this->prioritizePrintOverDigitalAudio($books);
+
             $results = array_values(array_map(fn ($book) => $this->normalizeBook($book), $books));
 
             return ['results' => array_slice($results, 0, 5), 'total' => count($results)];
@@ -141,6 +143,57 @@ class IsbnDbService
             }
             return false;
         }));
+    }
+
+    /**
+     * Sort raw API rows so print editions surface before audiobooks / e-books when both exist.
+     *
+     * Patrons suggesting a purchase usually mean a physical book; ISBNdb often returns
+     * an audiobook edition first for the same work.
+     *
+     * @param  list<array<string, mixed>>  $books
+     * @return list<array<string, mixed>>
+     */
+    private function prioritizePrintOverDigitalAudio(array $books): array
+    {
+        if (count($books) < 2) {
+            return $books;
+        }
+
+        $ranks = array_map(fn (array $book) => $this->isbndbBindingSortRank($book), $books);
+        array_multisort($ranks, SORT_ASC, $books);
+
+        return $books;
+    }
+
+    /**
+     * Lower rank = sort earlier (prefer for display). Audiobook / digital audio last.
+     */
+    private function isbndbBindingSortRank(array $book): int
+    {
+        $b = strtolower((string) ($book['binding'] ?? ''));
+
+        if ($b === '') {
+            return 15;
+        }
+
+        if (preg_match('/\baudiobook\b|\baudio book\b|\bmp3\b|\bdigital audio\b|\baudible\b/i', $b) === 1) {
+            return 400;
+        }
+
+        if (str_contains($b, 'audio') && (str_contains($b, 'cd') || str_contains($b, 'cassette'))) {
+            return 350;
+        }
+
+        if (str_contains($b, 'kindle') || str_contains($b, 'ebook') || str_contains($b, 'e-book')) {
+            return 200;
+        }
+
+        if (str_contains($b, 'hardcover') || str_contains($b, 'paperback') || str_contains($b, 'board book')) {
+            return 0;
+        }
+
+        return 80;
     }
 
     /**

@@ -29,12 +29,12 @@ $since = now()->subDays($days);
 
 ## Group: `ill`
 
-Interlibrary Loan age threshold and warning message.
+Interlibrary Loan age threshold.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `ill_age_threshold_days` | integer | `730` | Items older than this many days trigger the ILL soft warning (~2 years) |
-| `ill_warning_message` | html | *(HTML)* | Message shown when item exceeds threshold; displayed on Step 2 below the date field |
+| `ill_age_threshold_days` | integer | `730` | Items older than this many days (~2 years) trigger the optional ILL path **after** catalog / ISBNdb resolution (step 3), not while entering the date |
+| `ill_warning_message` | html | *(HTML)* | **Legacy:** previously shown below the date field; patron UI no longer uses it. Kept in the database for compatibility; safe to ignore or repurpose |
 
 ---
 

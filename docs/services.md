@@ -47,11 +47,15 @@ Builds a boolean query and calls the gateway API.
 
 **Search query format:**
 
+Title and contributor use **field + phrase** form (`title:"…"` / `contributor:"…"`) so punctuation such as `[` `]` `,` is literal, not Lucene operators. The gateway matches the catalog UI more reliably than `field:("…")` with an extra paren group.
+
 ```
-title:(The Covenant of Water) contributor:(Verghese) audience:"adult" pubyear:[2022 TO 2024]
+title:"The Covenant of Water" contributor:"Verghese" audience:"adult" pubyear:[2022 TO 2024]
 ```
 
-- Only the author's **last name** is used in the `contributor:` filter — avoids mismatches from first-name spelling variations or MARC inversion ("Verghese, Abraham" vs "Abraham Verghese")
+- Only the author's **last name** is used in the `contributor:` filter — avoids mismatches from first-name spelling variations or MARC inversion ("Verghese, Abraham" vs "Abraham Verghese"). Trailing commas on "Last, First," are harmless.
+- If the first query returns no rows, the service retries with **broader strategies**: same title without `audience:` (some juvenile records are not indexed under `children`), then a title with bracketed segments removed, then a single **primary word** from the title (e.g. `Astronuts`) — still with `contributor:` — then **title-only** (no `contributor:`) for the same title variants, which fixes cases where the catalog tokenizes contributors differently than the boolean parser expects.
+- If **all** boolean attempts return nothing, it runs the same plain strings through **`searchType=smart`** and **`searchType=keyword`** on the gateway — the same idea as typing title + author in the catalog search box, which often finds bibs boolean `title:`/`contributor:` misses.
 - Year filtering only applies to recent titles (within 2 years). Older books may have later editions in the catalog under a different year.
 - Results are capped at 5.
 
@@ -77,6 +81,8 @@ Two-stage search:
 
 1. **By title** — Search ISBNdb for the title, filter results by author last name.
 2. **By author (fallback)** — If stage 1 finds no matches (common when a generic title has hundreds of results), search by author last name and filter by significant title words. Stopwords (`a`, `an`, `the`, `of`, `in`, `me`, `so`, etc.) are excluded from the keyword filter.
+
+Before taking the top five, results are **sorted by binding** so **hardcover / paperback / board book** rows appear before **audiobook / audio CD / Kindle / e-book** when the same work appears in multiple formats.
 
 **Returns:**
 ```php

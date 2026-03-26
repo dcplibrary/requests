@@ -221,8 +221,8 @@ Role-based access via the `request.role` middleware:
 - `ill_limit_window_type` / `ill_limit_window_days` / `ill_limit_calendar_reset_day` — ILL equivalents
 
 **ILL:**
-- `ill_age_threshold_days` (default: 730) — Days before ILL soft warning
-- `ill_warning_message` — HTML shown when item exceeds age threshold
+- `ill_age_threshold_days` (default: 730) — After catalog/ISBNdb flow, older dated matches can show the step 3 ILL suggestion
+- `ill_warning_message` — Legacy setting (no longer shown on the form)
 - `ill_isbndb_enabled` (default: true) — ISBNdb enrichment for ILL
 
 **Messaging:**

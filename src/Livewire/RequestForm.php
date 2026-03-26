@@ -84,9 +84,6 @@ class RequestForm extends Component
     /** @var array<string, mixed> SFP custom field values (e.g. where_heard, console, ill_requested) */
     public array $custom = [];
 
-    // --- ILL age warning ---
-    public bool $showIllWarning = false;
-
     // --- Patron limit ---
     public bool    $limitReached = false;
     public ?string $limitUntil   = null; // formatted date string, e.g. "June 15, 2025"
@@ -213,7 +210,6 @@ class RequestForm extends Component
             'publish_date',
             'console',
             'custom',
-            'showIllWarning',
             'other_material_text',
             'genre',
             'resolvedMaterialId',
@@ -287,13 +283,6 @@ class RequestForm extends Component
         if (property_exists($this, $key) && is_string($this->{$key})) {
             $this->{$key} = '';
         }
-    }
-
-    // --- ILL age warning (triggered by publish_date change) ---
-
-    public function updatedPublishDate(string $value): void
-    {
-        $this->showIllWarning = Material::yearExceedsIllThreshold($value);
     }
 
     // --- Material type "Other" toggle (inline text within material type radio row) ---
@@ -670,8 +659,10 @@ class RequestForm extends Component
             }
         }
 
-        // 6. No match found — save request directly.
-        $this->saveRequest($patron);
+        // 6. No catalog/ISBNdb match — offer ILL from patron-entered date, or save.
+        if (! $this->offerIllPromptFromPatronEnteredDate()) {
+            $this->saveRequest($patron);
+        }
     }
 
     public function acceptCatalogMatch(string $bibId): void
@@ -704,7 +695,7 @@ class RequestForm extends Component
             }
         }
 
-        // No ISBNdb results either — save request directly.
+        // No ISBNdb results — offer ILL from patron-entered date, or save.
         $patron = app(PatronService::class)->findOrCreate([
             'barcode'    => $this->barcode,
             'name_first' => $this->name_first,
@@ -713,7 +704,9 @@ class RequestForm extends Component
             'email'      => $this->email ?: null,
         ])['patron'];
 
-        $this->saveRequest($patron);
+        if (! $this->offerIllPromptFromPatronEnteredDate()) {
+            $this->saveRequest($patron);
+        }
     }
 
     public function acceptIsbndbMatch(int $index): void
@@ -722,16 +715,10 @@ class RequestForm extends Component
 
         // If the selected item exceeds the ILL age threshold, prompt the patron
         // to consider submitting as an ILL instead — don't save the request yet.
-        if (is_array($isbndbData)) {
-            $publishDate = (string) ($isbndbData['publish_date'] ?? '');
-            // Extract a 4-digit year from strings like "2018", "2018-05-10", "May 2018"
-            preg_match('/\b(19|20)\d{2}\b/', $publishDate, $yearMatches);
-            $year = $yearMatches[0] ?? '';
-            if ($year !== '' && Material::yearExceedsIllThreshold($year)) {
-                $this->suggestIll          = true;
-                $this->pendingIsbndbIndex  = $index;
-                return;
-            }
+        if (is_array($isbndbData) && Material::stringExceedsIllThreshold((string) ($isbndbData['publish_date'] ?? ''))) {
+            $this->suggestIll         = true;
+            $this->pendingIsbndbIndex = $index;
+            return;
         }
 
         $this->isbndbMatchAccepted = true;
@@ -773,6 +760,10 @@ class RequestForm extends Component
             'email'      => $this->email ?: null,
         ])['patron'];
 
+        if ($this->offerIllPromptFromPatronEnteredDate()) {
+            return;
+        }
+
         $this->saveRequest($patron);
     }
 
@@ -787,6 +778,15 @@ class RequestForm extends Component
         $this->pendingIsbndbIndex = null;
 
         if ($index === null) {
+            $patron = app(PatronService::class)->findOrCreate([
+                'barcode'    => $this->barcode,
+                'name_first' => $this->name_first,
+                'name_last'  => $this->name_last,
+                'phone'      => $this->phone,
+                'email'      => $this->email ?: null,
+            ])['patron'];
+            $this->saveRequest($patron);
+
             return;
         }
 
@@ -836,6 +836,26 @@ class RequestForm extends Component
         session()->put('request.ill_skip_patron', true);
 
         $this->redirect(route('request.ill.form'));
+    }
+
+    /**
+     * Show step 3 ILL vs SFP when the patron-entered publish date is past the threshold
+     * and no ISBNdb row will be applied (no hits, skipped, or after skipping catalog with no ISBNdb).
+     *
+     * @return bool True if the prompt is shown — caller must not call saveRequest() yet.
+     */
+    private function offerIllPromptFromPatronEnteredDate(): bool
+    {
+        if (! Material::stringExceedsIllThreshold($this->publish_date)) {
+            return false;
+        }
+
+        $this->suggestIll = true;
+        $this->pendingIsbndbIndex = null;
+        $this->processing = false;
+        $this->step = 3;
+
+        return true;
     }
 
     private function checkPatronLimit(): void
@@ -1010,7 +1030,6 @@ class RequestForm extends Component
             'visibleStepTwoCustomFields' => $visibleStepTwoCustomFields,
             'customFieldOptionsByFieldId' => $customFieldOptions,
             'visibleFields'     => $visible,             // ['genre' => true/false, ...]
-            'illWarningMessage' => Setting::get('ill_warning_message', ''),
             'successMessage'    => Setting::get('submission_success_message', 'Thank you for your suggestion!'),
             'catalogOwnedMessage' => Setting::get(
                 'catalog_owned_message',

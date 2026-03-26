@@ -164,4 +164,23 @@ class Material extends Model
         $threshold = Setting::get('ill_age_threshold_years', 2);
         return (now()->year - (int) $year) > $threshold;
     }
+
+    /**
+     * True when $value contains a 4-digit year (19xx/20xx) that exceeds the ILL threshold.
+     *
+     * Use for patron- or API-sourced strings like "2019", "January 2019", "2019-05-01".
+     */
+    public static function stringExceedsIllThreshold(?string $value): bool
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return false;
+        }
+
+        if (preg_match('/\b(19|20)\d{2}\b/', $value, $matches) !== 1) {
+            return false;
+        }
+
+        return static::yearExceedsIllThreshold($matches[0]);
+    }
 }

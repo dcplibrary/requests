@@ -263,24 +263,10 @@
                 <input
                     type="text"
                     id="publish_date"
-                    wire:model.live="publish_date"
+                    wire:model="publish_date"
                     placeholder="e.g. 2022 or January 2022"
                     class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                @if($showIllWarning)
-                <div class="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md" role="alert">
-                    <p class="text-sm text-amber-800">
-                        <strong>Note:</strong> {!! $illWarningMessage !!}
-                        <a href="https://www.dcplibrary.org/interlibrary-loan/" target="_blank" rel="noopener" class="underline font-medium">Learn more about ILL</a>.
-                    </p>
-                    <div class="mt-2">
-                        <button type="button" wire:click="redirectToIll"
-                                class="px-3 py-1.5 bg-amber-700 text-white text-xs font-semibold rounded hover:bg-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-600">
-                            Submit as Interlibrary Loan instead
-                        </button>
-                    </div>
-                </div>
-                @endif
             </div>
 
         {{-- ── generic fallback for unmapped core fields (e.g. console) ── --}}

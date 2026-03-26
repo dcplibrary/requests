@@ -51,7 +51,6 @@ A processing overlay (`$processing = true`) replaces all step content while sear
 | `$publish_date` | `string` |
 | `$where_heard` | `string` |
 | `$ill_requested` | `bool` |
-| `$showIllWarning` | `bool` |
 
 ## Dynamic Step 2 form fields (`sfp_form_fields`)
 
@@ -113,6 +112,8 @@ The admin Options UI prevents this in two layers:
 | `$isDuplicate` | `bool` | |
 | `$duplicateMessage` | `string` | |
 | `$resolvedMaterialId` | `int\|null` | |
+| `$suggestIll` | `bool` | When true, step 3 shows the ILL vs SFP choice (after an ISBNdb pick exceeds the age threshold) |
+| `$pendingIsbndbIndex` | `int\|null` | ISBNdb index held while `$suggestIll` is shown |
 
 ---
 
@@ -123,7 +124,7 @@ The admin Options UI prevents this in two layers:
 | Method | Description |
 |--------|-------------|
 | `mount()` | Pre-selects first active material type and "Adult" audience |
-| `render()` | Returns view with `materialTypes`, `audiences`, `illWarningMessage`, `successMessage`, `duplicateMessage`, `formatLabels` |
+| `render()` | Returns view with `materialTypes`, `audiences`, `successMessage`, `duplicateMessage`, `formatLabels` |
 
 ### Navigation
 
@@ -131,8 +132,6 @@ The admin Options UI prevents this in two layers:
 |--------|-------------|
 | `nextStep()` | Validates step 1 fields; checks patron rate limit; advances to step 2 |
 | `prevStep()` | Returns to previous step |
-| `updatedPublishDate($value)` | Triggers ILL age warning check |
-
 ### Main Submission Flow (`submit()`)
 
 Called from the Step 2 "Submit Request" button. Runs synchronously:
@@ -181,13 +180,13 @@ On `submit()`:
 
 ---
 
-## ILL Warning
+## ILL suggestion (after catalog / ISBNdb)
 
-When `$publish_date` is updated, `updatedPublishDate()` checks:
-- Is the value a 4-digit year?
-- Does `Material::yearExceedsIllThreshold($year)` return true?
+Patrons are **not** prompted for ILL while typing the publication date. The catalog runs first on submit (`BibliocommonsService::search`), then ISBNdb if needed.
 
-If yes, `$showIllWarning = true` and the configured `ill_warning_message` HTML is shown below the date field.
+If the patron **selects** an ISBNdb result whose embedded publish date exceeds the threshold (`Material::stringExceedsIllThreshold()`), `acceptIsbndbMatch()` sets `$suggestIll = true` and stores `$pendingIsbndbIndex`.
+
+If there is **no** ISBNdb match (or the patron skips all ISBNdb cards), the same step 3 prompt can still appear when the patron-entered **publish date** string parses to an old year (`offerIllPromptFromPatronEnteredDate()` from `submit()`, `skipCatalogMatch()`, or `skipIsbndbMatch()`). In that case `$pendingIsbndbIndex` stays `null`; `proceedAsSfp()` calls `saveRequest()` without ISBNdb enrichment, and `redirectToIll()` still prefills from the form including `publish_date`.
 
 ---
 

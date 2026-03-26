@@ -234,6 +234,7 @@
     <a href="#requests-list">Browsing requests</a>
     <a href="#requests-detail">Reviewing a request</a>
     <a href="#requests-status">Updating status</a>
+    <a href="#ill-requests">ILL requests</a>
     <div class="section-label">Patrons</div>
     <a href="#patrons-list">Patrons list</a>
     <a href="#patron-detail">Patron detail</a>
@@ -261,32 +262,34 @@
     <!-- ══════════════════════════════════════════ OVERVIEW -->
     <section id="overview">
       <h2>Overview</h2>
-      <p>SFP collects purchase suggestions from patrons and puts them in one place for you to review. There are three main sections — <strong>Requests</strong>, <strong>Patrons</strong>, and <strong>Titles</strong> — accessible from the navigation bar at the top of every page.</p>
-      <p>As a selector, your main job is in <strong>Requests</strong>: look at what's been submitted, decide whether to order, and update the status accordingly.</p>
+      <p>The Requests portal collects purchase suggestions and interlibrary loan requests from patrons and puts them in one place for you to review. There are four main areas in the navigation bar: <strong>Suggestions for purchase</strong>, <strong>Interlibrary loans</strong>, <strong>Patrons</strong>, and <strong>Titles</strong>.</p>
+      <p>As a selector, your main job is in <strong>Suggestions for purchase</strong>: look at what's been submitted, decide whether to order, and update the status accordingly. If you have ILL access, the <strong>Interlibrary loans</strong> tab shows a separate queue of ILL requests.</p>
     </section>
 
     <!-- ══════════════════════════════════════════ REQUESTS LIST -->
     <section id="requests-list">
       <h2>Browsing Requests</h2>
-      <p>The <strong>Requests</strong> page shows every patron submission. By default, all statuses are shown — use the filters to narrow things down.</p>
+      <p>The <strong>Suggestions for purchase</strong> page shows every SFP submission. By default, all statuses are shown — use the filters to narrow things down.</p>
 
       <figure class="screenshot">
         <img src="/vendor/sfp/img/help/requests-list.jpg" alt="Purchase Requests list page">
-        <figcaption>The Requests list, showing filters at the top and one entry flagged as a Duplicate.</figcaption>
+        <figcaption>The Requests list — filters at the top, columns for status, assignee, and submission date.</figcaption>
       </figure>
+
+      <h3>Columns</h3>
+      <p>The list shows: Submitted date, Title/Author, Type, Audience, Patron, Status, and Assignee. The <strong>Assignee</strong> column shows which staff member has claimed the request, or is blank if no one has.</p>
 
       <h3>Filters</h3>
       <table class="field-table">
         <thead><tr><th>Filter</th><th>What it does</th></tr></thead>
         <tbody>
           <tr><td class="field-name">Status</td><td>Narrow to a specific status, e.g. <em>Pending</em> to see unreviewed requests.</td></tr>
-          <tr><td class="field-name">Material Type</td><td>Filter to Books, DVDs, etc.</td></tr>
-          <tr><td class="field-name">Audience</td><td>Filter to Adult, Teen, Kids, etc.</td></tr>
+          <tr><td class="field-name">Assigned</td><td>Filter to requests that are assigned to a specific staff member, or unassigned requests only.</td></tr>
           <tr><td class="field-name">Search</td><td>Free-text search across title, author, and patron barcode.</td></tr>
         </tbody>
       </table>
 
-      <p>Select your filters and click <strong>Filter</strong>. Click <strong>Clear</strong> to reset. The count in the top-right corner updates to show how many results match.</p>
+      <p>Select your filters and click <strong>Filter</strong>. Click <strong>Clear</strong> to reset.</p>
 
       <div class="callout tip">
         <span class="callout-icon">💡</span>
@@ -379,6 +382,19 @@
       <div class="callout danger">
         <span class="callout-icon">⚠️</span>
         <div><strong>Delete Request</strong> at the bottom of the page permanently removes the request and its history. The patron and title records are kept. Only use this to remove test entries or obvious errors.</div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ ILL REQUESTS -->
+    <section id="ill-requests">
+      <h2>ILL Requests</h2>
+      <p>The <strong>Interlibrary loans</strong> tab in the navigation shows a separate queue of ILL requests — items patrons need obtained from another library. This tab is only visible to staff with ILL access (admins, or members of the ILL access group configured under Settings → General → Staff).</p>
+
+      <p>Working the ILL queue follows the same pattern as SFP: open a request, review the item details, update the status, and optionally send a patron email. The status panel and email preview modal work identically.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>ILL requests can also be <em>converted from SFP</em> — when a patron opted into ILL during an SFP submission and you decide it's better handled as an ILL, use the <strong>Convert to ILL</strong> workflow on the SFP request detail page. See <a href="#convert-ill">Converting a Request to ILL</a> below.</div>
       </div>
     </section>
 
@@ -514,7 +530,7 @@
       </div>
 
       <h3>Status emails (to patrons)</h3>
-      <p>When you update a request to a status that has <strong>Notify Patron</strong> enabled, SFP sends the patron an email (if they have an address on file). The content comes from the matching email template configured under Settings → Notifications → Emails.</p>
+      <p>When you update a request to a status that has <strong>Notify Patron</strong> enabled, the portal sends the patron an email (if they have an address on file). The content comes from the matching email template configured under <strong>Settings → Notifications → Emails</strong>.</p>
       <p>If <strong>Email Preview</strong> is on, you'll see a preview modal before the email sends — see <a href="#requests-status">Updating a Request's Status</a> above. Either way, a <em>Notification sent.</em> entry appears in the status history confirming the email went out.</p>
       <div class="callout tip">
         <span class="callout-icon">💡</span>

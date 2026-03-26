@@ -34,18 +34,29 @@ class BibliocommonsServiceTest extends TestCase
                 return end($parts) ?: $author;
             }
 
-            // Copy of buildQuery() — depends on extractLastName()
-            public function buildQuery(string $title, string $author, string $audience, ?string $year): string
+            public function quoteLucenePhrase(string $value): string
+            {
+                $value = str_replace(['\\', '"'], ['\\\\', '\\"'], trim($value));
+
+                return '"' . $value . '"';
+            }
+
+            // Copy of buildQuery() — depends on extractLastName() + quoteLucenePhrase()
+            public function buildQuery(string $title, string $author, string $audience, ?string $year, bool $includeContributor = true): string
             {
                 $lastName = $this->extractLastName($author);
+                $title    = trim(preg_replace('/\s+/', ' ', $title));
 
                 $parts = [
-                    'title:(' . $title . ')',
-                    'contributor:(' . $lastName . ')',
+                    'title:' . $this->quoteLucenePhrase($title),
                 ];
 
-                if ($audience) {
-                    $parts[] = 'audience:"' . $audience . '"';
+                if ($includeContributor && $lastName !== '') {
+                    $parts[] = 'contributor:' . $this->quoteLucenePhrase($lastName);
+                }
+
+                if ($audience !== '') {
+                    $parts[] = 'audience:"' . str_replace('"', '\\"', $audience) . '"';
                 }
 
                 if ($year && (int) $year >= (date('Y') - 2)) {
@@ -126,6 +137,7 @@ class BibliocommonsServiceTest extends TestCase
             'three word name'               => ['Mary Balogh Smith',  'Smith'],
             'extra spaces'                  => ['  Alice   Feeney  ', 'Feeney'],
             'MARC with extra spaces'        => [' McFadden , Frieda', 'McFadden'],
+            'MARC trailing comma'           => ['Scieszka, Jon,', 'Scieszka'],
         ];
     }
 
@@ -140,7 +152,7 @@ class BibliocommonsServiceTest extends TestCase
 
         // Must use last name only — full "Frieda McFadden" fails in Bibliocommons
         // because catalog stores "McFadden, Freida" (different first-name spelling)
-        $this->assertStringContainsString('contributor:(McFadden)', $query);
+        $this->assertStringContainsString('contributor:"McFadden"', $query);
         $this->assertStringNotContainsString('Frieda', $query);
     }
 
@@ -149,7 +161,31 @@ class BibliocommonsServiceTest extends TestCase
     {
         $query = $this->service()->buildQuery('Dear Debbie', 'Frieda McFadden', 'adult', '2026');
 
-        $this->assertStringContainsString('title:(Dear Debbie)', $query);
+        $this->assertStringContainsString('title:"Dear Debbie"', $query);
+    }
+
+    #[Test]
+    public function it_phrase_quotes_title_with_brackets_so_lucene_does_not_treat_them_as_range_syntax(): void
+    {
+        $query = $this->service()->buildQuery(
+            'Astronuts. [Volume 1], The Plant Planet',
+            'Scieszka, Jon,',
+            'children',
+            '2019'
+        );
+
+        $this->assertStringContainsString('title:"Astronuts. [Volume 1], The Plant Planet"', $query);
+        $this->assertStringContainsString('contributor:"Scieszka"', $query);
+        $this->assertStringContainsString('audience:"children"', $query);
+    }
+
+    #[Test]
+    public function it_can_omit_contributor_for_title_only_fallback_queries(): void
+    {
+        $query = $this->service()->buildQuery('Astronuts', 'Scieszka, Jon', '', null, false);
+
+        $this->assertStringContainsString('title:"Astronuts"', $query);
+        $this->assertStringNotContainsString('contributor:', $query);
     }
 
     #[Test]
@@ -201,7 +237,7 @@ class BibliocommonsServiceTest extends TestCase
         // If patron types "McFadden, Frieda" (MARC order), last name still extracted correctly
         $query = $this->service()->buildQuery('Dear Debbie', 'McFadden, Frieda', 'adult', '2026');
 
-        $this->assertStringContainsString('contributor:(McFadden)', $query);
+        $this->assertStringContainsString('contributor:"McFadden"', $query);
         $this->assertStringNotContainsString('Frieda', $query);
     }
 

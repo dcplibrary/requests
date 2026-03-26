@@ -195,17 +195,6 @@ Route::group([
                 ])
                 ->except(['show']);
 
-            // --- TEMPORARY DEV: screenshot capture endpoint (remove after help doc update) ---
-            Route::post('/dev/save-screenshot', function (\Illuminate\Http\Request $req) {
-                $filename = preg_replace('/[^a-z0-9\-]/', '', $req->input('filename'));
-                $data     = $req->input('data');
-                if (!$filename || !$data) return response()->json(['error' => 'missing params'], 422);
-                $data = preg_replace('/^data:image\/\w+;base64,/', '', $data);
-                $dir = realpath(__DIR__ . '/../../public/img/help');
-                file_put_contents($dir . '/' . $filename . '.jpg', base64_decode($data));
-                return response()->json(['ok' => true, 'file' => $filename . '.jpg']);
-            })->name('dev.save-screenshot');
-
             Route::get('users/{user}/remove', [UserController::class, 'confirmDelete'])
                 ->name('users.remove');
             Route::resource('users', UserController::class)

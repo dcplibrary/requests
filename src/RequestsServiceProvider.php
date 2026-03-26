@@ -126,14 +126,6 @@ class RequestsServiceProvider extends ServiceProvider
                 ->header('Content-Type', 'text/html');
         })->name('request.assets.selector-help');
 
-        // Temporary dev asset: html2canvas for screenshot capture
-        Route::get(trim($routePrefix . '/assets/html2canvas.js', '/'), function () {
-            $path = __DIR__ . '/../public/js/html2canvas.min.js';
-            return response(file_get_contents($path), 200)
-                ->header('Content-Type', 'application/javascript')
-                ->header('Cache-Control', 'public, max-age=3600');
-        })->name('request.assets.html2canvas');
-
         $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
 
         // Register the dcpl.ui.css route if UiServiceProvider hasn't done it yet

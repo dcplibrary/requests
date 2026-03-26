@@ -20,13 +20,24 @@ class BibliocommonsSearchTest extends TestCase
 {
     private string $slug = 'dcpl';
 
+    private function quoteLucenePhrase(string $value): string
+    {
+        $value = str_replace(['\\', '"'], ['\\\\', '\\"'], trim($value));
+
+        return '"' . $value . '"';
+    }
+
     private function search(string $title, string $author, string $audience = 'adult', ?string $year = null): array
     {
         $lastName = $this->extractLastName($author);
+        $normTitle = trim(preg_replace('/\s+/', ' ', $title));
 
-        $parts = ['title:(' . $title . ')', 'contributor:(' . $lastName . ')'];
-        if ($audience) {
-            $parts[] = 'audience:"' . $audience . '"';
+        $parts = [
+            'title:' . $this->quoteLucenePhrase($normTitle),
+            'contributor:' . $this->quoteLucenePhrase($lastName),
+        ];
+        if ($audience !== '') {
+            $parts[] = 'audience:"' . str_replace('"', '\\"', $audience) . '"';
         }
         if ($year && (int) $year >= (date('Y') - 2)) {
             $parts[] = 'pubyear:[' . max(1, (int) $year - 1) . ' TO ' . ((int) $year + 1) . ']';
@@ -38,7 +49,13 @@ class BibliocommonsSearchTest extends TestCase
 
         $ctx  = stream_context_create(['http' => [
             'timeout' => 15,
-            'header'  => "User-Agent: Mozilla/5.0 (compatible; RequestsBot/1.0)\r\nAccept: application/json\r\n",
+            'header'  => implode("\r\n", [
+                'User-Agent: Mozilla/5.0 (compatible; RequestsBot/1.0)',
+                'Accept: application/json',
+                'Accept-Language: en-US,en;q=0.9',
+                "Referer: https://{$this->slug}.bibliocommons.com/",
+                "Origin: https://{$this->slug}.bibliocommons.com",
+            ]),
         ]]);
 
         $body = @file_get_contents($url, false, $ctx);
@@ -148,5 +165,36 @@ class BibliocommonsSearchTest extends TestCase
         $total = $data['catalogSearch']['pagination']['count'] ?? 0;
 
         $this->assertSame(0, $total, 'Expected 0 results for a fabricated title');
+    }
+
+    // ---------------------------------------------------------------------------
+    // "Astronuts. [Volume 1], The Plant Planet" by Jon Scieszka (bib S123C810959)
+    //
+    // Unquoted `[` / `]` in the title broke Lucene boolean parsing; phrase-quoted
+    // title + contributor must return the print book (BK), not zero results.
+    // ---------------------------------------------------------------------------
+
+    #[Test]
+    public function astronuts_volume_one_children_audience_finds_print_record(): void
+    {
+        $data  = $this->search(
+            'Astronuts. [Volume 1], The Plant Planet',
+            'Scieszka, Jon,',
+            'children',
+            '2019'
+        );
+        $total = $data['catalogSearch']['pagination']['count'] ?? 0;
+        $bibs  = $data['entities']['bibs'] ?? [];
+
+        $this->assertGreaterThan(0, $total, 'Expected catalog hits for Astronuts vol. 1 with phrase-quoted query');
+
+        $this->assertArrayHasKey(
+            'S123C810959',
+            $bibs,
+            'Expected bib S123C810959 (Astronuts print) in results'
+        );
+
+        $bib = $bibs['S123C810959'];
+        $this->assertSame('BK', $bib['briefInfo']['format'] ?? null);
     }
 }
