@@ -48,9 +48,10 @@ class BibliocommonsService
             );
             $browseUrl = "https://{$slug}.bibliocommons.com/v2/search?query=" . urlencode($query) . '&searchType=bl';
 
-            $parsed = $this->performGatewaySearch($slug, $query, 'bl');
-            if (count($parsed['results']) > 0) {
-                return array_merge($parsed, ['url' => $browseUrl]);
+            $parsed   = $this->performGatewaySearch($slug, $query, 'bl');
+            $filtered = $this->filterResultsByAuthor($parsed['results'], $author);
+            if (count($filtered) > 0) {
+                return array_merge($parsed, ['results' => $filtered, 'url' => $browseUrl]);
             }
         }
 
@@ -60,8 +61,9 @@ class BibliocommonsService
             foreach (['smart', 'keyword'] as $smartType) {
                 $browseUrl = "https://{$slug}.bibliocommons.com/v2/search?query=" . urlencode($smartQuery) . '&searchType=' . $smartType;
                 $parsed    = $this->performGatewaySearch($slug, $smartQuery, $smartType);
-                if (count($parsed['results']) > 0) {
-                    return array_merge($parsed, ['url' => $browseUrl]);
+                $filtered  = $this->filterResultsByAuthor($parsed['results'], $author);
+                if (count($filtered) > 0) {
+                    return array_merge($parsed, ['results' => $filtered, 'url' => $browseUrl]);
                 }
             }
         }
@@ -223,6 +225,34 @@ class BibliocommonsService
     }
 
     /**
+     * Filter results to those whose author field contains the searched last name.
+     *
+     * Prevents the broad fallback strategies (smart/keyword, primary-token-only) from
+     * returning completely unrelated books when a title is not in the catalog.
+     * Results with no author field are kept — some catalog records omit it.
+     * If no last name can be extracted the full result set is returned unchanged.
+     *
+     * @param  array<int, array>  $results
+     * @param  string             $author   Raw author string as entered by the patron
+     * @return array<int, array>
+     */
+    private function filterResultsByAuthor(array $results, string $author): array
+    {
+        $lastName = mb_strtolower($this->extractLastName($author));
+
+        if ($lastName === '') {
+            return $results;
+        }
+
+        return array_values(array_filter($results, function (array $result) use ($lastName): bool {
+            $resultAuthor = mb_strtolower($result['author'] ?? '');
+
+            // Keep results with no author recorded — don't falsely discard them.
+            return $resultAuthor === '' || str_contains($resultAuthor, $lastName);
+        }));
+    }
+
+    /**
      * Wrap text as a Lucene phrase literal inside field parentheses — brackets/punctuation are literal; escape \ and ".
      */
     private function quoteLucenePhrase(string $value): string
@@ -351,13 +381,15 @@ class BibliocommonsService
         // Bib entities keyed by ID
         $bibEntities = $data['entities']['bibs'] ?? [];
 
-        $results = [];
+        $results    = [];
+        $seenBibIds = [];
 
         foreach ($orderedResults as $resultRow) {
             $bibId = $resultRow['representative'] ?? null;
-            if (! $bibId || ! isset($bibEntities[$bibId])) {
+            if (! $bibId || ! isset($bibEntities[$bibId]) || isset($seenBibIds[$bibId])) {
                 continue;
             }
+            $seenBibIds[$bibId] = true;
 
             $bib  = $bibEntities[$bibId];
             $info = $bib['briefInfo'] ?? [];
