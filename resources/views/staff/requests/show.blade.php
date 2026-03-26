@@ -382,7 +382,14 @@
 
 
                 @if($showConvertToIll)
-                    <x-dcpl::sidebar-btn icon="arrow-right-left" label="Convert to ILL" @click="$dispatch('open-modal', 'convert-ill')" />
+                    <form method="POST" action="{{ route('request.staff.requests.convert-kind', $patronRequest) }}">
+                        @csrf
+                        <input type="hidden" name="to" value="ill">
+                        <x-dcpl::sidebar-btn
+                            icon="arrow-right-left"
+                            label="Convert to ILL"
+                            onclick="if(!confirm('Convert this request to {{ request_form_name('ill') }}?')) return; this.closest('form').submit()" />
+                    </form>
                 @endif
 
                 <form method="POST" action="{{ route('request.staff.requests.destroy', $patronRequest) }}">
@@ -404,25 +411,6 @@
 @if($synopsis && strlen(strip_tags($synopsis)) > 280)
 <x-requests::action-modal name="synopsis" title="Synopsis" max-width="lg">
     <div class="text-sm text-gray-700 leading-relaxed [&_p]:mb-2 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic">{!! $synopsis !!}</div>
-</x-requests::action-modal>
-@endif
-
-{{-- Convert to ILL modal --}}
-@if($showConvertToIll)
-<x-requests::action-modal name="convert-ill" :title="'Convert to ' . request_form_name('ill')">
-    <form method="POST" action="{{ route('request.staff.requests.convert-kind', $patronRequest) }}" id="convert-ill-form" class="space-y-3">
-        @csrf
-        <input type="hidden" name="to" value="ill">
-        <p class="text-sm text-gray-600">This will convert the request from {{ request_form_name('sfp') }} to {{ request_form_name('ill') }}.</p>
-        <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
-            <textarea name="note" rows="2" class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 resize-none"></textarea>
-        </div>
-    </form>
-    <x-slot:footer>
-        <button type="button" @click="$dispatch('close-modal', 'convert-ill')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100">Cancel</button>
-        <button type="submit" form="convert-ill-form" class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">Convert to {{ request_form_name('ill') }}</button>
-    </x-slot:footer>
 </x-requests::action-modal>
 @endif
 
