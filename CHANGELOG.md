@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.20.2](https://github.com/dcplibrary/requests/compare/v4.20.1...v4.20.2) (2026-03-26)
+
+
+### Bug Fixes
+
+* disable duplicate submissions ([093c941](https://github.com/dcplibrary/requests/commit/093c9416904c0ce30c3fe8e6ab57e9a40a787a44))
+
 ## [4.20.1](https://github.com/dcplibrary/requests/compare/v4.20.0...v4.20.1) (2026-03-26)
 
 
