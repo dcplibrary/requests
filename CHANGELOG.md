@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.19.11](https://github.com/dcplibrary/requests/compare/v4.19.10...v4.19.11) (2026-03-26)
+
+
+### Bug Fixes
+
+* remove ill message before catalog search ([9d84154](https://github.com/dcplibrary/requests/commit/9d841547afe3cffd8723d3f4c90fed693580f3c0))
+
 ## [4.19.10](https://github.com/dcplibrary/requests/compare/v4.19.9...v4.19.10) (2026-03-25)
 
 
