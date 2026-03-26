@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.20.1](https://github.com/dcplibrary/requests/compare/v4.20.0...v4.20.1) (2026-03-26)
+
+
+### Bug Fixes
+
+* tighten search criteria ([d354ffa](https://github.com/dcplibrary/requests/commit/d354ffa63b9e373139f56dc13756ae1ac82e118a))
+
 # [4.20.0](https://github.com/dcplibrary/requests/compare/v4.19.11...v4.20.0) (2026-03-26)
 
 
