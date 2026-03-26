@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.20.0](https://github.com/dcplibrary/requests/compare/v4.19.11...v4.20.0) (2026-03-26)
+
+
+### Features
+
+* add email queue and update phpdocs ([2fb58d4](https://github.com/dcplibrary/requests/commit/2fb58d4c9ad1418fb6dab99c35fc15cd1a17e1ad))
+
 ## [4.19.11](https://github.com/dcplibrary/requests/compare/v4.19.10...v4.19.11) (2026-03-26)
 
 
