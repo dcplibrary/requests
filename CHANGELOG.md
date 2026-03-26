@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.20.5](https://github.com/dcplibrary/requests/compare/v4.20.4...v4.20.5) (2026-03-26)
+
+
+### Bug Fixes
+
+* make convert to ill button work ([a27f053](https://github.com/dcplibrary/requests/commit/a27f0530a96db95a8eff45f3e043bd0f9436d36e))
+
 ## [4.20.4](https://github.com/dcplibrary/requests/compare/v4.20.3...v4.20.4) (2026-03-26)
 
 
