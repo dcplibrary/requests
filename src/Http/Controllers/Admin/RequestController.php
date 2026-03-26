@@ -590,10 +590,6 @@ class RequestController extends Controller
             $changes[] = "{$field->label}: {$oldLabel} → {$newLabel}";
         }
 
-        if (empty($changes)) {
-            return back()->with('success', 'No changes needed — fields already match this group.');
-        }
-
         // Unassign so the next group member who opens it auto-claims.
         $patronRequest->update([
             'assigned_to_user_id' => null,
@@ -603,7 +599,9 @@ class RequestController extends Controller
 
         $actor = $this->currentStaffUser($httpRequest);
         $userNote = trim((string) $httpRequest->input('note'));
-        $historyNote = 'Rerouted to ' . $group->name . ': ' . implode('; ', $changes) . '.';
+        $historyNote = empty($changes)
+            ? ('Rerouted to ' . $group->name . ' (no field changes). Request unassigned.')
+            : ('Rerouted to ' . $group->name . ': ' . implode('; ', $changes) . '.');
         if ($userNote) {
             $historyNote .= " {$userNote}";
         }
@@ -613,8 +611,8 @@ class RequestController extends Controller
             'note'              => $historyNote,
         ]);
 
-        // Notify the target group.
-        if ($actor) {
+        // Notify the target group only when reroute changed field routing.
+        if ($actor && ! empty($changes)) {
             app(NotificationService::class)->notifyStaffWorkflowAction(
                 $patronRequest->fresh(),
                 'Rerouted',
@@ -626,7 +624,12 @@ class RequestController extends Controller
 
         return redirect()
             ->route('request.staff.requests.index')
-            ->with('success', 'Request #' . $patronRequest->id . ' rerouted to ' . $group->name . '.');
+            ->with(
+                'success',
+                empty($changes)
+                    ? ('Request #' . $patronRequest->id . ' reassigned to ' . $group->name . ' (no field changes).')
+                    : ('Request #' . $patronRequest->id . ' rerouted to ' . $group->name . '.')
+            );
     }
 
     /**
@@ -731,10 +734,18 @@ class RequestController extends Controller
             return back()->with('success', "Request is already '{$to}'.");
         }
 
-        $patronRequest->update([
+        $updates = [
             'request_kind'  => $to,
             'ill_requested' => $to === PatronRequest::KIND_ILL ? true : $patronRequest->ill_requested,
-        ]);
+        ];
+        if ($to === PatronRequest::KIND_ILL) {
+            $updates = array_merge($updates, [
+                'assigned_to_user_id' => null,
+                'assigned_at'         => null,
+                'assigned_by_user_id' => null,
+            ]);
+        }
+        $patronRequest->update($updates);
 
         $staffUserId = $this->currentStaffUser($httpRequest)?->id;
         $note = trim((string) ($data['note'] ?? ''));
@@ -797,6 +808,9 @@ class RequestController extends Controller
         $patronRequest->update([
             'request_kind' => $to,
             'ill_requested' => true,
+            'assigned_to_user_id' => null,
+            'assigned_at'         => null,
+            'assigned_by_user_id' => null,
         ]);
 
         $patronRequest->statusHistory()->create([
