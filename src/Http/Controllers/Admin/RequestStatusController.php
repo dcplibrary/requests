@@ -17,8 +17,8 @@ class RequestStatusController extends Controller
     /**
      * List all request statuses.
      *
-     * @param  Request  $request
-     * @return \Illuminate\View\View
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Contracts\View\View
      */
     public function index(Request $request)
     {
@@ -38,11 +38,22 @@ class RequestStatusController extends Controller
         ]);
     }
 
+    /**
+     * Show the form to create a new request status.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function create()
     {
         return view('requests::staff.statuses.form', ['status' => new RequestStatus()]);
     }
 
+    /**
+     * Store a newly created request status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -66,11 +77,24 @@ class RequestStatusController extends Controller
         return redirect()->route('request.staff.statuses.index')->with('success', 'Status created.');
     }
 
+    /**
+     * Show the form to edit an existing request status.
+     *
+     * @param  \Dcplibrary\Requests\Models\RequestStatus  $status
+     * @return \Illuminate\Contracts\View\View
+     */
     public function edit(RequestStatus $status)
     {
         return view('requests::staff.statuses.form', ['status' => $status]);
     }
 
+    /**
+     * Update the specified request status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Dcplibrary\Requests\Models\RequestStatus  $status
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, RequestStatus $status)
     {
         $data = $request->validate([
@@ -94,6 +118,12 @@ class RequestStatusController extends Controller
         return redirect()->route('request.staff.statuses.index')->with('success', 'Status updated.');
     }
 
+    /**
+     * Delete a request status, optionally reassigning linked requests and history.
+     *
+     * @param  \Dcplibrary\Requests\Models\RequestStatus  $status
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function destroy(RequestStatus $status)
     {
         $request = request();
@@ -130,6 +160,12 @@ class RequestStatusController extends Controller
         return redirect()->route('request.staff.statuses.index')->with('success', 'Status deleted.');
     }
 
+    /**
+     * Show delete confirmation and optional reassignment targets for a status.
+     *
+     * @param  \Dcplibrary\Requests\Models\RequestStatus  $status
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+     */
     public function confirmDelete(RequestStatus $status)
     {
         $request = request();

@@ -11,6 +11,13 @@ use Illuminate\Support\Str;
  */
 class HelpController extends Controller
 {
+    /**
+     * Render a markdown help page as HTML (patron `user` or staff `admin`).
+     *
+     * @param  Request  $request  When `popup=1`, uses the popup layout
+     * @param  string|null  $page  `user`, `admin`, or default `user`
+     * @return \Illuminate\Contracts\View\View
+     */
     public function show(Request $request, ?string $page = null)
     {
         $page = $page ?: 'user';
@@ -56,6 +63,9 @@ class HelpController extends Controller
         ]);
     }
 
+    /**
+     * @param  string  $relative  Path relative to the package root (e.g. `docs/help-user.md`)
+     */
     private function packageRootPath(string $relative): string
     {
         return dirname(__DIR__, 4) . '/' . ltrim($relative, '/');

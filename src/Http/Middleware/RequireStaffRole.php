@@ -31,6 +31,11 @@ class RequireStaffRole
     /** Legacy host role; when provisioning we store as 'selector'. */
     private const LEGACY_ILL_ROLE = 'ill';
 
+    /**
+     * @param  Request  $request
+     * @param  Closure  $next  Next middleware / controller
+     * @return Response  Proceed, or 403 staff no-access view
+     */
     public function handle(Request $request, Closure $next): Response
     {
         $authUser = $request->user();

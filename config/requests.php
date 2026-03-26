@@ -68,6 +68,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Queue notification mail
+    |--------------------------------------------------------------------------
+    | When true (default), staff/patron notification email from NotificationService
+    | is dispatched to the queue so patron form submission and staff actions return
+    | faster. Requires a running queue worker unless QUEUE_CONNECTION=sync.
+    | Set to false to force synchronous Mail::send() (e.g. debugging).
+    */
+    'queue_notification_mail' => env('REQUESTS_QUEUE_NOTIFICATION_MAIL', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Polaris PAPI
     |--------------------------------------------------------------------------
     | Staff authentication for Polaris PAPI (barcode check, patron lookup).

@@ -57,6 +57,11 @@ class BackupController extends Controller
     /** Directory where artisan requests:backup writes files. */
     private string $backupDir;
 
+    /**
+     * Set the server backup directory used for listing and writing backup files.
+     *
+     * @return void
+     */
     public function __construct()
     {
         $this->backupDir = storage_path('app/requests-backups');
@@ -64,18 +69,120 @@ class BackupController extends Controller
 
     // ── View ──────────────────────────────────────────────────────────────────
 
+    /**
+     * Backups settings UI: server files, retention, and scheduled backup options.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function index()
     {
         $retentionDays = (int) (Setting::where('key', 'backup_retention_days')->value('value') ?: 30);
 
+        $cron = trim((string) Setting::get('backup_schedule_cron', '0 2 * * *'));
+        $preset = $this->backupSchedulePresetForCron($cron);
+
         return view('requests::staff.settings.backups', [
             'serverFiles'   => $this->scanServerFiles(),
             'retentionDays' => $retentionDays,
+            'backupScheduleEnabled' => (bool) Setting::get('backup_schedule_enabled', false),
+            'backupScheduleCron'    => $cron,
+            'backupSchedulePreset'  => $preset,
+            'backupScheduleIncludeConfig'  => (bool) Setting::get('backup_schedule_include_config', true),
+            'backupScheduleIncludeDb'      => (bool) Setting::get('backup_schedule_include_db', true),
+            'backupScheduleIncludeStorage' => (bool) Setting::get('backup_schedule_include_storage', false),
+            'backupSchedulePrune'          => (bool) Setting::get('backup_schedule_prune', true),
+            'backupSchedulePath'           => (string) Setting::get('backup_schedule_path', ''),
         ]);
+    }
+
+    /**
+     * Persist automated backup schedule for `RunScheduledBackup`.
+     *
+     * Form fields: `schedule_preset`, `cron_custom` (when preset is custom),
+     * `backup_schedule_enabled`, `include_config`, `include_db`, `include_storage`,
+     * `include_prune`, `backup_path`. Updates `Setting` rows and busts per-key cache.
+     *
+     * @see \Dcplibrary\Requests\Console\Scheduling\RunScheduledBackup
+     * @see \Dcplibrary\Requests\Models\Setting
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateSchedule(Request $request)
+    {
+        $request->validate([
+            'schedule_preset' => 'required|string|in:daily_2,weekly_sun_2,monthly_1_2,custom',
+            'cron_custom'     => 'nullable|string|max:128',
+            'backup_path'     => 'nullable|string|max:1024',
+        ]);
+
+        $cron = match ($request->string('schedule_preset')->toString()) {
+            'daily_2'       => '0 2 * * *',
+            'weekly_sun_2'  => '0 2 * * 0',
+            'monthly_1_2'   => '0 2 1 * *',
+            'custom'        => trim((string) $request->input('cron_custom', '')),
+            default         => '0 2 * * *',
+        };
+
+        if (! $this->isValidCronExpression($cron)) {
+            return back()->withErrors(['cron_custom' => 'Enter a valid five-field cron expression (e.g. 0 2 * * *).'])->withInput();
+        }
+
+        $includeConfig  = $request->boolean('include_config');
+        $includeDb      = $request->boolean('include_db');
+        $includeStorage = $request->boolean('include_storage');
+        $enabled        = $request->boolean('backup_schedule_enabled');
+
+        if ($enabled && ! $includeConfig && ! $includeDb && ! $includeStorage) {
+            return back()->withErrors(['include_config' => 'Choose at least one backup type when the schedule is enabled.'])->withInput();
+        }
+
+        Setting::set('backup_schedule_enabled', $enabled);
+        Setting::set('backup_schedule_cron', $cron);
+        Setting::set('backup_schedule_include_config', $includeConfig);
+        Setting::set('backup_schedule_include_db', $includeDb);
+        Setting::set('backup_schedule_include_storage', $includeStorage);
+        Setting::set('backup_schedule_prune', $request->boolean('include_prune'));
+        Setting::set('backup_schedule_path', trim((string) $request->input('backup_path', '')));
+
+        return back()->with('success', 'Backup schedule saved. Ensure a scheduler container runs `php artisan schedule:run` (see package docs).');
+    }
+
+    /**
+     * Map a stored five-field cron string to the backups UI preset key (or `custom`).
+     */
+    private function backupSchedulePresetForCron(string $cron): string
+    {
+        return match ($cron) {
+            '0 2 * * *'   => 'daily_2',
+            '0 2 * * 0'   => 'weekly_sun_2',
+            '0 2 1 * *'   => 'monthly_1_2',
+            default       => 'custom',
+        };
+    }
+
+    /**
+     * Lightweight validation for a standard five-field cron (no dependency on cron-expression libraries).
+     */
+    private function isValidCronExpression(string $cron): bool
+    {
+        if ($cron === '' || substr_count($cron, ' ') !== 4) {
+            return false;
+        }
+
+        return (bool) preg_match(
+            '/^[\d\*\-,\/A-Za-z]+\s+[\d\*\-,\/A-Za-z]+\s+[\d\*\-,\/A-Za-z]+\s+[\d\*\-,\/A-Za-z]+\s+[\d\*\-,\/A-Za-z]+$/',
+            $cron
+        );
     }
 
     // ── Configuration Export ──────────────────────────────────────────────────
 
+    /**
+     * Download non-transient package configuration as JSON.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function exportConfig()
     {
         $payload = [
@@ -135,6 +242,12 @@ class BackupController extends Controller
 
     // ── Configuration Import ──────────────────────────────────────────────────
 
+    /**
+     * Import configuration from an uploaded JSON backup file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function importConfig(Request $request)
     {
         $request->validate([
@@ -154,6 +267,12 @@ class BackupController extends Controller
 
     // ── Restore from server backup ────────────────────────────────────────────
 
+    /**
+     * Restore database or config from a file already saved under `storage/app/requests-backups`.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function restoreFromServer(Request $request)
     {
         $request->validate([
@@ -216,6 +335,12 @@ class BackupController extends Controller
 
     // ── Download server backup file ───────────────────────────────────────────
 
+    /**
+     * Stream a server-side backup file to the browser.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
     public function downloadFromServer(Request $request)
     {
         $request->validate([
@@ -243,6 +368,12 @@ class BackupController extends Controller
 
     // ── Delete server backup file ─────────────────────────────────────────────
 
+    /**
+     * Remove a backup file from the server backup directory.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function deleteFromServer(Request $request)
     {
         $request->validate([
@@ -269,6 +400,12 @@ class BackupController extends Controller
 
     // ── Backup retention ──────────────────────────────────────────────────────
 
+    /**
+     * Update how many days server backups are kept before pruning.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function updateRetention(Request $request)
     {
         $request->validate([
@@ -282,6 +419,11 @@ class BackupController extends Controller
         return back()->with('success', 'Backup retention updated.');
     }
 
+    /**
+     * Queue a job to prune old backup files according to retention settings.
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function pruneBackups()
     {
         PruneBackupsJob::dispatch();
@@ -290,6 +432,11 @@ class BackupController extends Controller
 
     // ── Database Export ───────────────────────────────────────────────────────
 
+    /**
+     * Download a MySQL-oriented SQL dump of all tables (driver-specific DDL).
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function exportDatabase()
     {
         $pdo    = DB::connection()->getPdo();
@@ -342,6 +489,12 @@ class BackupController extends Controller
 
     // ── Database Import ───────────────────────────────────────────────────────
 
+    /**
+     * Restore the database from an uploaded SQL file (split statements, driver-filtered).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function importDatabase(Request $request)
     {
         $request->validate([
@@ -372,6 +525,8 @@ class BackupController extends Controller
     /**
      * Export the full database as JSON (tables and rows).
      * Driver-agnostic: restore with importDatabaseFromJson() avoids SQL dialect issues.
+     *
+     * @return \Illuminate\Http\Response
      */
     public function exportDatabaseJson()
     {
@@ -402,6 +557,9 @@ class BackupController extends Controller
     /**
      * Restore the full database from a JSON dump.
      * Uses DB::table()->insert(); no SQL parsing, works on any driver.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function importDatabaseFromJson(Request $request)
     {
@@ -464,6 +622,9 @@ class BackupController extends Controller
     /**
      * Write one or both backup files directly to storage/app/requests-backups
      * without sending a download to the browser.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function saveToServer(Request $request)
     {
@@ -559,6 +720,11 @@ class BackupController extends Controller
 
     // ── Storage Export ────────────────────────────────────────────────────────
 
+    /**
+     * Download `storage/app` as a zip archive.
+     *
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\RedirectResponse
+     */
     public function exportStorage()
     {
         $storagePath = storage_path('app');
@@ -596,6 +762,9 @@ class BackupController extends Controller
     /**
      * Truncate every table in the database. This is a full wipe —
      * requests, patrons, titles, and all configuration. Use with caution.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function wipeAll(Request $request)
     {
@@ -1140,9 +1309,6 @@ class BackupController extends Controller
             : '`' . $name . '`';
     }
 
-    /**
-     * Export field options for a given field key in the legacy backup format.
-     *
     /**
      * Export all field definitions with nested options.
      *

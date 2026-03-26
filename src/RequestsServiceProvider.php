@@ -3,6 +3,7 @@
 namespace Dcplibrary\Requests;
 
 use Dcplibrary\Requests\Console\Commands\SeedDefaultsCommand;
+use Dcplibrary\Requests\Console\Scheduling\RunScheduledBackup;
 use Dcplibrary\Requests\Console\Commands\BackupCommand;
 use Dcplibrary\Requests\Console\Commands\RestoreDbCommand;
 use Dcplibrary\Requests\Console\Commands\UsersBackupCommand;
@@ -24,6 +25,8 @@ use Dcplibrary\Requests\Livewire\PatronPinLogin;
 use Dcplibrary\Requests\Livewire\PatronRequests;
 use Dcplibrary\Requests\Livewire\IllForm;
 use Dcplibrary\Requests\Livewire\RequestForm;
+use Dcplibrary\Requests\Models\Setting;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
@@ -83,6 +86,35 @@ class RequestsServiceProvider extends ServiceProvider
             UsersBackupCommand::class,
             UsersRestoreCommand::class,
         ]);
+
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            $cron = trim((string) Setting::get('backup_schedule_cron', '0 2 * * *'));
+            if (! self::isLikelyCronExpression($cron)) {
+                $cron = '0 2 * * *';
+            }
+
+            $schedule->call(new RunScheduledBackup)
+                ->name('requests-package-scheduled-backup')
+                ->cron($cron)
+                ->withoutOverlapping(120)
+                ->when(fn () => (bool) Setting::get('backup_schedule_enabled', false))
+                ->appendOutputTo(storage_path('logs/requests-backup.log'));
+        });
+    }
+
+    /**
+     * Lightweight validation for a 5-field cron expression (no dependency on cron libraries).
+     */
+    private static function isLikelyCronExpression(string $cron): bool
+    {
+        if ($cron === '' || substr_count($cron, ' ') !== 4) {
+            return false;
+        }
+
+        return (bool) preg_match(
+            '/^[\d\*\-,\/A-Za-z]+\s+[\d\*\-,\/A-Za-z]+\s+[\d\*\-,\/A-Za-z]+\s+[\d\*\-,\/A-Za-z]+\s+[\d\*\-,\/A-Za-z]+$/',
+            $cron
+        );
     }
 
     protected function registerMiddleware(): void

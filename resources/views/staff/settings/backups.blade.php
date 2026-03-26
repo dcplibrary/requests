@@ -506,97 +506,102 @@
             </div>
         </div>
 
-        {{-- Cron schedule builder --}}
+        {{-- Automated backup schedule (Laravel scheduler — see package docs/scheduler.md) --}}
         <div class="p-5">
-            <h3 class="text-sm font-semibold text-gray-700 mb-1">Backup Schedule</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-1">Automated backup schedule</h3>
             <p class="text-sm text-gray-500 mb-5">
-                Use <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">php artisan requests:backup</code>
-                on a schedule via Docker cron or the Laravel scheduler. Use
-                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">--prune</code>
-                to automatically delete old backups as part of the same job.
+                When enabled, the package registers a Laravel scheduler task from these settings.
+                Your deployment must run <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">php artisan schedule:run</code>
+                every minute (e.g. a scheduler container). You do not need a duplicate entry in
+                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">routes/console.php</code> unless you prefer to manage timing there instead.
             </p>
 
-            <div id="schedule-builder" class="space-y-4 mb-5">
+            <form method="POST" action="{{ route('request.staff.backups.schedule') }}" id="backup-schedule-form" class="space-y-4">
+                @csrf
+                <label class="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
+                    <input type="hidden" name="backup_schedule_enabled" value="0">
+                    <input type="checkbox" name="backup_schedule_enabled" value="1"
+                           class="rounded border-gray-300"
+                           @checked(old('backup_schedule_enabled', $backupScheduleEnabled ? '1' : '0') === '1')>
+                    Enable scheduled backups
+                </label>
 
-                {{-- Frequency --}}
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">Frequency</label>
-                        <select id="sched-frequency"
+                        <select name="schedule_preset" id="schedule_preset"
                                 class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
-                            <option value="0 2 * * *">Daily at 2:00 AM</option>
-                            <option value="0 2 * * 0">Weekly — Sunday at 2:00 AM</option>
-                            <option value="0 2 1 * *">Monthly — 1st at 2:00 AM</option>
-                            <option value="custom">Custom cron expression…</option>
+                            <option value="daily_2" @selected(old('schedule_preset', $backupSchedulePreset) === 'daily_2')>Daily at 2:00 AM</option>
+                            <option value="weekly_sun_2" @selected(old('schedule_preset', $backupSchedulePreset) === 'weekly_sun_2')>Weekly — Sunday 2:00 AM</option>
+                            <option value="monthly_1_2" @selected(old('schedule_preset', $backupSchedulePreset) === 'monthly_1_2')>Monthly — 1st at 2:00 AM</option>
+                            <option value="custom" @selected(old('schedule_preset', $backupSchedulePreset) === 'custom')>Custom cron…</option>
                         </select>
                     </div>
-                    <div id="sched-custom-wrap" class="hidden">
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Custom expression</label>
-                        <input type="text" id="sched-custom"
+                    <div id="cron-custom-wrap" class="@if(old('schedule_preset', $backupSchedulePreset) !== 'custom') hidden @endif">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Cron expression (five fields)</label>
+                        <input type="text" name="cron_custom" id="cron_custom"
+                               value="{{ old('cron_custom', $backupScheduleCron) }}"
                                placeholder="0 2 * * *"
-                               class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                               class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400 font-mono">
+                        @error('cron_custom')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
 
-                {{-- Include --}}
                 <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Include in backup</label>
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Include in each run</label>
                     <div class="flex flex-wrap gap-5 text-sm text-gray-700">
                         <label class="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="sched-config" checked class="rounded border-gray-300"> Configuration (JSON)
+                            <input type="hidden" name="include_config" value="0">
+                            <input type="checkbox" name="include_config" value="1" class="rounded border-gray-300"
+                                   @checked(old('include_config', $backupScheduleIncludeConfig ? '1' : '0') === '1')>
+                            Configuration (JSON)
                         </label>
                         <label class="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="sched-db" checked class="rounded border-gray-300"> Database (SQL)
+                            <input type="hidden" name="include_db" value="0">
+                            <input type="checkbox" name="include_db" value="1" class="rounded border-gray-300"
+                                   @checked(old('include_db', $backupScheduleIncludeDb ? '1' : '0') === '1')>
+                            Database (JSON dump)
                         </label>
                         <label class="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="sched-storage" class="rounded border-gray-300"> Storage (Zip)
+                            <input type="hidden" name="include_storage" value="0">
+                            <input type="checkbox" name="include_storage" value="1" class="rounded border-gray-300"
+                                   @checked(old('include_storage', $backupScheduleIncludeStorage ? '1' : '0') === '1')>
+                            Storage (Zip)
                         </label>
                         <label class="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="sched-prune" checked class="rounded border-gray-300"> Prune old backups
+                            <input type="hidden" name="include_prune" value="0">
+                            <input type="checkbox" name="include_prune" value="1" class="rounded border-gray-300"
+                                   @checked(old('include_prune', $backupSchedulePrune ? '1' : '0') === '1')>
+                            Prune old backups after
                         </label>
                     </div>
+                    @error('include_config')
+                        <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
-                {{-- Output path --}}
                 <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Backup output path <span class="text-gray-400 font-normal">(inside container)</span></label>
-                    <input type="text" id="sched-path"
-                           value="/var/www/html/storage/app/requests-backups"
-                           class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Output directory <span class="text-gray-400 font-normal">(optional — default is storage/app/requests-backups)</span></label>
+                    <input type="text" name="backup_path" value="{{ old('backup_path', $backupSchedulePath) }}"
+                           placeholder="{{ storage_path('app/requests-backups') }}"
+                           class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400 font-mono">
+                    @error('backup_path')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
-                {{-- App path --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Laravel app path <span class="text-gray-400 font-normal">(inside container)</span></label>
-                    <input type="text" id="sched-app"
-                           value="/var/www/html"
-                           class="w-full text-sm border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400">
-                </div>
+                <button type="submit"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded font-medium">
+                    {!! $icon['config'] !!} Save schedule
+                </button>
+            </form>
 
-                {{-- Generated cron line --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Generated cron line</label>
-                    <div id="sched-output"
-                         class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 font-mono text-xs overflow-x-auto whitespace-nowrap select-all cursor-text">
-                        0 2 * * * www-data php /var/www/html/artisan requests:backup --config --db --prune --path=/var/www/html/storage/app/requests-backups >> /var/log/requests-backup.log 2>&1
-                    </div>
-                    <p class="mt-1.5 text-xs text-gray-400">Click to select all. Add this to your container's crontab.</p>
-                </div>
-
-            </div>
-
-            {{-- Docker example --}}
-            <div class="border-t border-gray-100 pt-4">
-                <h3 class="text-xs font-semibold text-gray-600 mb-2">Docker setup</h3>
-                <pre class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 text-xs overflow-x-auto leading-relaxed"># Option A — cron inside the container
-RUN apt-get install -y cron
-COPY crontab /etc/cron.d/requests-backup
-RUN chmod 0644 /etc/cron.d/requests-backup &amp;&amp; crontab /etc/cron.d/requests-backup
-CMD ["cron", "-f"]
-
-# Option B — Laravel scheduler (add to your docker CMD / supervisor)
-# In App\Console\Kernel::schedule():
-#   $schedule->command('requests:backup --config --db --prune')->daily();</pre>
+            <div class="border-t border-gray-100 pt-4 mt-5">
+                <h3 class="text-xs font-semibold text-gray-600 mb-2">Reference: manual cron (optional)</h3>
+                <p class="text-xs text-gray-500 mb-2">If you do not use the Laravel scheduler, you can still call Artisan from system cron, e.g.:</p>
+                <pre class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 text-xs overflow-x-auto leading-relaxed">0 2 * * * www-data php /path/to/artisan requests:backup --all --prune &gt;&gt; /var/log/requests-backup.log 2&gt;&amp;1</pre>
             </div>
         </div>
 
@@ -605,41 +610,15 @@ CMD ["cron", "-f"]
 
 <script>
 (function () {
-    function el(id) { return document.getElementById(id); }
-
-    function buildCron() {
-        var freq    = el('sched-frequency').value;
-        var expr    = freq === 'custom' ? (el('sched-custom').value.trim() || '* * * * *') : freq;
-        var app     = (el('sched-app').value.trim()  || '/var/www/html').replace(/\/$/, '');
-        var path    = el('sched-path').value.trim();
-        var flags   = [];
-
-        if (el('sched-config').checked)  flags.push('--config');
-        if (el('sched-db').checked)      flags.push('--db');
-        if (el('sched-storage').checked) flags.push('--storage');
-        if (el('sched-prune').checked)   flags.push('--prune');
-        if (path) flags.push('--path=' + path);
-
-        var cmd = expr + ' www-data php ' + app + '/artisan requests:backup';
-        if (flags.length) cmd += ' ' + flags.join(' ');
-        cmd += ' >> /var/log/requests-backup.log 2>&1';
-
-        el('sched-output').textContent = cmd;
+    var preset = document.getElementById('schedule_preset');
+    var wrap = document.getElementById('cron-custom-wrap');
+    if (preset && wrap) {
+        function sync() {
+            wrap.classList.toggle('hidden', preset.value !== 'custom');
+        }
+        preset.addEventListener('change', sync);
+        sync();
     }
-
-    ['sched-frequency','sched-custom','sched-config','sched-db','sched-storage','sched-prune','sched-path','sched-app']
-        .forEach(function (id) {
-            var node = el(id);
-            if (node) node.addEventListener('input', buildCron);
-            if (node) node.addEventListener('change', buildCron);
-        });
-
-    el('sched-frequency').addEventListener('change', function () {
-        el('sched-custom-wrap').classList.toggle('hidden', this.value !== 'custom');
-        buildCron();
-    });
-
-    buildCron();
 })();
 </script>
 

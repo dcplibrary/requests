@@ -24,6 +24,12 @@ use Illuminate\Validation\Rule;
 class SettingController extends Controller
 {
     use ProvidesEmailTokens;
+
+    /**
+     * Show the main settings index (grouped key/value rows excluding dedicated tabs).
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function index()
     {
         return view('requests::staff.settings.index', [
@@ -35,6 +41,11 @@ class SettingController extends Controller
         ]);
     }
 
+    /**
+     * Show notification settings: toggles, patron templates, and staff routing templates overview.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function notifications()
     {
         $availableTokens = $this->availableTokens();
@@ -99,6 +110,8 @@ class SettingController extends Controller
 
     /**
      * Edit staff routing email (subject + body). Form posts to settings.update.
+     *
+     * @return \Illuminate\Contracts\View\View
      */
     public function staffEmailForm()
     {
@@ -141,6 +154,8 @@ class SettingController extends Controller
 
     /**
      * Edit default patron email (one fallback template). Form posts to settings.update.
+     *
+     * @return \Illuminate\Contracts\View\View
      */
     public function defaultPatronEmailForm()
     {
@@ -165,6 +180,9 @@ class SettingController extends Controller
     /**
      * Render a live preview of the staff or patron email template in the browser.
      * Opens in a new tab — no admin chrome, just the raw email HTML.
+     *
+     * @param  string  $type  `staff` or `patron`
+     * @return \Illuminate\Contracts\View\View
      */
     public function previewEmail(string $type)
     {
@@ -193,6 +211,9 @@ class SettingController extends Controller
 
     /**
      * Send a test email to the given address using sample placeholder data.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function sendTestEmail(Request $request)
     {
@@ -227,6 +248,12 @@ class SettingController extends Controller
         }
     }
 
+    /**
+     * Persist settings rows and optional inline patron template edits from staff forms.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request)
     {
         // Allow keys from the package catalog plus any already in DB (custom/host rows).

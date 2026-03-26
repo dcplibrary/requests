@@ -23,6 +23,12 @@ use Illuminate\Validation\Rule;
  */
 class RequestController extends Controller
 {
+    /**
+     * Paginated staff queue of patron requests with filters, sorting, and assignment context.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Contracts\View\View
+     */
     public function index(Request $request)
     {
         $user = $request->user();
@@ -200,6 +206,12 @@ class RequestController extends Controller
         return null;
     }
 
+    /**
+     * Show a single request with relations, optional auto-claim, and staff workflow UI data.
+     *
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Contracts\View\View
+     */
     public function show(PatronRequest $patronRequest)
     {
         $user = request()->user();
@@ -359,6 +371,13 @@ class RequestController extends Controller
         ]);
     }
 
+    /**
+     * Assign or unassign a request to a staff user and log history (when assignment is enabled).
+     *
+     * @param  \Illuminate\Http\Request  $httpRequest
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function assign(Request $httpRequest, PatronRequest $patronRequest)
     {
         abort_unless(Setting::get('assignment_enabled', false), 404);
@@ -435,6 +454,13 @@ class RequestController extends Controller
         return back()->with('success', 'Assignment updated.');
     }
 
+    /**
+     * Claim an unassigned request for the current staff user.
+     *
+     * @param  \Illuminate\Http\Request  $httpRequest
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function claim(Request $httpRequest, PatronRequest $patronRequest)
     {
         abort_unless(Setting::get('assignment_enabled', false), 404);
@@ -474,8 +500,8 @@ class RequestController extends Controller
      * target group has multiple options). Adjusts filterable field values to
      * match the target group and unassigns the request.
      *
-     * @param  Request        $httpRequest
-     * @param  PatronRequest  $patronRequest
+     * @param  \Illuminate\Http\Request  $httpRequest
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
      * @return \Illuminate\Http\RedirectResponse
      */
     public function reroute(Request $httpRequest, PatronRequest $patronRequest)
@@ -602,9 +628,9 @@ class RequestController extends Controller
      * For each filterable field, compares the request's current value against the
      * target group's options. Returns a list of changes with available options.
      *
-     * @param  Request        $httpRequest
-     * @param  PatronRequest  $patronRequest
-     * @return JsonResponse
+     * @param  \Illuminate\Http\Request  $httpRequest
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Http\JsonResponse
      */
     public function reroutePreview(Request $httpRequest, PatronRequest $patronRequest): JsonResponse
     {
@@ -669,6 +695,13 @@ class RequestController extends Controller
         ]);
     }
 
+    /**
+     * Convert a request between SFP and ILL workflows, with optional staff note and notifications.
+     *
+     * @param  \Illuminate\Http\Request  $httpRequest
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function convertKind(Request $httpRequest, PatronRequest $patronRequest)
     {
         $allowed = PatronRequest::query()
@@ -728,6 +761,10 @@ class RequestController extends Controller
 
     /**
      * One-click SFP → ILL from a signed link in staff routing email (patron must have opted in).
+     *
+     * @param  \Illuminate\Http\Request  $httpRequest
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function convertToIllFromSignedEmail(\Illuminate\Http\Request $httpRequest, PatronRequest $patronRequest)
     {
@@ -771,6 +808,10 @@ class RequestController extends Controller
     /**
      * Return a JSON preview of the patron email that would be sent for the
      * given status change, without actually sending anything.
+     *
+     * @param  \Illuminate\Http\Request  $httpRequest
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Http\JsonResponse
      */
     public function previewStatusEmail(Request $httpRequest, PatronRequest $patronRequest): JsonResponse
     {
@@ -802,6 +843,13 @@ class RequestController extends Controller
         ]);
     }
 
+    /**
+     * Transition request status, optionally send or skip patron email, and auto-claim when enabled.
+     *
+     * @param  \Illuminate\Http\Request  $httpRequest
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function updateStatus(\Illuminate\Http\Request $httpRequest, PatronRequest $patronRequest)
     {
         $allowed = PatronRequest::query()
@@ -888,6 +936,10 @@ class RequestController extends Controller
      * On success the staff member is redirected to the full request detail page.
      * If the request is already past the target status the action is a no-op and
      * a friendly message is shown.
+     *
+     * @param  \Illuminate\Http\Request  $httpRequest
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function emailAction(
         \Illuminate\Http\Request $httpRequest,
@@ -1002,6 +1054,12 @@ class RequestController extends Controller
         return $emails;
     }
 
+    /**
+     * Re-run the catalog search for this request and persist match metadata.
+     *
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function recheckCatalog(PatronRequest $patronRequest)
     {
         $allowed = PatronRequest::query()
@@ -1043,7 +1101,7 @@ class RequestController extends Controller
     /**
      * Bulk update the status of selected requests.
      *
-     * @param  Request  $httpRequest
+     * @param  \Illuminate\Http\Request  $httpRequest
      * @return \Illuminate\Http\RedirectResponse
      */
     public function bulkStatus(Request $httpRequest)
@@ -1082,7 +1140,7 @@ class RequestController extends Controller
      * request is unassigned. When a user is chosen, each request is assigned to
      * that user.
      *
-     * @param  Request  $httpRequest
+     * @param  \Illuminate\Http\Request  $httpRequest
      * @return \Illuminate\Http\RedirectResponse
      */
     public function bulkReassign(Request $httpRequest)
@@ -1205,7 +1263,7 @@ class RequestController extends Controller
     /**
      * Bulk delete selected requests. Admin only.
      *
-     * @param  Request  $httpRequest
+     * @param  \Illuminate\Http\Request  $httpRequest
      * @return \Illuminate\Http\RedirectResponse
      */
     public function bulkDelete(Request $httpRequest)
@@ -1237,6 +1295,13 @@ class RequestController extends Controller
         return back()->with('success', "{$count} request(s) deleted.");
     }
 
+    /**
+     * Delete a single request. Admin only.
+     *
+     * @param  \Illuminate\Http\Request  $httpRequest
+     * @param  \Dcplibrary\Requests\Models\PatronRequest  $patronRequest
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function destroy(Request $httpRequest, PatronRequest $patronRequest)
     {
         $allowed = PatronRequest::query()

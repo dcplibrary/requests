@@ -54,11 +54,19 @@ php artisan queue:table
 php artisan migrate
 ```
 
-The queue handles background jobs such as Polaris patron lookups and backup pruning.
+The queue handles background jobs such as Polaris patron lookups, backup pruning, and **patron/staff notification mail** from `NotificationService` (when the bus is available and `REQUESTS_QUEUE_NOTIFICATION_MAIL` is not `false`). Ensure a worker is running or set `QUEUE_CONNECTION=sync` for immediate in-process delivery.
 
-## Scheduled Tasks
+## Scheduled backups (package-managed)
 
-Register scheduled commands in the host app's `routes/console.php`:
+The package registers a scheduler event from **Settings → Backups → Automated backup schedule** (stored as `backup_schedule_*` settings). When **Enable scheduled backups** is on, `php artisan schedule:run` executes `requests:backup` with the flags you chose (config, database, storage, prune) and optional output path.
+
+- **Do not** duplicate the same backup in `routes/console.php` unless you disable the package schedule or you want two runs.
+- Timing uses a **five-field cron** expression (same as system cron), evaluated in the **application timezone** (`APP_TIMEZONE` / `config/app.php`).
+- Output is appended to `storage/logs/requests-backup.log`.
+
+### Legacy: register only in the host app
+
+If you prefer not to use the settings UI, you can instead register in `routes/console.php`:
 
 ```php
 use Illuminate\Support\Facades\Schedule;
@@ -70,7 +78,7 @@ Schedule::command('requests:backup --all --prune')
     ->appendOutputTo(storage_path('logs/requests-backup.log'));
 ```
 
-This runs a full backup (config JSON, database SQL, storage zip) at 2:00 AM daily and prunes files older than the configured retention period (`backup_retention_days` setting, default 30 days).
+Keep **scheduled backups disabled** in Settings if you use this approach, so the job does not run twice.
 
 ### Verifying the Scheduler
 

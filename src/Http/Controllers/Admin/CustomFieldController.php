@@ -28,7 +28,7 @@ class CustomFieldController extends Controller
      * Edit a field (base definition).
      *
      * @param  Field  $field
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Contracts\View\View
      */
     public function edit(Field $field)
     {
@@ -42,7 +42,7 @@ class CustomFieldController extends Controller
      *
      * @param  Field   $field
      * @param  string  $form  sfp|ill
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Contracts\View\View
      */
     public function editForForm(Field $field, string $form)
     {
@@ -85,7 +85,7 @@ class CustomFieldController extends Controller
      * @param  Field   $field
      * @param  string  $form      sfp|ill
      * @param  int     $optionId  FieldOption ID
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Contracts\View\View
      */
     public function editForFormOption(Field $field, string $form, int $optionId)
     {

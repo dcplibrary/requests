@@ -19,6 +19,11 @@ class StaffRoutingTemplateController extends Controller
 {
     use ProvidesEmailTokens;
 
+    /**
+     * Show the form to create a staff routing email template for a selector group.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function create(): \Illuminate\View\View
     {
         $assigned = StaffRoutingTemplate::query()->pluck('selector_group_id')->all();
@@ -40,6 +45,12 @@ class StaffRoutingTemplateController extends Controller
         ]);
     }
 
+    /**
+     * Store a new staff routing template.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function store(Request $request): \Illuminate\Http\RedirectResponse
     {
         $data = $this->validated($request, null);
@@ -56,6 +67,12 @@ class StaffRoutingTemplateController extends Controller
             ->with('success', 'Staff routing template created.');
     }
 
+    /**
+     * Show the form to edit an existing staff routing template.
+     *
+     * @param  \Dcplibrary\Requests\Models\StaffRoutingTemplate  $staffRoutingTemplate
+     * @return \Illuminate\Contracts\View\View
+     */
     public function edit(StaffRoutingTemplate $staffRoutingTemplate): \Illuminate\View\View
     {
         $staffRoutingTemplate->load('selectorGroup');
@@ -78,6 +95,13 @@ class StaffRoutingTemplateController extends Controller
         ]);
     }
 
+    /**
+     * Update the specified staff routing template.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Dcplibrary\Requests\Models\StaffRoutingTemplate  $staffRoutingTemplate
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, StaffRoutingTemplate $staffRoutingTemplate): \Illuminate\Http\RedirectResponse
     {
         $data = $this->validated($request, $staffRoutingTemplate);
@@ -94,6 +118,12 @@ class StaffRoutingTemplateController extends Controller
             ->with('success', 'Staff routing template saved.');
     }
 
+    /**
+     * Render a browser preview of the template body as staff would see it in email.
+     *
+     * @param  \Dcplibrary\Requests\Models\StaffRoutingTemplate  $staffRoutingTemplate
+     * @return \Illuminate\Contracts\View\View
+     */
     public function preview(StaffRoutingTemplate $staffRoutingTemplate): \Illuminate\View\View
     {
         $rendered = app(NotificationService::class)->renderStaffTemplateForPreview(
@@ -104,6 +134,13 @@ class StaffRoutingTemplateController extends Controller
         return view('requests::mail.notification', ['body' => $rendered['body']]);
     }
 
+    /**
+     * Send a test email using this template's subject and body to the given address.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Dcplibrary\Requests\Models\StaffRoutingTemplate  $staffRoutingTemplate
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function sendTest(Request $request, StaffRoutingTemplate $staffRoutingTemplate): \Illuminate\Http\RedirectResponse
     {
         $data = $request->validate([
@@ -124,6 +161,12 @@ class StaffRoutingTemplateController extends Controller
         }
     }
 
+    /**
+     * Show delete confirmation for a staff routing template.
+     *
+     * @param  \Dcplibrary\Requests\Models\StaffRoutingTemplate  $staffRoutingTemplate
+     * @return \Illuminate\Contracts\View\View
+     */
     public function confirmDelete(StaffRoutingTemplate $staffRoutingTemplate)
     {
         return view('requests::staff.staff-routing-templates.delete', [
@@ -131,6 +174,12 @@ class StaffRoutingTemplateController extends Controller
         ]);
     }
 
+    /**
+     * Delete the specified staff routing template.
+     *
+     * @param  \Dcplibrary\Requests\Models\StaffRoutingTemplate  $staffRoutingTemplate
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function destroy(StaffRoutingTemplate $staffRoutingTemplate)
     {
         $staffRoutingTemplate->delete();

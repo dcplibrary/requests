@@ -18,6 +18,12 @@ class TitleController extends Controller
     // INDEX — materials grouped, with request counts and bulk status action
     // -------------------------------------------------------------------------
 
+    /**
+     * Paginated materials list with search, sort, duplicate hints, and unmatched request count.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Contracts\View\View
+     */
     public function index(Request $request)
     {
         $staffUser = $this->currentStaffUser($request);
@@ -79,6 +85,13 @@ class TitleController extends Controller
     // SHOW — one material: its enriched data, all requests, bulk status
     // -------------------------------------------------------------------------
 
+    /**
+     * Material detail with linked requests and duplicate candidates in the staff scope.
+     *
+     * @param  Request  $request
+     * @param  Material  $material
+     * @return \Illuminate\Contracts\View\View
+     */
     public function show(Request $request, Material $material)
     {
         $staffUser = $this->currentStaffUser($request);
@@ -115,6 +128,13 @@ class TitleController extends Controller
     // BULK STATUS — update all requests for a material at once
     // -------------------------------------------------------------------------
 
+    /**
+     * Transition every request on a material to a single status (with optional note).
+     *
+     * @param  Request  $request
+     * @param  Material  $material
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function bulkStatus(Request $request, Material $material)
     {
         $staffUser = $this->currentStaffUser($request);
@@ -144,6 +164,13 @@ class TitleController extends Controller
     // MERGE — reassign all requests from loser material to winner, delete loser
     // -------------------------------------------------------------------------
 
+    /**
+     * Re-point all requests from the loser material to another material and delete the loser.
+     *
+     * @param  Request  $request
+     * @param  Material  $loser  Material whose requests will be moved then deleted
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function merge(Request $request, Material $loser)
     {
         $staffUser = $this->currentStaffUser($request);

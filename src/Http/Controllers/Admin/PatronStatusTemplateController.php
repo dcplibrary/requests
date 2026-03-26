@@ -20,11 +20,12 @@ use Illuminate\Support\Facades\Mail;
 class PatronStatusTemplateController extends Controller
 {
     use ProvidesEmailTokens;
+
     /**
      * List all patron status templates.
      *
-     * @param  Request  $request
-     * @return \Illuminate\View\View
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Contracts\View\View
      */
     public function index(Request $request)
     {
@@ -47,7 +48,7 @@ class PatronStatusTemplateController extends Controller
     /**
      * Show the create form for a new template.
      *
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Contracts\View\View
      */
     public function create()
     {
@@ -65,7 +66,7 @@ class PatronStatusTemplateController extends Controller
     /**
      * Store a newly created template.
      *
-     * @param  Request  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -92,8 +93,8 @@ class PatronStatusTemplateController extends Controller
     /**
      * Show the edit form for a template.
      *
-     * @param  PatronStatusTemplate  $patronStatusTemplate
-     * @return \Illuminate\View\View
+     * @param  \Dcplibrary\Requests\Models\PatronStatusTemplate  $patronStatusTemplate
+     * @return \Illuminate\Contracts\View\View
      */
     public function edit(PatronStatusTemplate $patronStatusTemplate)
     {
@@ -112,8 +113,8 @@ class PatronStatusTemplateController extends Controller
     /**
      * Update the specified template.
      *
-     * @param  Request               $request
-     * @param  PatronStatusTemplate   $patronStatusTemplate
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Dcplibrary\Requests\Models\PatronStatusTemplate  $patronStatusTemplate
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, PatronStatusTemplate $patronStatusTemplate)
@@ -138,6 +139,9 @@ class PatronStatusTemplateController extends Controller
 
     /**
      * Browser preview of this template using sample data (same placeholder pipeline as live sends).
+     *
+     * @param  \Dcplibrary\Requests\Models\PatronStatusTemplate  $patronStatusTemplate
+     * @return \Illuminate\Contracts\View\View
      */
     public function preview(PatronStatusTemplate $patronStatusTemplate)
     {
@@ -155,6 +159,10 @@ class PatronStatusTemplateController extends Controller
 
     /**
      * Send a test email for this template to the given address.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Dcplibrary\Requests\Models\PatronStatusTemplate  $patronStatusTemplate
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function sendTest(Request $request, PatronStatusTemplate $patronStatusTemplate)
     {
@@ -183,8 +191,8 @@ class PatronStatusTemplateController extends Controller
     /**
      * Show delete confirmation for a template.
      *
-     * @param  PatronStatusTemplate  $patronStatusTemplate
-     * @return \Illuminate\View\View
+     * @param  \Dcplibrary\Requests\Models\PatronStatusTemplate  $patronStatusTemplate
+     * @return \Illuminate\Contracts\View\View
      */
     public function confirmDelete(PatronStatusTemplate $patronStatusTemplate)
     {
@@ -196,7 +204,7 @@ class PatronStatusTemplateController extends Controller
     /**
      * Delete the specified template.
      *
-     * @param  PatronStatusTemplate  $patronStatusTemplate
+     * @param  \Dcplibrary\Requests\Models\PatronStatusTemplate  $patronStatusTemplate
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(PatronStatusTemplate $patronStatusTemplate)

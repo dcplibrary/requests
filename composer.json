@@ -10,6 +10,7 @@
         "illuminate/database": "^12.0",
         "illuminate/queue": "^12.0",
         "illuminate/http": "^12.0",
+        "illuminate/mail": "^12.0",
         "illuminate/cache": "^12.0",
         "illuminate/auth": "^12.0",
         "livewire/livewire": "^3.0|^4.0",

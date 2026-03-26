@@ -18,6 +18,12 @@ class PatronController extends Controller
     // INDEX — default shows only flagged patrons
     // -------------------------------------------------------------------------
 
+    /**
+     * Paginated patron list (flagged by default), search and sort.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Contracts\View\View
+     */
     public function index(Request $request)
     {
         $showAll = $request->boolean('show_all');
@@ -76,6 +82,12 @@ class PatronController extends Controller
     // SHOW
     // -------------------------------------------------------------------------
 
+    /**
+     * Patron detail with requests and duplicate suspects.
+     *
+     * @param  Patron  $patron
+     * @return \Illuminate\Contracts\View\View
+     */
     public function show(Patron $patron)
     {
         $patron->load(['requests.status', 'requests.fieldValues.field', 'ignoredDuplicates']);
@@ -92,6 +104,10 @@ class PatronController extends Controller
     // EDIT
     // -------------------------------------------------------------------------
 
+    /**
+     * @param  Patron  $patron
+     * @return \Illuminate\Contracts\View\View
+     */
     public function edit(Patron $patron)
     {
         return view('requests::staff.patrons.edit', [
@@ -103,6 +119,11 @@ class PatronController extends Controller
     // UPDATE
     // -------------------------------------------------------------------------
 
+    /**
+     * @param  Request  $request
+     * @param  Patron  $patron
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, Patron $patron)
     {
         $data = $request->validate([
@@ -124,6 +145,12 @@ class PatronController extends Controller
     // RETRIGGER POLARIS LOOKUP
     // -------------------------------------------------------------------------
 
+    /**
+     * Queue a fresh Polaris patron lookup for this record.
+     *
+     * @param  Patron  $patron
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function retriggerPolaris(Patron $patron)
     {
         $patron->update(['polaris_lookup_attempted' => false]);
@@ -139,6 +166,13 @@ class PatronController extends Controller
     // IGNORE DUPLICATE — marks two patrons as not duplicates of each other
     // -------------------------------------------------------------------------
 
+    /**
+     * Record that this patron and another are not duplicates (symmetric ignore).
+     *
+     * @param  Request  $request
+     * @param  Patron  $patron
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function ignoreDuplicate(Request $request, Patron $patron)
     {
         $request->validate([
@@ -158,6 +192,13 @@ class PatronController extends Controller
     // MERGE CONFIRM (GET — kept for manual ID entry fallback)
     // -------------------------------------------------------------------------
 
+    /**
+     * Merge preview: validate target patron and show confirmation view.
+     *
+     * @param  Request  $request
+     * @param  Patron  $loser  Patron that will be removed after merge
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+     */
     public function mergeConfirm(Request $request, Patron $loser)
     {
         $request->validate([
@@ -192,6 +233,13 @@ class PatronController extends Controller
     // All requests are reassigned to the winner, then the loser is deleted.
     // -------------------------------------------------------------------------
 
+    /**
+     * Execute patron merge: reassign requests to winner, apply preferences, delete loser.
+     *
+     * @param  Request  $request
+     * @param  Patron  $loser  Patron removed after merge
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function merge(Request $request, Patron $loser)
     {
         // Convert empty string to null so nullable|integer doesn't reject it

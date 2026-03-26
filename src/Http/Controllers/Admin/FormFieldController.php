@@ -20,7 +20,7 @@ class FormFieldController extends Controller
     /**
      * List all form fields.
      *
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Contracts\View\View
      */
     public function index()
     {
@@ -30,8 +30,8 @@ class FormFieldController extends Controller
     /**
      * Show the form to create a new field.
      *
-     * @param  Request  $request
-     * @return \Illuminate\View\View
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Contracts\View\View
      */
     public function create(Request $request)
     {
@@ -51,7 +51,7 @@ class FormFieldController extends Controller
      * Creates the Field row and the appropriate FormFieldConfig row(s)
      * based on the selected scope (sfp, ill, or both).
      *
-     * @param  Request  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -121,9 +121,9 @@ class FormFieldController extends Controller
      * Edits the per-form config (required, visible, conditional_logic); the base
      * field definition is unchanged. Creates the config row if missing.
      *
-     * @param  Field   $field
+     * @param  \Dcplibrary\Requests\Models\Field  $field
      * @param  string  $form  sfp|ill
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Contracts\View\View
      */
     public function editForForm(Field $field, string $form)
     {
@@ -161,10 +161,10 @@ class FormFieldController extends Controller
      *
      * Only valid for select/radio fields (material_type, audience, genre, etc.).
      *
-     * @param  Field   $field
+     * @param  \Dcplibrary\Requests\Models\Field  $field
      * @param  string  $form  sfp|ill
      * @param  string  $slug  FieldOption slug
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Contracts\View\View
      */
     public function editForFormOption(Field $field, string $form, string $slug)
     {
@@ -190,8 +190,8 @@ class FormFieldController extends Controller
     /**
      * Edit the base field (label, key, active, token) — shared across forms.
      *
-     * @param  Field  $field
-     * @return \Illuminate\View\View
+     * @param  \Dcplibrary\Requests\Models\Field  $field
+     * @return \Illuminate\Contracts\View\View
      */
     public function edit(Field $field)
     {

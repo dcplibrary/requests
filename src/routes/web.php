@@ -140,6 +140,7 @@ Route::group([
             Route::post('/backups/server-restore',  [BackupController::class, 'restoreFromServer'])->name('backups.server-restore');
             Route::delete('/backups/server-delete', [BackupController::class, 'deleteFromServer'])->name('backups.server-delete');
             Route::get('/backups/server-download',  [BackupController::class, 'downloadFromServer'])->name('backups.server-download');
+            Route::post('/backups/schedule',        [BackupController::class, 'updateSchedule'])->name('backups.schedule');
             Route::post('/backups/retention',       [BackupController::class, 'updateRetention'])->name('backups.retention');
             Route::post('/backups/prune',           [BackupController::class, 'pruneBackups'])->name('backups.prune');
             Route::post('/backups/wipe',            [BackupController::class, 'wipeAll'])->name('backups.wipe');

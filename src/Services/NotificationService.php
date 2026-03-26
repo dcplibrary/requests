@@ -2,6 +2,10 @@
 
 namespace Dcplibrary\Requests\Services;
 
+use Dcplibrary\Requests\Jobs\SendAssigneeNotificationJob;
+use Dcplibrary\Requests\Jobs\SendPatronNotificationBundleJob;
+use Dcplibrary\Requests\Jobs\SendStaffRoutingGroupMailJob;
+use Dcplibrary\Requests\Jobs\SendStaffWorkflowMailJob;
 use Dcplibrary\Requests\Mail\RequestMail;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
@@ -15,6 +19,7 @@ use Dcplibrary\Requests\Models\Patron;
 use Dcplibrary\Requests\Models\PatronRequest;
 use Dcplibrary\Requests\Models\RequestStatusHistory;
 use Dcplibrary\Requests\Models\User;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -73,6 +78,18 @@ class NotificationService
 
             $subject = $this->replacePlaceholders($subjectTpl, $request);
             $body = $this->finalizeStaffRoutingBody($bodyTpl, $request);
+
+            if ($this->shouldQueueNotificationMail()) {
+                SendStaffRoutingGroupMailJob::dispatch(
+                    (int) $request->getKey(),
+                    (int) $group->getKey(),
+                    (string) ($group->name ?? ''),
+                    $recipients,
+                    $subject,
+                    $body,
+                );
+                continue;
+            }
 
             $sentTo = [];
             foreach ($recipients as $email) {
@@ -151,6 +168,8 @@ class NotificationService
         $statusName = $request->status?->name ?? 'Unknown';
         $sentCount  = 0;
 
+        $ctx = ' for status “' . $statusName . '”';
+
         if ($templates->isEmpty()) {
             // Backward compat: no templates configured — use single setting
             $subject = $this->replacePlaceholders(
@@ -159,6 +178,20 @@ class NotificationService
             );
             $bodyTemplate = (string) Setting::get('patron_status_template', $this->defaultPatronTemplate());
             $body = $this->replacePlaceholders($bodyTemplate, $request);
+            $messages = [['subject' => $subject, 'body' => $body]];
+
+            if ($this->shouldQueueNotificationMail()) {
+                SendPatronNotificationBundleJob::dispatch(
+                    (int) $request->getKey(),
+                    $patronEmail,
+                    $ctx,
+                    $messages,
+                    true,
+                );
+
+                return true;
+            }
+
             try {
                 Mail::to($patronEmail)->send(new RequestMail($subject, $body));
                 $sentCount = 1;
@@ -180,18 +213,38 @@ class NotificationService
             return $sentCount > 0;
         }
 
+        $messages = [];
+        foreach ($templates as $template) {
+            $messages[] = [
+                'subject' => $this->replacePlaceholders($template->subject, $request),
+                'body'    => $this->replacePlaceholders((string) $template->body, $request),
+            ];
+        }
+
+        if ($this->shouldQueueNotificationMail()) {
+            SendPatronNotificationBundleJob::dispatch(
+                (int) $request->getKey(),
+                $patronEmail,
+                $ctx,
+                $messages,
+                false,
+            );
+
+            return true;
+        }
+
         foreach ($templates as $template) {
             try {
                 $subject = $this->replacePlaceholders($template->subject, $request);
-                $body = $this->replacePlaceholders((string) $template->body, $request);
+                $body    = $this->replacePlaceholders((string) $template->body, $request);
                 Mail::to($patronEmail)->send(new RequestMail($subject, $body));
                 $sentCount++;
             } catch (\Throwable $e) {
                 Log::error('Patron status email failed', [
-                    'patron_id'  => $request->patron_id,
-                    'request_id' => $request->id,
-                    'template_id'=> $template->id,
-                    'error'      => $e->getMessage(),
+                    'patron_id'   => $request->patron_id,
+                    'request_id'  => $request->id,
+                    'template_id' => $template->id,
+                    'error'       => $e->getMessage(),
                 ]);
             }
         }
@@ -253,6 +306,28 @@ class NotificationService
 
         if ($templates->isEmpty()) {
             return false;
+        }
+
+        $ctx = ' (converted to interlibrary loan)';
+
+        $messages = [];
+        foreach ($templates as $template) {
+            $messages[] = [
+                'subject' => $this->replacePlaceholders($template->subject, $request),
+                'body'    => $this->replacePlaceholders((string) $template->body, $request),
+            ];
+        }
+
+        if ($this->shouldQueueNotificationMail()) {
+            SendPatronNotificationBundleJob::dispatch(
+                (int) $request->getKey(),
+                $patronEmail,
+                $ctx,
+                $messages,
+                false,
+            );
+
+            return true;
         }
 
         $sentCount = 0;
@@ -463,6 +538,12 @@ class NotificationService
         $subject = $this->replacePlaceholders($this->defaultStaffRoutingSubject(), $request);
         $body = $header . $this->finalizeStaffRoutingBody($this->defaultStaffRoutingBodyTemplate(), $request);
 
+        if ($this->shouldQueueNotificationMail()) {
+            SendAssigneeNotificationJob::dispatch((int) $request->getKey(), $email, $subject, $body);
+
+            return;
+        }
+
         try {
             Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
             $this->logNotificationHistory(
@@ -513,6 +594,18 @@ class NotificationService
         $subject = $this->replacePlaceholders($this->defaultStaffRoutingSubject(), $request);
         $body = $header . $this->finalizeStaffRoutingBody($this->defaultStaffRoutingBodyTemplate(), $request);
 
+        if ($this->shouldQueueNotificationMail()) {
+            SendStaffWorkflowMailJob::dispatch(
+                (int) $request->getKey(),
+                $action,
+                $recipients,
+                $subject,
+                $body,
+            );
+
+            return;
+        }
+
         $sentTo = [];
         foreach ($recipients as $email) {
             try {
@@ -533,6 +626,32 @@ class NotificationService
                 'Workflow notification (“' . $action . '”) sent to: ' . implode(', ', $sentTo)
             );
         }
+    }
+
+    /**
+     * Whether to push outbound notification mail onto the queue instead of sending inline.
+     *
+     * When true, HTTP/Livewire returns faster while a worker delivers mail. When false, uses
+     * synchronous {@see Mail::send()} because {@see Dispatcher} is not bound (e.g. lightweight
+     * package tests), the container has no {@code config()} / config disables queuing via
+     * {@code requests.queue_notification_mail}, or the feature is turned off in config.
+     *
+     * @return bool  True when jobs should be dispatched; false to send mail in-process.
+     */
+    private function shouldQueueNotificationMail(): bool
+    {
+        if (function_exists('config')) {
+            if (! (bool) \config('requests.queue_notification_mail', true)) {
+                return false;
+            }
+        }
+
+        $app = app();
+        if (! is_object($app) || ! method_exists($app, 'bound')) {
+            return false;
+        }
+
+        return $app->bound(Dispatcher::class);
     }
 
     /**

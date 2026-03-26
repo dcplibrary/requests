@@ -12,6 +12,11 @@ use Illuminate\Http\Request;
  */
 class CatalogController extends Controller
 {
+    /**
+     * Catalog integration settings and BiblioCommons format label table.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function index()
     {
         $settings = Setting::allGrouped()
@@ -23,6 +28,12 @@ class CatalogController extends Controller
         ]);
     }
 
+    /**
+     * Persist catalog-related settings and format label edits.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request)
     {
         $data = $request->validate([
@@ -45,6 +56,12 @@ class CatalogController extends Controller
         return back()->with('success', 'Catalog settings saved.');
     }
 
+    /**
+     * Create a new format code → label mapping row.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function storeFormatLabel(Request $request)
     {
         $data = $request->validate([
@@ -57,6 +74,12 @@ class CatalogController extends Controller
         return back()->with('success', 'Format label added.');
     }
 
+    /**
+     * Remove a format label row.
+     *
+     * @param  CatalogFormatLabel  $catalogFormatLabel
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function destroyFormatLabel(CatalogFormatLabel $catalogFormatLabel)
     {
         $catalogFormatLabel->delete();

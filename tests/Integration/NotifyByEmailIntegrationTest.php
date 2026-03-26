@@ -10,6 +10,7 @@ use Dcplibrary\Requests\Services\NotificationService;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -247,13 +248,30 @@ class NotifyByEmailIntegrationTest extends TestCase
         $this->createPatron(1, 'valid@example.com');
         $request = $this->createRequest(1, true);
 
-        $mailer = \Mockery::mock();
-        $mailer->shouldReceive('to')->andReturnSelf();
-        $mailer->shouldReceive('send')->andReturnNull();
-        app()->instance('mailer', $mailer);
+        $mailer = \Mockery::mock(\Illuminate\Contracts\Mail\Mailer::class);
+        $mailer->shouldReceive('to')->once()->withAnyArgs()->andReturnSelf();
+        $mailer->shouldReceive('send')->once()->withAnyArgs()->andReturnNull();
+
+        // Mail facade resolves mail.manager and calls ->to() on it (see Illuminate\Support\Facades\Mail).
+        $manager = new class ($mailer) {
+            public function __construct(private \Illuminate\Contracts\Mail\Mailer $mailer) {}
+
+            public function mailer(?string $name = null): \Illuminate\Contracts\Mail\Mailer
+            {
+                return $this->mailer;
+            }
+
+            public function to(mixed $users, ?string $name = null): \Illuminate\Contracts\Mail\Mailer
+            {
+                return $this->mailer->to($users);
+            }
+        };
+        app()->instance('mail.manager', $manager);
+        Mail::clearResolvedInstance();
 
         $log = \Mockery::mock();
-        $log->shouldReceive('error')->andReturnNull();
+        $log->shouldIgnoreMissing();
+        $log->shouldReceive('error')->never();
         app()->instance('log', $log);
 
         $service = new NotificationService();

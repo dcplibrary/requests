@@ -38,6 +38,12 @@ class UserController extends Controller
         ]);
     }
 
+    /**
+     * Staff user edit form (role, active, selector groups).
+     *
+     * @param  User  $user
+     * @return \Illuminate\Contracts\View\View
+     */
     public function edit(User $user)
     {
         return view('requests::staff.users.form', [
@@ -46,6 +52,13 @@ class UserController extends Controller
         ]);
     }
 
+    /**
+     * Update staff user fields and sync selector groups (cleared when role is admin).
+     *
+     * @param  Request  $request
+     * @param  User  $user
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, User $user)
     {
         $data = $request->validate([
@@ -66,6 +79,12 @@ class UserController extends Controller
         return redirect()->route('request.staff.users.index')->with('success', 'User updated.');
     }
 
+    /**
+     * Delete a staff user, optionally reassigning history and group membership.
+     *
+     * @param  User  $user
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function destroy(User $user)
     {
         $request = request();
@@ -131,6 +150,12 @@ class UserController extends Controller
         return redirect()->route('request.staff.users.index')->with('success', 'User removed.');
     }
 
+    /**
+     * Confirmation step before delete when the user has history or group rows.
+     *
+     * @param  User  $user
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+     */
     public function confirmDelete(User $user)
     {
         $request = request();
