@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.20.4](https://github.com/dcplibrary/requests/compare/v4.20.3...v4.20.4) (2026-03-26)
+
+
+### Bug Fixes
+
+* prevent sfps from crossing with ills ([888d989](https://github.com/dcplibrary/requests/commit/888d9891091cb333bc8c9e43325503088bdb5a52))
+
 ## [4.20.3](https://github.com/dcplibrary/requests/compare/v4.20.2...v4.20.3) (2026-03-26)
 
 
