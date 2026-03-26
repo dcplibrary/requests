@@ -78,7 +78,7 @@ class PatronRequests extends Component
         $limitReached = $patron?->hasReachedLimit() ?? false;
         $limitUntil   = $limitReached ? $patron->nextAvailableDate() : null;
         $requests     = $patron
-            ? PatronRequest::with(['status', 'materialType'])
+            ? PatronRequest::with(['status', 'fieldValues.field'])
                 ->where('patron_id', $patron->id)
                 ->latest()
                 ->get()

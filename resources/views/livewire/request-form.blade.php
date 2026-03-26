@@ -403,13 +403,23 @@
     {{-- Step 3: Resolution (catalog / ISBNdb match) --}}
     @elseif($step === 3)
     <section aria-labelledby="resolution-heading">
-        <h2 id="resolution-heading" class="text-2xl font-bold text-gray-900 mb-2">We Found Some Results</h2>
+        <h2 id="resolution-heading" class="text-2xl font-bold text-gray-900 mb-2">
+            {{-- Use a distinct heading when this is a duplicate-only screen --}}
+            @if($isDuplicate && count($catalogResults) === 0 && count($isbndbResults) === 0)
+                Already Requested
+            @else
+                We Found Some Results
+            @endif
+        </h2>
 
         {{-- Duplicate notice --}}
         @if($isDuplicate)
-        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md" role="alert">
-            <div class="text-sm text-blue-800 prose prose-sm">
-                {!! $duplicateMessage !!}
+        <div class="mb-6 p-4 bg-yellow-50 border border-yellow-300 rounded-md" role="alert">
+            <div class="flex gap-2 items-start">
+                <svg class="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+                <div class="text-sm text-yellow-800 prose prose-sm">
+                    {!! $duplicateMessage !!}
+                </div>
             </div>
         </div>
         @endif

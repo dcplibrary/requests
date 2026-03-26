@@ -55,6 +55,21 @@ class IsbnDbService
                 $books = $this->fetchByAuthor($lastName, $searchTitle);
             }
 
+            // Last resort: title search without author filter. Handles ISBNdb entries
+            // where author data is missing or formatted differently than what the patron
+            // entered (e.g. missing authors array, alternate name form). Cap at 3 so we
+            // don't flood the patron with unrelated books.
+            if (empty($books)) {
+                $books = array_slice($this->fetchByTitle($searchTitle, ''), 0, 3);
+            }
+
+            if (empty($books)) {
+                Log::info('ISBNdb search: no results after all stages', [
+                    'title'  => $searchTitle,
+                    'author' => $lastName,
+                ]);
+            }
+
             $books = $this->prioritizePrintOverDigitalAudio($books);
 
             $results = array_values(array_map(fn ($book) => $this->normalizeBook($book), $books));

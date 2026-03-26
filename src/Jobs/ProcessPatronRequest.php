@@ -2,6 +2,7 @@
 
 namespace Dcplibrary\Requests\Jobs;
 
+use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\PatronRequest;
 use Dcplibrary\Requests\Services\BibliocommonsService;
 use Dcplibrary\Requests\Services\IsbnDbService;
@@ -25,14 +26,22 @@ class ProcessPatronRequest implements ShouldQueue
 
     public function handle(BibliocommonsService $bibliocommons, IsbnDbService $isbndb): void
     {
-        $request = PatronRequest::with(['audience', 'materialType'])->find($this->requestId);
+        $request = PatronRequest::with(['fieldValues.field'])->find($this->requestId);
 
         if (! $request) {
             return;
         }
 
-        // 1. Catalog search
-        $audienceValue = $request->audience?->bibliocommons_value ?? 'adult';
+        // 1. Catalog search — audience lives in request_field_values + field_options.metadata
+        $audienceSlug  = $request->fieldValue('audience');
+        $audienceValue = 'adult';
+        if ($audienceSlug) {
+            $audienceOption = FieldOption::query()
+                ->whereHas('field', fn ($q) => $q->where('key', 'audience'))
+                ->where('slug', $audienceSlug)
+                ->first();
+            $audienceValue = $audienceOption?->meta('bibliocommons_value', 'adult') ?? 'adult';
+        }
 
         $catalogResult = $bibliocommons->search(
             $request->submitted_title,

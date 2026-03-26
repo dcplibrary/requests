@@ -57,11 +57,13 @@ class BibliocommonsService
 
         // Boolean search often misses bibs the website finds (punctuation, tokenization, audience).
         // Mirror the catalog omnibox: plain keywords + searchType smart/keyword (varies by site build).
+        // Smart/keyword queries carry no contributor constraint, so require a real author match
+        // (no empty-author exemption) to prevent anthologies and other unrelated results leaking through.
         foreach ($this->catalogSmartSearchQueries($title, $author) as $smartQuery) {
             foreach (['smart', 'keyword'] as $smartType) {
                 $browseUrl = "https://{$slug}.bibliocommons.com/v2/search?query=" . urlencode($smartQuery) . '&searchType=' . $smartType;
                 $parsed    = $this->performGatewaySearch($slug, $smartQuery, $smartType);
-                $filtered  = $this->filterResultsByAuthor($parsed['results'], $author);
+                $filtered  = $this->filterResultsByAuthor($parsed['results'], $author, requireAuthorMatch: true);
                 if (count($filtered) > 0) {
                     return array_merge($parsed, ['results' => $filtered, 'url' => $browseUrl]);
                 }
@@ -236,7 +238,7 @@ class BibliocommonsService
      * @param  string             $author   Raw author string as entered by the patron
      * @return array<int, array>
      */
-    private function filterResultsByAuthor(array $results, string $author): array
+    private function filterResultsByAuthor(array $results, string $author, bool $requireAuthorMatch = false): array
     {
         $lastName = mb_strtolower($this->extractLastName($author));
 
@@ -244,11 +246,19 @@ class BibliocommonsService
             return $results;
         }
 
-        return array_values(array_filter($results, function (array $result) use ($lastName): bool {
+        return array_values(array_filter($results, function (array $result) use ($lastName, $requireAuthorMatch): bool {
             $resultAuthor = mb_strtolower($result['author'] ?? '');
 
-            // Keep results with no author recorded — don't falsely discard them.
-            return $resultAuthor === '' || str_contains($resultAuthor, $lastName);
+            // When $requireAuthorMatch is false (boolean strategies, which already constrain
+            // by contributor in the Lucene query), keep results with no author recorded so we
+            // don't falsely discard a book whose author field is simply missing from the API.
+            // When true (smart/keyword fallback, no contributor constraint in query), require
+            // an explicit match — empty-author results are almost certainly unrelated noise.
+            if ($resultAuthor === '') {
+                return ! $requireAuthorMatch;
+            }
+
+            return str_contains($resultAuthor, $lastName);
         }));
     }
 
