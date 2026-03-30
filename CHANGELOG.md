@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.21.0](https://github.com/dcplibrary/requests/compare/v4.20.7...v4.21.0) (2026-03-30)
+
+
+### Features
+
+* add log pruning to schedule ([17cfb48](https://github.com/dcplibrary/requests/commit/17cfb487e756ac49fb51ca503a4f439c8fe9d76f))
+
 ## [4.20.7](https://github.com/dcplibrary/requests/compare/v4.20.6...v4.20.7) (2026-03-30)
 
 
