@@ -13,6 +13,7 @@ use Dcplibrary\Requests\Models\RequestStatus;
 use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Models\StaffRoutingTemplate;
+use Dcplibrary\Requests\Support\StorageAppBackupArchive;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use ZipArchive;
@@ -173,6 +174,9 @@ class BackupCommand extends Command
                     if ($f->isFile()) {
                         $filePath     = $f->getRealPath();
                         $relativePath = substr($filePath, strlen($storagePath) + 1);
+                        if (StorageAppBackupArchive::shouldExcludeRelativePath($relativePath)) {
+                            continue;
+                        }
                         $zip->addFile($filePath, $relativePath);
                     }
                 }

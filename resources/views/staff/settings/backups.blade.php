@@ -340,8 +340,7 @@
         </div>
         @else
             @foreach($groups as $group)
-            @if(! empty($serverFiles[$group['key']]))
-            @php $files = $serverFiles[$group['key']]; $total = count($files); @endphp
+            @php $files = $serverFiles[$group['key']] ?? []; $total = count($files); @endphp
             <div class="p-5"
                  x-data="{ page: 1, perPage: {{ $perPage }}, total: {{ $total }} }"
                  x-init="">
@@ -350,6 +349,17 @@
                     <span class="ml-1 text-xs font-normal text-gray-400">({{ $total }})</span>
                 </h3>
 
+                @if($total === 0)
+                <p class="text-sm text-gray-500">
+                    @if($group['key'] === 'storage')
+                        No storage zip backups in the backup directory yet. They appear here when you enable
+                        <strong>Storage (Zip)</strong> on the schedule, run <code class="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">php artisan requests:backup --storage</code>,
+                        or use <strong>Download Storage Zip</strong> and save the file to this server.
+                    @else
+                        No {{ strtolower($group['label']) }} in the scanned backup directories yet.
+                    @endif
+                </p>
+                @else
                 <ul class="divide-y divide-gray-100 rounded-lg border border-gray-200 overflow-hidden">
                     @foreach($files as $i => $file)
                     @php $sizeLabel = $group['key'] === 'storage'
@@ -440,8 +450,9 @@
                     <code class="bg-gray-100 px-1 rounded font-mono">storage/app</code>.
                 </p>
                 @endif
+
+                @endif
             </div>
-            @endif
             @endforeach
         @endif
 
@@ -601,7 +612,11 @@
             <div class="border-t border-gray-100 pt-4 mt-5">
                 <h3 class="text-xs font-semibold text-gray-600 mb-2">Reference: manual cron (optional)</h3>
                 <p class="text-xs text-gray-500 mb-2">If you do not use the Laravel scheduler, you can still call Artisan from system cron, e.g.:</p>
-                <pre class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 text-xs overflow-x-auto leading-relaxed">0 2 * * * www-data php /path/to/artisan requests:backup --all --prune &gt;&gt; /var/log/requests-backup.log 2&gt;&amp;1</pre>
+                <pre class="bg-gray-900 text-green-400 rounded-lg px-4 py-3 text-xs overflow-x-auto leading-relaxed">0 2 * * * www-data php /path/to/artisan requests:backup --config --db --prune &gt;&gt; /var/log/requests-backup.log 2&gt;&amp;1</pre>
+                <p class="text-xs text-amber-800 mt-2">
+                    Do not use <code class="bg-amber-100 px-1 rounded font-mono">--all</code> here unless you want a full <code class="bg-amber-100 px-1 rounded font-mono">storage/app</code> zip every run
+                    (large). Add <code class="bg-amber-100 px-1 rounded font-mono">--storage</code> only when you intend that. The Laravel scheduler uses your checkboxes above, not this cron line.
+                </p>
             </div>
         </div>
 

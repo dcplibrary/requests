@@ -71,14 +71,14 @@ If you prefer not to use the settings UI, you can instead register in `routes/co
 ```php
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('requests:backup --all --prune')
+Schedule::command('requests:backup --config --db --prune')
     ->daily()
     ->at('02:00')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/requests-backup.log'));
 ```
 
-Keep **scheduled backups disabled** in Settings if you use this approach, so the job does not run twice.
+`--all` is shorthand for `--config --db --storage` and will create a **full storage zip on every run** (often huge). Add `--storage` only when you want that. Keep **scheduled backups disabled** in Settings if you use this approach, so the job does not run twice.
 
 ### Verifying the Scheduler
 
@@ -148,7 +148,11 @@ Expected output should show `America/Chicago` (or your configured timezone) and 
 
 ### Backup command fails with "No backup type selected"
 - **Cause:** Missing flags.
-- **Fix:** Use `--all` for a complete backup, or specify `--config`, `--db`, and/or `--storage`.
+- **Fix:** Pass at least one of `--config`, `--db`, `--storage`. Use `--all` only when you intentionally want all three (including a full `storage/app` zip).
+
+### Storage zips grow huge or duplicate each other
+- **Cause:** Older versions zipped all of `storage/app`, including `requests-backups` and prior `requests-storage-*.zip` files.
+- **Fix:** Update the package; storage exports now skip the backup directory and prior storage zip names. Prefer explicit `--config --db` in cron instead of `--all` unless you need daily storage archives.
 
 ### Config cache stale after `.env` changes
 - **Cause:** Laravel caches config on first boot.

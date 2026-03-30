@@ -16,6 +16,7 @@ use Dcplibrary\Requests\Models\SelectorGroup;
 use Dcplibrary\Requests\Models\Setting;
 use Dcplibrary\Requests\Models\StaffRoutingTemplate;
 use Dcplibrary\Requests\Services\SqlStatementSplitter;
+use Dcplibrary\Requests\Support\StorageAppBackupArchive;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -280,14 +281,9 @@ class BackupController extends Controller
         ]);
 
         $filename = $request->input('filename');
-        $path     = $this->backupDir . DIRECTORY_SEPARATOR . $filename;
+        $path     = $this->resolveServerBackupFilePath($filename);
 
-        // Prevent any path traversal
-        if (! str_starts_with(realpath($path) ?: '', realpath($this->backupDir) ?: $this->backupDir)) {
-            return back()->withErrors(['filename' => 'Invalid file path.']);
-        }
-
-        if (! file_exists($path)) {
+        if ($path === null) {
             return back()->withErrors(['filename' => "File not found: {$filename}"]);
         }
 
@@ -348,13 +344,9 @@ class BackupController extends Controller
         ]);
 
         $filename = $request->query('filename');
-        $path     = $this->backupDir . DIRECTORY_SEPARATOR . $filename;
+        $path     = $this->resolveServerBackupFilePath($filename);
 
-        if (! str_starts_with(realpath($path) ?: '', realpath($this->backupDir) ?: $this->backupDir)) {
-            abort(403);
-        }
-
-        if (! file_exists($path)) {
+        if ($path === null) {
             abort(404);
         }
 
@@ -381,13 +373,9 @@ class BackupController extends Controller
         ]);
 
         $filename = $request->input('filename');
-        $path     = $this->backupDir . DIRECTORY_SEPARATOR . $filename;
+        $path     = $this->resolveServerBackupFilePath($filename);
 
-        if (! str_starts_with(realpath($path) ?: '', realpath($this->backupDir) ?: $this->backupDir)) {
-            return back()->withErrors(['filename' => 'Invalid file path.']);
-        }
-
-        if (! file_exists($path)) {
+        if ($path === null) {
             return back()->withErrors(['filename' => "File not found: {$filename}"]);
         }
 
@@ -745,6 +733,9 @@ class BackupController extends Controller
                 if ($file->isFile()) {
                     $filePath     = $file->getRealPath();
                     $relativePath = substr($filePath, strlen($storagePath) + 1);
+                    if (StorageAppBackupArchive::shouldExcludeRelativePath($relativePath)) {
+                        continue;
+                    }
                     $zip->addFile($filePath, $relativePath);
                 }
             }
@@ -1214,28 +1205,49 @@ class BackupController extends Controller
     // ── Server backup file listing ────────────────────────────────────────────
 
     /**
-     * Scan the local backup directory and return file metadata grouped by type.
+     * Scan backup directories (default + optional scheduled output path) and return file metadata grouped by type.
      * Returns ['config' => [...], 'db' => [...], 'storage' => [...]]
      */
     private function scanServerFiles(): array
     {
         $groups = ['config' => [], 'db' => [], 'storage' => []];
 
-        if (! is_dir($this->backupDir)) {
-            return $groups;
+        /** @var array<string, array{name: string, size: int|false, modified: int|false}> $bestByName */
+        $bestByName = [];
+
+        foreach ($this->backupDirectoriesForScan() as $dir) {
+            $files = glob($dir . DIRECTORY_SEPARATOR . 'requests-*.{json,sql,zip}', GLOB_BRACE) ?: [];
+            foreach ($files as $path) {
+                $name = basename($path);
+                if (! is_file($path)) {
+                    continue;
+                }
+                $mtime = filemtime($path);
+                $size  = filesize($path);
+                $mtimeVal = $mtime !== false ? $mtime : 0;
+                if (! isset($bestByName[$name])) {
+                    $bestByName[$name] = [
+                        'name'     => $name,
+                        'size'     => $size !== false ? $size : 0,
+                        'modified' => $mtime,
+                    ];
+                    continue;
+                }
+                $prevM = $bestByName[$name]['modified'];
+                $prevVal = $prevM !== false ? $prevM : 0;
+                if ($mtimeVal > $prevVal) {
+                    $bestByName[$name] = [
+                        'name'     => $name,
+                        'size'     => $size !== false ? $size : 0,
+                        'modified' => $mtime,
+                    ];
+                }
+            }
         }
 
-        $files = glob($this->backupDir . DIRECTORY_SEPARATOR . 'requests-*.{json,sql,zip}', GLOB_BRACE) ?: [];
-
-        foreach ($files as $path) {
-            $name = basename($path);
+        foreach ($bestByName as $meta) {
+            $name = $meta['name'];
             $ext  = pathinfo($name, PATHINFO_EXTENSION);
-            $meta = [
-                'name'     => $name,
-                'size'     => filesize($path),
-                'modified' => filemtime($path),
-            ];
-
             if ($ext === 'json') {
                 $groups[str_starts_with($name, 'requests-database-') ? 'db' : 'config'][] = $meta;
             } elseif ($ext === 'sql') {
@@ -1245,12 +1257,69 @@ class BackupController extends Controller
             }
         }
 
-        // Newest first within each group
         foreach ($groups as &$group) {
             usort($group, fn ($a, $b) => $b['modified'] <=> $a['modified']);
         }
 
         return $groups;
+    }
+
+    /**
+     * Absolute directory configured for scheduled backups (defaults to storage/app/requests-backups).
+     */
+    private function configuredBackupOutputDir(): string
+    {
+        $path = trim((string) Setting::get('backup_schedule_path', ''));
+        if ($path === '') {
+            return $this->backupDir;
+        }
+
+        return rtrim($path, '/');
+    }
+
+    /**
+     * Distinct realpaths to scan for server-side backup files (UI list + download/delete/restore).
+     *
+     * @return list<string>
+     */
+    private function backupDirectoriesForScan(): array
+    {
+        $candidates = array_unique([
+            $this->backupDir,
+            $this->configuredBackupOutputDir(),
+        ]);
+        $out = [];
+        foreach ($candidates as $dir) {
+            if (! is_dir($dir)) {
+                continue;
+            }
+            $real = realpath($dir);
+            if ($real !== false && ! in_array($real, $out, true)) {
+                $out[] = $real;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Resolve a backup filename to an absolute path if it exists under an allowed backup root.
+     */
+    private function resolveServerBackupFilePath(string $filename): ?string
+    {
+        foreach ($this->backupDirectoriesForScan() as $dir) {
+            $path = $dir . DIRECTORY_SEPARATOR . $filename;
+            if (! is_file($path)) {
+                continue;
+            }
+            $realFile = realpath($path);
+            $prefix   = $dir . DIRECTORY_SEPARATOR;
+            if ($realFile !== false && str_starts_with($realFile, $prefix)) {
+                return $realFile;
+            }
+        }
+
+        return null;
     }
 
     // ── Driver-aware helpers ──────────────────────────────────────────────────
