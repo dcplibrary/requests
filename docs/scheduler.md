@@ -56,6 +56,17 @@ php artisan migrate
 
 The queue handles background jobs such as Polaris patron lookups, backup pruning, and **patron/staff notification mail** from `NotificationService` (when the bus is available and `REQUESTS_QUEUE_NOTIFICATION_MAIL` is not `false`). Ensure a worker is running or set `QUEUE_CONNECTION=sync` for immediate in-process delivery.
 
+## Scheduled Laravel log pruning (package-managed)
+
+The package registers **`requests-package-prune-laravel-logs`** when `config('requests.log_pruning.enabled')` is true (default). It runs `php artisan requests:prune-logs` on the cron in `requests.log_pruning.cron` (default `15 3 * * *` — daily at 3:15 AM, offset from the default backup window).
+
+- Deletes `*.log` files in `storage/logs` (or `REQUESTS_LOG_PRUNING_PATH` if set) whose **mtime** is older than `requests.log_pruning.retention_days` (default **14**).
+- Output is appended to `storage/logs/requests-log-prune.log`.
+- **Disable:** set `REQUESTS_LOG_PRUNING_ENABLED=false` in `.env`, or publish `config/requests.php` and set `'enabled' => false` under `log_pruning`.
+- **Manual run:** `php artisan requests:prune-logs` (add `--dry-run` to preview).
+
+Env keys: `REQUESTS_LOG_PRUNING_ENABLED`, `REQUESTS_LOG_RETENTION_DAYS`, `REQUESTS_LOG_PRUNING_CRON`, `REQUESTS_LOG_PRUNING_PATH` (optional; must still resolve under the app `storage/` directory).
+
 ## Scheduled backups (package-managed)
 
 The package registers a scheduler event from **Settings → Backups → Automated backup schedule** (stored as `backup_schedule_*` settings). When **Enable scheduled backups** is on, `php artisan schedule:run` executes `requests:backup` with the flags you chose (config, database, storage, prune) and optional output path.

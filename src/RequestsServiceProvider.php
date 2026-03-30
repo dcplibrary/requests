@@ -3,7 +3,9 @@
 namespace Dcplibrary\Requests;
 
 use Dcplibrary\Requests\Console\Commands\SeedDefaultsCommand;
+use Dcplibrary\Requests\Console\Commands\PruneLaravelLogsCommand;
 use Dcplibrary\Requests\Console\Scheduling\RunScheduledBackup;
+use Dcplibrary\Requests\Console\Scheduling\RunScheduledLogPrune;
 use Dcplibrary\Requests\Console\Commands\BackupCommand;
 use Dcplibrary\Requests\Console\Commands\RestoreDbCommand;
 use Dcplibrary\Requests\Console\Commands\UsersBackupCommand;
@@ -85,6 +87,7 @@ class RequestsServiceProvider extends ServiceProvider
             RestoreDbCommand::class,
             UsersBackupCommand::class,
             UsersRestoreCommand::class,
+            PruneLaravelLogsCommand::class,
         ]);
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
@@ -99,6 +102,16 @@ class RequestsServiceProvider extends ServiceProvider
                 ->withoutOverlapping(120)
                 ->when(fn () => (bool) Setting::get('backup_schedule_enabled', false))
                 ->appendOutputTo(storage_path('logs/requests-backup.log'));
+
+            $logCron = trim((string) config('requests.log_pruning.cron', '15 3 * * *'));
+            if (self::isLikelyCronExpression($logCron)) {
+                $schedule->call(new RunScheduledLogPrune)
+                    ->name('requests-package-prune-laravel-logs')
+                    ->cron($logCron)
+                    ->withoutOverlapping(30)
+                    ->when(fn () => (bool) config('requests.log_pruning.enabled', true))
+                    ->appendOutputTo(storage_path('logs/requests-log-prune.log'));
+            }
         });
     }
 

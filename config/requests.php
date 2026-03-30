@@ -90,4 +90,21 @@ return [
         'password' => env('PAPI_PASSWORD', ''),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Laravel log pruning (scheduled)
+    |--------------------------------------------------------------------------
+    | The package registers a daily scheduler task that deletes *.log files under
+    | storage/logs (or log_pruning.path) whose last modification time is older than
+    | log_pruning.retention_days. Requires php artisan schedule:run every minute.
+    |
+    | Set log_pruning.enabled to false to disable, or override via .env.
+    */
+    'log_pruning' => [
+        'enabled'        => env('REQUESTS_LOG_PRUNING_ENABLED', true),
+        'retention_days' => (int) env('REQUESTS_LOG_RETENTION_DAYS', 14),
+        'cron'           => env('REQUESTS_LOG_PRUNING_CRON', '15 3 * * *'),
+        'path'           => env('REQUESTS_LOG_PRUNING_PATH') ?: null,
+    ],
+
 ];
