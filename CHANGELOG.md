@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.20.7](https://github.com/dcplibrary/requests/compare/v4.20.6...v4.20.7) (2026-03-30)
+
+
+### Bug Fixes
+
+* enable zip files to be downloaded.  storage backup no longer includes zip files ([c69aa8a](https://github.com/dcplibrary/requests/commit/c69aa8a4b579068dcfcba3a3721ef040802ed98e))
+
 ## [4.20.6](https://github.com/dcplibrary/requests/compare/v4.20.5...v4.20.6) (2026-03-26)
 
 
