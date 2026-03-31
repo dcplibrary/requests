@@ -387,6 +387,7 @@ class RequestController extends Controller
      */
     public function assign(Request $httpRequest, PatronRequest $patronRequest)
     {
+        $this->requireEditor($httpRequest);
         abort_unless(Setting::get('assignment_enabled', false), 404);
 
         $allowed = PatronRequest::query()
@@ -470,6 +471,7 @@ class RequestController extends Controller
      */
     public function claim(Request $httpRequest, PatronRequest $patronRequest)
     {
+        $this->requireEditor($httpRequest);
         abort_unless(Setting::get('assignment_enabled', false), 404);
 
         $allowed = PatronRequest::query()
@@ -513,6 +515,7 @@ class RequestController extends Controller
      */
     public function reroute(Request $httpRequest, PatronRequest $patronRequest)
     {
+        $this->requireEditor($httpRequest);
         abort_unless(Setting::get('assignment_enabled', false), 404);
 
         $allowed = PatronRequest::query()
@@ -714,6 +717,7 @@ class RequestController extends Controller
      */
     public function convertKind(Request $httpRequest, PatronRequest $patronRequest)
     {
+        $this->requireEditor($httpRequest);
         $allowed = PatronRequest::query()
             ->visibleTo($httpRequest->user())
             ->whereKey($patronRequest->getKey())
@@ -873,6 +877,7 @@ class RequestController extends Controller
      */
     public function updateStatus(\Illuminate\Http\Request $httpRequest, PatronRequest $patronRequest)
     {
+        $this->requireEditor($httpRequest);
         $allowed = PatronRequest::query()
             ->visibleTo($httpRequest->user())
             ->whereKey($patronRequest->getKey())
@@ -1083,6 +1088,7 @@ class RequestController extends Controller
      */
     public function recheckCatalog(PatronRequest $patronRequest)
     {
+        $this->requireEditor(request());
         $allowed = PatronRequest::query()
             ->visibleTo(request()->user())
             ->whereKey($patronRequest->getKey())
@@ -1127,6 +1133,7 @@ class RequestController extends Controller
      */
     public function bulkStatus(Request $httpRequest)
     {
+        $this->requireEditor($httpRequest);
         $httpRequest->validate([
             'ids'       => 'required|array|min:1',
             'ids.*'     => 'integer|exists:requests,id',
@@ -1166,6 +1173,7 @@ class RequestController extends Controller
      */
     public function bulkReassign(Request $httpRequest)
     {
+        $this->requireEditor($httpRequest);
         abort_unless(Setting::get('assignment_enabled', false), 404);
 
         $httpRequest->validate([
@@ -1325,6 +1333,7 @@ class RequestController extends Controller
      */
     public function destroy(Request $httpRequest, PatronRequest $patronRequest)
     {
+        $this->requireEditor($httpRequest);
         $allowed = PatronRequest::query()
             ->visibleTo($httpRequest->user())
             ->whereKey($patronRequest->getKey())

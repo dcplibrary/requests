@@ -111,6 +111,7 @@ Route::group([
                 ->name('titles.bulk-status');
 
             Route::get('/settings',                  [SettingController::class, 'index'])->name('settings.index');
+            Route::get('/settings/permissions',      [SettingController::class, 'permissions'])->name('settings.permissions');
             Route::get('/settings/notifications',                      [SettingController::class, 'notifications'])->name('settings.notifications');
             Route::get('/settings/notifications/staff-email',           [SettingController::class, 'staffEmailForm'])->name('settings.notifications.staff-email');
             Route::get('/settings/notifications/default-patron-email', [SettingController::class, 'defaultPatronEmailForm'])->name('settings.notifications.default-patron-email');

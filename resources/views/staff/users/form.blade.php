@@ -13,16 +13,22 @@
         <p class="text-sm text-gray-500">{{ $user->email }}</p>
     </div>
 
-    <form method="POST" action="{{ route('request.staff.users.update', $user) }}">
+    <form method="POST" action="{{ route('request.staff.users.update', $user) }}" x-data="{ role: '{{ old('role', $user->role) }}' }">
         @csrf @method('PUT')
 
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Role <span class="text-red-500">*</span></label>
-                <select name="role" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                <select name="role" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm" id="role-select" x-model="role">
+                    <option value="staff" {{ old('role', $user->role) === 'staff' ? 'selected' : '' }}>Staff (view only)</option>
                     <option value="selector" {{ old('role', $user->role) === 'selector' ? 'selected' : '' }}>Selector</option>
                     <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>Admin</option>
                 </select>
+                <p class="mt-1 text-xs text-gray-400">
+                    <strong>Staff</strong> — view-only access to all queues and patrons, no write actions.<br>
+                    <strong>Selector</strong> — processes requests scoped to their assigned groups.<br>
+                    <strong>Admin</strong> — full access including settings.
+                </p>
             </div>
             <div class="flex items-center gap-2">
                 <input type="hidden" name="active" value="0">
@@ -31,7 +37,7 @@
                        class="w-4 h-4 rounded border-gray-300 text-blue-600">
                 <label for="active" class="text-sm font-medium text-gray-700">Active</label>
             </div>
-            <div>
+            <div x-show="role === 'selector'">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Selector Groups</label>
                 <p class="text-xs text-gray-400 mb-2">Applies to the Selector role only.</p>
                 @forelse($groups as $group)

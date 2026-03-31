@@ -13,6 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * Authenticated via Azure Entra ID (OIDC). Role controls what data a user can see:
  * - `admin`    — full access to all requests, patrons, titles, and settings
  * - `selector` — access scoped to their assigned SelectorGroups (field options)
+ * - `staff`    — view-only access to SFPs, ILLs, Titles, and Patrons; cannot take actions
  *
  * ILL access is not a role; it is determined by group membership. The setting
  * `ill_selector_group_id` points to the selector group that may view and work
@@ -23,7 +24,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string           $name
  * @property string           $email
  * @property string|null      $entra_id      Azure Entra object ID
- * @property string           $role          'admin'|'selector'
+ * @property string           $role          'admin'|'selector'|'staff'
  * @property bool             $active
  * @property \Carbon\Carbon|null $last_login_at
  */
@@ -52,15 +53,30 @@ class User extends Authenticatable
         return $this->role === 'selector';
     }
 
+    /** Returns true when this user has the view-only 'staff' role. */
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff';
+    }
+
     /**
-     * Returns true when this user can access the ILL queue and ILL workflow.
-     * ILL access is group-based: admins always have it; otherwise the user must
-     * be in the selector group whose ID is ill_selector_group_id (that group
-     * can be named anything, e.g. "ILL" or "Cathats").
+     * Returns true when this user may take write actions (status changes, assignment, etc.).
+     * Admin and selector roles can edit; the 'staff' view-only role cannot.
+     */
+    public function canEdit(): bool
+    {
+        return $this->isAdmin() || $this->isSelector();
+    }
+
+    /**
+     * Returns true when this user can access the ILL queue.
+     * - Admins always have access.
+     * - Staff (view-only) can always view the ILL queue (read-only).
+     * - Selectors must be in the selector group identified by ill_selector_group_id.
      */
     public function hasIllAccess(): bool
     {
-        if ($this->isAdmin()) {
+        if ($this->isAdmin() || $this->isStaff()) {
             return true;
         }
         $illGroupId = (int) Setting::get('ill_selector_group_id', 0);

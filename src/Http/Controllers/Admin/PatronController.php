@@ -26,7 +26,7 @@ class PatronController extends Controller
      */
     public function index(Request $request)
     {
-        $showAll = $request->boolean('show_all');
+        $showAll = $request->boolean('show_all', true);
         $search  = $request->input('search');
 
         $suspectedDuplicateIds = $this->getSuspectedDuplicateIds();
@@ -126,6 +126,7 @@ class PatronController extends Controller
      */
     public function update(Request $request, Patron $patron)
     {
+        $this->requireEditor($request);
         $data = $request->validate([
             'barcode'    => 'required|string|max:255|unique:patrons,barcode,' . $patron->id,
             'name_first' => 'required|string|max:255',
@@ -153,6 +154,7 @@ class PatronController extends Controller
      */
     public function retriggerPolaris(Patron $patron)
     {
+        $this->requireEditor(request());
         $patron->update(['polaris_lookup_attempted' => false]);
 
         LookupPatronInPolaris::dispatch($patron->id)
@@ -175,6 +177,7 @@ class PatronController extends Controller
      */
     public function ignoreDuplicate(Request $request, Patron $patron)
     {
+        $this->requireEditor($request);
         $request->validate([
             'other_id' => 'required|integer|exists:patrons,id',
         ]);
@@ -242,6 +245,7 @@ class PatronController extends Controller
      */
     public function merge(Request $request, Patron $loser)
     {
+        $this->requireEditor($request);
         // Convert empty string to null so nullable|integer doesn't reject it
         if ($request->input('polaris_patron_id') === '') {
             $request->merge(['polaris_patron_id' => null]);

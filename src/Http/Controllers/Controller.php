@@ -40,4 +40,17 @@ abstract class Controller extends BaseController
 
         return StaffUser::where('email', $email)->first();
     }
+
+    /**
+     * Abort with 403 if the current staff user is view-only (staff role).
+     * Call this at the top of any controller method that performs write actions.
+     */
+    protected function requireEditor(Request $request): void
+    {
+        $staffUser = $this->currentStaffUser($request);
+
+        if ($staffUser && ! $staffUser->canEdit()) {
+            abort(403, 'Your account has view-only access and cannot perform this action.');
+        }
+    }
 }

@@ -15,7 +15,14 @@
         ? $staffUser->selectorGroups()->whereKey($illGroupId)->exists()
         : false;
 
-    $showIllTab = $isAdmin || $openAccess || $inIllGroup;
+    $isStaffViewer = $staffUser && $staffUser->isStaff();
+    $canEdit       = $staffUser && $staffUser->canEdit();
+
+    $showIllTab = $isAdmin || $openAccess || $inIllGroup || $isStaffViewer;
+
+    // Share $canEdit with all yielded views
+    \Illuminate\Support\Facades\View::share('canEdit', $canEdit);
+    \Illuminate\Support\Facades\View::share('isStaffViewer', $isStaffViewer);
 
     $navItems = [
         [

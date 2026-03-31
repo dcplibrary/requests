@@ -62,7 +62,7 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $data = $request->validate([
-            'role'   => 'required|in:admin,selector',
+            'role'   => 'required|in:admin,selector,staff',
             'active' => 'boolean',
             'groups' => 'nullable|array',
             'groups.*' => 'exists:selector_groups,id',
@@ -73,7 +73,7 @@ class UserController extends Controller
             'active' => $data['active'] ?? false,
         ]);
 
-        // Only selectors use selector groups (including the ILL group). Ensure admins don't retain group assignments.
+        // Only selectors use selector groups (including the ILL group). Admins and staff don't retain group assignments.
         $user->selectorGroups()->sync($data['role'] === 'selector' ? ($data['groups'] ?? []) : []);
 
         return redirect()->route('request.staff.users.index')->with('success', 'User updated.');

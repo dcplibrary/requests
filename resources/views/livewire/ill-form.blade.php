@@ -1,5 +1,10 @@
 <div class="max-w-3xl mx-auto px-4 py-8">
 
+    {{-- Page title --}}
+    <h1 class="text-2xl font-semibold text-dcpl-text mb-6">
+        {{ \Dcplibrary\Requests\Models\Setting::get('ill_form_title', 'Request Interlibrary Loan') }}
+    </h1>
+
     <x-requests::livewire-request-loading-modal targets="submit" />
 
     {{-- Processing overlay (second phase after first response, e.g. saving) --}}
@@ -15,8 +20,7 @@
     {{-- Step 1: Patron --}}
     @if($step === 1)
     <x-requests::patron-step
-        :title="request_form_name('ill') . ' Request'"
-        subtitle="Request items the library doesn't own from other libraries."
+        title="Your Information"
         :show-notify-by-email="true"
     />
 

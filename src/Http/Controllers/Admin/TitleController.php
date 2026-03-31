@@ -137,6 +137,7 @@ class TitleController extends Controller
      */
     public function bulkStatus(Request $request, Material $material)
     {
+        $this->requireEditor($request);
         $staffUser = $this->currentStaffUser($request);
 
         abort_unless(
@@ -173,6 +174,7 @@ class TitleController extends Controller
      */
     public function merge(Request $request, Material $loser)
     {
+        $this->requireEditor($request);
         $staffUser = $this->currentStaffUser($request);
 
         abort_unless(

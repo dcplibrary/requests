@@ -26,7 +26,7 @@ use Symfony\Component\HttpFoundation\Response;
 class RequireStaffRole
 {
     /** Roles that are permitted to access the staff area. */
-    private const ALLOWED_ROLES = ['admin', 'selector'];
+    private const ALLOWED_ROLES = ['admin', 'selector', 'staff'];
 
     /** Legacy host role; when provisioning we store as 'selector'. */
     private const LEGACY_ILL_ROLE = 'ill';

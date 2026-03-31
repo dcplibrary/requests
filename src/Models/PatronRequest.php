@@ -296,6 +296,11 @@ class PatronRequest extends Model
             return $query;
         }
 
+        // Staff (view-only) role can see all requests — they just cannot act on them.
+        if ($staffUser->isStaff()) {
+            return $query;
+        }
+
         // Open access mode: any staff user can see all requests.
         if (Setting::get('requests_visibility_open_access', false)) {
             return $query;

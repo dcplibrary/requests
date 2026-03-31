@@ -5,6 +5,30 @@
 @tailwind utilities;
 
 /*
+ * ── DCPL brand tokens ────────────────────────────────────────────────────────
+ * Mirrors the dcplibrary/ui token set so patron-facing forms share the same
+ * look-and-feel as the staff interface.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+@layer base {
+    :root {
+        --dcpl-blue:   #0075A3;
+        --dcpl-orange: #F47920;
+        --dcpl-green:  #8BC53F;
+        --dcpl-purple: #8B5CF6;
+        --dcpl-gold:   #F4B942;
+        --dcpl-text:   #4d6375;
+        --dcpl-gray:   #516573;
+    }
+
+    body {
+        /* Match the staff interface typography and text colour */
+        font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+        color: var(--dcpl-text);
+    }
+}
+
+/*
  * Trix (rich text) — MUST stay outside @layer
  * -------------------------------------------
  * trix.css from unpkg is unlayered; these overrides stay unlayered so they apply.

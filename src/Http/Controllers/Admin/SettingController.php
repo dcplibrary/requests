@@ -338,6 +338,25 @@ class SettingController extends Controller
     }
 
     /**
+     * Show the permissions settings page (role descriptions and staff user summary).
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function permissions()
+    {
+        $roleCounts = \Dcplibrary\Requests\Models\User::query()
+            ->selectRaw('role, count(*) as total')
+            ->where('active', true)
+            ->groupBy('role')
+            ->pluck('total', 'role')
+            ->toArray();
+
+        return view('requests::staff.settings.permissions', [
+            'roleCounts' => $roleCounts,
+        ]);
+    }
+
+    /**
      * Create/update/delete patron status templates and sync their request statuses.
      */
     private function savePatronStatusTemplates(array $rows): void

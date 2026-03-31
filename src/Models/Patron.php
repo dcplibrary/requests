@@ -240,21 +240,37 @@ class Patron extends Model
      */
     public function applyPolarisData(array $polarisData): void
     {
-        $this->update([
-            'found_in_polaris'      => true,
+        $phoneMatches = $this->normalizePhone($this->phone) === $this->normalizePhone($polarisData['PhoneVoice1'] ?? '');
+        $emailMatches = strtolower(trim($this->email ?? '')) === strtolower(trim($polarisData['EmailAddress'] ?? ''));
+
+        $updates = [
+            'found_in_polaris'       => true,
             'polaris_lookup_attempted' => true,
-            'polaris_lookup_at'     => now(),
-            'polaris_patron_id'     => $polarisData['PatronID'] ?? null,
-            'polaris_patron_code_id'=> $polarisData['PatronCodeID'] ?? null,
-            'polaris_name_first'    => $polarisData['NameFirst'] ?? null,
-            'polaris_name_last'     => $polarisData['NameLast'] ?? null,
-            'polaris_phone'         => $polarisData['PhoneVoice1'] ?? null,
-            'polaris_email'         => $polarisData['EmailAddress'] ?? null,
-            'name_first_matches'    => $this->normalizeForCompare($this->name_first) === $this->normalizeForCompare($polarisData['NameFirst'] ?? ''),
-            'name_last_matches'     => $this->normalizeForCompare($this->name_last) === $this->normalizeForCompare($polarisData['NameLast'] ?? ''),
-            'phone_matches'         => $this->normalizePhone($this->phone) === $this->normalizePhone($polarisData['PhoneVoice1'] ?? ''),
-            'email_matches'         => strtolower(trim($this->email ?? '')) === strtolower(trim($polarisData['EmailAddress'] ?? '')),
-        ]);
+            'polaris_lookup_at'      => now(),
+            'polaris_patron_id'      => $polarisData['PatronID'] ?? null,
+            'polaris_patron_code_id' => $polarisData['PatronCodeID'] ?? null,
+            'polaris_name_first'     => $polarisData['NameFirst'] ?? null,
+            'polaris_name_last'      => $polarisData['NameLast'] ?? null,
+            'polaris_phone'          => $polarisData['PhoneVoice1'] ?? null,
+            'polaris_email'          => $polarisData['EmailAddress'] ?? null,
+            'name_first_matches'     => $this->normalizeForCompare($this->name_first) === $this->normalizeForCompare($polarisData['NameFirst'] ?? ''),
+            'name_last_matches'      => $this->normalizeForCompare($this->name_last) === $this->normalizeForCompare($polarisData['NameLast'] ?? ''),
+            'phone_matches'          => $phoneMatches,
+            'email_matches'          => $emailMatches,
+        ];
+
+        // When the patron's submitted contact differs from Polaris, automatically
+        // mark the submitted value as preferred so it is used for notifications.
+        // Staff can override this on the patron detail page at any time.
+        if (! $phoneMatches && ! empty($this->phone)) {
+            $updates['preferred_phone'] = 'submitted';
+        }
+
+        if (! $emailMatches && ! empty($this->email)) {
+            $updates['preferred_email'] = 'submitted';
+        }
+
+        $this->update($updates);
     }
 
     /**

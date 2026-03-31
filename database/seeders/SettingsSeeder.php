@@ -507,6 +507,14 @@ class SettingsSeeder extends Seeder
 
             // --- External lookup links ---
             [
+                'key'         => 'library_website_url',
+                'value'       => '',
+                'label'       => 'Library Website URL',
+                'type'        => 'string',
+                'group'       => 'external_links',
+                'description' => 'URL for the "Back to DCPL Website" link shown on patron-facing forms. Leave blank to hide the link.',
+            ],
+            [
                 'key'         => 'sfp_isbn_lookup_url',
                 'value'       => 'https://www.amazon.com/s?k=ISBN+{isbn}',
                 'label'       => 'SFP ISBN Lookup URL',
@@ -532,6 +540,24 @@ class SettingsSeeder extends Seeder
                 'group'       => 'external_links',
                 'description' => 'URL template for viewing a patron in Polaris Leap. Use {PatronID} as a placeholder.',
                 'tokens'      => json_encode(['{PatronID}']),
+            ],
+
+            // --- Form titles (patron-facing) ---
+            [
+                'key'         => 'sfp_form_title',
+                'value'       => 'Suggest a Purchase',
+                'label'       => 'SFP Form Title',
+                'type'        => 'string',
+                'group'       => 'forms',
+                'description' => 'Heading shown at the top of the Suggest a Purchase patron form.',
+            ],
+            [
+                'key'         => 'ill_form_title',
+                'value'       => 'Request Interlibrary Loan',
+                'label'       => 'ILL Form Title',
+                'type'        => 'string',
+                'group'       => 'forms',
+                'description' => 'Heading shown at the top of the Interlibrary Loan patron form.',
             ],
 
             // --- Auto-order exclusions (popular authors) ---

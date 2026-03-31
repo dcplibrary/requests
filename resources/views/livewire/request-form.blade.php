@@ -5,6 +5,13 @@
         title="Working on your suggestion…"
     />
 
+    {{-- Page title --}}
+    @if($step < 4)
+    <h1 class="text-2xl font-semibold text-dcpl-text mb-6">
+        {{ \Dcplibrary\Requests\Models\Setting::get('sfp_form_title', 'Suggest a Purchase') }}
+    </h1>
+    @endif
+
     {{-- Step progress indicator --}}
     @if($step < 4)
     <nav aria-label="Form progress" class="mb-8">
