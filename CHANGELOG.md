@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.21.1](https://github.com/dcplibrary/requests/compare/v4.21.0...v4.21.1) (2026-03-31)
+
+
+### Bug Fixes
+
+* update form style to match website" ([5a7e2b5](https://github.com/dcplibrary/requests/commit/5a7e2b51b949561fd3d41016ed878c7c9b93a76d))
+
 # [4.21.0](https://github.com/dcplibrary/requests/compare/v4.20.7...v4.21.0) (2026-03-30)
 
 
