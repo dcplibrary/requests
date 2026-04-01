@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.22.1](https://github.com/dcplibrary/requests/compare/v4.22.0...v4.22.1) (2026-04-01)
+
+
+### Bug Fixes
+
+* show isbndb toggle in material type settings.  remove seeding for settings ([60b1829](https://github.com/dcplibrary/requests/commit/60b182987c20fd359b9a05e240ef0de6f0a28ed6))
+
 # [4.22.0](https://github.com/dcplibrary/requests/compare/v4.21.1...v4.22.0) (2026-04-01)
 
 
