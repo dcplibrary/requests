@@ -586,13 +586,28 @@ class SettingsSeeder extends Seeder
         $settings = self::defaultSettings($illGroupId);
 
         foreach ($settings as $setting) {
-            DB::table('settings')->updateOrInsert(
-                ['key' => $setting['key']],
-                array_merge($setting, [
+            $exists = DB::table('settings')->where('key', $setting['key'])->exists();
+
+            if (! $exists) {
+                // New key — insert with the seeded default value.
+                DB::table('settings')->insert(array_merge($setting, [
                     'created_at' => now(),
                     'updated_at' => now(),
-                ])
-            );
+                ]));
+            } else {
+                // Existing key — sync metadata (label, description, group, type, tokens)
+                // but NEVER overwrite the admin-configured value.
+                DB::table('settings')
+                    ->where('key', $setting['key'])
+                    ->update([
+                        'label'       => $setting['label']       ?? null,
+                        'type'        => $setting['type']        ?? 'string',
+                        'group'       => $setting['group']       ?? 'general',
+                        'description' => $setting['description'] ?? null,
+                        'tokens'      => $setting['tokens']      ?? null,
+                        'updated_at'  => now(),
+                    ]);
+            }
 
             Cache::forget("setting:{$setting['key']}");
         }

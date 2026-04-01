@@ -21,9 +21,13 @@ class FormFormFieldOptionEdit extends Component
     public string $optionSlug;
     public string $formSlug = '';
 
-    public string $optionName    = '';
-    public string $labelOverride = '';
-    public bool   $visible       = true;
+    public string $optionName      = '';
+    public string $labelOverride   = '';
+    public bool   $visible         = true;
+    public bool   $isbndbSearchable = false;
+
+    /** Whether the field this option belongs to is the material_type field. */
+    public bool $isMaterialType = false;
 
     /**
      * @param  int     $fieldId
@@ -37,11 +41,18 @@ class FormFormFieldOptionEdit extends Component
         $this->optionSlug = $optionSlug;
         $this->formSlug   = $formSlug;
 
-        // Look up the option's display name from FieldOption.
+        // Look up the option's display name and global metadata from FieldOption.
         $option = FieldOption::where('field_id', $fieldId)
             ->where('slug', $optionSlug)
             ->first();
         $this->optionName = $option?->name ?? $optionSlug;
+
+        // Check if this is the material_type field and load ISBNdb flag.
+        $field = Field::find($fieldId);
+        if ($field?->key === 'material_type') {
+            $this->isMaterialType    = true;
+            $this->isbndbSearchable  = (bool) ($option?->meta('isbndb_searchable', false));
+        }
 
         // Load any existing per-form override.
         $formModel = Form::bySlug($formSlug);
@@ -79,6 +90,18 @@ class FormFormFieldOptionEdit extends Component
             ['form_id' => $formModel->id, 'field_id' => $this->fieldId],
             ['sort_order' => 0, 'required' => false, 'visible' => true]
         );
+
+        // Persist isbndb_searchable to the global FieldOption metadata when applicable.
+        if ($this->isMaterialType) {
+            $option = FieldOption::where('field_id', $this->fieldId)
+                ->where('slug', $this->optionSlug)
+                ->first();
+            if ($option) {
+                $meta = $option->metadata ?? [];
+                $meta['isbndb_searchable'] = $this->isbndbSearchable;
+                $option->update(['metadata' => $meta]);
+            }
+        }
 
         $labelOverride = trim($this->labelOverride);
 

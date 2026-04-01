@@ -17,6 +17,22 @@
         </div>
     </div>
 
+    {{-- ISBNdb search (material types only) --}}
+    @if($isMaterialType)
+    <div class="max-w-lg bg-white rounded-lg border border-gray-200 p-6">
+        <div class="flex items-center gap-2">
+            <input
+                type="checkbox"
+                id="fffo_isbndb"
+                wire:model="isbndbSearchable"
+                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label for="fffo_isbndb" class="text-sm font-medium text-gray-700 cursor-pointer">Search ISBNdb for this material type</label>
+        </div>
+        <p class="mt-2 text-xs text-gray-400">When enabled, submitting a {{ $optionName }} request will search ISBNdb for enrichment data. Applies globally across all forms.</p>
+    </div>
+    @endif
+
     {{-- Visible --}}
     <div class="max-w-lg bg-white rounded-lg border border-gray-200 p-6">
         <div class="flex items-center gap-2">
