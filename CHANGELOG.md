@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.22.0](https://github.com/dcplibrary/requests/compare/v4.21.1...v4.22.0) (2026-04-01)
+
+
+### Features
+
+* add toggle to disable/enable isbndb search for material types ([523e371](https://github.com/dcplibrary/requests/commit/523e371fde14895f22efedb8e075a4ee9055ed74))
+
 ## [4.21.1](https://github.com/dcplibrary/requests/compare/v4.21.0...v4.21.1) (2026-03-31)
 
 
