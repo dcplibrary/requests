@@ -645,7 +645,8 @@ class RequestForm extends Component
         }
 
         // 5. ISBNdb search (no catalog hits)
-        if (! $this->isDuplicate && Setting::get('isbndb_search_enabled', true)) {
+        $materialTypeOpt = $this->material_type_id ? FieldOption::find($this->material_type_id) : null;
+        if (! $this->isDuplicate && Setting::get('isbndb_search_enabled', true) && $materialTypeOpt?->meta('isbndb_searchable', false)) {
             $this->processingStep = 'Searching book database...';
             $service = app(IsbnDbService::class);
             $result = $service->search($this->title, $this->author);
@@ -684,7 +685,8 @@ class RequestForm extends Component
         $this->catalogMatchAccepted = false;
 
         // Move on to ISBNdb if not yet searched
-        if (! $this->isbndbSearched && Setting::get('isbndb_search_enabled', true)) {
+        $materialTypeOpt = $this->material_type_id ? FieldOption::find($this->material_type_id) : null;
+        if (! $this->isbndbSearched && Setting::get('isbndb_search_enabled', true) && $materialTypeOpt?->meta('isbndb_searchable', false)) {
             $service = app(IsbnDbService::class);
             $result = $service->search($this->title, $this->author);
             $this->isbndbSearched = true;
