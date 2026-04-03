@@ -132,7 +132,8 @@
                     <label class="inline-flex items-center gap-2 cursor-pointer select-none">
                         <input
                             type="checkbox"
-                            wire:model="{{ $notifyWireModel }}"
+                            id="notify_by_email"
+                            wire:model="notify_by_email"
                             class="rounded border-blue-300 text-blue-600 focus:ring-blue-500 shrink-0"
                         />
                         <span class="text-sm font-medium text-blue-900">Notify me by email when my request is updated</span>

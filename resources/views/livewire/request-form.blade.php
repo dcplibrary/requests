@@ -110,7 +110,7 @@
         <h2 id="material-heading" class="text-2xl font-bold text-gray-900 mb-6">Material Details</h2>
 
         @if($limitReached)
-            <div dusk="sfp-limit-reached-banner">
+            <div dusk="limit-reached-banner">
             <x-requests::limit-reached
                 :count="(int) \Dcplibrary\Requests\Models\Setting::get('sfp_limit_count', 5)"
                 :until="$limitUntil ? \Illuminate\Support\Carbon::parse($limitUntil) : null"
@@ -128,7 +128,7 @@
 
         {{-- ── material_type ─────────────────────────────────── --}}
         @if($field->key === 'material_type' && $isVisible)
-            <fieldset dusk="sfp-material-type-group">
+            <fieldset dusk="material-type-group">
                 <legend class="block text-sm font-medium text-gray-700 mb-2">
                     {{ $field->label }}
                     @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
@@ -318,7 +318,7 @@
 
         {{-- SFP custom fields (where_heard textarea, console select, etc.) — filtered in render() to avoid Livewire/Blade clashing on $visibleCustomFields --}}
         @foreach($visibleStepTwoCustomFields as $field)
-            <div wire:key="sfp-custom-field-{{ $field->id }}">
+            <div wire:key="custom-field-{{ $field->id }}">
                 <label for="custom_{{ $field->key }}" class="block text-sm font-medium text-gray-700 mb-1">
                     {{ $field->label }}
                     @if($field->required)<span class="text-red-600" aria-hidden="true">*</span>@endif
