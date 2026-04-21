@@ -33,10 +33,12 @@ class PolarisService
         try {
             // Step 1: Authenticate as staff to obtain AccessSecret.
             // Mirrors the approach used in LookupPatronInPolaris job.
+            // Using 'authenticator/staff' without leading slash to avoid double-slash
+            // when protectedURI has a trailing slash.
             $authResponse = (new PAPIClient())
                 ->method('POST')
                 ->protected()
-                ->uri('/authenticator/staff')
+                ->uri('authenticator/staff')
                 ->params([
                     'Domain'   => $domain,
                     'Username' => $staff,
@@ -55,11 +57,12 @@ class PolarisService
             }
 
             // Step 2: GET patron basicdata by barcode.
+            // Using 'basicdata' without leading slash to avoid double-slash issues.
             $data = (new PAPIClient())
                 ->method('GET')
                 ->patron($barcode)
                 ->auth($accessSecret)
-                ->uri('/basicdata')
+                ->uri('basicdata')
                 ->execRequest();
 
             $basicData = $data['PatronBasicData'] ?? $data;

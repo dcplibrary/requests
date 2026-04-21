@@ -150,6 +150,7 @@
     }
     .badge-admin    { background: #ede9fe; color: #6d28d9; }
     .badge-selector { background: #dbeafe; color: #1d4ed8; }
+    .badge-staff    { background: #f1f5f9; color: #334155; }
     .badge-active   { background: #d1fae5; color: #065f46; }
     .badge-inactive { background: #f1f5f9; color: #64748b; }
     .badge-terminal { background: #fce7f3; color: #9d174d; }
@@ -172,7 +173,7 @@
 
   <!-- ── Sidebar ── -->
   <nav class="sidebar">
-    <div class="sidebar-title">SFP Help</div>
+    <div class="sidebar-title">Requests Help</div>
     <a href="#overview">Overview</a>
     <div class="section-label">Settings</div>
     <a href="#general">General</a>
@@ -181,6 +182,7 @@
     <a href="#catalog">Catalog</a>
     <a href="#statuses">Statuses</a>
     <a href="#users">Users</a>
+    <a href="#permissions">Permissions</a>
     <a href="#groups">Groups</a>
     <a href="#backups">Backups</a>
   </nav>
@@ -189,7 +191,7 @@
   <main>
 
     <div class="topbar">
-      <span class="topbar-logo">SFP</span>
+      <span class="topbar-logo">Requests</span>
       <span class="topbar-breadcrumb">Settings Guide</span>
     </div>
 
@@ -199,7 +201,7 @@
     <!-- ══ OVERVIEW ══ -->
     <section id="overview">
       <h2>Overview</h2>
-      <p>Settings are only accessible to <span class="badge badge-admin">Admin</span> users. Go there from the navigation bar or directly via <strong>Settings</strong> in the nav. The sidebar inside Settings lets you jump between these areas: General, Forms, Notifications, Catalog, Statuses, Users, Groups, and Backups.</p>
+      <p>Settings are only accessible to <span class="badge badge-admin">Admin</span> users. Go there from the navigation bar or directly via <strong>Settings</strong> in the nav. The sidebar inside Settings lets you jump between these areas: General, Forms, Notifications, Catalog, Statuses, Users, Permissions, Groups, and Backups.</p>
       <p>Most changes take effect immediately after saving. Messaging changes are visible to patrons as soon as you save.</p>
     </section>
 
@@ -509,27 +511,33 @@
     <!-- ══ USERS ══ -->
     <section id="users">
       <h2>Users</h2>
-      <p>Staff members who log in via Microsoft Entra (Azure AD) are added here automatically the first time they sign in. You don't need to create accounts manually — just have staff log in and then assign their role here.</p>
+      <p>Staff members who log in via Microsoft Entra (Azure AD) are added here automatically the first time they sign in. You don't need to create accounts manually — just have staff log in and then set their role and group assignments here. The three available roles are <strong>Admin</strong>, <strong>Selector</strong>, and <strong>Staff</strong> (view-only).</p>
 
       <figure class="screenshot">
         <img src="/vendor/sfp/img/help/settings-users.jpg" alt="Users settings page">
         <figcaption>Users — each user's role, group assignments, and last login are shown here.</figcaption>
       </figure>
 
-      <h3>Roles</h3>
+      <h3>Roles at a glance</h3>
       <table class="field-table">
         <thead><tr><th>Role</th><th>Access</th></tr></thead>
         <tbody>
           <tr>
             <td><span class="badge badge-admin">Admin</span></td>
-            <td>Full access to all requests, patrons, titles, and all Settings pages. Can manage users, groups, statuses, and configuration.</td>
+            <td>Full access to all SFP and ILL requests, patrons, titles, and every Settings page. Can take all workflow actions (status changes, reassignment, routing, deletion).</td>
           </tr>
           <tr>
             <td><span class="badge badge-selector">Selector</span></td>
-            <td>Access to Requests, Patrons, and Titles. Scoped to their assigned Groups — they only see requests that match their group's material types and audiences.</td>
+            <td>Sees only the SFP requests matching their assigned selector group(s). ILL access is group-based. Can take workflow actions on requests visible to them, but has no access to settings or user management.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-staff">Staff</span></td>
+            <td>Read-only access to all SFP requests, ILL requests, patrons, and titles. Cannot change statuses, claim or assign requests, merge patrons, or take any write actions. Useful for circulation / reference staff who need to look things up without processing them.</td>
           </tr>
         </tbody>
       </table>
+
+      <p>For a fuller explanation of what each role can and can't do, see the <strong>Permissions</strong> page (<a href="#permissions">below</a>).</p>
 
       <h3>Editing a user</h3>
       <p>Click <strong>Edit</strong> on any user to change their role, assign them to selector groups, or toggle their account active/inactive. Setting a user to Inactive prevents them from logging in without deleting their record.</p>
@@ -537,6 +545,28 @@
       <div class="callout tip">
         <span class="callout-icon">💡</span>
         <div>A selector with no group assignments can log in but won't see any requests in their queue. Always assign at least one group after changing a user's role to Selector.</div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ══ PERMISSIONS ══ -->
+    <section id="permissions">
+      <h2>Permissions</h2>
+      <p>The <strong>Permissions</strong> page is a read-only reference describing what each role can see and do in the portal. Use it as a quick explainer when onboarding new staff or deciding which role to assign to someone. Actual role assignment still happens on the <strong>Users</strong> page.</p>
+
+      <h3>Administrator</h3>
+      <p>Full access to every part of the portal — all SFP and ILL requests, every patron, every title, every Settings page (including Users, Groups, Statuses, email templates, and Backups). Admins can take every workflow action, including deletion.</p>
+
+      <h3>Selector</h3>
+      <p>Sees only the SFP requests that match their assigned selector group(s). ILL visibility is group-based — members of the designated ILL group can also view and work the ILL queue. Selectors can take workflow actions on requests visible to them but have no access to settings or user management.</p>
+
+      <h3>Staff (view only)</h3>
+      <p>Read-only access to all SFP requests, ILL requests, patrons, and titles. Staff can look things up but cannot change statuses, claim or assign requests, merge patrons, or take any other write action. No access to settings or user management. This is the right role for library staff who need to answer patron questions about their requests without being part of the selection workflow.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The page shows a live count of how many active users are in each role, and links straight to the Users page so you can adjust role assignments in one click.</div>
       </div>
     </section>
 

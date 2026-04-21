@@ -88,8 +88,8 @@ Every patron lookup therefore requires **two sequential calls**: authenticate as
 
 ```php
 // CORRECT
-$auth = (new PAPIClient())->method('POST')->protected()->uri('/authenticator/staff')->params([...])->execRequest();
-$data = (new PAPIClient())->method('GET')->patron($barcode)->auth($accessSecret)->uri('/basicdata')->execRequest();
+$auth = (new PAPIClient())->method('POST')->protected()->uri('authenticator/staff')->params([...])->execRequest();
+$data = (new PAPIClient())->method('GET')->patron($barcode)->auth($accessSecret)->uri('basicdata')->execRequest();
 
 // WRONG — state from $auth bleeds into second call
 $client = app(PAPIClient::class);
@@ -98,8 +98,9 @@ $data = $client->method('GET')->patron($barcode)->auth($accessSecret)->uri('/bas
 ```
 
 ### URI construction rules
-- `->protected()` uses `protectedURI` (no trailing slash) — so `->uri(...)` needs a **leading slash**: `->uri('/authenticator/staff')`
-- `->patron($barcode)` uses `publicURI` and builds `patron/{barcode}` automatically — so `->uri(...)` also needs a **leading slash**: `->uri('/basicdata')`
+- `->protected()` uses `protectedURI` — use `->uri(...)` **without a leading slash** to avoid double-slash issues: `->uri('authenticator/staff')`
+- `->patron($barcode)` uses `publicURI` and builds `patron/{barcode}` automatically — use `->uri(...)` **without a leading slash**: `->uri('basicdata')`
+- Note: The configuration may have trailing slashes, so omitting the leading slash in code prevents `//` in the final URL
 
 ### `execRequest()` return value
 Returns an array directly — not a Response object. Patron basicdata is wrapped one level deep:

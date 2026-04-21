@@ -277,19 +277,13 @@
       </figure>
 
       <h3>Columns</h3>
-      <p>The list shows: Submitted date, Title/Author, Type, Audience, Patron, Status, and Assignee. The <strong>Assignee</strong> column shows which staff member has claimed the request, or is blank if no one has.</p>
+      <p>Each row has a selection checkbox plus these columns: <strong>Submitted</strong> (date), <strong>Title / Author</strong>, <strong>Selection Type</strong> (material type, with the routing selector group shown underneath), <strong>Patron</strong>, <strong>Status</strong>, and — when assignment is enabled — <strong>Assignee</strong>. On the top-level <em>Requests</em> view (kind filter cleared) the Selection Type column is split into separate <strong>Type</strong> and <strong>Audience</strong> columns. The Assignee column is blank when no one has claimed a request.</p>
 
       <h3>Filters</h3>
-      <table class="field-table">
-        <thead><tr><th>Filter</th><th>What it does</th></tr></thead>
-        <tbody>
-          <tr><td class="field-name">Status</td><td>Narrow to a specific status, e.g. <em>Pending</em> to see unreviewed requests.</td></tr>
-          <tr><td class="field-name">Assigned</td><td>Filter to requests that are assigned to a specific staff member, or unassigned requests only.</td></tr>
-          <tr><td class="field-name">Search</td><td>Free-text search across title, author, and patron barcode.</td></tr>
-        </tbody>
-      </table>
+      <p>The filter bar at the top of the list lets you narrow the queue by <strong>Status</strong>, <strong>Material type</strong>, <strong>Assigned to</strong>, a free-text <strong>Search</strong> across title / author / patron, and (on the <em>All Requests</em> view) <strong>Kind</strong> (SFP vs ILL). A <strong>Show completed</strong> toggle controls whether terminal-status requests appear in the queue. Select your filters and click <strong>Filter</strong>; click <strong>Clear</strong> to reset.</p>
 
-      <p>Select your filters and click <strong>Filter</strong>. Click <strong>Clear</strong> to reset.</p>
+      <h3>Bulk actions</h3>
+      <p>Tick one or more rows and a bulk action bar appears above the table. From there you can apply a status to every selected request in one click, reassign them to a group or user, or (admins only) delete them. This is the fastest way to close a batch of similar requests.</p>
 
       <div class="callout tip">
         <span class="callout-icon">💡</span>
@@ -307,7 +301,7 @@
 
       <figure class="screenshot">
         <img src="/vendor/sfp/img/help/request-detail-top.jpg" alt="Request detail page">
-        <figcaption>Request detail — Material info on the left, Update Status panel on the right, Patron info below.</figcaption>
+        <figcaption>Request detail — Material info on the left; Update Status and Quick Actions cards on the right; Patron info below.</figcaption>
       </figure>
 
       <h3>Material section</h3>
@@ -461,19 +455,24 @@
 
       <figure class="screenshot">
         <img src="/vendor/sfp/img/help/titles-list.jpg" alt="Titles list page">
-        <figcaption>Titles list — the Requests column shows how many pending requests exist for each title. The Source column shows where the metadata came from.</figcaption>
+        <figcaption>Titles list — the Requests column breaks out each title's requests by status, with a count badge per status.</figcaption>
       </figure>
 
-      <h3>Source column</h3>
+      <h3>Columns</h3>
       <table class="field-table">
-        <thead><tr><th>Source</th><th>Meaning</th></tr></thead>
+        <thead><tr><th>Column</th><th>Meaning</th></tr></thead>
         <tbody>
-          <tr><td><span class="badge" style="background:#e0e7ff;color:#3730a3">Submitted</span></td><td>Title info is exactly as the patron typed it — no ISBN or external data enrichment.</td></tr>
-          <tr><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">ISBNdb</span></td><td>The system matched this title to an ISBNdb record and enriched it with publisher, ISBN, etc.</td></tr>
+          <tr><td class="field-name">Title</td><td>The enriched title, with the publish date shown underneath when known.</td></tr>
+          <tr><td class="field-name">Author</td><td>Author as resolved on the material record.</td></tr>
+          <tr><td class="field-name">ISBN</td><td>ISBN-13 preferred, falling back to ISBN-10 if that's all that's known.</td></tr>
+          <tr><td class="field-name">Type</td><td>Material type (Book, DVD, eBook, etc.).</td></tr>
+          <tr><td class="field-name">Kind</td><td>Which form the requests came from — <strong>SFP</strong>, <strong>ILL</strong>, or both.</td></tr>
+          <tr><td class="field-name">Requests</td><td>A colored badge per status showing how many of this title's requests are in each state (e.g. "2× Pending", "1× On Order").</td></tr>
         </tbody>
       </table>
 
-      <p>Use the <strong>Search</strong> box to find a specific title or author, and the <strong>Source</strong> dropdown to filter by data source.</p>
+      <h3>Filters</h3>
+      <p>Use the <strong>Search</strong> box to find by title, author, or ISBN. The count at the top right shows the total number of titles matching the current filter. An amber "unmatched requests" badge appears when any request in the system isn't yet linked to a title record.</p>
     </section>
 
     <!-- ══════════════════════════════════════════ TITLE DETAIL -->
@@ -541,19 +540,24 @@
     <!-- ══════════════════════════════════════════ CONVERT TO ILL -->
     <section id="convert-ill">
       <h2>Converting a Request to ILL</h2>
-      <p>When a patron opted in to interlibrary loan during submission, a <strong>Workflow</strong> panel appears on the right side of the request detail page (SFP requests only). This lets you convert the request to the ILL workflow with one click.</p>
+      <p>The <strong>Quick Actions</strong> card on the right side of the request detail page includes a <strong>Convert to ILL</strong> button for SFP requests where the patron opted in to interlibrary loan during submission. This lets you move the request into the ILL workflow with one click.</p>
 
       <div class="screenshot">
-        <img src="/vendor/sfp/img/help/request-detail-top.jpg" alt="Request detail page showing the Workflow panel with Convert to ILL button">
+        <img src="/vendor/sfp/img/help/request-detail-top.jpg" alt="Request detail page showing the Quick Actions card with Convert to ILL button">
       </div>
 
       <ol class="steps">
-        <li>Open the SFP request. Look for the <strong>Workflow</strong> panel in the right sidebar — it only appears when the patron answered "Yes" to the interlibrary loan question.</li>
-        <li>Optionally type a note explaining the conversion (e.g. "Not in collection scope — sending to ILL").</li>
-        <li>Click <strong>Convert to ILL</strong> and confirm the prompt.</li>
+        <li>Open the SFP request and locate the <strong>Quick Actions</strong> card in the right sidebar.</li>
+        <li>Click <strong>Convert to ILL</strong>. The button only appears when the patron answered "Yes" to the interlibrary loan question on the submission form.</li>
+        <li>Confirm the prompt.</li>
       </ol>
 
       <p>After conversion you are redirected to the requests list. The request is now an ILL request and will appear in the queue of staff who have ILL access. A <em>Converted workflow: sfp → ill.</em> entry is added to the status history.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Other buttons on the Quick Actions card — <strong>Claim</strong>, <strong>Reassign</strong>, <strong>↺ Re-check catalog</strong>, and the external lookup links (WorldCat / Amazon) — are also where you'll do most hands-on request work from the detail page.</div>
+      </div>
 
       <div class="callout tip">
         <span class="callout-icon">💡</span>

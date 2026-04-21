@@ -38,12 +38,12 @@ class LookupPatronInPolaris implements ShouldQueue
 
             // Step 1: Authenticate as staff to obtain an AccessSecret.
             // The AccessSecret is required as X-PAPI-AccessToken on patron endpoints.
-            // protectedURI has no trailing slash, so uri needs a leading slash.
-            // getPolarisSettings() auto-prepends LogonWorkstationID and PatronBranchID.
+            // Using 'authenticator/staff' without leading slash to avoid double-slash
+            // when protectedURI has a trailing slash.
             $authResponse = (new PAPIClient())
                 ->method('POST')
                 ->protected()
-                ->uri('/authenticator/staff')
+                ->uri('authenticator/staff')
                 ->params([
                     'Domain'   => config('requests.polaris.domain', ''),
                     'Username' => config('requests.polaris.staff', ''),
@@ -58,18 +58,24 @@ class LookupPatronInPolaris implements ShouldQueue
                     'patron_id' => $this->patronId,
                     'response'  => $authResponse,
                 ]);
-                $patron->markPolarisNotFound();
+                // Staff auth failed — mark as attempted but don't mark patron as "not found"
+                // since we never actually checked if the patron exists in Polaris.
+                $patron->update([
+                    'polaris_lookup_attempted' => true,
+                    'polaris_lookup_at' => now(),
+                ]);
                 return;
             }
 
             // Step 2: GET patron basicdata by barcode via Polaris public PAPI.
             // execRequest() returns an array directly (not a Response object).
             // URI builds as: {publicURI}patron/{barcode}/basicdata
+            // Using 'basicdata' without leading slash to avoid double-slash issues.
             $data = (new PAPIClient())
                 ->method('GET')
                 ->patron($patron->barcode)
                 ->auth($accessSecret)
-                ->uri('/basicdata')
+                ->uri('basicdata')
                 ->execRequest();
 
             // Polaris wraps the payload in PatronBasicData
