@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.22.4](https://github.com/dcplibrary/requests/compare/v4.22.3...v4.22.4) (2026-04-21)
+
+
+### Bug Fixes
+
+* correct url for patron lookup ([4489be9](https://github.com/dcplibrary/requests/commit/4489be979f2231834f1c2b1b01beb119e8fe74e2))
+
 ## [4.22.3](https://github.com/dcplibrary/requests/compare/v4.22.2...v4.22.3) (2026-04-21)
 
 
