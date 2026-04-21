@@ -62,7 +62,7 @@ class PolarisService
                 ->method('GET')
                 ->patron($barcode)
                 ->auth($accessSecret)
-                ->uri('basicdata')
+                ->uri('/basicdata')
                 ->execRequest();
 
             $basicData = $data['PatronBasicData'] ?? $data;

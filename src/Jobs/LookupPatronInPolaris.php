@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Async Polaris PAPI patron basicdata lookup after submission; updates patron match flags.
+ *
+ * Dispatched with the patron's library barcode — the only identifier Polaris
+ * uses for lookup. The local DB patron record is found by barcode, not by the
+ * local primary key, because patron_id is a value that comes FROM Polaris, not
+ * something we send to it.
  */
 class LookupPatronInPolaris implements ShouldQueue
 {
@@ -21,11 +26,14 @@ class LookupPatronInPolaris implements ShouldQueue
     public int $tries = 3;
     public int $backoff = 30;
 
-    public function __construct(public readonly int $patronId) {}
+    /**
+     * @param string $barcode The patron's library barcode used for Polaris lookup.
+     */
+    public function __construct(public readonly string $barcode) {}
 
     public function handle(PAPIClient $papiclient): void
     {
-        $patron = Patron::find($this->patronId);
+        $patron = Patron::where('barcode', $this->barcode)->first();
 
         if (! $patron || $patron->polaris_lookup_attempted) {
             return;
@@ -38,8 +46,8 @@ class LookupPatronInPolaris implements ShouldQueue
 
             // Step 1: Authenticate as staff to obtain an AccessSecret.
             // The AccessSecret is required as X-PAPI-AccessToken on patron endpoints.
-            // Using 'authenticator/staff' without leading slash to avoid double-slash
-            // when protectedURI has a trailing slash.
+            // 'authenticator/staff' has no leading slash; protectedURI already has a
+            // trailing slash, so the combined URL is correct with no double-slash.
             $authResponse = (new PAPIClient())
                 ->method('POST')
                 ->protected()
@@ -55,8 +63,8 @@ class LookupPatronInPolaris implements ShouldQueue
 
             if (! $accessSecret) {
                 Log::warning('Polaris staff auth returned no AccessSecret', [
-                    'patron_id' => $this->patronId,
-                    'response'  => $authResponse,
+                    'barcode'  => $this->barcode,
+                    'response' => $authResponse,
                 ]);
                 // Staff auth failed — mark as attempted but don't mark patron as "not found"
                 // since we never actually checked if the patron exists in Polaris.
@@ -68,14 +76,14 @@ class LookupPatronInPolaris implements ShouldQueue
             }
 
             // Step 2: GET patron basicdata by barcode via Polaris public PAPI.
-            // execRequest() returns an array directly (not a Response object).
-            // URI builds as: {publicURI}patron/{barcode}/basicdata
-            // Using 'basicdata' without leading slash to avoid double-slash issues.
+            // execRequest() builds: {publicURI}patron/{barcode} + uri
+            // The leading slash on '/basicdata' is required to produce the correct
+            // path: patron/{barcode}/basicdata — without it the slash is missing.
             $data = (new PAPIClient())
                 ->method('GET')
-                ->patron($patron->barcode)
+                ->patron($this->barcode)
                 ->auth($accessSecret)
-                ->uri('basicdata')
+                ->uri('/basicdata')
                 ->execRequest();
 
             // Polaris wraps the payload in PatronBasicData
@@ -99,9 +107,8 @@ class LookupPatronInPolaris implements ShouldQueue
 
         } catch (\Throwable $e) {
             Log::error('Polaris patron lookup failed', [
-                'patron_id' => $this->patronId,
-                'barcode'   => $patron->barcode,
-                'error'     => $e->getMessage(),
+                'barcode' => $this->barcode,
+                'error'   => $e->getMessage(),
             ]);
 
             // Don't rethrow — a Polaris failure should not block the patron's submission

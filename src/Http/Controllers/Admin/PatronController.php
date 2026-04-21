@@ -47,24 +47,24 @@ class PatronController extends Controller
             $term = '%' . $search . '%';
             $query->where(function ($q) use ($term) {
                 $q->where('barcode', 'like', $term)
-                  ->orWhere('name_last', 'like', $term)
-                  ->orWhere('name_first', 'like', $term)
-                  ->orWhere('email', 'like', $term);
+                    ->orWhere('name_last', 'like', $term)
+                    ->orWhere('name_first', 'like', $term)
+                    ->orWhere('email', 'like', $term);
             });
         }
 
         if (! $showAll) {
             $query->where(function ($q) use ($suspectedDuplicateIds) {
                 $q->where('polaris_lookup_attempted', false)
-                  ->orWhere(function ($inner) {
-                      $inner->where('found_in_polaris', false)
+                    ->orWhere(function ($inner) {
+                        $inner->where('found_in_polaris', false)
                             ->where('polaris_lookup_attempted', true);
-                  })
-                  ->orWhere('name_first_matches', false)
-                  ->orWhere('name_last_matches', false)
-                  ->orWhere('phone_matches', false)
-                  ->orWhere('email_matches', false)
-                  ->orWhereIn('id', $suspectedDuplicateIds);
+                    })
+                    ->orWhere('name_first_matches', false)
+                    ->orWhere('name_last_matches', false)
+                    ->orWhere('phone_matches', false)
+                    ->orWhere('email_matches', false)
+                    ->orWhereIn('id', $suspectedDuplicateIds);
             });
         }
 
@@ -157,7 +157,7 @@ class PatronController extends Controller
         $this->requireEditor(request());
         $patron->update(['polaris_lookup_attempted' => false]);
 
-        LookupPatronInPolaris::dispatch($patron->id)
+        LookupPatronInPolaris::dispatch($patron->barcode)
             ->onConnection(config('requests.queue.connection'))
             ->onQueue(config('requests.queue.name'));
 
@@ -321,7 +321,7 @@ class PatronController extends Controller
 
         // Returns true if the two patrons have mutually ignored each other
         $isIgnored = fn (int $a, int $b): bool =>
-            isset($ignoredPairs[min($a, $b) . '|' . max($a, $b)]);
+        isset($ignoredPairs[min($a, $b) . '|' . max($a, $b)]);
 
         // Given a group of patrons, return only those that still have at least
         // one non-ignored partner within the group.

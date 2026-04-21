@@ -36,7 +36,7 @@ class PatronService
         ]);
 
         // Queue Polaris lookup — runs after submission
-        LookupPatronInPolaris::dispatch($patron->id)
+        LookupPatronInPolaris::dispatch($patron->barcode)
             ->onConnection(config('requests.queue.connection'))
             ->onQueue(config('requests.queue.name'));
 
