@@ -57,7 +57,7 @@ class SendPatronNotificationBundleJob implements ShouldQueue
             $subject = $message['subject'] ?? '';
             $body    = $message['body'] ?? '';
             try {
-                Mail::to($this->patronEmail)->send(new RequestMail($subject, $body));
+                Mail::to($this->patronEmail)->send(new RequestMail($subject, $body, 'patron'));
                 $sentCount++;
             } catch (\Throwable $e) {
                 Log::error('Patron notification email failed', [

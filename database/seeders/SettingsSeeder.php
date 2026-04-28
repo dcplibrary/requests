@@ -385,6 +385,22 @@ class SettingsSeeder extends Seeder
                 'description' => 'Text shown in the footer of every notification email sent to patrons and staff.',
             ],
             [
+                'key'         => 'staff_email_show_header',
+                'value'       => '1',
+                'label'       => 'Staff Emails — Show Logo Header',
+                'type'        => 'boolean',
+                'group'       => 'notifications',
+                'description' => 'Show the library logo at the top of staff routing, assignee, and workflow emails. Disable to send plain body-only emails to staff.',
+            ],
+            [
+                'key'         => 'staff_email_show_footer',
+                'value'       => '1',
+                'label'       => 'Staff Emails — Show Footer',
+                'type'        => 'boolean',
+                'group'       => 'notifications',
+                'description' => 'Show the footer text at the bottom of staff routing, assignee, and workflow emails.',
+            ],
+            [
                 'key'         => 'email_preview_enabled',
                 'value'       => '1',
                 'label'       => 'Email Preview Enabled',

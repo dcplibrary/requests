@@ -18,10 +18,12 @@ class RequestMail extends Mailable
     /**
      * @param  string  $emailSubject  Final subject line after placeholder replacement
      * @param  string  $emailBody     Final HTML body after placeholder replacement
+     * @param  string  $mailType      'staff' or 'patron' — controls header/footer visibility via settings
      */
     public function __construct(
         private string $emailSubject,
         private string $emailBody,
+        private string $mailType = 'patron',
     ) {}
 
     /**
@@ -33,15 +35,16 @@ class RequestMail extends Mailable
     }
 
     /**
-     * @return Content  Blade view `requests::mail.notification` with body and logo URL
+     * @return Content  Blade view `requests::mail.notification` with body, logo URL, and mail type
      */
     public function content(): Content
     {
         return new Content(
             view: 'requests::mail.notification',
             with: [
-                'body'    => $this->emailBody,
-                'logoSrc' => route('request.assets.logo'),
+                'body'     => $this->emailBody,
+                'logoSrc'  => route('request.assets.logo'),
+                'mailType' => $this->mailType,
             ],
         );
     }

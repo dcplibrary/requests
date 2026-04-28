@@ -50,7 +50,7 @@ class SendStaffWorkflowMailJob implements ShouldQueue
         $sentTo = [];
         foreach ($this->recipients as $email) {
             try {
-                Mail::to($email)->send(new RequestMail($this->subject, $this->body));
+                Mail::to($email)->send(new RequestMail($this->subject, $this->body, 'staff'));
                 $sentTo[] = $email;
             } catch (\Throwable $e) {
                 Log::error('Staff workflow notification failed', [

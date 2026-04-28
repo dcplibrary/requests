@@ -153,7 +153,7 @@ class StaffRoutingTemplateController extends Controller
         );
 
         try {
-            Mail::to($data['email'])->send(new RequestMail('[Test] ' . $rendered['subject'], $rendered['body']));
+            Mail::to($data['email'])->send(new RequestMail('[Test] ' . $rendered['subject'], $rendered['body'], 'staff'));
 
             return back()->with('test_success', "Test email sent to {$data['email']}.");
         } catch (\Throwable $e) {

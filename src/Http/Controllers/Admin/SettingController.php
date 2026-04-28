@@ -88,6 +88,8 @@ class SettingController extends Controller
             'email_preview_enabled'      => 'general',
             'email_editing_enabled'      => 'general',
             'email_footer_text'          => 'general',
+            'staff_email_show_header'    => 'general',
+            'staff_email_show_footer'    => 'general',
             'staff_routing_enabled'      => 'emails',
             'staff_routing_subject'      => 'emails',
             'staff_routing_template'     => 'emails',
@@ -97,7 +99,7 @@ class SettingController extends Controller
         ];
         $tabOrder = ['general', 'emails'];
         $keyOrder = [
-            'general' => ['notifications_enabled', 'email_preview_enabled', 'email_editing_enabled', 'email_footer_text'],
+            'general' => ['notifications_enabled', 'email_preview_enabled', 'email_editing_enabled', 'email_footer_text', 'staff_email_show_header', 'staff_email_show_footer'],
             'emails'  => [], // Enable/preview/test live on each email's edit view
         ];
         $settingsByTab = [];
@@ -273,7 +275,7 @@ class SettingController extends Controller
         }
 
         try {
-            Mail::to($data['email'])->send(new RequestMail('[Test] ' . $rendered['subject'], $rendered['body']));
+            Mail::to($data['email'])->send(new RequestMail('[Test] ' . $rendered['subject'], $rendered['body'], $data['type'] === 'staff' ? 'staff' : 'patron'));
             return back()->with('test_success', "Test email sent to {$data['email']}.");
         } catch (\Throwable $e) {
             return back()->with('test_error', 'Failed to send: ' . $e->getMessage());

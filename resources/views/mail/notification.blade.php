@@ -15,7 +15,14 @@
         <table role="presentation" width="600" cellpadding="0" cellspacing="0"
                style="max-width:600px;width:100%;background:#ffffff;">
 
+            @php
+                $isStaff   = ($mailType ?? 'patron') === 'staff';
+                $showHeader = ! $isStaff || (bool) \Dcplibrary\Requests\Models\Setting::get('staff_email_show_header', true);
+                $showFooter = ! $isStaff || (bool) \Dcplibrary\Requests\Models\Setting::get('staff_email_show_footer', true);
+            @endphp
+
             {{-- ── Header: DCPL logo ── --}}
+            @if($showHeader)
             <tr>
                 <td align="center" style="background-color:#ffffff;padding:28px 28px 0;">
                     @if(!empty($logoSrc))
@@ -67,12 +74,13 @@
                 </td>
             </tr>
 
-{{-- ── Divider under header ── --}}
+            {{-- ── Divider under header ── --}}
             <tr>
                 <td style="padding:0 28px;">
                     <hr style="border:none;border-top:1px solid #e2e8f0;margin:0;">
                 </td>
             </tr>
+            @endif
 
             {{-- ── Body ── --}}
             <tr>
@@ -82,6 +90,7 @@
             </tr>
 
             {{-- ── Footer (editable via Settings → Notifications → Email Footer Text) ── --}}
+            @if($showFooter)
             @php
                 $footerText = \Dcplibrary\Requests\Models\Setting::get(
                     'email_footer_text',
@@ -94,6 +103,7 @@
                     {!! $footerText !!}
                 </td>
             </tr>
+            @endif
 
         </table>
 

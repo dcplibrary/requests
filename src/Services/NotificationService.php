@@ -94,7 +94,7 @@ class NotificationService
             $sentTo = [];
             foreach ($recipients as $email) {
                 try {
-                    Mail::to($email)->send(new RequestMail($subject, $body));
+                    Mail::to($email)->send(new RequestMail($subject, $body, 'staff'));
                     $sentTo[] = $email;
                 } catch (\Throwable $e) {
                     Log::error('Staff routing email failed', [
@@ -193,7 +193,7 @@ class NotificationService
             }
 
             try {
-                Mail::to($patronEmail)->send(new RequestMail($subject, $body));
+                Mail::to($patronEmail)->send(new RequestMail($subject, $body, 'patron'));
                 $sentCount = 1;
             } catch (\Throwable $e) {
                 Log::error('Patron status email failed', [
@@ -237,7 +237,7 @@ class NotificationService
             try {
                 $subject = $this->replacePlaceholders($template->subject, $request);
                 $body    = $this->replacePlaceholders((string) $template->body, $request);
-                Mail::to($patronEmail)->send(new RequestMail($subject, $body));
+                Mail::to($patronEmail)->send(new RequestMail($subject, $body, 'patron'));
                 $sentCount++;
             } catch (\Throwable $e) {
                 Log::error('Patron status email failed', [
@@ -335,7 +335,7 @@ class NotificationService
             try {
                 $subject = $this->replacePlaceholders($template->subject, $request);
                 $body    = $this->replacePlaceholders((string) $template->body, $request);
-                Mail::to($patronEmail)->send(new RequestMail($subject, $body));
+                Mail::to($patronEmail)->send(new RequestMail($subject, $body, 'patron'));
                 $sentCount++;
             } catch (\Throwable $e) {
                 Log::error('Patron ILL conversion email failed', [
@@ -545,7 +545,7 @@ class NotificationService
         }
 
         try {
-            Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
+            Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body, 'staff'));
             $this->logNotificationHistory(
                 $request,
                 RequestStatusHistory::ACTIVITY_STAFF_ASSIGNEE,
@@ -609,7 +609,7 @@ class NotificationService
         $sentTo = [];
         foreach ($recipients as $email) {
             try {
-                Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
+                Mail::to($email)->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body, 'staff'));
                 $sentTo[] = $email;
             } catch (\Throwable $e) {
                 Log::error('Staff workflow notification failed', [

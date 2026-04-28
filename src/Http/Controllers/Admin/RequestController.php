@@ -1051,7 +1051,7 @@ class RequestController extends Controller
             $mailer = \Illuminate\Support\Facades\Mail::to($to);
             if (! empty($ccAddresses))  $mailer = $mailer->cc($ccAddresses);
             if (! empty($bccAddresses)) $mailer = $mailer->bcc($bccAddresses);
-            $mailer->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body));
+            $mailer->send(new \Dcplibrary\Requests\Mail\RequestMail($subject, $body, 'patron'));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Custom patron email failed', [
                 'to'    => $to,

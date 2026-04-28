@@ -49,7 +49,7 @@ class SendAssigneeNotificationJob implements ShouldQueue
         }
 
         try {
-            Mail::to($this->assigneeEmail)->send(new RequestMail($this->subject, $this->body));
+            Mail::to($this->assigneeEmail)->send(new RequestMail($this->subject, $this->body, 'staff'));
             $request->fresh()?->logNotificationActivity(
                 RequestStatusHistory::ACTIVITY_STAFF_ASSIGNEE,
                 'Assignee notification sent to ' . $this->assigneeEmail . '. Subject: ' . Str::limit($this->subject, 120)
