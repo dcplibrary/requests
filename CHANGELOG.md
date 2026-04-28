@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.23.0](https://github.com/dcplibrary/requests/compare/v4.22.4...v4.23.0) (2026-04-28)
+
+
+### Features
+
+* disable logo for staff emails ([91ed5e8](https://github.com/dcplibrary/requests/commit/91ed5e8799fe30bcbf240c31662cecb0dfa62ec0))
+
 ## [4.22.4](https://github.com/dcplibrary/requests/compare/v4.22.3...v4.22.4) (2026-04-21)
 
 
