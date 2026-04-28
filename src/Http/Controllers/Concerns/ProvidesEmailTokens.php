@@ -47,7 +47,7 @@ trait ProvidesEmailTokens
     protected function systemTokens(bool $includeStatusDescription = false): array
     {
         $tokens = [
-            '{patron_name}', '{patron_first_name}', '{patron_email}', '{patron_phone}',
+            '{patron_name}', '{patron_first_name}', '{patron_barcode}', '{patron_email}', '{patron_phone}',
             '{notify_by_email}', '{status}', '{status_name}', '{submitted_date}', '{request_url}',
         ];
 

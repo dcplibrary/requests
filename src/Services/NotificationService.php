@@ -998,6 +998,7 @@ class NotificationService
      *   {author}            — submitted author
      *   {patron_name}       — patron full name
      *   {patron_first_name} — patron first name
+     *   {patron_barcode}    — patron library card barcode
      *   {patron_email}      — patron canonical email address
      *   {patron_phone}      — patron canonical phone number
      *   {material_type}     — material type name
@@ -1043,6 +1044,7 @@ class NotificationService
             '{author}'            => $request->submitted_author ?? '',
             '{patron_name}'       => $patronName,
             '{patron_first_name}' => $patron?->name_first        ?? '',
+            '{patron_barcode}'    => $patron?->barcode            ?? '',
             '{patron_email}'      => $patron?->effective_email   ?? '',
             '{patron_phone}'      => $patron?->effective_phone  ?? '',
             '{material_type}'     => $request->fieldValueLabel('material_type') ?? '',

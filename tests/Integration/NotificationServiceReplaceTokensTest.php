@@ -215,6 +215,18 @@ class NotificationServiceReplaceTokensTest extends TestCase
     }
 
     #[Test]
+    public function patron_barcode_token_is_replaced_with_patron_barcode(): void
+    {
+        $this->createPatron(1, 'Jane', 'Doe', 'jane@example.com');
+        $request = $this->createRequest(1);
+
+        $result = $this->invokeReplacePlaceholders('Barcode: {patron_barcode}', $request->fresh()->load('patron'));
+
+        $this->assertStringContainsString('P1', $result);
+        $this->assertStringNotContainsString('{patron_barcode}', $result);
+    }
+
+    #[Test]
     public function replace_tokens_strips_remaining_unrecognized_tokens_from_template(): void
     {
         $this->createPatron(1);
