@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.24.0](https://github.com/dcplibrary/requests/compare/v4.23.0...v4.24.0) (2026-04-29)
+
+
+### Features
+
+* add cloudflare turnstile security to forms ([cafd20e](https://github.com/dcplibrary/requests/commit/cafd20eb00ab7a618b022257ec27f2c9ca300eb1))
+
 # [4.23.0](https://github.com/dcplibrary/requests/compare/v4.22.4...v4.23.0) (2026-04-28)
 
 
