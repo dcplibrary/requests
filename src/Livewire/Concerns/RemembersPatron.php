@@ -8,9 +8,16 @@ namespace Dcplibrary\Requests\Livewire\Concerns;
  * Expects the consuming component to declare public properties:
  *   string $barcode, $name_first, $name_last, $phone, $email
  * Optional: bool $notify_by_email (RequestForm, IllForm)
+ *
+ * Also provides $turnstileToken — the cf-turnstile-response value set by the
+ * Cloudflare Turnstile widget via its JS callback. Verified in nextStep() when
+ * captcha_enabled is true.
  */
 trait RemembersPatron
 {
+    /** Cloudflare Turnstile token, set by the widget's JS success callback. */
+    public string $turnstileToken = '';
+
     /**
      * Hydrate patron fields from the session (e.g. after "Submit Another Request").
      *

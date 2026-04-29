@@ -258,6 +258,16 @@ class SettingsSeeder extends Seeder
                 'description' => 'Shown on Step 1 of the request form when the patron\'s barcode is not found in Polaris. HTML is allowed — you can include links and your library\'s address.',
             ],
 
+            // --- Security ---
+            [
+                'key'         => 'captcha_enabled',
+                'value'       => '0',
+                'label'       => 'Enable CAPTCHA',
+                'type'        => 'boolean',
+                'group'       => 'security',
+                'description' => 'Show a Cloudflare Turnstile CAPTCHA on Step 1 of the patron request forms. Requires TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY in .env.',
+            ],
+
             // --- Email notifications ---
             [
                 'key'         => 'notifications_enabled',

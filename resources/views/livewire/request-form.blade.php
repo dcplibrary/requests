@@ -58,6 +58,21 @@
         :barcode-not-found-message="$barcodeNotFoundMessage ?? ''"
     />
 
+        {{-- Cloudflare Turnstile (only when captcha_enabled) --}}
+        @if(\Dcplibrary\Requests\Models\Setting::get('captcha_enabled', false))
+        <div class="mt-6" wire:ignore>
+            <div class="cf-turnstile"
+                 data-sitekey="{{ config('requests.turnstile.site_key') }}"
+                 data-callback="sfpTurnstileSuccess"
+                 data-expired-callback="sfpTurnstileExpired"
+                 data-error-callback="sfpTurnstileError">
+            </div>
+        </div>
+        @error('turnstileToken')
+        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+        @enderror
+        @endif
+
         <div class="mt-8 flex justify-end">
             <button
                 type="button"
@@ -595,3 +610,27 @@
     @endif
 
 </div>
+
+@if(\Dcplibrary\Requests\Models\Setting::get('captcha_enabled', false))
+@push('head')
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+@endpush
+<script>
+function sfpTurnstileSuccess(token) {
+    @this.set('turnstileToken', token);
+}
+function sfpTurnstileExpired() {
+    @this.set('turnstileToken', '');
+}
+function sfpTurnstileError() {
+    @this.set('turnstileToken', '');
+}
+document.addEventListener('livewire:initialized', function () {
+    Livewire.on('turnstile-reset', function () {
+        if (window.turnstile) {
+            window.turnstile.reset();
+        }
+    });
+});
+</script>
+@endif

@@ -22,6 +22,7 @@ use Dcplibrary\Requests\Services\IsbnDbService;
 use Dcplibrary\Requests\Services\PatronService;
 use Dcplibrary\Requests\Services\NotificationService;
 use Dcplibrary\Requests\Services\PolarisService;
+use Dcplibrary\Requests\Services\TurnstileService;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -158,6 +159,16 @@ class RequestForm extends Component
             // Reset barcode-not-found state on each attempt
             $this->barcodeNotFound = false;
             $this->barcodeNotFoundMessage = '';
+
+            // Verify Turnstile CAPTCHA before doing anything else.
+            if (Setting::get('captcha_enabled', false)) {
+                if (! app(TurnstileService::class)->verify($this->turnstileToken, request()->ip())) {
+                    $this->addError('turnstileToken', 'CAPTCHA verification failed. Please try again.');
+                    $this->dispatch('turnstile-reset');
+                    $this->turnstileToken = '';
+                    return;
+                }
+            }
 
             $this->validate($this->patronValidationRules());
 

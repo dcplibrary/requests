@@ -79,6 +79,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Cloudflare Turnstile
+    |--------------------------------------------------------------------------
+    | CAPTCHA widget for the patron-facing forms (Step 1 / barcode check).
+    | Get keys at Cloudflare Dashboard → Turnstile → Add site.
+    | Set TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY in .env.
+    | Enable/disable the feature via Settings → Security → Enable CAPTCHA.
+    */
+    'turnstile' => [
+        'site_key'   => env('TURNSTILE_SITE_KEY', ''),
+        'secret_key' => env('TURNSTILE_SECRET_KEY', ''),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Polaris PAPI
     |--------------------------------------------------------------------------
     | Staff authentication for Polaris PAPI (barcode check, patron lookup).
