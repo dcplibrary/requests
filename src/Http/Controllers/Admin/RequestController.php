@@ -536,6 +536,16 @@ class RequestController extends Controller
         $group = SelectorGroup::with('fieldOptions.field')->findOrFail($httpRequest->group_id);
         $fieldOverrides = $httpRequest->input('fields', []);
 
+        // Detect a cross-kind reassignment: an ILL request rerouted to a
+        // non-ILL (i.e. SFP) selector group becomes an SFP request. This is
+        // the inverse of the explicit "Convert to ILL" button used on SFP
+        // requests; ILL → SFP has no patron-facing semantics so we fold the
+        // conversion into the reroute action itself.
+        $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
+        $kindFlipped = $patronRequest->request_kind === PatronRequest::KIND_ILL
+            && $illGroupId > 0
+            && $group->id !== $illGroupId;
+
         $rerouteFields = Field::query()
             ->where('filterable', true)
             ->whereIn('type', ['select', 'radio'])
@@ -594,17 +604,25 @@ class RequestController extends Controller
         }
 
         // Unassign so the next group member who opens it auto-claims.
-        $patronRequest->update([
+        // Flip request_kind from ILL to SFP if this is a cross-kind reassignment.
+        $updates = [
             'assigned_to_user_id' => null,
             'assigned_at'         => null,
             'assigned_by_user_id' => null,
-        ]);
+        ];
+        if ($kindFlipped) {
+            $updates['request_kind'] = PatronRequest::KIND_SFP;
+        }
+        $patronRequest->update($updates);
 
         $actor = $this->currentStaffUser($httpRequest);
         $userNote = trim((string) $httpRequest->input('note'));
         $historyNote = empty($changes)
             ? ('Rerouted to ' . $group->name . ' (no field changes). Request unassigned.')
             : ('Rerouted to ' . $group->name . ': ' . implode('; ', $changes) . '.');
+        if ($kindFlipped) {
+            $historyNote .= ' Converted workflow: ill → sfp.';
+        }
         if ($userNote) {
             $historyNote .= " {$userNote}";
         }
@@ -614,25 +632,32 @@ class RequestController extends Controller
             'note'              => $historyNote,
         ]);
 
-        // Notify the target group only when reroute changed field routing.
-        if ($actor && ! empty($changes)) {
+        // Notify the target group when reroute changed field routing OR when
+        // the request kind flipped (the SFP group should know they got a new
+        // request even if its existing field values already matched the group).
+        if ($actor && (! empty($changes) || $kindFlipped)) {
             app(NotificationService::class)->notifyStaffWorkflowAction(
                 $patronRequest->fresh(),
-                'Rerouted',
+                $kindFlipped ? 'Converted to SFP' : 'Rerouted',
                 $actor,
                 $userNote ?: null,
                 $changes
             );
         }
 
+        if ($kindFlipped) {
+            $successMessage = empty($changes)
+                ? ('Request #' . $patronRequest->id . ' converted to SFP and reassigned to ' . $group->name . '.')
+                : ('Request #' . $patronRequest->id . ' converted to SFP and rerouted to ' . $group->name . '.');
+        } else {
+            $successMessage = empty($changes)
+                ? ('Request #' . $patronRequest->id . ' reassigned to ' . $group->name . ' (no field changes).')
+                : ('Request #' . $patronRequest->id . ' rerouted to ' . $group->name . '.');
+        }
+
         return redirect()
             ->route('request.staff.requests.index')
-            ->with(
-                'success',
-                empty($changes)
-                    ? ('Request #' . $patronRequest->id . ' reassigned to ' . $group->name . ' (no field changes).')
-                    : ('Request #' . $patronRequest->id . ' rerouted to ' . $group->name . '.')
-            );
+            ->with('success', $successMessage);
     }
 
     /**
@@ -1210,7 +1235,13 @@ class RequestController extends Controller
                 ->where('active', true)
                 ->get(['id', 'key', 'label']);
 
+            // For cross-kind detection: any non-ILL group is treated as SFP.
+            // Mirrors the single-request reroute() behaviour.
+            $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
+            $targetIsIllGroup = $illGroupId > 0 && $group->id === $illGroupId;
+
             $rerouted = 0;
+            $converted = 0;
             foreach ($requests as $req) {
                 $changes = [];
                 foreach ($rerouteFields as $field) {
@@ -1249,15 +1280,25 @@ class RequestController extends Controller
                     $changes[] = "{$field->label}: {$oldLabel} → {$newLabel}";
                 }
 
-                $req->update([
+                $kindFlipped = $req->request_kind === PatronRequest::KIND_ILL && ! $targetIsIllGroup && $illGroupId > 0;
+
+                $updates = [
                     'assigned_to_user_id' => null,
                     'assigned_at'         => null,
                     'assigned_by_user_id' => null,
-                ]);
+                ];
+                if ($kindFlipped) {
+                    $updates['request_kind'] = PatronRequest::KIND_SFP;
+                }
+                $req->update($updates);
 
                 $historyNote = 'Bulk rerouted to ' . $group->name . '.';
                 if (! empty($changes)) {
                     $historyNote .= ' ' . implode('; ', $changes) . '.';
+                }
+                if ($kindFlipped) {
+                    $historyNote .= ' Converted workflow: ill → sfp.';
+                    $converted++;
                 }
                 $req->statusHistory()->create([
                     'request_status_id' => $req->request_status_id,
@@ -1267,7 +1308,12 @@ class RequestController extends Controller
                 $rerouted++;
             }
 
-            return back()->with('success', "{$rerouted} request(s) rerouted to {$group->name}.");
+            $message = "{$rerouted} request(s) rerouted to {$group->name}.";
+            if ($converted > 0) {
+                $message .= " {$converted} converted from ILL to SFP.";
+            }
+
+            return back()->with('success', $message);
         }
 
         // --- Assign to user ---
