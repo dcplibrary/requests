@@ -300,7 +300,15 @@ class SettingsSeeder extends Seeder
                 'label'       => 'Enable Request Assignment',
                 'type'        => 'boolean',
                 'group'       => 'staff',
-                'description' => 'Allow staff to claim/reassign requests. When enabled, viewing an unassigned request auto-claims it. Rerouting changes field values and unassigns so the next group can claim.',
+                'description' => 'Allow staff to claim/reassign requests. Rerouting changes field values and unassigns so the next group can claim. Whether opening an unassigned request auto-claims it is controlled separately by Auto-claim on open.',
+            ],
+            [
+                'key'         => 'auto_claim_enabled',
+                'value'       => '1',
+                'label'       => 'Auto-claim on open',
+                'type'        => 'boolean',
+                'group'       => 'staff',
+                'description' => 'When enabled, opening an unassigned request automatically assigns it to the staff user viewing it (and likewise on a status update). Disable to require staff to claim manually. Has no effect when Enable Request Assignment is off.',
             ],
             [
                 'key'         => 'ill_selector_group_id',

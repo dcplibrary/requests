@@ -216,9 +216,10 @@ class PatronRequestAssignmentTest extends TestCase
     private function applyShowAssignmentLogic(PatronRequest $patronRequest, ?User $actor, bool $noclaim = false): void
     {
         $assignmentEnabled = (bool) Setting::get('assignment_enabled', false);
+        $autoClaimEnabled = (bool) Setting::get('auto_claim_enabled', true);
         $justClaimed = false;
 
-        if ($assignmentEnabled && ! $patronRequest->assigned_to_user_id && ! $noclaim && $actor) {
+        if ($assignmentEnabled && $autoClaimEnabled && ! $patronRequest->assigned_to_user_id && ! $noclaim && $actor) {
             $patronRequest->update([
                 'assigned_to_user_id' => $actor->id,
                 'assigned_at'         => \Carbon\Carbon::now(),

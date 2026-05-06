@@ -240,10 +240,12 @@ class RequestController extends Controller
         ]);
 
         // Auto-claim on first open: assign to the current staff user if unassigned.
-        // Suppressed by ?noclaim=1 (used after reroute / manual unassign).
+        // Suppressed by ?noclaim=1 (used after reroute / manual unassign) or when
+        // the auto_claim_enabled setting is off (assignment stays manual then).
         $justClaimed = false;
         $assignmentEnabled = (bool) Setting::get('assignment_enabled', false);
-        if ($assignmentEnabled && ! $patronRequest->assigned_to_user_id && ! request()->boolean('noclaim')) {
+        $autoClaimEnabled = (bool) Setting::get('auto_claim_enabled', true);
+        if ($assignmentEnabled && $autoClaimEnabled && ! $patronRequest->assigned_to_user_id && ! request()->boolean('noclaim')) {
             $actor = $this->currentStaffUser(request());
             if ($actor) {
                 $patronRequest->update([
@@ -931,8 +933,8 @@ class RequestController extends Controller
             $httpRequest->note
         );
 
-        // Auto-claim on status update (only if assignment is enabled and currently unassigned).
-        if (Setting::get('assignment_enabled', false) && $staffUserId && ! $patronRequest->assigned_to_user_id) {
+        // Auto-claim on status update (only if assignment + auto-claim are enabled and currently unassigned).
+        if (Setting::get('assignment_enabled', false) && Setting::get('auto_claim_enabled', true) && $staffUserId && ! $patronRequest->assigned_to_user_id) {
             $patronRequest->update([
                 'assigned_to_user_id' => $staffUserId,
                 'assigned_at'         => now(),
