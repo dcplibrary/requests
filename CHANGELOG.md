@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.26.0](https://github.com/dcplibrary/requests/compare/v4.25.0...v4.26.0) (2026-05-06)
+
+
+### Features
+
+* add auto_claim_enabled setting to disable auto-claim on open ([5b2f48a](https://github.com/dcplibrary/requests/commit/5b2f48ac5fab22718025385362702ba952629aa4))
+
 # [4.25.0](https://github.com/dcplibrary/requests/compare/v4.24.0...v4.25.0) (2026-05-05)
 
 
