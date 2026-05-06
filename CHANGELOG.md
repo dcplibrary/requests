@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.25.0](https://github.com/dcplibrary/requests/compare/v4.24.0...v4.25.0) (2026-05-05)
+
+
+### Features
+
+* auto-convert ILL to SFP when rerouting to a non-ILL selector group ([364e0ed](https://github.com/dcplibrary/requests/commit/364e0ed71f72cbffc3a19f0b18a1a1fed138cc33))
+
 # [4.24.0](https://github.com/dcplibrary/requests/compare/v4.23.0...v4.24.0) (2026-04-29)
 
 
