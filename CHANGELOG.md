@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.26.1](https://github.com/dcplibrary/requests/compare/v4.26.0...v4.26.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* decouple auto_claim_enabled from status-update claim ([85dcc63](https://github.com/dcplibrary/requests/commit/85dcc639ffb1ef408d94153c796f075720138ed9))
+
 # [4.26.0](https://github.com/dcplibrary/requests/compare/v4.25.0...v4.26.0) (2026-05-06)
 
 
