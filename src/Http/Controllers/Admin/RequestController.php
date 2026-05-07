@@ -933,8 +933,10 @@ class RequestController extends Controller
             $httpRequest->note
         );
 
-        // Auto-claim on status update (only if assignment + auto-claim are enabled and currently unassigned).
-        if (Setting::get('assignment_enabled', false) && Setting::get('auto_claim_enabled', true) && $staffUserId && ! $patronRequest->assigned_to_user_id) {
+        // Claim on status update: any staff user changing the status of an
+        // unassigned request takes ownership. Independent of auto_claim_enabled,
+        // which only governs the implicit claim on opening a request.
+        if (Setting::get('assignment_enabled', false) && $staffUserId && ! $patronRequest->assigned_to_user_id) {
             $patronRequest->update([
                 'assigned_to_user_id' => $staffUserId,
                 'assigned_at'         => now(),
@@ -944,7 +946,7 @@ class RequestController extends Controller
             $patronRequest->statusHistory()->create([
                 'request_status_id' => $patronRequest->request_status_id,
                 'user_id'           => $staffUserId,
-                'note'              => 'Auto-claimed on status update.',
+                'note'              => 'Claimed on status update.',
             ]);
         }
 

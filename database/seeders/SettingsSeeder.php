@@ -308,7 +308,7 @@ class SettingsSeeder extends Seeder
                 'label'       => 'Auto-claim on open',
                 'type'        => 'boolean',
                 'group'       => 'staff',
-                'description' => 'When enabled, opening an unassigned request automatically assigns it to the staff user viewing it (and likewise on a status update). Disable to require staff to claim manually. Has no effect when Enable Request Assignment is off.',
+                'description' => 'When enabled, the first staff user to open an unassigned request is automatically assigned to it. Disable to require staff to claim manually via the Claim button. Changing a request\'s status always claims it regardless of this setting. Has no effect when Enable Request Assignment is off.',
             ],
             [
                 'key'         => 'ill_selector_group_id',

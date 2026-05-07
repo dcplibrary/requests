@@ -316,7 +316,7 @@
         <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
         <tbody>
           <tr><td class="field-name">Enable Request Assignment</td><td>Allow staff to claim and reassign requests. Rerouting changes field values and unassigns so the next group can claim. Whether opening an unassigned request auto-claims it is controlled by <em>Auto-claim on open</em> below.</td></tr>
-          <tr><td class="field-name">Auto-claim on open</td><td>When enabled, opening an unassigned request (or updating its status) automatically assigns it to the staff user viewing it. Disable to require staff to claim manually. Has no effect when <em>Enable Request Assignment</em> is off.</td></tr>
+          <tr><td class="field-name">Auto-claim on open</td><td>When enabled, the first staff user to open an unassigned request is automatically assigned to it. Disable to require staff to claim manually via the Claim button. Changing a request's status always claims it regardless of this setting. Has no effect when <em>Enable Request Assignment</em> is off.</td></tr>
           <tr><td class="field-name">ILL Access Group ID</td><td>The selector group whose members may view and work the ILL queue. Set automatically by the seeder but can be changed here if your ILL group changes.</td></tr>
           <tr><td class="field-name">Open Staff Access to Requests</td><td>When enabled, all staff users can view all requests (SFP + ILL), regardless of their selector group assignments.</td></tr>
           <tr><td class="field-name">Strict Selector Group Scoping</td><td>When enabled (and Open Staff Access is off), selector users can only view SFP requests that match their group's material types and audiences exactly.</td></tr>

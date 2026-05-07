@@ -244,7 +244,7 @@ flowchart TD
   </div>
   <p class="note"><strong>Notes:</strong>
     Email action buttons in routing emails use signed, expiring URLs (14-day TTL) — no login required.
-    Auto-claim runs on every open (when <code>auto_claim_enabled</code> is on), not just the first; already-claimed requests are not re-claimed. Disable <em>Auto-claim on open</em> in Settings → Staff to require manual claiming.
+    Auto-claim runs on every open (when <code>auto_claim_enabled</code> is on); already-claimed requests are not re-claimed. Disable <em>Auto-claim on open</em> in Settings → Staff to require manual claiming via the Claim button. Changing a request's status always claims it regardless of the toggle.
     The 'advance on claim' flag is configured per status under Settings → Statuses.
     Rerouting is only available for SFP requests (filterable fields control selector group assignment).
     Bulk actions available: status change, reassign (admin), delete (admin).
