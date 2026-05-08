@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.26.2](https://github.com/dcplibrary/requests/compare/v4.26.1...v4.26.2) (2026-05-08)
+
+
+### Bug Fixes
+
+* update help and phpdoc documentation ([520981a](https://github.com/dcplibrary/requests/commit/520981a85e4d8880bbabeabf121db7152508be34))
+
 ## [4.26.1](https://github.com/dcplibrary/requests/compare/v4.26.0...v4.26.1) (2026-05-07)
 
 
