@@ -15,6 +15,11 @@ use Livewire\Component;
 #[Layout('requests::layouts.requests')]
 class PatronRequests extends Component
 {
+    /**
+     * Redirect unauthenticated visitors back to the request form.
+     *
+     * @return void
+     */
     public function mount(): void
     {
         if (! session()->has('requests_authenticated_barcode')) {
@@ -22,12 +27,24 @@ class PatronRequests extends Component
         }
     }
 
+    /**
+     * Forget the patron's authenticated barcode session and redirect to the form.
+     *
+     * @return void
+     */
     public function logout(): void
     {
         session()->forget('requests_authenticated_barcode');
         $this->redirect(route('request.form'));
     }
 
+    /**
+     * Convert an SFP request to an ILL request on behalf of the authenticated patron.
+     * Guards that the request belongs to this patron and is not already ILL.
+     *
+     * @param  int  $requestId
+     * @return void
+     */
     public function convertToIll(int $requestId): void
     {
         $barcode = session('requests_authenticated_barcode');
@@ -71,6 +88,9 @@ class PatronRequests extends Component
         session()->flash('success', 'Request converted to Interlibrary Loan.');
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $barcode      = session('requests_authenticated_barcode');

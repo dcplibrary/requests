@@ -13,11 +13,19 @@ class CustomFields extends Component
     /** @var array<int, array<string, mixed>> */
     public array $fields = [];
 
+    /**
+     * @return void
+     */
     public function mount(): void
     {
         $this->loadFromDb();
     }
 
+    /**
+     * Reload the fields array from the database.
+     *
+     * @return void
+     */
     private function loadFromDb(): void
     {
         $this->fields = Field::ordered()
@@ -39,6 +47,12 @@ class CustomFields extends Component
             ->toArray();
     }
 
+    /**
+     * Move the field at $index one position up in the list and persist new sort order.
+     *
+     * @param  int  $index
+     * @return void
+     */
     public function moveUp(int $index): void
     {
         if ($index <= 0) return;
@@ -48,6 +62,12 @@ class CustomFields extends Component
         $this->persistOrder();
     }
 
+    /**
+     * Move the field at $index one position down in the list and persist new sort order.
+     *
+     * @param  int  $index
+     * @return void
+     */
     public function moveDown(int $index): void
     {
         if ($index >= count($this->fields) - 1) return;
@@ -57,6 +77,11 @@ class CustomFields extends Component
         $this->persistOrder();
     }
 
+    /**
+     * Write current in-memory sort order back to the database without reloading.
+     *
+     * @return void
+     */
     private function persistOrder(): void
     {
         $rows = array_values($this->fields);
@@ -67,6 +92,12 @@ class CustomFields extends Component
         // make multiple sequential reorders without Livewire state getting confused.
     }
 
+    /**
+     * Toggle the active flag for the field at $index and reload.
+     *
+     * @param  int  $index
+     * @return void
+     */
     public function toggleActive(int $index): void
     {
         $this->fields[$index]['active'] = ! $this->fields[$index]['active'];
@@ -74,6 +105,9 @@ class CustomFields extends Component
         $this->loadFromDb();
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         return view('requests::livewire.admin.custom-fields');

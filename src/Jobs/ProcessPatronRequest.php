@@ -22,8 +22,19 @@ class ProcessPatronRequest implements ShouldQueue
 
     public int $tries = 2;
 
+    /**
+     * @param  int  $requestId  ID of the PatronRequest to process.
+     */
     public function __construct(public readonly int $requestId) {}
 
+    /**
+     * Run catalog and ISBNdb searches for the given request.
+     * Results are stored in cache for Livewire polling; request counts are updated in-place.
+     *
+     * @param  BibliocommonsService  $bibliocommons
+     * @param  IsbnDbService         $isbndb
+     * @return void
+     */
     public function handle(BibliocommonsService $bibliocommons, IsbnDbService $isbndb): void
     {
         $request = PatronRequest::with(['fieldValues.field'])->find($this->requestId);

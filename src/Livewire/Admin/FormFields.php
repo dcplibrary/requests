@@ -26,6 +26,11 @@ class FormFields extends Component
     /** Active tab: 'sfp' | 'ill' */
     public string $activeFormTab = PatronRequest::KIND_SFP;
 
+    /**
+     * Initialise active tab from the ?tab query parameter and load field data.
+     *
+     * @return void
+     */
     public function mount(): void
     {
         $tab = request()->query('tab');
@@ -35,6 +40,11 @@ class FormFields extends Component
         $this->loadFromDb();
     }
 
+    /**
+     * Reload both SFP and ILL field lists from the database.
+     *
+     * @return void
+     */
     private function loadFromDb(): void
     {
         $formSfp = Form::bySlug(PatronRequest::KIND_SFP);
@@ -98,6 +108,12 @@ class FormFields extends Component
         return URL::to($path);
     }
 
+    /**
+     * Move the SFP field at $index one position up and persist the new sort order.
+     *
+     * @param  int  $index
+     * @return void
+     */
     public function moveUpSuggest(int $index): void
     {
         if ($index <= 0) {
@@ -110,6 +126,12 @@ class FormFields extends Component
         $this->persistSuggest();
     }
 
+    /**
+     * Move the SFP field at $index one position down and persist the new sort order.
+     *
+     * @param  int  $index
+     * @return void
+     */
     public function moveDownSuggest(int $index): void
     {
         if ($index >= count($this->suggestFields) - 1) {
@@ -122,6 +144,12 @@ class FormFields extends Component
         $this->persistSuggest();
     }
 
+    /**
+     * Move the ILL field at $index one position up and persist the new sort order.
+     *
+     * @param  int  $index
+     * @return void
+     */
     public function moveUpIll(int $index): void
     {
         if ($index <= 0) {
@@ -134,6 +162,12 @@ class FormFields extends Component
         $this->persistIll();
     }
 
+    /**
+     * Move the ILL field at $index one position down and persist the new sort order.
+     *
+     * @param  int  $index
+     * @return void
+     */
     public function moveDownIll(int $index): void
     {
         if ($index >= count($this->illFields) - 1) {
@@ -146,6 +180,11 @@ class FormFields extends Component
         $this->persistIll();
     }
 
+    /**
+     * Write the current SFP in-memory sort order back to the database.
+     *
+     * @return void
+     */
     private function persistSuggest(): void
     {
         $rows = array_values($this->suggestFields);
@@ -156,6 +195,11 @@ class FormFields extends Component
         }
     }
 
+    /**
+     * Write the current ILL in-memory sort order back to the database.
+     *
+     * @return void
+     */
     private function persistIll(): void
     {
         $rows = array_values($this->illFields);

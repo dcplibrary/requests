@@ -18,11 +18,20 @@ class PatronPinLogin extends Component
 
     private mixed $papiclient;
 
+    /**
+     * Inject PAPIClient dependency (called by Livewire on each request before the action method).
+     */
     public function boot(PAPIClient $papiclient): void
     {
         $this->papiclient = $papiclient;
     }
 
+    /**
+     * Validate barcode + PIN, authenticate against Polaris PAPI, and start a session.
+     * Rate-limited to 5 attempts per IP per 60 seconds.
+     *
+     * @return void
+     */
     public function login(): void
     {
         $key = 'requests-pin-login:' . request()->ip();
@@ -62,6 +71,9 @@ class PatronPinLogin extends Component
         }
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         return view('requests::livewire.patron-pin-login');

@@ -28,6 +28,12 @@ class CustomFieldEdit extends Component
     public array $condition = ['match' => 'all', 'rules' => []];
     public bool $hasCondition = false;
 
+    /**
+     * Load the field record into component state.
+     *
+     * @param  int  $fieldId
+     * @return void
+     */
     public function mount(int $fieldId): void
     {
         $field = Field::findOrFail($fieldId);
@@ -46,6 +52,7 @@ class CustomFieldEdit extends Component
         $this->hasCondition   = ! empty($this->condition['rules']);
     }
 
+    /** Toggle the conditional-logic panel on/off. */
     public function toggleHasCondition(): void
     {
         $this->hasCondition = ! $this->hasCondition;
@@ -55,11 +62,13 @@ class CustomFieldEdit extends Component
         }
     }
 
+    /** Set the AND/OR match strategy for the condition group. */
     public function setConditionMatch(string $match): void
     {
         $this->condition['match'] = $match;
     }
 
+    /** Append a blank rule to the condition. */
     public function addRule(): void
     {
         $this->condition['rules'][] = [
@@ -69,22 +78,49 @@ class CustomFieldEdit extends Component
         ];
     }
 
+    /**
+     * Remove the rule at the given index.
+     *
+     * @param  int  $ruleIndex
+     * @return void
+     */
     public function removeRule(int $ruleIndex): void
     {
         array_splice($this->condition['rules'], $ruleIndex, 1);
     }
 
+    /**
+     * Change the field key a rule targets and clear its selected values.
+     *
+     * @param  int     $ruleIndex
+     * @param  string  $field
+     * @return void
+     */
     public function setRuleField(int $ruleIndex, string $field): void
     {
         $this->condition['rules'][$ruleIndex]['field']  = $field;
         $this->condition['rules'][$ruleIndex]['values'] = [];
     }
 
+    /**
+     * Change the operator (e.g. 'in', 'not_in') for a rule.
+     *
+     * @param  int     $ruleIndex
+     * @param  string  $operator
+     * @return void
+     */
     public function setRuleOperator(int $ruleIndex, string $operator): void
     {
         $this->condition['rules'][$ruleIndex]['operator'] = $operator;
     }
 
+    /**
+     * Toggle a slug value's presence in a rule's values array.
+     *
+     * @param  int     $ruleIndex
+     * @param  string  $value  Slug of the option to toggle.
+     * @return void
+     */
     public function toggleRuleValue(int $ruleIndex, string $value): void
     {
         $values = $this->condition['rules'][$ruleIndex]['values'] ?? [];
@@ -98,6 +134,11 @@ class CustomFieldEdit extends Component
         $this->condition['rules'][$ruleIndex]['values'] = $values;
     }
 
+    /**
+     * Validate and persist the field definition changes.
+     *
+     * @return void
+     */
     public function save(): void
     {
         $this->label = trim($this->label);

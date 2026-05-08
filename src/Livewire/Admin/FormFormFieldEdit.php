@@ -32,6 +32,14 @@ class FormFormFieldEdit extends Component
     public array $condition = ['match' => 'all', 'rules' => []];
     public bool $hasCondition = false;
 
+    /**
+     * Load per-form config for a core (non-custom) field into component state.
+     *
+     * @param  int     $pivotId   FormFieldConfig row ID.
+     * @param  int     $fieldId   Underlying Field ID.
+     * @param  string  $formSlug  'sfp' or 'ill'.
+     * @return void
+     */
     public function mount(int $pivotId, int $fieldId, string $formSlug): void
     {
         $this->pivotId  = $pivotId;
@@ -138,6 +146,7 @@ class FormFormFieldEdit extends Component
         $this->redirect(route('request.staff.settings.form-fields', ['tab' => $this->formSlug]));
     }
 
+    /** Toggle the conditional-logic panel on/off. */
     public function toggleHasCondition(): void
     {
         $this->hasCondition = ! $this->hasCondition;
@@ -146,11 +155,13 @@ class FormFormFieldEdit extends Component
         }
     }
 
+    /** Set the AND/OR match strategy for the condition group. */
     public function setConditionMatch(string $match): void
     {
         $this->condition['match'] = $match;
     }
 
+    /** Append a blank rule to the condition. */
     public function addRule(): void
     {
         $this->condition['rules'][] = [
@@ -160,22 +171,49 @@ class FormFormFieldEdit extends Component
         ];
     }
 
+    /**
+     * Remove the rule at the given index.
+     *
+     * @param  int  $ruleIndex
+     * @return void
+     */
     public function removeRule(int $ruleIndex): void
     {
         array_splice($this->condition['rules'], $ruleIndex, 1);
     }
 
+    /**
+     * Change the field key a rule targets and clear its selected values.
+     *
+     * @param  int     $ruleIndex
+     * @param  string  $field
+     * @return void
+     */
     public function setRuleField(int $ruleIndex, string $field): void
     {
         $this->condition['rules'][$ruleIndex]['field']  = $field;
         $this->condition['rules'][$ruleIndex]['values'] = [];
     }
 
+    /**
+     * Change the operator (e.g. 'in', 'not_in') for a rule.
+     *
+     * @param  int     $ruleIndex
+     * @param  string  $operator
+     * @return void
+     */
     public function setRuleOperator(int $ruleIndex, string $operator): void
     {
         $this->condition['rules'][$ruleIndex]['operator'] = $operator;
     }
 
+    /**
+     * Toggle a slug value's presence in a rule's values array.
+     *
+     * @param  int     $ruleIndex
+     * @param  string  $value  Slug of the option to toggle.
+     * @return void
+     */
     public function toggleRuleValue(int $ruleIndex, string $value): void
     {
         $values = $this->condition['rules'][$ruleIndex]['values'] ?? [];

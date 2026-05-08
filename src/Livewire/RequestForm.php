@@ -128,6 +128,11 @@ class RequestForm extends Component
     public bool $suggestIll = false;
     public ?int $pendingIsbndbIndex = null;
 
+    /**
+     * Pre-select default material type (Book) and audience (Adult); hydrate patron from session.
+     *
+     * @return void
+     */
     public function mount(): void
     {
         $this->hydratePatronFromSession();
@@ -153,6 +158,13 @@ class RequestForm extends Component
 
     // --- Step navigation ---
 
+    /**
+     * Advance to the next step, validating the current step's rules first.
+     * Step 1: validates patron fields, checks Polaris barcode (if enabled), and patron limit.
+     * Step 2: validates material fields.
+     *
+     * @return void
+     */
     public function nextStep(): void
     {
         if ($this->step === 1) {
@@ -202,6 +214,11 @@ class RequestForm extends Component
         $this->step++;
     }
 
+    /**
+     * Go back one step (minimum step 1).
+     *
+     * @return void
+     */
     public function prevStep(): void
     {
         $this->step = max(1, $this->step - 1);
@@ -248,16 +265,31 @@ class RequestForm extends Component
 
     // --- Clear hidden fields when material type or audience changes ---
 
+    /**
+     * Clear any field values that are now hidden after the material type changed.
+     *
+     * @return void
+     */
     public function updatedMaterialTypeId(): void
     {
         $this->clearHiddenFields();
     }
 
+    /**
+     * Clear any field values that are now hidden after the audience changed.
+     *
+     * @return void
+     */
     public function updatedAudienceId(): void
     {
         $this->clearHiddenFields();
     }
 
+    /**
+     * Reset values for all core and custom fields that are currently not visible.
+     *
+     * @return void
+     */
     private function clearHiddenFields(): void
     {
         foreach ($this->formFields as $field) {
@@ -283,6 +315,12 @@ class RequestForm extends Component
         }
     }
 
+    /**
+     * Reset the value for a single field key — handles custom[] array and string properties.
+     *
+     * @param  string  $key
+     * @return void
+     */
     private function clearFieldValue(string $key): void
     {
         if ($this->stepTwoCustomFields->contains('key', $key)) {
@@ -298,6 +336,12 @@ class RequestForm extends Component
 
     // --- Material type "Other" toggle (inline text within material type radio row) ---
 
+    /**
+     * True when the selected material type has the 'has_other_text' meta flag set,
+     * indicating an inline free-text input should be shown alongside the radio option.
+     *
+     * @return bool
+     */
     public function getShowOtherTextProperty(): bool
     {
         if (! $this->material_type_id) {
@@ -561,6 +605,13 @@ class RequestForm extends Component
 
     // --- Main submission ---
 
+    /**
+     * Handle the Step 2 submission: validate, run catalog/ISBNdb checks,
+     * detect duplicates and auto-order exclusions, then save the request
+     * or pause for patron interaction (step 3).
+     *
+     * @return void
+     */
     public function submit(): void
     {
         $this->validate($this->buildStepTwoRules());
@@ -677,6 +728,12 @@ class RequestForm extends Component
         }
     }
 
+    /**
+     * Patron confirmed the catalog item matches — record the bib ID and show step 4 (no request created).
+     *
+     * @param  string  $bibId  BiblioCommons bib_id of the confirmed catalog item.
+     * @return void
+     */
     public function acceptCatalogMatch(string $bibId): void
     {
         $this->catalogMatchAccepted = true;
@@ -691,6 +748,11 @@ class RequestForm extends Component
         $this->step = 4;
     }
 
+    /**
+     * Patron dismissed catalog results — proceed to ISBNdb search or save.
+     *
+     * @return void
+     */
     public function skipCatalogMatch(): void
     {
         $this->catalogMatchAccepted = false;
@@ -722,6 +784,13 @@ class RequestForm extends Component
         }
     }
 
+    /**
+     * Patron selected an ISBNdb result — apply enrichment and save the request.
+     * If the item's publish date exceeds the ILL threshold, shows the ILL prompt instead.
+     *
+     * @param  int  $index  Zero-based index into $isbndbResults.
+     * @return void
+     */
     public function acceptIsbndbMatch(int $index): void
     {
         $isbndbData = $this->isbndbResults[$index] ?? null;
@@ -761,6 +830,11 @@ class RequestForm extends Component
         $this->saveRequest($patron, $isbndbData);
     }
 
+    /**
+     * Patron dismissed ISBNdb results — save the request without enrichment.
+     *
+     * @return void
+     */
     public function skipIsbndbMatch(): void
     {
         $this->isbndbMatchAccepted = false;
@@ -871,6 +945,12 @@ class RequestForm extends Component
         return true;
     }
 
+    /**
+     * Check if the patron for the current barcode has already reached their request limit.
+     * Sets $limitReached and $limitUntil if so.
+     *
+     * @return void
+     */
     private function checkPatronLimit(): void
     {
         $existing = Patron::where('barcode', $this->barcode)->first();
@@ -880,6 +960,11 @@ class RequestForm extends Component
         }
     }
 
+    /**
+     * Resolve/create the patron and save the request after step 3 resolution (duplicate confirmation).
+     *
+     * @return void
+     */
     private function finishAfterResolution(): void
     {
         $patron = app(PatronService::class)->findOrCreate([
@@ -893,6 +978,13 @@ class RequestForm extends Component
         $this->saveRequest($patron);
     }
 
+    /**
+     * Create the PatronRequest, store field values, log status history, and notify staff.
+     *
+     * @param  Patron       $patron
+     * @param  array|null   $isbndbData  Enrichment data from the accepted ISBNdb result, if any.
+     * @return void
+     */
     private function saveRequest(Patron $patron, ?array $isbndbData = null): void
     {
         $this->processing = true;
@@ -1001,6 +1093,9 @@ class RequestForm extends Component
         $this->step = 4; // Confirmation
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $visible = $this->visibleFields;

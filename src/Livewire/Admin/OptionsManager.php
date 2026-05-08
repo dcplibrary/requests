@@ -54,6 +54,15 @@ class OptionsManager extends Component
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
 
+    /**
+     * Initialise with the target model class and optional UI configuration.
+     *
+     * @param  class-string<Model>  $modelClass
+     * @param  string  $title          Display heading for the manager widget.
+     * @param  array<int, array{key: string, label: string, type: string}>  $extraFields
+     * @param  string|null  $conditionField  Field key used in condition rules (e.g. 'material_type').
+     * @return void
+     */
     public function mount(
         string $modelClass,
         string $title = '',
@@ -69,6 +78,11 @@ class OptionsManager extends Component
 
     // ── Data ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Reload the items array from the database.
+     *
+     * @return void
+     */
     private function loadItems(): void
     {
         $extra     = $this->extraFields;
@@ -126,6 +140,11 @@ class OptionsManager extends Component
 
     // ── Add ──────────────────────────────────────────────────────────────────
 
+    /**
+     * Create a new option from the $newName input, auto-generating a unique slug.
+     *
+     * @return void
+     */
     public function addItem(): void
     {
         $name = trim($this->newName);
@@ -202,6 +221,12 @@ class OptionsManager extends Component
 
     // ── Toggle active ─────────────────────────────────────────────────────────
 
+    /**
+     * Toggle the active flag on a single item.
+     *
+     * @param  int  $id
+     * @return void
+     */
     public function toggleActive(int $id): void
     {
         $item = ($this->modelClass)::findOrFail($id);
@@ -211,6 +236,14 @@ class OptionsManager extends Component
 
     // ── Toggle boolean extra field ────────────────────────────────────────────
 
+    /**
+     * Toggle a boolean extra-field value for an item. Only fields declared as
+     * 'boolean' in $extraFields are accepted; others are silently ignored.
+     *
+     * @param  int     $id
+     * @param  string  $field  The extra-field key to toggle (e.g. 'has_other_text').
+     * @return void
+     */
     public function toggleBoolField(int $id, string $field): void
     {
         // Guard: only allow declared boolean extra fields
@@ -230,6 +263,12 @@ class OptionsManager extends Component
 
     // ── Reordering ───────────────────────────────────────────────────────────
 
+    /**
+     * Move an item one position up in the list, swapping sort_order values.
+     *
+     * @param  int  $id
+     * @return void
+     */
     public function moveUp(int $id): void
     {
         $this->items = array_values($this->items);
@@ -243,6 +282,12 @@ class OptionsManager extends Component
         $this->items = array_values($this->items);
     }
 
+    /**
+     * Move an item one position down in the list, swapping sort_order values.
+     *
+     * @param  int  $id
+     * @return void
+     */
     public function moveDown(int $id): void
     {
         $this->items = array_values($this->items);
@@ -258,6 +303,13 @@ class OptionsManager extends Component
         $this->items = array_values($this->items);
     }
 
+    /**
+     * Swap the sort_order values of two items in the database.
+     *
+     * @param  int  $idA
+     * @param  int  $idB
+     * @return void
+     */
     private function swapSortOrders(int $idA, int $idB): void
     {
         $a = ($this->modelClass)::findOrFail($idA);
@@ -271,6 +323,12 @@ class OptionsManager extends Component
 
     // ── Delete ───────────────────────────────────────────────────────────────
 
+    /**
+     * Hard-delete an option by ID and reload the list.
+     *
+     * @param  int  $id
+     * @return void
+     */
     public function deleteItem(int $id): void
     {
         ($this->modelClass)::destroy($id);
@@ -279,6 +337,13 @@ class OptionsManager extends Component
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
+    /**
+     * Generate a unique slug, appending a counter suffix if $base is already taken.
+     *
+     * @param  string    $base
+     * @param  int|null  $excludeId  Exclude this row's own ID from the uniqueness check.
+     * @return string
+     */
     private function uniqueSlug(string $base, ?int $excludeId = null): string
     {
         $slug  = $base;
@@ -293,11 +358,22 @@ class OptionsManager extends Component
         return $slug;
     }
 
+    /**
+     * Set the transient saved confirmation message (shown briefly in the UI).
+     *
+     * @param  string  $message
+     * @return void
+     */
     private function flash(string $message): void
     {
         $this->savedMessage = $message;
     }
 
+    /**
+     * Clear the transient saved confirmation message (called from the view via dispatch).
+     *
+     * @return void
+     */
     public function clearFlash(): void
     {
         $this->savedMessage = null;
@@ -305,6 +381,9 @@ class OptionsManager extends Component
 
     // ── Render ───────────────────────────────────────────────────────────────
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         return view('requests::livewire.admin.options-manager');

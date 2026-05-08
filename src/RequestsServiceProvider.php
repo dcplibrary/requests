@@ -54,6 +54,11 @@ use Livewire\Livewire;
  */
 class RequestsServiceProvider extends ServiceProvider
 {
+    /**
+     * Merge package config and load helpers.
+     *
+     * @return void
+     */
     public function register(): void
     {
         $this->mergeConfigFrom(
@@ -65,6 +70,12 @@ class RequestsServiceProvider extends ServiceProvider
         require_once __DIR__ . '/helpers.php';
     }
 
+    /**
+     * Register middleware, routes, views, Livewire components, publishables,
+     * console commands, and scheduled tasks.
+     *
+     * @return void
+     */
     public function boot(): void
     {
         $this->registerMiddleware();
@@ -130,12 +141,23 @@ class RequestsServiceProvider extends ServiceProvider
         );
     }
 
+    /**
+     * Alias the request.role middleware for use in route definitions.
+     *
+     * @return void
+     */
     protected function registerMiddleware(): void
     {
         $router = $this->app->make(Router::class);
         $router->aliasMiddleware('request.role', RequireStaffRole::class);
     }
 
+    /**
+     * Register the CSS/logo asset routes, help page routes, and the main web routes.
+     * Also registers the dcpl.ui.css route if dcplibrary/ui is not Composer-installed.
+     *
+     * @return void
+     */
     protected function registerRoutes(): void
     {
         // Asset route — serves compiled CSS directly from inside the package.
@@ -178,6 +200,12 @@ class RequestsServiceProvider extends ServiceProvider
         $this->registerDcplUiCssRoute();
     }
 
+    /**
+     * Register the dcpl.ui.css route if it hasn't been registered yet.
+     * Checks both the Composer vendor path and a local dev sibling directory.
+     *
+     * @return void
+     */
     protected function registerDcplUiCssRoute(): void
     {
         if (Route::has('dcpl.ui.css')) {
@@ -202,6 +230,11 @@ class RequestsServiceProvider extends ServiceProvider
         }
     }
 
+    /**
+     * Load the package's Blade view namespaces and anonymous component namespaces.
+     *
+     * @return void
+     */
     protected function registerViews(): void
     {
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'requests');
@@ -220,6 +253,11 @@ class RequestsServiceProvider extends ServiceProvider
         }
     }
 
+    /**
+     * Locate the dcplibrary/ui views directory (Composer or local dev sibling).
+     *
+     * @return string|null  Resolved absolute path, or null if not found.
+     */
     protected function resolveDcplUiViewsPath(): ?string
     {
         // Check composer-installed location first, then local dev sibling directory.
@@ -237,6 +275,11 @@ class RequestsServiceProvider extends ServiceProvider
         return null;
     }
 
+    /**
+     * Enable Livewire Blaze optimization for package components, if installed.
+     *
+     * @return void
+     */
     protected function registerBlaze(): void
     {
         // Blaze is an optional host-app optimization. We only enable it if the
@@ -249,6 +292,11 @@ class RequestsServiceProvider extends ServiceProvider
             ->in(__DIR__ . '/../resources/views/components');
     }
 
+    /**
+     * Register all package Livewire components with their canonical kebab-case aliases.
+     *
+     * @return void
+     */
     protected function registerLivewire(): void
     {
         Livewire::component('requests-form', RequestForm::class);
@@ -281,6 +329,12 @@ class RequestsServiceProvider extends ServiceProvider
         View::share('requestsCssVersion', $version);
     }
 
+    /**
+     * Declare publishable groups: requests-config, requests-migrations,
+     * requests-seeders, requests-views, and the convenience 'requests' all-in-one tag.
+     *
+     * @return void
+     */
     protected function registerPublishables(): void
     {
         $this->publishes([
