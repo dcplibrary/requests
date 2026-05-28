@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.28.1](https://github.com/dcplibrary/requests/compare/v4.28.0...v4.28.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* make continue with ill request button complete process with single click ([a039693](https://github.com/dcplibrary/requests/commit/a03969379743825d27acf107e5b8fa37b63f7c8b))
+
 # [4.28.0](https://github.com/dcplibrary/requests/compare/v4.27.0...v4.28.0) (2026-05-28)
 
 
