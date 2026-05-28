@@ -2,6 +2,8 @@
 
 namespace Dcplibrary\Requests;
 
+use Dcplibrary\Requests\Console\Commands\MigrateCommand;
+use Dcplibrary\Requests\Console\Commands\MigrateStatusCommand;
 use Dcplibrary\Requests\Console\Commands\SeedDefaultsCommand;
 use Dcplibrary\Requests\Console\Commands\PruneLaravelLogsCommand;
 use Dcplibrary\Requests\Console\Scheduling\RunScheduledBackup;
@@ -93,6 +95,8 @@ class RequestsServiceProvider extends ServiceProvider
         // Register commands outside runningInConsole() so Artisan::call()
         // from web requests (e.g. backup UI) can find them.
         $this->commands([
+            MigrateCommand::class,
+            MigrateStatusCommand::class,
             SeedDefaultsCommand::class,
             BackupCommand::class,
             RestoreDbCommand::class,

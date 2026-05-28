@@ -146,9 +146,19 @@ If any of these are missing, Polaris integration is skipped silently.
 ## Artisan Commands
 
 ```bash
-php artisan requests:backup            # run a backup
-php artisan requests:backup --prune    # run a backup then prune old files
+php artisan requests:migrate              # pending package migrations only
+php artisan requests:migrate:status         # show pending/ran for package migrations
+php artisan requests:migrate --force        # production
+php artisan requests:seed-defaults          # seed settings, forms, statuses, etc.
+php artisan requests:backup                 # run a backup
+php artisan requests:backup --prune         # backup then prune old files
+php artisan requests:restore-db {file.sql}  # restore from SQL dump
+php artisan requests:users-backup           # staff users export
+php artisan requests:users-restore {file}   # staff users import
+php artisan requests:prune-logs             # prune Laravel logs (see config)
 ```
+
+`requests:migrate` scopes to this package's `database/migrations` and skips migrations already recorded in the host app's `migrations` table. The host app's `php artisan migrate` also picks up package migrations via `loadMigrationsFrom`, but runs everything pending app-wide.
 
 Prune cutoff is controlled by the `backup_retention_days` setting (default: 30).
 
