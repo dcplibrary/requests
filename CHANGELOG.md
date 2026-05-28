@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.28.0](https://github.com/dcplibrary/requests/compare/v4.27.0...v4.28.0) (2026-05-28)
+
+
+### Features
+
+* add requests:migrate command to update only request package migrations ([fcbb1d2](https://github.com/dcplibrary/requests/commit/fcbb1d2c9043be63606fd9d664b4311e6a8827d9))
+
 # [4.27.0](https://github.com/dcplibrary/requests/compare/v4.26.2...v4.27.0) (2026-05-28)
 
 
