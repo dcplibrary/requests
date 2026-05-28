@@ -388,6 +388,9 @@ class IllForm extends Component
 
     public function skipCatalogMatch(): void
     {
+        $this->processing = true;
+        $this->processingStep = 'Continuing with your ILL request...';
+
         /** @var Patron $patron */
         $patron = Patron::where('barcode', $this->barcode)->firstOrFail();
 
@@ -415,6 +418,9 @@ class IllForm extends Component
 
     public function acceptIsbndbMatch(int $index): void
     {
+        $this->processing = true;
+        $this->processingStep = 'Submitting your request...';
+
         /** @var Patron $patron */
         $patron = Patron::where('barcode', $this->barcode)->firstOrFail();
         $isbndbData = $this->isbndbResults[$index] ?? null;
@@ -424,9 +430,44 @@ class IllForm extends Component
 
     public function skipIsbndbMatch(): void
     {
+        $this->processing = true;
+        $this->processingStep = 'Submitting your request...';
+
         /** @var Patron $patron */
         $patron = Patron::where('barcode', $this->barcode)->firstOrFail();
         $this->saveRequest($patron);
+    }
+
+    /**
+     * Keep patron info and start a new ILL request on step 2.
+     */
+    public function submitAnotherRequest(): void
+    {
+        $this->savePatronToSession();
+
+        $this->reset([
+            'material_type_id',
+            'custom',
+            'fromSfp',
+            'sfpPrefillKeys',
+            'catalogResults',
+            'catalogSearched',
+            'catalogMatchBibId',
+            'catalogFoundUrl',
+            'isbndbResults',
+            'isbndbSearched',
+            'isbndbMatchAccepted',
+            'processing',
+            'processingStep',
+            'createdRequestId',
+            'limitReached',
+            'limitUntil',
+            'limitCount',
+        ]);
+
+        $this->resetValidation();
+        $this->step = 2;
+        $this->checkPatronLimit();
     }
 
     /**

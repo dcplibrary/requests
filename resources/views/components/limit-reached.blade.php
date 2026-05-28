@@ -26,11 +26,11 @@
         ? "You won't be able to submit another ILL request until {until}."
         : "You won't be able to submit another suggestion until {until}.";
 
-    $line1 = str_replace(
+    $line1 = trim(preg_replace('/\s+/', ' ', str_replace(
         ['{limit}', '{period}'],
         [$count,    $period],
         \Dcplibrary\Requests\Models\Setting::get($messageKey, $defaultMsg)
-    );
+    )));
 
     $line2 = (! $isConcurrent && $until)
         ? str_replace(
@@ -45,5 +45,12 @@
     <p class="text-sm font-medium text-amber-800">{{ $line1 }}</p>
     @if($line2)
     <p class="mt-1 text-sm text-amber-700">{!! $line2 !!}</p>
+    @endif
+    @if($isIll)
+    <p class="mt-2 text-sm text-amber-800">
+        <a href="{{ route('request.patron.requests') }}" class="font-medium text-amber-900 underline hover:text-amber-950">
+            View your existing ILL requests
+        </a>
+    </p>
     @endif
 </div>

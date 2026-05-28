@@ -5,7 +5,10 @@
         {{ \Dcplibrary\Requests\Models\Setting::get('ill_form_title', 'Request Interlibrary Loan') }}
     </h1>
 
-    <x-requests::livewire-request-loading-modal targets="submit" />
+    <x-requests::livewire-request-loading-modal
+        targets="submit,skipCatalogMatch,skipIsbndbMatch,acceptIsbndbMatch"
+        title="Working on your request…"
+    />
 
     {{-- Processing overlay (second phase after first response, e.g. saving) --}}
     @if($processing)
@@ -258,10 +261,39 @@
         @endif
     </section>
 
-    {{-- Step 3: Catalog and/or ISBNdb resolution --}}
+    {{-- Step 3: Catalog and/or ISBNdb resolution (ISBNdb takes priority after patron skips catalog) --}}
     @elseif($step === 3)
     <section aria-labelledby="resolution-heading">
-        @if(count($catalogResults) > 0)
+        @if(count($isbndbResults) > 0 && $isbndbMatchAccepted === null)
+        <div x-data="{ detailOpen: false, detailItem: null, detailIndex: 0, openDetail(i) { this.detailItem = {{ Js::from($isbndbResults) }}[i]; this.detailIndex = i; this.detailOpen = true; } }">
+            <h2 id="resolution-heading" class="text-2xl font-bold text-gray-900 mb-4">Verify your book details</h2>
+            <p class="text-sm text-gray-600 mb-6">We found possible matches. Confirm the correct edition so we can add ISBN and other details to your request.</p>
+
+            <div class="space-y-4">
+                @foreach($isbndbResults as $i => $result)
+                    <x-requests::isbndb-result-card :result="$result" :index="$i" />
+                @endforeach
+            </div>
+
+            <div class="mt-6 flex items-center justify-between">
+                <button type="button" wire:click="prevStep"
+                        class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
+                    Back
+                </button>
+                <button type="button" wire:click="skipIsbndbMatch" wire:loading.attr="disabled" wire:target="skipIsbndbMatch,acceptIsbndbMatch"
+                        class="inline-flex items-center justify-center gap-2 min-w-[12rem] px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed">
+                    <span wire:loading.remove wire:target="skipIsbndbMatch">None of these — continue with my details</span>
+                    <span wire:loading wire:target="skipIsbndbMatch" class="inline-flex items-center gap-2">
+                        <svg class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        Please wait…
+                    </span>
+                </button>
+            </div>
+
+            <x-requests::isbndb-detail-modal />
+        </div>
+
+        @elseif(count($catalogResults) > 0)
         <h2 id="resolution-heading" class="text-2xl font-bold text-gray-900 mb-4">Before we request from other libraries…</h2>
         <p class="text-sm text-gray-600 mb-6">We found possible matches in our catalog. If we already own it, you can place a hold instead of requesting ILL.</p>
 
@@ -288,61 +320,51 @@
                     class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
                 Back
             </button>
-            <button type="button" wire:click="skipCatalogMatch"
-                    class="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700">
-                Continue with ILL request
+            <button type="button" wire:click="skipCatalogMatch" wire:loading.attr="disabled" wire:target="skipCatalogMatch"
+                    class="inline-flex items-center justify-center gap-2 min-w-[12rem] px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed">
+                <span wire:loading.remove wire:target="skipCatalogMatch">Continue with ILL request</span>
+                <span wire:loading wire:target="skipCatalogMatch" class="inline-flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    Please wait…
+                </span>
             </button>
-        </div>
-
-        @elseif(count($isbndbResults) > 0 && $isbndbMatchAccepted === null)
-        <div x-data="{ detailOpen: false, detailItem: null, detailIndex: 0, openDetail(i) { this.detailItem = {{ Js::from($isbndbResults) }}[i]; this.detailIndex = i; this.detailOpen = true; } }">
-            <h2 id="resolution-heading" class="text-2xl font-bold text-gray-900 mb-4">Verify your book details</h2>
-            <p class="text-sm text-gray-600 mb-6">We found possible matches. Confirm the correct edition so we can add ISBN and other details to your request.</p>
-
-            <div class="space-y-4">
-                @foreach($isbndbResults as $i => $result)
-                    <x-requests::isbndb-result-card :result="$result" :index="$i" />
-                @endforeach
-            </div>
-
-            <div class="mt-6 flex items-center justify-between">
-                <button type="button" wire:click="prevStep"
-                        class="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
-                    Back
-                </button>
-                <button type="button" wire:click="skipIsbndbMatch"
-                        class="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700">
-                    None of these — continue with my details
-                </button>
-            </div>
-
-            <x-requests::isbndb-detail-modal />
         </div>
         @endif
     </section>
 
     {{-- Step 4: Confirmation --}}
     @else
-    <section aria-labelledby="confirm-heading">
-        <h2 id="confirm-heading" class="text-2xl font-bold text-gray-900 mb-4">Thanks!</h2>
+    <section aria-labelledby="confirm-heading" class="text-center py-8">
+        <div class="flex justify-center mb-4">
+            <span class="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full" aria-hidden="true">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </span>
+        </div>
 
         @if($catalogMatchBibId)
-            <div class="bg-blue-50 border border-blue-100 rounded-lg p-5">
+            <h2 id="confirm-heading" class="text-2xl font-bold text-gray-900 mb-3">It’s already in the catalog</h2>
+            <div class="text-gray-600 text-sm max-w-md mx-auto prose prose-sm text-left">
                 {!! $catalogOwnedMessage !!}
-                @if($catalogFoundUrl)
-                    <p class="mt-3">
-                        <a href="{{ $catalogFoundUrl }}" target="_blank" rel="noopener noreferrer"
-                           class="text-sm font-medium text-blue-700 hover:underline">
-                            Open catalog record →
-                        </a>
-                    </p>
-                @endif
             </div>
+            @if($catalogFoundUrl)
+                <div class="mt-6">
+                    <a href="{{ $catalogFoundUrl }}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700">
+                        Open catalog record
+                    </a>
+                </div>
+            @endif
         @else
-            <div class="bg-emerald-50 border border-emerald-100 rounded-lg p-5">
-                <p class="text-sm text-emerald-900">Your interlibrary loan request has been submitted.</p>
-            </div>
+            <h2 id="confirm-heading" class="text-2xl font-bold text-gray-900 mb-3">Request Submitted</h2>
+            <p class="text-gray-600 text-sm max-w-md mx-auto">Your interlibrary loan request has been submitted.</p>
         @endif
+
+        <div class="mt-8">
+            <button type="button" wire:click="submitAnotherRequest"
+                    class="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Submit Another ILL Request
+            </button>
+        </div>
     </section>
     @endif
 </div>
