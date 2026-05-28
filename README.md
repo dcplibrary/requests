@@ -217,8 +217,10 @@ Role-based access via the `request.role` middleware:
 - `sfp_limit_window_type` (default: rolling) — rolling / calendar_month / calendar_week
 - `sfp_limit_window_days` (default: 30) — Rolling window length in days
 - `sfp_limit_calendar_reset_day` (default: 1) — Monthly reset day (1–28)
-- `ill_limit_count` (default: unlimited) — Max ILL requests per window
-- `ill_limit_window_type` / `ill_limit_window_days` / `ill_limit_calendar_reset_day` — ILL equivalents
+- `ill_limit_count` (default: 5) — Max ILL requests for the chosen limit type
+- `ill_limit_window_type` — `concurrent` (open/non-terminal only), `rolling`, `calendar_month`, or `calendar_week`
+- `ill_limit_window_days` / `ill_limit_calendar_reset_day` — Used when limit type is not concurrent
+- `sfp_limit_window_type` — Same options as ILL (SFP defaults to rolling)
 
 **ILL:**
 - `ill_age_threshold_days` (default: 730) — After catalog/ISBNdb flow, older dated matches can show the step 3 ILL suggestion

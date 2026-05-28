@@ -51,15 +51,15 @@ class SettingsSeeder extends Seeder
                 'label'       => 'SFP Request Limit Count',
                 'type'        => 'integer',
                 'group'       => 'request_limits',
-                'description' => 'Maximum number of SFP requests a patron can submit within the limit window. Leave blank for unlimited.',
+                'description' => 'Maximum SFP requests per patron for the chosen limit type. Leave blank for unlimited.',
             ],
             [
                 'key'         => 'sfp_limit_window_type',
                 'value'       => 'rolling',
-                'label'       => 'SFP Limit Window Type',
+                'label'       => 'SFP Limit Type',
                 'type'        => 'text',
                 'group'       => 'request_limits',
-                'description' => 'How the submission limit window is measured: Rolling counts requests within a sliding day window; Calendar Month resets on a fixed day each month; Calendar Week resets every Monday.',
+                'description' => 'Concurrent counts open (non-terminal) requests only. Rolling, Calendar Month, and Calendar Week count submissions within a date window (configure days/reset below).',
             ],
             [
                 'key'         => 'sfp_limit_window_days',
@@ -81,19 +81,19 @@ class SettingsSeeder extends Seeder
             // --- ILL request limits (separate from SFP) ---
             [
                 'key'         => 'ill_limit_count',
-                'value'       => '',
+                'value'       => '5',
                 'label'       => 'ILL Request Limit Count',
                 'type'        => 'integer',
                 'group'       => 'request_limits',
-                'description' => 'Maximum number of ILL requests a patron can submit within the limit window. Leave blank for unlimited.',
+                'description' => 'Maximum ILL requests per patron for the chosen limit type. Leave blank for unlimited.',
             ],
             [
                 'key'         => 'ill_limit_window_type',
-                'value'       => 'rolling',
-                'label'       => 'ILL Limit Window Type',
+                'value'       => 'concurrent',
+                'label'       => 'ILL Limit Type',
                 'type'        => 'text',
                 'group'       => 'request_limits',
-                'description' => 'How the ILL submission limit window is measured (same options as SFP).',
+                'description' => 'Concurrent counts open (non-terminal) ILL requests only (e.g. borrow up to N items at a time). Rolling, Calendar Month, and Calendar Week count submissions within a date window.',
             ],
             [
                 'key'         => 'ill_limit_window_days',
@@ -456,11 +456,11 @@ class SettingsSeeder extends Seeder
             ],
             [
                 'key'         => 'ill_limit_reached_message',
-                'value'       => 'You have reached the limit of {limit} ILL requests {period}.',
+                'value'       => 'You can only borrow {limit} items at a time. Please wait until an active request is completed.',
                 'label'       => 'ILL Limit Reached Message',
                 'type'        => 'string',
                 'group'       => 'messaging',
-                'description' => 'Shown when a patron hits their ILL request limit. Tokens: {limit}, {period}',
+                'description' => 'Shown when a patron hits their ILL limit. Tokens: {limit}, {period} ({period} is empty for concurrent limits)',
                 'tokens'      => json_encode(['{limit}', '{period}']),
             ],
             [

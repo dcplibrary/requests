@@ -3,8 +3,11 @@
 @php
     $isIll = $kind === 'ill';
     $prefix = $isIll ? 'ill_limit_' : 'sfp_limit_';
-    $type   = \Dcplibrary\Requests\Models\Setting::get($prefix . 'window_type', 'rolling');
-    $period = match ($type) {
+    $defaultType = $isIll ? \Dcplibrary\Requests\Models\Patron::LIMIT_TYPE_CONCURRENT : 'rolling';
+    $type = \Dcplibrary\Requests\Models\Setting::get($prefix . 'window_type', $defaultType);
+    $isConcurrent = $type === \Dcplibrary\Requests\Models\Patron::LIMIT_TYPE_CONCURRENT;
+
+    $period = $isConcurrent ? '' : match ($type) {
         'calendar_month' => 'per calendar month',
         'calendar_week'  => 'per week',
         default          => 'every ' . (int) \Dcplibrary\Requests\Models\Setting::get($prefix . 'window_days', 30) . ' days',
@@ -12,8 +15,16 @@
 
     $messageKey = $isIll ? 'ill_limit_reached_message' : 'limit_reached_message';
     $untilKey   = $isIll ? 'ill_limit_until_message' : 'limit_until_message';
-    $defaultMsg = $isIll ? 'You have reached the limit of {limit} ILL requests {period}.' : 'You have reached the limit of {limit} suggestions {period}.';
-    $defaultUntil = $isIll ? "You won't be able to submit another ILL request until {until}." : "You won't be able to submit another suggestion until {until}.";
+    $defaultMsg = $isConcurrent
+        ? ($isIll
+            ? 'You can only borrow {limit} items at a time. Please wait until an active request is completed.'
+            : 'You have reached the limit of {limit} active suggestions.')
+        : ($isIll
+            ? 'You have reached the limit of {limit} ILL requests {period}.'
+            : 'You have reached the limit of {limit} suggestions {period}.');
+    $defaultUntil = $isIll
+        ? "You won't be able to submit another ILL request until {until}."
+        : "You won't be able to submit another suggestion until {until}.";
 
     $line1 = str_replace(
         ['{limit}', '{period}'],
@@ -21,7 +32,7 @@
         \Dcplibrary\Requests\Models\Setting::get($messageKey, $defaultMsg)
     );
 
-    $line2 = $until
+    $line2 = (! $isConcurrent && $until)
         ? str_replace(
             '{until}',
             '<strong>' . $until->format('F j, Y') . '</strong>',

@@ -162,6 +162,7 @@ class IllForm extends Component
             }
 
             $this->validate($this->patronValidationRules());
+            $this->checkPatronLimit();
         }
 
         if ($this->step === 2) {
@@ -333,12 +334,7 @@ class IllForm extends Component
             'email'      => $this->email ?: null,
         ])['patron'];
 
-        if ($patron->hasReachedLimit(PatronRequest::KIND_ILL)) {
-            $this->limitReached = true;
-            $raw = Setting::get('ill_limit_count', '');
-            $this->limitCount   = trim((string) $raw) === '' ? 0 : (int) $raw;
-            $this->limitUntil   = $patron->nextAvailableDate(PatronRequest::KIND_ILL)?->format('F j, Y');
-            $this->processing   = false;
+        if ($this->applyPatronLimitState($patron)) {
             return;
         }
 
@@ -442,12 +438,7 @@ class IllForm extends Component
      */
     private function saveRequest(Patron $patron, ?array $isbndbData = null): void
     {
-        if ($patron->hasReachedLimit(PatronRequest::KIND_ILL)) {
-            $this->limitReached = true;
-            $raw = Setting::get('ill_limit_count', '');
-            $this->limitCount   = trim((string) $raw) === '' ? 0 : (int) $raw;
-            $this->limitUntil   = $patron->nextAvailableDate(PatronRequest::KIND_ILL)?->format('F j, Y');
-            $this->processing   = false;
+        if ($this->applyPatronLimitState($patron)) {
             return;
         }
 
@@ -725,6 +716,36 @@ class IllForm extends Component
                 '<p><strong>Good news:</strong> this item is already in our catalog. Please place a hold in the catalog to get it as soon as it\'s available.</p>'
             ),
         ]);
+    }
+
+    /**
+     * Check if the patron for the current barcode has already reached their ILL limit.
+     */
+    private function checkPatronLimit(): void
+    {
+        $existing = Patron::where('barcode', $this->barcode)->first();
+        if ($existing && $existing->hasReachedLimit(PatronRequest::KIND_ILL)) {
+            $this->limitReached = true;
+            $this->limitCount   = $existing->configuredLimitCount(PatronRequest::KIND_ILL);
+            $this->limitUntil   = $existing->nextAvailableDate(PatronRequest::KIND_ILL)?->format('F j, Y');
+        }
+    }
+
+    /**
+     * Apply limit-reached UI state from the patron. Returns true when blocked.
+     */
+    private function applyPatronLimitState(Patron $patron): bool
+    {
+        if (! $patron->hasReachedLimit(PatronRequest::KIND_ILL)) {
+            return false;
+        }
+
+        $this->limitReached = true;
+        $this->limitCount   = $patron->configuredLimitCount(PatronRequest::KIND_ILL);
+        $this->limitUntil   = $patron->nextAvailableDate(PatronRequest::KIND_ILL)?->format('F j, Y');
+        $this->processing   = false;
+
+        return true;
     }
 }
 

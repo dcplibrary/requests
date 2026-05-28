@@ -116,6 +116,65 @@ class Patron extends Model
             : $this->email;
     }
 
+    /** Limit type: count open (non-terminal) requests only — no date window. */
+    public const LIMIT_TYPE_CONCURRENT = 'concurrent';
+
+    /**
+     * Configured limit type for the given kind ({@see LIMIT_TYPE_CONCURRENT}, rolling, calendar_month, calendar_week).
+     *
+     * @param  'sfp'|'ill'  $kind
+     */
+    public function limitWindowType(string $kind = PatronRequest::KIND_SFP): string
+    {
+        $prefix  = $kind === PatronRequest::KIND_ILL ? 'ill_limit_' : 'sfp_limit_';
+        $default = $kind === PatronRequest::KIND_ILL ? self::LIMIT_TYPE_CONCURRENT : 'rolling';
+
+        return (string) Setting::get($prefix . 'window_type', $default);
+    }
+
+    /**
+     * Whether the limit for this kind counts concurrent open requests (not a date window).
+     *
+     * @param  'sfp'|'ill'  $kind
+     */
+    public function usesConcurrentLimit(string $kind = PatronRequest::KIND_SFP): bool
+    {
+        return $this->limitWindowType($kind) === self::LIMIT_TYPE_CONCURRENT;
+    }
+
+    /**
+     * Configured max requests for the kind (0 = unlimited).
+     *
+     * @param  'sfp'|'ill'  $kind
+     */
+    public function configuredLimitCount(string $kind = PatronRequest::KIND_SFP): int
+    {
+        $key = $kind === PatronRequest::KIND_ILL ? 'ill_limit_count' : 'sfp_limit_count';
+        $raw = Setting::get($key, $kind === PatronRequest::KIND_SFP ? '5' : '5');
+        $v   = trim((string) $raw);
+
+        return $v === '' ? 0 : (int) $v;
+    }
+
+    /**
+     * Open (non-terminal) requests of the given kind.
+     *
+     * @param  'sfp'|'ill'  $kind
+     */
+    public function activeRequestCount(string $kind = PatronRequest::KIND_SFP): int
+    {
+        $query = $this->requests()
+            ->whereHas('status', fn ($q) => $q->where('is_terminal', false));
+
+        if ($kind === PatronRequest::KIND_ILL) {
+            $query->where('request_kind', PatronRequest::KIND_ILL);
+        } else {
+            $query->where(fn ($q) => $q->whereNull('request_kind')->orWhere('request_kind', PatronRequest::KIND_SFP));
+        }
+
+        return $query->count();
+    }
+
     /**
      * Count requests of the given kind within the configured rate-limit window.
      *
@@ -135,6 +194,18 @@ class Patron extends Model
     }
 
     /**
+     * Current count toward the patron's limit (open requests or window submissions).
+     *
+     * @param  'sfp'|'ill'  $kind
+     */
+    public function limitUsageCount(string $kind = PatronRequest::KIND_SFP): int
+    {
+        return $this->usesConcurrentLimit($kind)
+            ? $this->activeRequestCount($kind)
+            : $this->recentRequestCount($kind);
+    }
+
+    /**
      * Whether this patron has hit their submission limit for the given kind.
      * Blank or zero limit count is treated as unlimited (returns false).
      *
@@ -142,33 +213,37 @@ class Patron extends Model
      */
     public function hasReachedLimit(string $kind = PatronRequest::KIND_SFP): bool
     {
-        $key   = $kind === PatronRequest::KIND_ILL ? 'ill_limit_count' : 'sfp_limit_count';
-        $raw   = Setting::get($key, $kind === PatronRequest::KIND_SFP ? '5' : '');
-        $limit = trim((string) $raw) === '' ? 0 : (int) $raw;
+        $limit = $this->configuredLimitCount($kind);
         if ($limit <= 0) {
-            return false; // unlimited
+            return false;
         }
-        return $this->recentRequestCount($kind) >= $limit;
+
+        return $this->limitUsageCount($kind) >= $limit;
     }
 
     /**
      * The earliest date this patron can submit again for the given kind.
      * For rolling windows this is tied to the oldest request in the window;
      * for calendar windows it is the fixed start of the next period.
+     * Returns null when the limit type is concurrent (no date-based reset).
      *
      * @param  'sfp'|'ill'  $kind
      */
     public function nextAvailableDate(string $kind = PatronRequest::KIND_SFP): ?Carbon
     {
+        if ($this->usesConcurrentLimit($kind)) {
+            return null;
+        }
+
         $prefix = $kind === PatronRequest::KIND_ILL ? 'ill_limit_' : 'sfp_limit_';
-        $type   = Setting::get($prefix . 'window_type', 'rolling');
+        $type   = $this->limitWindowType($kind);
 
         if ($type === 'calendar_month') {
             return $this->nextCalendarMonthStart($kind);
         }
 
         if ($type === 'calendar_week') {
-            return now()->addWeek()->startOfWeek(Carbon::MONDAY)->startOfDay();
+            return Carbon::now()->addWeek()->startOfWeek(Carbon::MONDAY)->startOfDay();
         }
 
         $daysSetting = $prefix . 'window_days';
@@ -193,13 +268,12 @@ class Patron extends Model
      */
     private function windowStart(string $kind = PatronRequest::KIND_SFP): Carbon
     {
-        $prefix = $kind === PatronRequest::KIND_ILL ? 'ill_limit_' : 'sfp_limit_';
-        $type   = Setting::get($prefix . 'window_type', 'rolling');
+        $type = $this->limitWindowType($kind);
 
         return match ($type) {
             'calendar_month' => $this->calendarMonthStart($kind),
-            'calendar_week'  => now()->startOfWeek(Carbon::MONDAY)->startOfDay(),
-            default          => now()->subDays((int) Setting::get($prefix . 'window_days', 30)),
+            'calendar_week'  => Carbon::now()->startOfWeek(Carbon::MONDAY)->startOfDay(),
+            default          => Carbon::now()->subDays((int) Setting::get($prefix . 'window_days', 30)),
         };
     }
 
@@ -212,7 +286,7 @@ class Patron extends Model
     {
         $prefix   = $kind === PatronRequest::KIND_ILL ? 'ill_limit_' : 'sfp_limit_';
         $resetDay = max(1, min(28, (int) Setting::get($prefix . 'calendar_reset_day', 1)));
-        $now      = now();
+        $now      = Carbon::now();
 
         return $now->day >= $resetDay
             ? $now->copy()->day($resetDay)->startOfDay()
@@ -228,7 +302,7 @@ class Patron extends Model
     {
         $prefix   = $kind === PatronRequest::KIND_ILL ? 'ill_limit_' : 'sfp_limit_';
         $resetDay = max(1, min(28, (int) Setting::get($prefix . 'calendar_reset_day', 1)));
-        $now      = now();
+        $now      = Carbon::now();
 
         return $now->day >= $resetDay
             ? $now->copy()->addMonthNoOverflow()->day($resetDay)->startOfDay()

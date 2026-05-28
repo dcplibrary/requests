@@ -73,8 +73,11 @@ Library patrons identified by barcode. Enriched asynchronously from Polaris afte
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `recentRequestCount()` | `int` | Requests within the `sfp_limit_window_days` setting window |
-| `hasReachedLimit()` | `bool` | Whether count ≥ `sfp_limit_count` setting |
+| `activeRequestCount()` | `int` | Open (non-terminal) requests of the given kind |
+| `recentRequestCount()` | `int` | Submissions within the configured date window |
+| `limitUsageCount()` | `int` | Active or recent count, depending on limit type |
+| `hasReachedLimit()` | `bool` | Whether usage ≥ configured limit (`sfp_limit_count` / `ill_limit_count`) |
+| `usesConcurrentLimit()` | `bool` | Limit type is `concurrent` (no date window) |
 | `applyPolarisData(array)` | `void` | Store Polaris lookup results and compute match flags |
 | `markPolarisNotFound()` | `void` | Mark lookup attempted but patron not found in ILS |
 

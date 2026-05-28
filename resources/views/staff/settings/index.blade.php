@@ -29,7 +29,13 @@
         $illWindowDays   = $items->firstWhere('key', 'ill_limit_window_days');
         $illResetDay     = $items->firstWhere('key', 'ill_limit_calendar_reset_day');
         $sfpWindowTypeVal = $sfpWindowType?->value ?? 'rolling';
-        $illWindowTypeVal = $illWindowType?->value ?? 'rolling';
+        $illWindowTypeVal = $illWindowType?->value ?? 'concurrent';
+        $limitTypeOptions = [
+            'concurrent'      => 'Concurrent (open requests only)',
+            'rolling'         => 'Rolling',
+            'calendar_month'  => 'Calendar Month',
+            'calendar_week'   => 'Calendar Week',
+        ];
     @endphp
     <div class="bg-white rounded-lg border border-gray-200 mb-6 overflow-hidden"
          x-data="{ sfpWindowType: '{{ $sfpWindowTypeVal }}', illWindowType: '{{ $illWindowTypeVal }}' }">
@@ -59,7 +65,7 @@
                                min="0"
                                placeholder="Unlimited"
                                class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
-                        <span class="text-sm text-gray-500">requests (blank = unlimited)</span>
+                        <span class="text-sm text-gray-500">max (blank = unlimited)</span>
                     </div>
                 </div>
             </div>
@@ -76,7 +82,7 @@
                 </div>
                 <div class="flex-1">
                     <div class="flex flex-col gap-2.5">
-                        @foreach(['rolling' => 'Rolling', 'calendar_month' => 'Calendar Month', 'calendar_week' => 'Calendar Week'] as $val => $lbl)
+                        @foreach($limitTypeOptions as $val => $lbl)
                         <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                             <input type="radio" name="settings[{{ $i }}][value]" value="{{ $val }}" x-model="sfpWindowType" class="w-4 h-4 border-gray-300 text-blue-600">
                             {{ $lbl }}
@@ -145,7 +151,7 @@
                                min="0"
                                placeholder="Unlimited"
                                class="w-32 border border-gray-300 rounded px-3 py-2 text-sm">
-                        <span class="text-sm text-gray-500">requests (blank = unlimited)</span>
+                        <span class="text-sm text-gray-500">max (blank = unlimited)</span>
                     </div>
                 </div>
             </div>
@@ -162,7 +168,7 @@
                 </div>
                 <div class="flex-1">
                     <div class="flex flex-col gap-2.5">
-                        @foreach(['rolling' => 'Rolling', 'calendar_month' => 'Calendar Month', 'calendar_week' => 'Calendar Week'] as $val => $lbl)
+                        @foreach($limitTypeOptions as $val => $lbl)
                         <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                             <input type="radio" name="settings[{{ $i }}][value]" value="{{ $val }}" x-model="illWindowType" class="w-4 h-4 border-gray-300 text-blue-600">
                             {{ $lbl }}
