@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.27.0](https://github.com/dcplibrary/requests/compare/v4.26.2...v4.27.0) (2026-05-28)
+
+
+### Features
+
+* add item limit only to request limits ([91d4f8c](https://github.com/dcplibrary/requests/commit/91d4f8ca67986babe3b44caed276f1b8684321f8))
+
 ## [4.26.2](https://github.com/dcplibrary/requests/compare/v4.26.1...v4.26.2) (2026-05-08)
 
 
