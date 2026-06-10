@@ -138,7 +138,7 @@
                     </button>
                 </div>
 
-                <livewire:requests.patron-pin-login />
+                <livewire:requests-patron-pin-login />
             </div>
         </div>
     </div>
