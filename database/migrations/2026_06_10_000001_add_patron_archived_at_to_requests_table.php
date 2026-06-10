@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('requests', 'patron_archived_at')) {
+            return;
+        }
+
         Schema::table('requests', function (Blueprint $table) {
             $table->timestamp('patron_archived_at')->nullable()->after('assigned_by_user_id');
         });
