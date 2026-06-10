@@ -14,6 +14,7 @@ use Dcplibrary\Requests\Http\Controllers\Admin\FormFieldController;
 use Dcplibrary\Requests\Http\Controllers\Admin\CustomFieldController;
 use Dcplibrary\Requests\Http\Controllers\Admin\SettingController;
 use Dcplibrary\Requests\Http\Controllers\Admin\UserController;
+use Dcplibrary\Requests\Livewire\PatronPinLogin;
 use Dcplibrary\Requests\Livewire\PatronRequests;
 use Dcplibrary\Requests\Livewire\RequestForm;
 use Dcplibrary\Requests\Livewire\IllForm;
@@ -48,6 +49,15 @@ Route::group([
 
     // --- Public: My Requests (Polaris PIN authentication) ---
     Route::get('/my-requests', PatronRequests::class)->name('request.patron.requests');
+
+    // --- Public: Patron PIN login (standalone page) ---
+    Route::get('/my-account', PatronPinLogin::class)->name('request.patron.login');
+
+    // --- Public: Patron logout ---
+    Route::post('/patron/logout', function () {
+        session()->forget('requests_authenticated_barcode');
+        return redirect()->route('request.form');
+    })->name('request.patron.logout');
 
     // --- Login redirect (keeps everything under /{prefix}) ---
     Route::get('/login', fn () => redirect()->route('login'))->name('request.login');

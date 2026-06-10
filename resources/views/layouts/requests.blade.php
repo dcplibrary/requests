@@ -29,17 +29,19 @@
             </span>
         </div>
         {{-- DCPL blue bar (matches staff interface) --}}
-        <div class="w-full flex items-stretch justify-end" style="background-color: var(--dcpl-blue, #0075A3);">
-            {{-- Back to library website (right-aligned) --}}
+        <div class="w-full flex items-stretch justify-between" style="background-color: var(--dcpl-blue, #0075A3);">
+            {{-- Back to library website (left) --}}
             @if($libraryWebsite)
             <a href="{{ $libraryWebsite }}"
                class="inline-flex items-center px-5 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-black/10 transition-colors whitespace-nowrap">
                 &larr; Back to DCPL Website
             </a>
             @else
-            {{-- Keep bar visible even without back link --}}
-            <div class="h-10"></div>
+            <div></div>
             @endif
+
+            {{-- Patron account nav (right) --}}
+            <x-requests::patron-nav />
         </div>
     </header>
     {{ $slot }}
