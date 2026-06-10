@@ -48,17 +48,11 @@
                         @php
                             $bcTitle = rawurlencode($req->submitted_title ?? '');
                             $bcAuthor = rawurlencode($req->submitted_author ?? '');
-                            $bcQuery = 'title%3A(' . $bcTitle . ')%20%20%20-contributor%3A(' . $bcAuthor . ')';
+                            $bcQuery = '(title%3A(' . $bcTitle . ')%20AND%20contributor%3A(' . $bcAuthor . ')%20)';
                             $bcUrl = 'https://dcpl.bibliocommons.com/v2/search?custom_edit=false&query=' . $bcQuery . '&searchType=bl&suppress=true';
                         @endphp
                         <p class="font-semibold text-gray-900 text-sm truncate">
-                            @if($req->submitted_title)
-                                <a href="{{ $bcUrl }}" target="_blank" rel="noopener noreferrer"
-                                   class="hover:underline hover:text-blue-700"
-                                   title="Search catalog for this title">{{ $req->submitted_title }}</a>
-                            @else
-                                {{ $req->submitted_title }}
-                            @endif
+                            {{ $req->submitted_title }}
                         </p>
                         <p class="text-sm text-gray-500">
                             {{ $req->submitted_author }}
@@ -94,6 +88,16 @@
                                 onclick="return confirm('Convert this request to {{ request_form_name('ill') }}?')">
                             Convert to {{ request_form_name('ill') }}
                         </button>
+                    </div>
+                @endif
+
+                {{-- Catalog search --}}
+                @if($req->submitted_title)
+                    <div class="mt-3">
+                        <x-requests::external-link-btn :href="$bcUrl" label="Search the catalog" icon="globe" />
+                        <p class="mt-1.5 text-xs text-gray-400">
+                            If the title isn't in the catalog yet, check back later — it may still be on order.
+                        </p>
                     </div>
                 @endif
 
