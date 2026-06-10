@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.29.0](https://github.com/dcplibrary/requests/compare/v4.28.1...v4.29.0) (2026-06-10)
+
+
+### Features
+
+* add links to purchased titles to my requests page ([21ab569](https://github.com/dcplibrary/requests/commit/21ab5699b16cc631c03267d3b2137a57c4e60f2c))
+
 ## [4.28.1](https://github.com/dcplibrary/requests/compare/v4.28.0...v4.28.1) (2026-05-28)
 
 
