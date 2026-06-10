@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.30.0](https://github.com/dcplibrary/requests/compare/v4.29.2...v4.30.0) (2026-06-10)
+
+
+### Features
+
+* add archive feature and filters to requests list ([ff3563c](https://github.com/dcplibrary/requests/commit/ff3563c081ffa7a4d17799c8cf4bb167f04681c1))
+
 ## [4.29.2](https://github.com/dcplibrary/requests/compare/v4.29.1...v4.29.2) (2026-06-10)
 
 
