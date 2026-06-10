@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.30.2](https://github.com/dcplibrary/requests/compare/v4.30.1...v4.30.2) (2026-06-10)
+
+
+### Bug Fixes
+
+* update new migrations even if mysql is restored from previous backup ([12ad916](https://github.com/dcplibrary/requests/commit/12ad9165e936bf2a46c7551e68a678e39c0e4aed))
+
 ## [4.30.1](https://github.com/dcplibrary/requests/compare/v4.30.0...v4.30.1) (2026-06-10)
 
 
