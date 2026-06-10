@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.31.1](https://github.com/dcplibrary/requests/compare/v4.31.0...v4.31.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* change requests.patron-pin-login path to requests-patron-pin-login ([5037026](https://github.com/dcplibrary/requests/commit/50370269354259a36d696e28d9320abba71f6fad))
+
 # [4.31.0](https://github.com/dcplibrary/requests/compare/v4.30.2...v4.31.0) (2026-06-10)
 
 
