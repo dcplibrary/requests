@@ -33,10 +33,11 @@ class MigrateCommand extends Command
         $this->line('  ' . $path);
 
         return $this->call('migrate', [
-            '--path'    => $path,
-            '--force'   => $this->option('force'),
-            '--pretend' => $this->option('pretend'),
-            '--step'    => $this->option('step'),
+            '--path'     => $path,
+            '--realpath' => true,
+            '--force'    => $this->option('force'),
+            '--pretend'  => $this->option('pretend'),
+            '--step'     => $this->option('step'),
         ]);
     }
 }

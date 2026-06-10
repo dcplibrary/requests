@@ -24,7 +24,8 @@ class MigrateStatusCommand extends Command
         }
 
         return $this->call('migrate:status', [
-            '--path' => $path,
+            '--path'     => $path,
+            '--realpath' => true,
         ]);
     }
 }
