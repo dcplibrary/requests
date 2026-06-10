@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.31.2](https://github.com/dcplibrary/requests/compare/v4.31.1...v4.31.2) (2026-06-10)
+
+
+### Bug Fixes
+
+* update patron-nav.blade.php ([602443e](https://github.com/dcplibrary/requests/commit/602443e154754c625bc0e61b2bf5b1109665fbc3))
+
 ## [4.31.1](https://github.com/dcplibrary/requests/compare/v4.31.0...v4.31.1) (2026-06-10)
 
 
