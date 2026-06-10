@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.29.2](https://github.com/dcplibrary/requests/compare/v4.29.1...v4.29.2) (2026-06-10)
+
+
+### Bug Fixes
+
+* remove catalog link from ILLs and change language ([33432d0](https://github.com/dcplibrary/requests/commit/33432d076bfe3f357d1f51649d361aa4f6402fe5))
+
 ## [4.29.1](https://github.com/dcplibrary/requests/compare/v4.29.0...v4.29.1) (2026-06-10)
 
 
