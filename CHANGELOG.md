@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.30.1](https://github.com/dcplibrary/requests/compare/v4.30.0...v4.30.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* correct requests migration command to run all requests migrations ([0d5a77a](https://github.com/dcplibrary/requests/commit/0d5a77a6227ff9eb84e97256137f0fd408081632))
+
 # [4.30.0](https://github.com/dcplibrary/requests/compare/v4.29.2...v4.30.0) (2026-06-10)
 
 
