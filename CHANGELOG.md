@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.29.1](https://github.com/dcplibrary/requests/compare/v4.29.0...v4.29.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* correct search link to include, not exclude, the author ([590ddf4](https://github.com/dcplibrary/requests/commit/590ddf4b5137ebc0943c3686489a910327ac1594))
+
 # [4.29.0](https://github.com/dcplibrary/requests/compare/v4.28.1...v4.29.0) (2026-06-10)
 
 
