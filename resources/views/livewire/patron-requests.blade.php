@@ -45,8 +45,20 @@
 
                     {{-- Title / Author / Type --}}
                     <div class="min-w-0">
+                        @php
+                            $bcTitle = rawurlencode($req->submitted_title ?? '');
+                            $bcAuthor = rawurlencode($req->submitted_author ?? '');
+                            $bcQuery = 'title%3A(' . $bcTitle . ')%20%20%20-contributor%3A(' . $bcAuthor . ')';
+                            $bcUrl = 'https://dcpl.bibliocommons.com/v2/search?custom_edit=false&query=' . $bcQuery . '&searchType=bl&suppress=true';
+                        @endphp
                         <p class="font-semibold text-gray-900 text-sm truncate">
-                            {{ $req->submitted_title }}
+                            @if($req->submitted_title)
+                                <a href="{{ $bcUrl }}" target="_blank" rel="noopener noreferrer"
+                                   class="hover:underline hover:text-blue-700"
+                                   title="Search catalog for this title">{{ $req->submitted_title }}</a>
+                            @else
+                                {{ $req->submitted_title }}
+                            @endif
                         </p>
                         <p class="text-sm text-gray-500">
                             {{ $req->submitted_author }}
