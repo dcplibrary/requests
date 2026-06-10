@@ -15,6 +15,9 @@ use Livewire\Component;
 #[Layout('requests::layouts.requests')]
 class PatronRequests extends Component
 {
+    /** @var string active|archived|all */
+    public string $filter = 'active';
+
     /**
      * Redirect unauthenticated visitors back to the request form.
      *
@@ -39,6 +42,55 @@ class PatronRequests extends Component
     }
 
     /**
+     * Archive a request on behalf of the authenticated patron.
+     *
+     * @param  int  $requestId
+     * @return void
+     */
+    public function archive(int $requestId): void
+    {
+        $req = $this->findPatronRequest($requestId);
+        $req?->update(['patron_archived_at' => now()]);
+    }
+
+    /**
+     * Unarchive a request on behalf of the authenticated patron.
+     *
+     * @param  int  $requestId
+     * @return void
+     */
+    public function unarchive(int $requestId): void
+    {
+        $req = $this->findPatronRequest($requestId);
+        $req?->update(['patron_archived_at' => null]);
+    }
+
+    /**
+     * Find a request that belongs to the currently authenticated patron.
+     *
+     * @param  int  $requestId
+     * @return PatronRequest|null
+     */
+    protected function findPatronRequest(int $requestId): ?PatronRequest
+    {
+        $barcode = session('requests_authenticated_barcode');
+        if (! $barcode) {
+            $this->redirect(route('request.form'));
+            return null;
+        }
+
+        $patron = Patron::where('barcode', $barcode)->first();
+        if (! $patron) {
+            $this->redirect(route('request.form'));
+            return null;
+        }
+
+        return PatronRequest::whereKey($requestId)
+            ->where('patron_id', $patron->id)
+            ->first();
+    }
+
+    /**
      * Convert an SFP request to an ILL request on behalf of the authenticated patron.
      * Guards that the request belongs to this patron and is not already ILL.
      *
@@ -47,22 +99,7 @@ class PatronRequests extends Component
      */
     public function convertToIll(int $requestId): void
     {
-        $barcode = session('requests_authenticated_barcode');
-        if (! $barcode) {
-            $this->redirect(route('request.form'));
-            return;
-        }
-
-        $patron = Patron::where('barcode', $barcode)->first();
-        if (! $patron) {
-            $this->redirect(route('request.form'));
-            return;
-        }
-
-        /** @var PatronRequest|null $req */
-        $req = PatronRequest::whereKey($requestId)
-            ->where('patron_id', $patron->id)
-            ->first();
+        $req = $this->findPatronRequest($requestId);
 
         if (! $req) {
             return;
@@ -97,16 +134,22 @@ class PatronRequests extends Component
         $patron       = $barcode ? Patron::where('barcode', $barcode)->first() : null;
         $limitReached = $patron?->hasReachedLimit() ?? false;
         $limitUntil   = $limitReached ? $patron->nextAvailableDate() : null;
-        $requests     = $patron
+
+        $query = $patron
             ? PatronRequest::with(['status', 'fieldValues.field'])
                 ->where('patron_id', $patron->id)
                 ->latest()
-                ->get()
-            : collect();
+            : PatronRequest::whereRaw('0 = 1');
+
+        if ($this->filter === 'active') {
+            $query->whereNull('patron_archived_at');
+        } elseif ($this->filter === 'archived') {
+            $query->whereNotNull('patron_archived_at');
+        }
 
         return view('requests::livewire.patron-requests', [
             'patron'       => $patron,
-            'requests'     => $requests,
+            'requests'     => $query->get(),
             'limitReached' => $limitReached,
             'limitUntil'   => $limitUntil,
             'limitCount'   => (int) Setting::get('sfp_limit_count', 5),

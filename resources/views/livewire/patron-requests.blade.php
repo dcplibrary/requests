@@ -11,7 +11,7 @@
             Sign out
         </button>
     </div>
-    <p class="text-sm text-gray-500 mb-8">
+    <p class="text-sm text-gray-500 mb-6">
         Suggestions you've submitted and their current status.
     </p>
 
@@ -22,19 +22,41 @@
         </div>
     @endif
 
+    {{-- Filter tabs --}}
+    <div class="flex gap-1 mb-6 border-b border-gray-200">
+        @foreach(['active' => 'Active', 'archived' => 'Archived', 'all' => 'All'] as $value => $label)
+            <button
+                type="button"
+                wire:click="$set('filter', '{{ $value }}')"
+                class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors
+                    {{ $filter === $value
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
+            >
+                {{ $label }}
+            </button>
+        @endforeach
+    </div>
+
     {{-- Results --}}
     @if($requests->isEmpty())
 
         <div class="bg-white rounded-lg border border-gray-200 p-8 shadow-sm text-center text-gray-500 text-sm">
-            You haven't submitted any suggestions yet.
-            <a href="{{ route('request.form') }}" class="ml-1 text-blue-600 hover:underline">Submit your first one →</a>
+            @if($filter === 'archived')
+                No archived requests.
+            @elseif($filter === 'all')
+                You haven't submitted any suggestions yet.
+                <a href="{{ route('request.form') }}" class="ml-1 text-blue-600 hover:underline">Submit your first one →</a>
+            @else
+                No active requests.
+            @endif
         </div>
 
     @else
 
         <div class="mb-4">
             <p class="text-sm text-gray-600">
-                {{ $requests->count() }} suggestion{{ $requests->count() === 1 ? '' : 's' }} found.
+                {{ $requests->count() }} {{ $requests->count() === 1 ? 'request' : 'requests' }} found.
             </p>
         </div>
 
@@ -84,14 +106,44 @@
                     </div>
                 @endif
 
-                {{-- Submitted date --}}
-                <p class="mt-2 text-xs text-gray-400">
-                    @if(($req->request_kind ?? 'sfp') === 'ill')
-                        Interlibrary loan requested on {{ $req->created_at->format('F j, Y') }}
+                {{-- Footer: date + archive button --}}
+                <div class="mt-3 flex items-center justify-between gap-4">
+                    <p class="text-xs text-gray-400">
+                        @if(($req->request_kind ?? 'sfp') === 'ill')
+                            Interlibrary loan requested on {{ $req->created_at->format('F j, Y') }}
+                        @else
+                            Suggested for purchase on {{ $req->created_at->format('F j, Y') }}
+                        @endif
+                    </p>
+
+                    @if($req->patron_archived_at)
+                        <button
+                            type="button"
+                            wire:click="unarchive({{ $req->id }})"
+                            class="shrink-0 inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600"
+                            title="Unarchive"
+                        >
+                            {{-- Heroicon: arrow-uturn-left (mini) --}}
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"/>
+                            </svg>
+                            Unarchive
+                        </button>
                     @else
-                        Suggested for purchase on {{ $req->created_at->format('F j, Y') }}
+                        <button
+                            type="button"
+                            wire:click="archive({{ $req->id }})"
+                            class="shrink-0 inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600"
+                            title="Archive"
+                        >
+                            {{-- Heroicon: archive-box-arrow-down (mini) --}}
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0-3-3m3 3 3-3M3.75 7.5h16.5M12 3h-1.5a1.5 1.5 0 0 0-1.5 1.5v.75h6V4.5a1.5 1.5 0 0 0-1.5-1.5H12Z"/>
+                            </svg>
+                            Archive
+                        </button>
                     @endif
-                </p>
+                </div>
             </div>
             @endforeach
         </div>

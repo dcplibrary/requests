@@ -74,6 +74,7 @@ class PatronRequest extends Model
         'assigned_to_user_id',
         'assigned_at',
         'assigned_by_user_id',
+        'patron_archived_at',
     ];
 
     protected $casts = [
@@ -85,6 +86,7 @@ class PatronRequest extends Model
         'is_duplicate' => 'boolean',
         'notify_by_email' => 'boolean',
         'assigned_at' => 'datetime',
+        'patron_archived_at' => 'datetime',
     ];
 
     /**
