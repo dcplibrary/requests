@@ -60,9 +60,6 @@
                         @if($req->fieldValueLabel('material_type'))
                             <p class="text-xs text-gray-400 mt-0.5">{{ $req->fieldValueLabel('material_type') }}</p>
                         @endif
-                        <p class="text-xs text-gray-400 mt-0.5">
-                            Kind: <span class="font-mono">{{ strtoupper($req->request_kind ?? 'sfp') }}</span>
-                        </p>
                     </div>
 
                     {{-- Status badge --}}
@@ -77,22 +74,8 @@
 
                 </div>
 
-                @if(($req->request_kind ?? 'sfp') === 'sfp')
-                    <div class="mt-3 flex items-center justify-between">
-                        <p class="text-xs text-gray-400">
-                            Need ILL instead? You can convert this request.
-                        </p>
-                        <button type="button"
-                                wire:click="convertToIll({{ $req->id }})"
-                                class="text-xs px-3 py-1.5 rounded bg-purple-600 text-white hover:bg-purple-700"
-                                onclick="return confirm('Convert this request to {{ request_form_name('ill') }}?')">
-                            Convert to {{ request_form_name('ill') }}
-                        </button>
-                    </div>
-                @endif
-
-                {{-- Catalog search --}}
-                @if($req->submitted_title)
+                {{-- Catalog search (SFP only) --}}
+                @if(($req->request_kind ?? 'sfp') === 'sfp' && $req->submitted_title)
                     <div class="mt-3">
                         <x-requests::external-link-btn :href="$bcUrl" label="Search the catalog" icon="globe" />
                         <p class="mt-1.5 text-xs text-gray-400">
@@ -103,7 +86,11 @@
 
                 {{-- Submitted date --}}
                 <p class="mt-2 text-xs text-gray-400">
-                    Submitted {{ $req->created_at->format('F j, Y') }}
+                    @if(($req->request_kind ?? 'sfp') === 'ill')
+                        Interlibrary loan requested on {{ $req->created_at->format('F j, Y') }}
+                    @else
+                        Suggested for purchase on {{ $req->created_at->format('F j, Y') }}
+                    @endif
                 </p>
             </div>
             @endforeach
