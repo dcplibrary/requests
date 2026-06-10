@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+# [4.31.0](https://github.com/dcplibrary/requests/compare/v4.30.2...v4.31.0) (2026-06-10)
+
+
+### Features
+
+* add patron login to header ([1600351](https://github.com/dcplibrary/requests/commit/16003511103249a777f21a00dde4657de1b56792))
+
 ## [4.30.2](https://github.com/dcplibrary/requests/compare/v4.30.1...v4.30.2) (2026-06-10)
 
 
