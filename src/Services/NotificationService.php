@@ -1008,18 +1008,18 @@ class NotificationService
      *   {status_description} — description text for the current status (for patron emails)
      *   {submitted_date}    — submission date (e.g. January 5, 2026)
      *   {request_url}       — "View Request" button linking to the staff request page
+     *   {notify_by_email}   — "Yes" or "No" (patron opted in at submission to status-update emails)
+     *   {isbn}              — ISBN from matched material (isbn13, then isbn), else request isbn field
      *   {convert_to_ill_url} — signed convert URL (empty if not SFP+ill_requested). Same action as the
      *                          indigo **Convert to ILL** button in {action_buttons}; omit if you use that block.
      *   {convert_to_ill_link} — standalone button block; duplicates {action_buttons} if both are used.
      *
      * Dynamic placeholders (form fields with include_as_token = true):
-     *   {isbn}              — ISBN from matched material
      *   {publish_date}      — submitted publish / release date
      *   {genre}             — genre name (resolved from slug)
      *   {console}           — console name (resolved from slug)
      *   {where_heard}       — patron's answer to "where did you hear about this?"
      *   {ill_requested}     — "Yes" or "No"
-     *   {notify_by_email}   — "Yes" or "No" (patron opted in at submission to status-update emails)
      *   {<key>}             — any other active form field value stored on the request
      */
     private function replacePlaceholders(string $template, PatronRequest $request): string
@@ -1055,6 +1055,11 @@ class NotificationService
             '{submitted_date}'    => $request->created_at?->format('F j, Y') ?? '',
             '{request_url}'       => $requestUrlButton,
             '{notify_by_email}'   => $request->notify_by_email ? 'Yes' : 'No',
+            // Prefer matched material ISBNs; fall back to the request's isbn field value.
+            '{isbn}'              => (string) ($request->material?->isbn13
+                ?? $request->material?->isbn
+                ?? $request->fieldValue('isbn')
+                ?? ''),
         ];
 
         // Extend with dynamic field tokens from the unified fields table.
