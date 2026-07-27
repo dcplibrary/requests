@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.31.3](https://github.com/dcplibrary/requests/compare/v4.31.2...v4.31.3) (2026-07-27)
+
+
+### Bug Fixes
+
+* add access to dcplibrary ui repo ([a709743](https://github.com/dcplibrary/requests/commit/a709743f028cd754ec5b91ab8c28455c51aca6d1))
+
 ## [4.31.2](https://github.com/dcplibrary/requests/compare/v4.31.1...v4.31.2) (2026-06-10)
 
 
