@@ -2,6 +2,14 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.31.4](https://github.com/dcplibrary/requests/compare/v4.31.3...v4.31.4) (2026-07-27)
+
+
+### Bug Fixes
+
+* merge changes ([5d3dcb6](https://github.com/dcplibrary/requests/commit/5d3dcb626771edba29e971554eb344efdb2456a0))
+* secure calls to isbn and bibliocommons ([8ea71c8](https://github.com/dcplibrary/requests/commit/8ea71c81d5ef25dc08bbf398b942601959858afe))
+
 ## [4.31.3](https://github.com/dcplibrary/requests/compare/v4.31.2...v4.31.3) (2026-07-27)
 
 
