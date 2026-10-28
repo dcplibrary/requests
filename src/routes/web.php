@@ -120,6 +120,9 @@ Route::group([
             Route::post('titles/{material}/bulk-status', [TitleController::class, 'bulkStatus'])
                 ->name('titles.bulk-status');
 
+            // --- Admin only: settings, backups, users, groups, catalog, statuses, templates ---
+            Route::middleware('request.admin')->group(function () {
+
             Route::get('/settings',                  [SettingController::class, 'index'])->name('settings.index');
             Route::get('/settings/permissions',      [SettingController::class, 'permissions'])->name('settings.permissions');
             Route::get('/settings/notifications',                      [SettingController::class, 'notifications'])->name('settings.notifications');
@@ -228,5 +231,6 @@ Route::group([
                     'destroy' => 'groups.destroy',
                 ])
                 ->except(['show']);
+            }); // end request.admin
         });
 });

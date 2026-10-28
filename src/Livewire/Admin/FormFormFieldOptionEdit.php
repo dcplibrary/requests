@@ -7,6 +7,7 @@ use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldConfig;
 use Dcplibrary\Requests\Models\FormFieldOptionOverride;
+use Dcplibrary\Requests\Livewire\Admin\Concerns\RequiresAdmin;
 use Livewire\Component;
 
 /**
@@ -17,6 +18,8 @@ use Livewire\Component;
  */
 class FormFormFieldOptionEdit extends Component
 {
+    use RequiresAdmin;
+
     public int    $fieldId;
     public string $optionSlug;
     public string $formSlug = '';

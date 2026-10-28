@@ -47,8 +47,7 @@ class RequireStaffRole
 
         $staffUser = $this->resolveStaffUser($authUser);
 
-        $roleAllowed = in_array($staffUser->role, self::ALLOWED_ROLES, true);
-        if (! $staffUser || ! $roleAllowed || ! $staffUser->active) {
+        if (! $staffUser || ! in_array($staffUser->role, self::ALLOWED_ROLES, true) || ! $staffUser->active) {
             return response()->view('requests::staff.no-access', [
                 'appName' => config('app.name'),
             ], 403);

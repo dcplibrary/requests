@@ -41,6 +41,28 @@ class User extends Authenticatable
         'last_login_at' => 'datetime',
     ];
 
+    /**
+     * Resolve the staff user record for an authenticated host-app user (by model or email).
+     * Does not auto-provision; returns null when there is no matching staff_users row.
+     */
+    public static function forAuthenticatable(?\Illuminate\Contracts\Auth\Authenticatable $user): ?self
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        if ($user instanceof self) {
+            return $user;
+        }
+
+        $email = $user->email ?? null;
+        if (! is_string($email) || $email === '') {
+            return null;
+        }
+
+        return static::where('email', $email)->first();
+    }
+
     /** Returns true when this user has the 'admin' role. */
     public function isAdmin(): bool
     {

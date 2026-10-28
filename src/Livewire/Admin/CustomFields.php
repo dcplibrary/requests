@@ -3,6 +3,7 @@
 namespace Dcplibrary\Requests\Livewire\Admin;
 
 use Dcplibrary\Requests\Models\Field;
+use Dcplibrary\Requests\Livewire\Admin\Concerns\RequiresAdmin;
 use Livewire\Component;
 
 /**
@@ -10,6 +11,8 @@ use Livewire\Component;
  */
 class CustomFields extends Component
 {
+    use RequiresAdmin;
+
     /** @var array<int, array<string, mixed>> */
     public array $fields = [];
 

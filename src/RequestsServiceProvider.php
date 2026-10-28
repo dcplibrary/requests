@@ -12,6 +12,7 @@ use Dcplibrary\Requests\Console\Commands\BackupCommand;
 use Dcplibrary\Requests\Console\Commands\RestoreDbCommand;
 use Dcplibrary\Requests\Console\Commands\UsersBackupCommand;
 use Dcplibrary\Requests\Console\Commands\UsersRestoreCommand;
+use Dcplibrary\Requests\Http\Middleware\RequireAdminRole;
 use Dcplibrary\Requests\Http\Middleware\RequireStaffRole;
 use Dcplibrary\Requests\Livewire\Admin\FormFieldEdit;
 use Dcplibrary\Requests\Livewire\Admin\FormFields as FormFieldsAdmin;
@@ -154,6 +155,10 @@ class RequestsServiceProvider extends ServiceProvider
     {
         $router = $this->app->make(Router::class);
         $router->aliasMiddleware('request.role', RequireStaffRole::class);
+        $router->aliasMiddleware('request.admin', RequireAdminRole::class);
+
+        // Re-run the admin check on Livewire updates for components rendered on admin pages.
+        Livewire::addPersistentMiddleware([RequireAdminRole::class]);
     }
 
     /**

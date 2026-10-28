@@ -49,7 +49,7 @@ abstract class Controller extends BaseController
     {
         $staffUser = $this->currentStaffUser($request);
 
-        if ($staffUser && ! $staffUser->canEdit()) {
+        if (! $staffUser || ! $staffUser->canEdit()) {
             abort(403, 'Your account has view-only access and cannot perform this action.');
         }
     }

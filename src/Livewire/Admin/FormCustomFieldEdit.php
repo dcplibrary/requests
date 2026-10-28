@@ -5,6 +5,7 @@ namespace Dcplibrary\Requests\Livewire\Admin;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FormFieldConfig;
+use Dcplibrary\Requests\Livewire\Admin\Concerns\RequiresAdmin;
 use Livewire\Component;
 
 /**
@@ -19,6 +20,8 @@ use Livewire\Component;
  */
 class FormCustomFieldEdit extends Component
 {
+    use RequiresAdmin;
+
     public int    $pivotId;
     public int    $fieldId;
     public string $formSlug    = '';

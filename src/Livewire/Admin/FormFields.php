@@ -9,6 +9,7 @@ use Dcplibrary\Requests\Models\FormFieldOptionOverride;
 use Dcplibrary\Requests\Models\PatronRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
+use Dcplibrary\Requests\Livewire\Admin\Concerns\RequiresAdmin;
 use Livewire\Component;
 
 /**
@@ -17,6 +18,8 @@ use Livewire\Component;
  */
 class FormFields extends Component
 {
+    use RequiresAdmin;
+
     /** @var array<int, array<string, mixed>> Suggest for Purchase form field configs */
     public array $suggestFields = [];
 

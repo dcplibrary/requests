@@ -7,6 +7,7 @@ use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldConfig;
 use Dcplibrary\Requests\Models\PatronRequest;
+use Dcplibrary\Requests\Livewire\Admin\Concerns\RequiresAdmin;
 use Livewire\Component;
 
 /**
@@ -15,6 +16,8 @@ use Livewire\Component;
  */
 class FormFormFieldEdit extends Component
 {
+    use RequiresAdmin;
+
     public int $pivotId;
     public int $fieldId;
     public string $formSlug  = '';

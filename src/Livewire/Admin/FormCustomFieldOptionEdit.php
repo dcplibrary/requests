@@ -5,6 +5,7 @@ namespace Dcplibrary\Requests\Livewire\Admin;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\Form;
 use Dcplibrary\Requests\Models\FormFieldOptionOverride;
+use Dcplibrary\Requests\Livewire\Admin\Concerns\RequiresAdmin;
 use Livewire\Component;
 
 /**
@@ -15,6 +16,8 @@ use Livewire\Component;
  */
 class FormCustomFieldOptionEdit extends Component
 {
+    use RequiresAdmin;
+
     public int    $fieldId;
     public int    $optionId;
     public string $formSlug = '';

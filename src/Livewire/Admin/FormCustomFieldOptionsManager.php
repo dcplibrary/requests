@@ -6,6 +6,7 @@ use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\FormFieldConfig;
 use Dcplibrary\Requests\Models\FormFieldOptionOverride;
 use Illuminate\Support\Facades\URL;
+use Dcplibrary\Requests\Livewire\Admin\Concerns\RequiresAdmin;
 use Livewire\Component;
 
 /**
@@ -21,6 +22,8 @@ use Livewire\Component;
  */
 class FormCustomFieldOptionsManager extends Component
 {
+    use RequiresAdmin;
+
     public int    $pivotId;
     public int    $fieldId;
     public int    $formId  = 0;

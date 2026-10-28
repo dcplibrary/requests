@@ -4,6 +4,7 @@ namespace Dcplibrary\Requests\Livewire\Admin;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Dcplibrary\Requests\Livewire\Admin\Concerns\RequiresAdmin;
 use Livewire\Component;
 
 /**
@@ -24,6 +25,8 @@ use Livewire\Component;
  */
 class OptionsManager extends Component
 {
+    use RequiresAdmin;
+
     /** @var class-string<Model> */
     public string $modelClass = '';
 

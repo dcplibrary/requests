@@ -6,6 +6,7 @@ use Dcplibrary\Requests\Models\Field;
 use Dcplibrary\Requests\Models\FieldOption;
 use Dcplibrary\Requests\Models\RequestFieldValue;
 use Illuminate\Support\Str;
+use Dcplibrary\Requests\Livewire\Admin\Concerns\RequiresAdmin;
 use Livewire\Component;
 
 /**
@@ -13,6 +14,8 @@ use Livewire\Component;
  */
 class CustomFieldOptionsManager extends Component
 {
+    use RequiresAdmin;
+
     public int $fieldId;
 
     public string $newName = '';
