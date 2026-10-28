@@ -410,7 +410,7 @@
 {{-- Synopsis modal --}}
 @if($synopsis && strlen(strip_tags($synopsis)) > 280)
 <x-requests::action-modal name="synopsis" title="Synopsis" max-width="lg">
-    <div class="text-sm text-gray-700 leading-relaxed [&_p]:mb-2 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic">{!! $synopsis !!}</div>
+    <div class="text-sm text-gray-700 leading-relaxed [&_p]:mb-2 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic">{!! requests_safe_html($synopsis) !!}</div>
 </x-requests::action-modal>
 @endif
 

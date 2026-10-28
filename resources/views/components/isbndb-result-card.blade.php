@@ -68,7 +68,7 @@
 
             {{-- Truncated synopsis (rendered as HTML) --}}
             @if($synopsis)
-                <div class="text-gray-500 text-xs mt-2 line-clamp-3 leading-relaxed [&_p]:mb-1 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic">{!! $synopsis !!}</div>
+                <div class="text-gray-500 text-xs mt-2 line-clamp-3 leading-relaxed [&_p]:mb-1 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic">{!! requests_safe_html($synopsis) !!}</div>
             @endif
 
             {{-- More details link --}}

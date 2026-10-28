@@ -19,3 +19,29 @@ if (! function_exists('request_form_name')) {
         return $form?->name ?? $formSlug;
     }
 }
+
+if (! function_exists('requests_safe_html')) {
+    /**
+     * Reduce untrusted HTML (e.g. ISBNdb synopsis/overview) to a small set of
+     * formatting tags with all attributes removed, so it is safe to render with {!! !!}.
+     *
+     * @param  string|null  $html
+     * @return string|null
+     */
+    function requests_safe_html(?string $html): ?string
+    {
+        if ($html === null || $html === '') {
+            return $html;
+        }
+
+        $allowed = ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li'];
+        $clean   = strip_tags($html, $allowed);
+
+        // Drop every attribute from the surviving tags (onclick, style, href, ...).
+        return (string) preg_replace(
+            '#<(/?)(' . implode('|', $allowed) . ')\b[^>]*>#i',
+            '<$1$2>',
+            $clean
+        );
+    }
+}

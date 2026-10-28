@@ -24,6 +24,7 @@ use Dcplibrary\Requests\Services\PatronService;
 use Dcplibrary\Requests\Services\TurnstileService;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
@@ -71,12 +72,16 @@ class IllForm extends Component
     public array $sfpPrefillKeys = [];
 
     /** Catalog resolution (Step 3) */
+    #[Locked]
     public array $catalogResults = [];
     public bool $catalogSearched = false;
+    #[Locked]
     public ?string $catalogMatchBibId = null;
+    #[Locked]
     public ?string $catalogFoundUrl = null;
 
     /** ISBNdb enrichment (Step 3, when catalog had no hits or patron skipped) */
+    #[Locked]
     public array $isbndbResults = [];
     public bool $isbndbSearched = false;
     public ?bool $isbndbMatchAccepted = null;
@@ -84,6 +89,7 @@ class IllForm extends Component
     public bool $processing = false;
     public string $processingStep = '';
 
+    #[Locked]
     public ?int $createdRequestId = null;
 
     /** ILL request limit: set when patron has reached their ILL limit (block submit, show message). */

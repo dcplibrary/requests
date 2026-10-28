@@ -25,6 +25,7 @@ use Dcplibrary\Requests\Services\PolarisService;
 use Dcplibrary\Requests\Services\TurnstileService;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
@@ -91,20 +92,27 @@ class RequestForm extends Component
 
     // --- Barcode not found in Polaris ---
     public bool $barcodeNotFound = false;
+    #[Locked]
     public string $barcodeNotFoundMessage = '';
 
     // --- Step 3: Resolution state ---
+    #[Locked]
     public ?int $resolvedMaterialId = null; // set if local material match found
     public bool $isDuplicate = false;
+    #[Locked]
     public string $duplicateMessage = '';
 
     // Catalog results passed to view
+    #[Locked]
     public array $catalogResults = [];
     public bool $catalogSearched = false;
+    #[Locked]
     public ?string $catalogMatchBibId = null;
+    #[Locked]
     public ?string $catalogFoundUrl = null;
 
     // ISBNdb results
+    #[Locked]
     public array $isbndbResults = [];
     public bool $isbndbSearched = false;
 
@@ -118,10 +126,12 @@ class RequestForm extends Component
     public string $processingStep = '';
 
     // Final request ID
+    #[Locked]
     public ?int $createdRequestId = null;
 
     // Auto-order exclusion handling (popular authors)
     public bool $autoOrderExcluded = false;
+    #[Locked]
     public string $autoOrderExcludedMessage = '';
 
     // ILL suggestion (item exceeds age threshold — offer to submit as ILL instead)
