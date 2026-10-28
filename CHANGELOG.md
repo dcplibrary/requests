@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.31.6](https://github.com/dcplibrary/requests/compare/v4.31.5...v4.31.6) (2026-10-28)
+
+
+### Bug Fixes
+
+* secure admin pages to admin role only ([6db0378](https://github.com/dcplibrary/requests/commit/6db03780c5955e04dea8128f03a42669f3be3b17))
+
 ## [4.31.5](https://github.com/dcplibrary/requests/compare/v4.31.4...v4.31.5) (2026-10-28)
 
 
