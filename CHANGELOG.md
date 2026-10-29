@@ -2,6 +2,17 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [5.0.0](https://github.com/dcplibrary/requests/compare/v4.31.7...v5.0.0) (2026-10-29)
+
+### ⚠ BREAKING CHANGES
+
+* secure patron login and correct page referral
+
+### Bug Fixes
+
+* secure patron login and correct page referral ([a841c2a](https://github.com/dcplibrary/requests/commit/a841c2a2a28d5482e2a7ec724178722ea92976e9))
+* update semantic release to create major release on fix! ([8adb725](https://github.com/dcplibrary/requests/commit/8adb725e851a2a9b6d044b3bc169adbf9fe2d1c7))
+
 ## [4.31.7](https://github.com/dcplibrary/requests/compare/v4.31.6...v4.31.7) (2026-10-29)
 
 
