@@ -211,16 +211,16 @@
         },
         {
             "name": "dcplibrary/entra-sso",
-            "version": "dev-main",
+            "version": "v1.6.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/dcplibrary/entra-sso.git",
-                "reference": "5a0e51886b332272d2e1aad6acc7259056714e1e"
+                "reference": "5ea3753f5281a2798d5c9076e886b248364b93e8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dcplibrary/entra-sso/zipball/5a0e51886b332272d2e1aad6acc7259056714e1e",
-                "reference": "5a0e51886b332272d2e1aad6acc7259056714e1e",
+                "url": "https://api.github.com/repos/dcplibrary/entra-sso/zipball/5ea3753f5281a2798d5c9076e886b248364b93e8",
+                "reference": "5ea3753f5281a2798d5c9076e886b248364b93e8",
                 "shasum": ""
             },
             "require": {
@@ -233,7 +233,6 @@
                 "orchestra/testbench": "^11.0|^12.0",
                 "phpunit/phpunit": "^11.0|^12.0"
             },
-            "default-branch": true,
             "type": "library",
             "extra": {
                 "laravel": {
@@ -260,22 +259,22 @@
             "description": "Simple Entra (Azure AD) SSO package for Laravel 12+",
             "support": {
                 "issues": "https://github.com/dcplibrary/entra-sso/issues",
-                "source": "https://github.com/dcplibrary/entra-sso/tree/main"
+                "source": "https://github.com/dcplibrary/entra-sso/tree/v1.6.7"
             },
-            "time": "2026-07-28T18:19:12+00:00"
+            "time": "2026-10-29T22:04:18+00:00"
         },
         {
             "name": "dcplibrary/ui",
-            "version": "v1.3.3",
+            "version": "v1.3.4",
             "source": {
                 "type": "git",
                 "url": "git@github.com:dcplibrary/ui.git",
-                "reference": "0a2333d7dfeff17c8439c82a945fee46804ad563"
+                "reference": "547ac1103a4570ca89a4a32c4e3b3ffcc4bc70d2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dcplibrary/ui/zipball/0a2333d7dfeff17c8439c82a945fee46804ad563",
-                "reference": "0a2333d7dfeff17c8439c82a945fee46804ad563",
+                "url": "https://api.github.com/repos/dcplibrary/ui/zipball/547ac1103a4570ca89a4a32c4e3b3ffcc4bc70d2",
+                "reference": "547ac1103a4570ca89a4a32c4e3b3ffcc4bc70d2",
                 "shasum": ""
             },
             "require": {
@@ -308,10 +307,10 @@
             ],
             "description": "DCPL shared UI design system — Blade components, Tailwind config, and CSS for the Daviess County Public Library app suite.",
             "support": {
-                "source": "https://github.com/dcplibrary/ui/tree/v1.3.3",
+                "source": "https://github.com/dcplibrary/ui/tree/v1.3.4",
                 "issues": "https://github.com/dcplibrary/ui/issues"
             },
-            "time": "2026-07-27T22:43:07+00:00"
+            "time": "2026-10-29T22:04:04+00:00"
         },
         {
             "name": "dflydev/dot-access-data",
