@@ -2,6 +2,13 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [4.31.7](https://github.com/dcplibrary/requests/compare/v4.31.6...v4.31.7) (2026-10-29)
+
+
+### Bug Fixes
+
+* update composer.lock ([accfb90](https://github.com/dcplibrary/requests/commit/accfb90484873f01a7ff4205ac58cd0a42b5fa0c))
+
 ## [4.31.6](https://github.com/dcplibrary/requests/compare/v4.31.5...v4.31.6) (2026-10-28)
 
 
