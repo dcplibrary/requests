@@ -76,7 +76,7 @@ class NotificationService
                 ? (string) $tpl->body
                 : $defaultBodyTpl;
 
-            $subject = $this->replacePlaceholders($subjectTpl, $request);
+            $subject = $this->replacePlaceholders($subjectTpl, $request, html: false);
             $body = $this->finalizeStaffRoutingBody($bodyTpl, $request);
 
             if ($this->shouldQueueNotificationMail()) {
@@ -129,7 +129,7 @@ class NotificationService
         $request->loadMissing(['patron', 'material', 'fieldValues.field', 'status']);
 
         return [
-            'subject' => $this->replacePlaceholders($subjectTemplate, $request),
+            'subject' => $this->replacePlaceholders($subjectTemplate, $request, html: false),
             'body'    => $this->finalizeStaffRoutingBody($bodyTemplate, $request),
         ];
     }
@@ -174,7 +174,8 @@ class NotificationService
             // Backward compat: no templates configured — use single setting
             $subject = $this->replacePlaceholders(
                 (string) Setting::get('patron_status_subject', 'Update on your suggestion: {title}'),
-                $request
+                $request,
+                html: false
             );
             $bodyTemplate = (string) Setting::get('patron_status_template', $this->defaultPatronTemplate());
             $body = $this->replacePlaceholders($bodyTemplate, $request);
@@ -216,7 +217,7 @@ class NotificationService
         $messages = [];
         foreach ($templates as $template) {
             $messages[] = [
-                'subject' => $this->replacePlaceholders($template->subject, $request),
+                'subject' => $this->replacePlaceholders($template->subject, $request, html: false),
                 'body'    => $this->replacePlaceholders((string) $template->body, $request),
             ];
         }
@@ -235,7 +236,7 @@ class NotificationService
 
         foreach ($templates as $template) {
             try {
-                $subject = $this->replacePlaceholders($template->subject, $request);
+                $subject = $this->replacePlaceholders($template->subject, $request, html: false);
                 $body    = $this->replacePlaceholders((string) $template->body, $request);
                 Mail::to($patronEmail)->send(new RequestMail($subject, $body, 'patron'));
                 $sentCount++;
@@ -313,7 +314,7 @@ class NotificationService
         $messages = [];
         foreach ($templates as $template) {
             $messages[] = [
-                'subject' => $this->replacePlaceholders($template->subject, $request),
+                'subject' => $this->replacePlaceholders($template->subject, $request, html: false),
                 'body'    => $this->replacePlaceholders((string) $template->body, $request),
             ];
         }
@@ -333,7 +334,7 @@ class NotificationService
         $sentCount = 0;
         foreach ($templates as $template) {
             try {
-                $subject = $this->replacePlaceholders($template->subject, $request);
+                $subject = $this->replacePlaceholders($template->subject, $request, html: false);
                 $body    = $this->replacePlaceholders((string) $template->body, $request);
                 Mail::to($patronEmail)->send(new RequestMail($subject, $body, 'patron'));
                 $sentCount++;
@@ -397,7 +398,8 @@ class NotificationService
         if ($templates->isEmpty()) {
             $subject = $this->replacePlaceholders(
                 (string) Setting::get('patron_status_subject', 'Update on your suggestion: {title}'),
-                $request
+                $request,
+                html: false
             );
             $body = $this->replacePlaceholders(
                 (string) Setting::get('patron_status_template', $this->defaultPatronTemplate()),
@@ -406,7 +408,7 @@ class NotificationService
         } else {
             // Use first matching template for preview.
             $template = $templates->first();
-            $subject  = $this->replacePlaceholders($template->subject, $request);
+            $subject  = $this->replacePlaceholders($template->subject, $request, html: false);
             $body     = $this->replacePlaceholders((string) $template->body, $request);
         }
 
@@ -431,7 +433,7 @@ class NotificationService
         $request = $this->makeSamplePatronRequestForEmailPreview($previewStatus, $requestKind);
 
         return [
-            'subject' => $this->replacePlaceholders($subjectTemplate, $request),
+            'subject' => $this->replacePlaceholders($subjectTemplate, $request, html: false),
             'body'    => $this->replacePlaceholders($bodyTemplate, $request),
         ];
     }
@@ -535,7 +537,7 @@ class NotificationService
 
         $header = $this->buildWorkflowHeader('Reassigned', $actor, $note);
 
-        $subject = $this->replacePlaceholders($this->defaultStaffRoutingSubject(), $request);
+        $subject = $this->replacePlaceholders($this->defaultStaffRoutingSubject(), $request, html: false);
         $body = $header . $this->finalizeStaffRoutingBody($this->defaultStaffRoutingBodyTemplate(), $request);
 
         if ($this->shouldQueueNotificationMail()) {
@@ -591,7 +593,7 @@ class NotificationService
 
         $header = $this->buildWorkflowHeader($action, $actor, $note, $changes);
 
-        $subject = $this->replacePlaceholders($this->defaultStaffRoutingSubject(), $request);
+        $subject = $this->replacePlaceholders($this->defaultStaffRoutingSubject(), $request, html: false);
         $body = $header . $this->finalizeStaffRoutingBody($this->defaultStaffRoutingBodyTemplate(), $request);
 
         if ($this->shouldQueueNotificationMail()) {
@@ -851,6 +853,12 @@ class NotificationService
     private const STAFF_ACTION_BUTTONS_MARKER = '<!--REQUESTS_ACTION_BUTTONS-->';
 
     /**
+     * Tokens whose values are HTML built by this service (never patron input) and are
+     * inserted unescaped into email bodies.
+     */
+    private const RAW_HTML_TOKENS = ['{request_url}', '{convert_to_ill_link}'];
+
+    /**
      * Expand staff routing body: optional {action_buttons} slot; otherwise append buttons at end.
      */
     private function finalizeStaffRoutingBody(string $template, PatronRequest $request): string
@@ -1021,8 +1029,14 @@ class NotificationService
      *   {where_heard}       — patron's answer to "where did you hear about this?"
      *   {ill_requested}     — "Yes" or "No"
      *   {<key>}             — any other active form field value stored on the request
+     *
+     * Patron- and staff-supplied values are HTML-escaped when $html is true (email bodies),
+     * so a submitted title or name can never inject markup, links, or the action-button marker.
+     * Only the system-built button tokens in RAW_HTML_TOKENS are inserted as HTML.
+     * With $html false (subject lines) values are inserted as plain text with line breaks removed.
+     * Substitution is single-pass (strtr), so a value containing "{patron_email}" is not expanded.
      */
-    private function replacePlaceholders(string $template, PatronRequest $request): string
+    private function replacePlaceholders(string $template, PatronRequest $request, bool $html = true): string
     {
         $patron     = $request->patron;
         $patronName = trim(($patron?->name_first ?? '') . ' ' . ($patron?->name_last ?? ''));
@@ -1097,10 +1111,36 @@ class NotificationService
 
         $map = array_merge($map, $this->convertToIllMailTokens($request));
 
-        $result = str_replace(array_keys($map), array_values($map), $template);
+        return self::applyTokenMap($template, $map, $html);
+    }
 
-        // Strip any remaining unrecognised {tokens} so they never appear literally.
-        return preg_replace('/\{[a-z0-9_]+\}/i', '', $result);
+    /**
+     * Substitute {tokens} in a template in a single pass.
+     *
+     * @param  array<string, string>  $map  token => raw value
+     * @param  bool  $html  true: escape values for an HTML body; false: plain-text subject line
+     */
+    public static function applyTokenMap(string $template, array $map, bool $html = true): string
+    {
+        foreach ($map as $token => $value) {
+            $value = (string) $value;
+            if (in_array($token, self::RAW_HTML_TOKENS, true)) {
+                $map[$token] = $html ? $value : trim(strip_tags($value));
+            } elseif ($html) {
+                $map[$token] = e($value);
+            } else {
+                $map[$token] = trim((string) preg_replace('/[\r\n]+/', ' ', $value));
+            }
+        }
+
+        // Strip unrecognised {tokens} from the template (not from substituted values) so they never appear literally.
+        $template = (string) preg_replace_callback(
+            '/\{[a-z0-9_]+\}/i',
+            fn (array $m) => array_key_exists($m[0], $map) ? $m[0] : '',
+            $template
+        );
+
+        return strtr($template, $map);
     }
 
     /**
