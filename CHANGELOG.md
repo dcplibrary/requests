@@ -2,6 +2,12 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [5.0.1](https://github.com/dcplibrary/requests/compare/v5.0.0...v5.0.1) (2026-10-29)
+
+### Bug Fixes
+
+* update composer requirements ([e1d0979](https://github.com/dcplibrary/requests/commit/e1d0979d3f853b6d9f5d2994c879a00bbbf58196))
+
 ## [5.0.0](https://github.com/dcplibrary/requests/compare/v4.31.7...v5.0.0) (2026-10-29)
 
 ### ⚠ BREAKING CHANGES
