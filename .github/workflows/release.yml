@@ -32,6 +32,8 @@ jobs:
 
       - name: Install release dependencies
         run: npm clean-install
+      - name: Test release configuration
+        run: npm run test:release
 
       - name: Release
         env:
