@@ -5,11 +5,16 @@ namespace Dcplibrary\Requests\Livewire;
 use Blashbrook\PAPIClient\PAPIClient;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\RateLimiter;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 /**
  * Patron barcode + PIN login against Polaris PAPI (rate-limited).
+ *
+ * Rendered full-page at /{prefix}/my-account, so it needs an explicit layout:
+ * without one Livewire 4 falls back to `layouts::app`, which host apps don't define.
  */
+#[Layout('requests::layouts.requests')]
 class PatronPinLogin extends Component
 {
     public string $barcode = '';
