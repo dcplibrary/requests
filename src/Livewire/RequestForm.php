@@ -42,6 +42,7 @@ class RequestForm extends Component
     use WithCoverService;
 
     // --- Steps ---
+    #[Locked]
     public int $step = 1; // 1=patron, 2=material, 3=resolution, 4=confirmation
 
     // --- Step 1: Patron ---
@@ -215,9 +216,14 @@ class RequestForm extends Component
                 }
                 // $exists === null means Polaris is unavailable or not configured — let through.
             }
+
+            $this->markPatronVerified();
         }
 
         if ($this->step === 2) {
+            if (! $this->ensurePatronVerified()) {
+                return;
+            }
             $this->validate($this->buildStepTwoRules());
         }
 
@@ -624,6 +630,10 @@ class RequestForm extends Component
      */
     public function submit(): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->validate($this->buildStepTwoRules());
 
         $this->processing = true;
@@ -746,6 +756,10 @@ class RequestForm extends Component
      */
     public function acceptCatalogMatch(string $bibId): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->catalogMatchAccepted = true;
         $this->catalogMatchBibId = $bibId;
 
@@ -765,6 +779,10 @@ class RequestForm extends Component
      */
     public function skipCatalogMatch(): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->catalogMatchAccepted = false;
 
         // Move on to ISBNdb if not yet searched
@@ -803,6 +821,10 @@ class RequestForm extends Component
      */
     public function acceptIsbndbMatch(int $index): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $isbndbData = $this->isbndbResults[$index] ?? null;
 
         // If the selected item exceeds the ILL age threshold, prompt the patron
@@ -847,6 +869,10 @@ class RequestForm extends Component
      */
     public function skipIsbndbMatch(): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->isbndbMatchAccepted = false;
 
         $patron = app(PatronService::class)->findOrCreate([
@@ -870,6 +896,10 @@ class RequestForm extends Component
      */
     public function proceedAsSfp(): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->suggestIll = false;
         $index = $this->pendingIsbndbIndex;
         $this->pendingIsbndbIndex = null;
@@ -920,6 +950,10 @@ class RequestForm extends Component
      */
     public function redirectToIll(): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->savePatronToSession();
 
         session()->put('request.ill_prefill', [
@@ -931,6 +965,7 @@ class RequestForm extends Component
 
         // Signal the ILL form to skip step 1 — patron data is already in session.
         session()->put('request.ill_skip_patron', true);
+        session()->put(self::VERIFIED_BARCODE_SESSION_KEY, $this->verifiedBarcode);
 
         $this->redirect(route('request.ill.form'));
     }

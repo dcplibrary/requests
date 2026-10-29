@@ -2,6 +2,9 @@
 
 namespace Dcplibrary\Requests\Livewire\Concerns;
 
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
+
 /**
  * Shared patron session helpers for SFP and ILL forms.
  *
@@ -17,6 +20,59 @@ trait RemembersPatron
 {
     /** Cloudflare Turnstile token, set by the widget's JS success callback. */
     public string $turnstileToken = '';
+
+    /**
+     * Set server-side once step 1 (CAPTCHA, patron validation, barcode check) has passed.
+     * Locked so the browser cannot flip it and skip straight to submit().
+     */
+    #[Locked]
+    public bool $patronVerified = false;
+
+    /** Barcode that passed step 1; the patron must not swap it afterwards. */
+    #[Locked]
+    public string $verifiedBarcode = '';
+
+    /** Session key used to carry step-1 verification across the SFP → ILL hand-off. */
+    protected const VERIFIED_BARCODE_SESSION_KEY = 'request.verified_barcode';
+
+    /**
+     * Record that step 1 passed for the current barcode.
+     */
+    protected function markPatronVerified(): void
+    {
+        $this->patronVerified  = true;
+        $this->verifiedBarcode = $this->barcode;
+    }
+
+    /**
+     * Guard for every action after step 1 (search, accept/skip match, submit, hand-off).
+     *
+     * Returns false and sends the patron back to step 1 when step 1 never passed in this
+     * component, or the barcode was changed afterwards. Re-validates the patron fields,
+     * which stay editable in the browser.
+     */
+    protected function ensurePatronVerified(): bool
+    {
+        if (! $this->patronVerified || ! hash_equals($this->verifiedBarcode, $this->barcode)) {
+            $this->patronVerified  = false;
+            $this->verifiedBarcode = '';
+            $this->step            = 1;
+            $this->processing      = false;
+            $this->addError('barcode', 'Please confirm your library card details to continue.');
+
+            return false;
+        }
+
+        try {
+            $this->validate($this->patronValidationRules());
+        } catch (ValidationException $e) {
+            $this->step       = 1;
+            $this->processing = false;
+            throw $e;
+        }
+
+        return true;
+    }
 
     /**
      * Hydrate patron fields from the session (e.g. after "Submit Another Request").

@@ -39,6 +39,7 @@ class IllForm extends Component
     use FiltersFormFieldOptions;
     use RemembersPatron;
     use WithCoverService;
+    #[Locked]
     public int $step = 1;
 
     // Step 1 (patron)
@@ -127,7 +128,12 @@ class IllForm extends Component
 
         // Skip patron step when arriving from the SFP form redirect
         // (patron data is already hydrated from session above).
-        if (session()->pull('request.ill_skip_patron', false)) {
+        $handoffBarcode = (string) session()->pull(self::VERIFIED_BARCODE_SESSION_KEY, '');
+        if (session()->pull('request.ill_skip_patron', false)
+            && $handoffBarcode !== ''
+            && hash_equals($handoffBarcode, $this->barcode)) {
+            // Patron already passed step 1 on the SFP form with this barcode.
+            $this->markPatronVerified();
             $this->step = 2;
             $this->fromSfp = ! empty($this->sfpPrefillKeys);
         }
@@ -169,9 +175,13 @@ class IllForm extends Component
 
             $this->validate($this->patronValidationRules());
             $this->checkPatronLimit();
+            $this->markPatronVerified();
         }
 
         if ($this->step === 2) {
+            if (! $this->ensurePatronVerified()) {
+                return;
+            }
             $this->validate(['material_type_id' => $this->materialTypeIdValidationRule()]);
             $this->clearHiddenFields();
             $this->validate($this->buildStepTwoRules());
@@ -324,6 +334,10 @@ class IllForm extends Component
 
     public function submit(): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->validate(['material_type_id' => $this->materialTypeIdValidationRule()]);
         $this->clearHiddenFields();
         $this->validate($this->buildStepTwoRules());
@@ -383,6 +397,10 @@ class IllForm extends Component
 
     public function acceptCatalogMatch(string $bibId): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->catalogMatchBibId = $bibId;
 
         $match = collect($this->catalogResults)->firstWhere('bib_id', $bibId);
@@ -394,6 +412,10 @@ class IllForm extends Component
 
     public function skipCatalogMatch(): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->processing = true;
         $this->processingStep = 'Continuing with your ILL request...';
 
@@ -424,6 +446,10 @@ class IllForm extends Component
 
     public function acceptIsbndbMatch(int $index): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->processing = true;
         $this->processingStep = 'Submitting your request...';
 
@@ -436,6 +462,10 @@ class IllForm extends Component
 
     public function skipIsbndbMatch(): void
     {
+        if (! $this->ensurePatronVerified()) {
+            return;
+        }
+
         $this->processing = true;
         $this->processingStep = 'Submitting your request...';
 
