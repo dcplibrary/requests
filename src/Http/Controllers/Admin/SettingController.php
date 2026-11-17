@@ -30,7 +30,7 @@ class SettingController extends Controller
      *
      * @return \Illuminate\Contracts\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
         $illGroupId = (int) Setting::get('ill_selector_group_id', 0);
         $illSelectorGroupDiagnostics = null;
@@ -70,6 +70,7 @@ class SettingController extends Controller
                 ->sortKeys(),
             'selectorGroupsForSettings' => SelectorGroup::query()->orderBy('name')->get(['id', 'name']),
             'illSelectorGroupDiagnostics' => $illSelectorGroupDiagnostics,
+            'staffUser' => $this->currentStaffUser($request),
         ]);
     }
 

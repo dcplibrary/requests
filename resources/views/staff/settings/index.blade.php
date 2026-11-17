@@ -1,6 +1,9 @@
 @extends('requests::staff.settings._layout')
 @section('title', 'Settings')
 @section('settings-content')
+@if($staffUser ?? null)
+    @include('requests::staff.account._email-preference', ['user' => $staffUser])
+@endif
 <form method="POST" action="{{ route('request.staff.settings.update') }}">
     @csrf @method('PATCH')
 

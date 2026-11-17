@@ -1,5 +1,6 @@
 <?php
 
+use Dcplibrary\Requests\Http\Controllers\AccountSettingsController;
 use Dcplibrary\Requests\Http\Controllers\Admin\BackupController;
 use Dcplibrary\Requests\Http\Controllers\Admin\CatalogController;
 use Dcplibrary\Requests\Http\Controllers\Admin\HelpController;
@@ -71,6 +72,9 @@ Route::group([
             Route::get('/', fn () => redirect()->route('request.staff.requests.index'));
 
             Route::get('/help/{page?}', [HelpController::class, 'show'])->name('help');
+
+            Route::get('/account', [AccountSettingsController::class, 'edit'])->name('account.edit');
+            Route::patch('/account', [AccountSettingsController::class, 'update'])->name('account.update');
 
             Route::get('/requests',                                       [RequestController::class, 'index'])->name('requests.index');
             Route::post('/requests/bulk-reassign',               [RequestController::class, 'bulkReassign'])->name('requests.bulk-reassign');

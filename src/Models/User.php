@@ -26,18 +26,20 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string|null      $entra_id      Azure Entra object ID
  * @property string           $role          'admin'|'selector'|'staff'
  * @property bool             $active
+ * @property bool             $receive_notification_emails  Activity emails; true unless the user opts out
  * @property \Carbon\Carbon|null $last_login_at
  */
 class User extends Authenticatable
 {
     protected $table = 'staff_users';
 
-    protected $fillable = ['name', 'email', 'entra_id', 'role', 'active', 'last_login_at'];
+    protected $fillable = ['name', 'email', 'entra_id', 'role', 'active', 'receive_notification_emails', 'last_login_at'];
 
     protected $hidden = ['remember_token'];
 
     protected $casts = [
         'active' => 'boolean',
+        'receive_notification_emails' => 'boolean',
         'last_login_at' => 'datetime',
     ];
 
@@ -61,6 +63,20 @@ class User extends Authenticatable
         }
 
         return static::where('email', $email)->first();
+    }
+
+    /**
+     * Whether activity emails (group routing and assignment) should go to this user.
+     * Missing column or unsaved accounts stay opted in — mail goes out by default.
+     */
+    public function wantsNotificationEmails(): bool
+    {
+        $attributes = $this->getAttributes();
+        if (! array_key_exists('receive_notification_emails', $attributes)) {
+            return true;
+        }
+
+        return filter_var($attributes['receive_notification_emails'], FILTER_VALIDATE_BOOLEAN);
     }
 
     /** Returns true when this user has the 'admin' role. */

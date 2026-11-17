@@ -63,7 +63,7 @@ class NotificationService
         foreach ($groups as $group) {
             $emails = [];
             $this->collectEmailsFromGroup($group, $emails);
-            $recipients = array_values(array_unique(array_filter($emails)));
+            $recipients = $this->deliverableStaffEmails($emails);
             if ($recipients === []) {
                 continue;
             }
@@ -530,6 +530,8 @@ class NotificationService
         if (! Setting::get('notifications_enabled', true)) return;
         if (! Setting::get('staff_routing_enabled', true)) return;
 
+        if (! $assignee->wantsNotificationEmails()) return;
+
         $email = $assignee->email;
         if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL)) return;
 
@@ -694,7 +696,8 @@ class NotificationService
     /**
      * Return unique, valid email addresses for staff routing: selectors who are
      * in the groups that have access to this request, plus any group-level
-     * notification_emails (e.g. shared inboxes).
+     * notification_emails (e.g. shared inboxes). Staff who turned off
+     * "Send notification emails" are left out; other shared inboxes are kept.
      *
      * - ILL requests: the group identified by ill_selector_group_id.
      * - SFP requests: groups whose material type AND audience match the request.
@@ -708,7 +711,7 @@ class NotificationService
             $this->collectEmailsFromGroup($group, $emails);
         }
 
-        return array_values(array_unique(array_filter($emails)));
+        return $this->deliverableStaffEmails($emails);
     }
 
     /**
@@ -809,6 +812,73 @@ class NotificationService
             if ($user->active && $user->email && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
                 $emails[] = $user->email;
             }
+        }
+    }
+
+    /**
+     * Lowercased addresses of staff who turned off activity emails.
+     *
+     * @var array<string, true>|null
+     */
+    private ?array $optedOutEmailLookup = null;
+
+    /**
+     * Remove addresses for staff who opted out of activity emails.
+     * Shared inboxes that are not a staff user's address are kept.
+     * When the preference column is not present yet, every address is kept.
+     *
+     * @param  array<int, string>  $emails
+     * @return array<int, string>
+     */
+    private function deliverableStaffEmails(array $emails): array
+    {
+        $emails = array_values(array_unique(array_filter(array_map(
+            fn ($email) => trim((string) $email),
+            $emails
+        ))));
+
+        if ($emails === []) {
+            return [];
+        }
+
+        $blocked = $this->optedOutStaffEmails();
+        if ($blocked === []) {
+            return $emails;
+        }
+
+        return array_values(array_filter(
+            $emails,
+            fn (string $email) => ! isset($blocked[strtolower($email)])
+        ));
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    private function optedOutStaffEmails(): array
+    {
+        if ($this->optedOutEmailLookup !== null) {
+            return $this->optedOutEmailLookup;
+        }
+
+        try {
+            $user = new User();
+            $schema = $user->getConnection()->getSchemaBuilder();
+            if (! $schema->hasTable($user->getTable()) || ! $schema->hasColumn($user->getTable(), 'receive_notification_emails')) {
+                return $this->optedOutEmailLookup = [];
+            }
+
+            $blocked = [];
+            foreach (User::query()->where('receive_notification_emails', false)->pluck('email') as $email) {
+                $email = strtolower(trim((string) $email));
+                if ($email !== '') {
+                    $blocked[$email] = true;
+                }
+            }
+
+            return $this->optedOutEmailLookup = $blocked;
+        } catch (\Throwable) {
+            return $this->optedOutEmailLookup = [];
         }
     }
 
