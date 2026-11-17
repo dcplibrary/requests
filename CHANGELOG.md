@@ -2,6 +2,12 @@
 
 All notable changes to `dcplibrary/requests` are documented here.
 
+## [5.1.0](https://github.com/dcplibrary/requests/compare/v5.0.1...v5.1.0) (2026-11-17)
+
+### Features
+
+* enable user notification settings ([bcc7b8c](https://github.com/dcplibrary/requests/commit/bcc7b8c673d50d7e0884f241e68957ef620f18bf))
+
 ## [5.0.1](https://github.com/dcplibrary/requests/compare/v5.0.0...v5.0.1) (2026-10-29)
 
 ### Bug Fixes
